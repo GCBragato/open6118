@@ -1,0 +1,1 @@
+Esse é um projeto de código aberto Engenheiro Civil Gustavo Bragato. O objetivo é criar uma biblioteca completa que envolve a NBR 6118:2014.

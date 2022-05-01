@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./utilitarios",
+        "./secoes_norma"
+    ]
+}
