@@ -1,10 +1,16 @@
+"""
+NBR 6118:2014, pag 21 - Seção 8 Propriedades dos materiais
+Métodos disponíveis:
+CAAPropriedades(), 
+"""
+
 def main():
-    #Pergunta ao usuário a Classe de Agressividade Ambiental e o tipo de Concreto
+    #Pede ao usuário a Classe de Agressividade Ambiental e o tipo de Concreto
     caa = input("Classe de Agressividade Ambiental (CAI, CAII, CAIII, CAIV): ")
     ct  = input("Tipo de concreto (CA p/ armado ou CP p/ protendido): ")
 
     #Roda a função para pegar todas as propriedades atreladas à CAA
-    resultado = CAAProperties(caa, ct)
+    resultado = CAAPropriedades(caa, ct)
 
     #Printa resultados
     print("Relação A/C ≤ " + str(resultado[0]))
@@ -13,7 +19,8 @@ def main():
     print("Cobrimento Nominal de Vigas e Pilares = " + str(resultado[3]) + "mm")
     print("Cobrimento Nominal de Elementos Estruturais em contato com o solo = " + str(resultado[4]) + "mm")
 
-def CAAProperties(caa, ct):
+def CAAPropriedades(caa, ct):
+    """Unidades aceitas: mm, cm, m, km e pol"""
     if ct == "CA": #Para Concreto Armado, base de dados é:
         relacao_a_c_origem ={"CAI": 0.65, "CAII": 0.6, "CAIII": 0.55, "CAIV": 0.45}
         cClass_origem = {"CAI": "C20", "CAII": "C25", "CAIII": "C30", "CAIV": "C40"}
@@ -34,14 +41,14 @@ def CAAProperties(caa, ct):
     # [2] = Cobrimento Nominal de Laje
     # [3] = Cobrimento Nominal de Vigas e Pilares
     # [4] = Cobrimento Nominal de Elementos Estruturais em contato com o solo
-    caaproperties_get = [
+    CAAPropriedades_get = [
         relacao_a_c_origem.get(caa, 'erro'),
         cClass_origem.get(caa, 'erro'),
         cob_nom_laje_origem.get(caa, 'erro'),
         cob_nom_vigpil_origem.get(caa, 'erro'),
         cob_nom_solo_origem.get(caa, 'erro')
         ]
-    return caaproperties_get
+    return CAAPropriedades_get
 
 if __name__ == "__main__":
     main()

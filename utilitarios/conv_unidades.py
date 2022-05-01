@@ -97,13 +97,34 @@ def convPressao(de, para):
 
     #3a Parte: converter a força
     multForca = convForca(deMatriz[0], paraMatriz[0])
-    
+
     #4a Parte: converter a área
     multArea = convArea(deMatriz[1], paraMatriz[1])
 
     #5a Parte: juntar as conversões
     multiplicador = multForca / multArea
     return multiplicador
+
+def convPesoProprio(de, para):
+    """Unidades aceitas: Separar com "/" (exemplo: tf/m3)
+    Para Força: N, kN, MN, GN, gf, kgf e tf
+    Para Volume: mm3, cm3, m3, km3 e pol3. Atenção ao 3 não expoente!
+    """
+
+    #1a Parte: Separar por "/"
+    deMatriz = de.split('/')
+    paraMatriz = para.split('/')
+
+    #2a Parte: converter a força
+    multForca = convForca(deMatriz[0], paraMatriz[0])
+
+    #3a Parte: converter o volume
+    multVolume = convVolume(deMatriz[1], paraMatriz[1])
+
+    #4a Parte: juntar as conversões
+    multiplicador = multForca / multVolume
+    return multiplicador
+
 
 def convInercia(de, para):
     """Unidades aceitas: mm4, cm4, m4, km4 e pol4. Atenção ao 4 não

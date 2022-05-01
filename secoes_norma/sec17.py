@@ -10,9 +10,11 @@ def main():
     print("Multiplicar a flecha imediata por 1 + " + str(a_f))
 
 def multiplicador_flecha_diferida(p_linha, meses):
-    """Seção 17.3.2.1.2 Cálculo da flecha diferida no tempo para vigas
+    """
+    Seção 17.3.2.1.2 Cálculo da flecha diferida no tempo para vigas
     de concreto armado, Página 126. Aqui calculamos o valor de αf, o
-    multiplicador da flecha imediata.
+    multiplicador da flecha imediata. Dados de entrada = armadura
+    comprimida (%) e idade para cálculo da flecha diferida (meses).
     """
 
     #Função para o cálculo de delta_xi
@@ -32,8 +34,9 @@ def multiplicador_flecha_diferida(p_linha, meses):
     return a_f
 
 def armadura_minima_vigas(fck):
-    """17.3.5.2.1 Armadura de tração, Página 130 Tabela para área de
-    aço mínima, expresso em % da área da seção.
+    """
+    17.3.5.2.1 Armadura de tração, Página 130 Tabela para área de aço
+    mínima, expresso em % da área da seção. Dados de entrada = fck (MPa).
     """
 
     valores_p_min ={
