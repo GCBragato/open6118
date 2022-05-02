@@ -1,7 +1,7 @@
 """
 NBR 6118:2014, pg 21 - Seção 8 Propriedades dos materiais
-Métodos disponíveis:
-
+Classes disponíveis:
+Concreto e Aco_Passivo
 """
 
 """
@@ -11,7 +11,6 @@ Todas as propriedades do concreto serão computadas em uma classe.
 
 import os
 pathConvUnid = os.getcwd() + "\\utilitarios"
-print(pathConvUnid)
 import sys
 sys.path.append(pathConvUnid)
 
@@ -63,43 +62,43 @@ class Concreto:
 
     def fct_m_F(self):
         """Retorna ftct_m em MPa"""
-        if self.fck_j() <= 7:
+        if self.fck_j <= 7:
             fct_m = 0
             return fct_m
         if self.fck <= 50:
-            fct_m = 0.3*self.fck_j()**(2/3)
+            fct_m = 0.3*self.fck_j**(2/3)
         elif self.fck <= 90:
-            fct_m = 2.12*math.log(1+0.11*self.fck_j())
+            fct_m = 2.12*math.log(1+0.11*self.fck_j)
         return fct_m
     
     def fctk_inf_F(self):
         """Retorna ftct_inf em MPa"""
-        if self.fck_j() <= 7:
+        if self.fck_j <= 7:
             fctk_inf = 0
         else:
-            fctk_inf = 0.7*self.fct_m()
+            fctk_inf = 0.7*self.fct_m
         return fctk_inf
 
     def fctk_sup_F(self):
         """Retorna fctk_sup em MPa"""
-        if self.fck_j() <= 7:
+        if self.fck_j <= 7:
             fctk_sup = 0
         else:
-            fctk_sup = 1.3*self.fct_m()
+            fctk_sup = 1.3*self.fct_m
         return fctk_sup
 
     def E_ci_F(self):
         """Retorna E_ci em MPa"""
         if self.fck <= 50:
-            E_ci = ((self.fck_j()/self.fck)**(0.5))*self.a_E*5600*self.fck_j()**(1/2)
+            E_ci = ((self.fck_j/self.fck)**(0.5))*self.a_E*5600*self.fck_j**(1/2)
         elif self.fck <= 90:
-            E_ci = ((self.fck_j()/self.fck)**(0.3))*21.5*1000*self.a_E*((self.fck_j()/10)+1.25)**(1/3)
+            E_ci = ((self.fck_j/self.fck)**(0.3))*21.5*1000*self.a_E*((self.fck_j/10)+1.25)**(1/3)
         return E_ci
 
     def E_cs_F(self):
         """Retorna E_cs em MPa"""
-        a_i = min(0.8+0.2*(self.fck_j()/80), 1)
-        E_cs = a_i*self.E_ci()
+        a_i = min(0.8+0.2*(self.fck_j/80), 1)
+        E_cs = a_i*self.E_ci
         return E_cs
 
     def fcd_F(self):
@@ -125,14 +124,21 @@ class Concreto:
         if tipo == 'a':
             o_c = self.fck*(1-(1-(E_c/E_c2))**n)
         elif tipo == 'b':
-            o_c = 0.85*self.fcd()*(1-(1-(E_c/E_c2))**n)
+            o_c = 0.85*self.fcd*(1-(1-(E_c/E_c2))**n)
 
         return o_c
 
 class Aco_Passivo:
+    """Propriedades do Aço Passico. Insira categoria como CA25, CA50 ou
+    CA60 e superficie como lisa, entalhada ou nervurada
 
-    def __init__(self, categoria = 'CA50', superficie = 'nervurada', y_s = 1.15):
-        self.categoria = categoria
+    Propriedades:
+    Peso próprio = .pp [kN/m³],
+    Coeficiente de Dilatação Térmica = .cDilTermica [/°C],
+    .Es [MPa], .n_1, .fyk [MPa], .fyd [MPa]
+    """
+    def __init__(self, catAco = 'CA50', superficie = 'nervurada', y_s = 1.15):
+        self.catAco = catAco
         self.superficie = superficie
         self.y_s = y_s
         self.pp = 78.5
@@ -148,7 +154,7 @@ class Aco_Passivo:
 
     def fyk_F(self):
         fyk_dic = {'CA25': 250, 'CA50': 500, 'CA60': 600}
-        return fyk_dic.get(self.categoria)
+        return fyk_dic.get(self.catAco)
 
     def fyd_F(self):
         return self.fyk/self.y_s

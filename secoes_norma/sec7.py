@@ -1,7 +1,7 @@
 """
-NBR 6118:2014, pag 21 - Seção 8 Propriedades dos materiais
+NBR 6118:2014, pg 17 - Seção 7 Critérios de projeto que visam a durabilidade
 Métodos disponíveis:
-CAAPropriedades(), 
+CAAPropriedades(),
 """
 
 def main():
