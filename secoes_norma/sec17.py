@@ -13,8 +13,9 @@ def multiplicador_flecha_diferida(p_linha, meses):
     """
     Seção 17.3.2.1.2 Cálculo da flecha diferida no tempo para vigas
     de concreto armado, Página 126. Aqui calculamos o valor de αf, o
-    multiplicador da flecha imediata. Dados de entrada = armadura
-    comprimida (%) e idade para cálculo da flecha diferida (meses).
+    multiplicador da flecha imediata.
+    
+    Dados de entrada: As comprimido [%] e idade da flecha diferida [meses].
     """
 
     #Função para o cálculo de delta_xi
@@ -33,10 +34,12 @@ def multiplicador_flecha_diferida(p_linha, meses):
 
     return a_f
 
-def armadura_minima_vigas(fck):
+def As_min_long_vigas(fck):
     """
     17.3.5.2.1 Armadura de tração, Página 130 Tabela para área de aço
-    mínima, expresso em % da área da seção. Dados de entrada = fck (MPa).
+    mínima, expresso em % da área da seção.
+    
+    Dados de entrada = fck [MPa].
     """
 
     valores_p_min ={
@@ -46,6 +49,33 @@ def armadura_minima_vigas(fck):
         }
     p_min = valores_p_min.get(fck, 'erro')
     return p_min
+
+#17.4 Elementos lineares sujeitos à força cortante - Estado-limite último
+
+def As_min_trans_vigas(fct_m,fyk,bw,alfa):
+    """
+    17.4.1.1.1 Condições gerais, página 133. Cálculo de Asw/s
+    mínimo.
+    
+    Dados de entrada = fct_m e fyk [MPa].
+    """
+
+    #Fórmula deduzida
+    Asw_s_min = 0.2*fct_m*bw*math.sin(math.radians(alfa))/fyk
+    return Asw_s_min
+
+def VRd2(fck,fcd,bw,d,modelo,elemento):
+    """17.4.2.2 Modelo de cálculo 1, página 135 e 17.4.2.2 Modelo de
+    cálculo 2, página 137. Cálculo da resistência a compressão diagonal
+    do concreto para verificações.
+    
+    Dados de entrada: fck [MPa], fcd [MPa], bw [m], d [m], modelo [1 ou 2],
+    elemento [tracionado ou flsimples_fltracao]
+    """
+
+    if modelo == 1:
+        VRd2 = 0.27*(1-fck/250)*fcd*bw*d
+
 
 if __name__ == "__main__":
     main()

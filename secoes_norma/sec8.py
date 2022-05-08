@@ -46,6 +46,7 @@ class Concreto:
         self.E_ci = self.E_ci_F()
         self.E_cs = self.E_cs_F()
         self.fcd = self.fcd_F()
+        self.fctd = self.fctk_inf/y_c
 
     def fck_j_F(self):
         s_dic = {
@@ -104,6 +105,11 @@ class Concreto:
     def fcd_F(self):
         """Retorna fcd em MPa"""
         return self.fck/self.y_c
+
+    
+    def fctd_F(self):
+        """Retorna fcd em MPa"""
+        return self.fctk_inf/self.y_c
 
     def tensaoDeformacao_Compressao(self,E_c,tipo='a'):
         """Retorna a tensão o_c para o Diagrama tensão-deformação

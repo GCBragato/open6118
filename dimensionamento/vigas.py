@@ -12,106 +12,84 @@ pathUtilitarios = os.getcwd() + "\\utilitarios"
 sys.path.append(pathUtilitarios)
 pathSecoes_Norma = os.getcwd() + "\\secoes_norma"
 sys.path.append(pathSecoes_Norma)
+pathSecoes_Norma = os.getcwd() + "\\dimensionamento\\rotinas"
+sys.path.append(pathSecoes_Norma)
 
 import conv_unidades as cv
 import sec8 as s8
+import flexao_simples as fs
+import conv_areadeaco as cAs
 
-class Viga(s8.Concreto, s8.Aco_Passivo):
-    def __init__(self,
-    fck,
-    largura,
-    altura,
-    cobrimento,
-    Mk,
-    Vk,
-    Nk,
-    a_E = 1,
-    t = 28,
-    cimento='CPIII',
-    y_c = 1.4,
-    catAco = 'CA50',
-    superficie = 'nervurada',
-    y_s = 1.15,
-    y_f = 1.4,
-    mult_dAproximado = 0.9):
+class Viga():
+    def __init__(self, largura, altura, cobrimento,  mult_dAproximado = 0.9):
+        """Uma viga, suas propriedades e funções.
+        Unidades de entrada: MPa, kN, metros e MPa"""
 
-        """Uma viga, suas propriedades e funções. Insira fck em MPa,
-        esforços em kN e m, e dimensões em cm.
+        self.largura = largura
+        self.altura = altura
+        self.cobrimento = cobrimento
+        self.mult_dAproximado = mult_dAproximado
+        self.dAproximado = self.altura*self.mult_dAproximado #[m]
 
-        Propriedades:
-
-        """
-
-        self.fck = fck
-        self.largura = largura*cv.convComprimento('cm', 'm')
-        self.altura = altura*cv.convComprimento('cm', 'm')
-        self.cobrimento = cobrimento*cv.convComprimento('cm', 'm')
+class EsforcosSolicitantesViga():
+    def __init__(self, Mk=0, Vk=0, Nk=0, y_f=1.4):
+        """Esforços comumente utilizados para o dimensionamento de
+        uma viga de concreto armado."""
         self.Mk = Mk
         self.Vk = Vk
         self.Nk = Nk
-        self.a_E = a_E
-        self.t = t
-        self.cimento = cimento
-        self.y_c = y_c
-        self.catAco = catAco
-        self.superficie = superficie
-        self.y_s = y_s
-        self.y_f = y_f
-        self.mult_dAproximado = mult_dAproximado
+        self.Md = Mk*y_f
+        self.Vd = Vk*y_f
+        self.Nd = Nk*y_f
 
-        #Atribuir esforços de dimensionamento [MPa]
-        self.Md = self.Mk*self.y_c
-        self.Vd = self.Vk*self.y_c
-        self.Nd = self.Nk*self.y_c
+def dim_flexao_simples():
 
-        #Atribuir valores usados em Concreto com métodos herdados [MPa]
-        self.fck_j = self.fck_j_F()
-        self.fct_m = self.fct_m_F()
-        self.fctk_inf = self.fctk_inf_F()
-        self.fctk_sup = self.fctk_sup_F()
-        self.E_ci = self.E_ci_F()
-        self.E_cs = self.E_cs_F()
-        self.fcd = self.fcd_F()
+    #Input
+    fck_input = 25
+    largura_input = 14*cv.convComprimento('cm','m')
+    altura_input = 54*cv.convComprimento('cm','m')
+    cobrimento_input = 2.5*cv.convComprimento('cm','m')
+    Mk_input = 2.55*cv.convMomento('tf.m', 'kN.m')
+    Vk_input = 0
+    Nk_input = 0
+    y_f = 1.4
 
-        #Atribuir valores usados em Aco_Passivo com métodos herdados [MPa]
-        self.fyk = self.fyk_F()
-        self.fyd = self.fyd_F()
+    C = s8.Concreto(fck_input)
+    A = s8.Aco_Passivo()
+    V = Viga(largura_input,altura_input,cobrimento_input)
+    S = EsforcosSolicitantesViga(Mk_input,Vk_input,Nk_input,y_f=y_f)
 
-        #Atribuir outros valores que serão utilizados no dimensionamento
-        self.dAproximado = self.altura*self.mult_dAproximado #[m]
+    a_c, coefLambda = fs.calc_a_c_coef_lambda(C.fck)
 
-        if self.fck <= 50:
-            self.coefLambda = 0.8
-            self.a_c = 0.85
-        elif self.fck <= 90:
-            self.coefLambda = 0.8-(self.fck-50)/400
-            self.a_c = 0.85*(1-(self.fck-50)/200)
+    x = fs.calc_x(V.dAproximado,C.fcd,S.Md,V.largura,a_c,coefLambda)
+    B_x = fs.calc_B_x(x, V.dAproximado)
+    As = fs.calc_As(A.fyd,S.Md,V.dAproximado,coefLambda,x)
 
-    def calc_x(self):
-        """Retorna altura da linha (x) neutra em metros"""
+    #print('x = ' + str(x*cv.convComprimento('m', 'cm')) +'cm')
+    #print('B_x = ' + str(B_x))
+    print('As = ' + str(As*cv.convArea('m2', 'cm2')) +'cm²')
+    print(str(cAs.As_barras(As*cv.convArea('m2','cm2'),10))+'Barras de 10 mm')
+    return As
 
-        d = self.dAproximado
-        fcd = self.fcd*cv.convPressao('MPa', 'kPa')
+def MRd_da_As():
 
-        x = (d-(d**2-2*(self.Md/(self.largura*self.a_c*fcd)))**(1/2))/self.coefLambda
+    #Input
+    fck_input = 25
+    largura_input = 14*cv.convComprimento('cm','m')
+    altura_input = 54*cv.convComprimento('cm','m')
+    cobrimento_input = 2.5*cv.convComprimento('cm','m')
+    As_input=cAs.barras_As(2,10)*cv.convArea('cm2','m2')
 
-        return x
+    C = s8.Concreto(fck_input)
+    A = s8.Aco_Passivo()
+    V = Viga(largura_input,altura_input,cobrimento_input)
 
-    def calc_B_x(self):
-        """Retorna a relação x/d (Bx) e o estádio da seção"""
-        B_x = self.calc_x()/self.dAproximado
-        return B_x
+    a_c, coefLambda = fs.calc_a_c_coef_lambda(C.fck)
 
-    def calc_As(self):
-        """Retorna a área de aço necessária para a viga em m²"""
-        fyd = self.fyd*cv.convPressao('MPa', 'kPa')
-        As = self.Md/((self.dAproximado-0.5*self.coefLambda*self.calc_x())*fyd)
-        return As
+    MRd = fs.calc_MRd(A.fyd,As_input,largura_input,C.fcd,V.dAproximado,a_c,coefLambda)*cv.convMomento('kN.m','tf.m')
+    print('MRk = '+str(MRd/1.4))
+    return MRd
 
-#Testes
-minhaViga = Viga(25,14,30,2.5,10,0,0)
-print(minhaViga.calc_x()*cv.convComprimento('m', 'cm'))
-print(minhaViga.dAproximado*cv.convComprimento('m', 'cm'))
-print(minhaViga.calc_B_x())
-print(minhaViga.calc_As()*cv.convArea('m2', 'cm2'))
-print(minhaViga.fyd)
+if __name__ == "__main__":
+    dim_flexao_simples()
+    MRd_da_As()

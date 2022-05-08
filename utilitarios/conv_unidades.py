@@ -1,5 +1,5 @@
 """
-Esse módulo converte unidades comumente usadas na NBR 6118.\n
+Este módulo converte unidades comumente usadas na NBR 6118.\n
 Métodos disponíveis:
 convComprimento(), convForca(), convArea(), convVolume(), convPressao(),
 convInercia(), convCargaLinear(), convMomento()
