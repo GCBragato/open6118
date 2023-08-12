@@ -19,6 +19,7 @@ import conv_unidades as cv
 import sec8 as s8
 import flexao_simples as fs
 import conv_areadeaco as cAs
+import math
 
 class Viga():
     def __init__(self, largura, altura, cobrimento,  mult_dAproximado = 0.9):
@@ -44,18 +45,21 @@ class EsforcosSolicitantesViga():
 
 def dim_flexao_simples():
 
-    #Input
-    fck_input = 25
-    largura_input = 14*cv.convComprimento('cm','m')
-    altura_input = 54*cv.convComprimento('cm','m')
-    cobrimento_input = 2.5*cv.convComprimento('cm','m')
-    Mk_input = 2.55*cv.convMomento('tf.m', 'kN.m')
+    ##################################################################
+    #                       INSERIR DADOS AQUI                       #
+    ##################################################################
+
+    fck_input = 17.34
+    largura_input = 100*cv.convComprimento('cm','m')
+    altura_input = 5*cv.convComprimento('cm','m')
+    cobrimento_input = 2*cv.convComprimento('cm','m')
+    Mk_input = 0.13*cv.convMomento('tf.m', 'kN.m')
     Vk_input = 0
     Nk_input = 0
     y_f = 1.4
 
-    C = s8.Concreto(fck_input)
-    A = s8.Aco_Passivo()
+    C = s8.Concreto(fck_input,t=28,y_c=1.0,a_E=0.8,cimento='CPIV')
+    A = s8.Aco_Passivo('CA50')
     V = Viga(largura_input,altura_input,cobrimento_input)
     S = EsforcosSolicitantesViga(Mk_input,Vk_input,Nk_input,y_f=y_f)
 
@@ -65,10 +69,11 @@ def dim_flexao_simples():
     B_x = fs.calc_B_x(x, V.dAproximado)
     As = fs.calc_As(A.fyd,S.Md,V.dAproximado,coefLambda,x)
 
-    #print('x = ' + str(x*cv.convComprimento('m', 'cm')) +'cm')
+    print('x = ',x*cv.convComprimento('m', 'cm'),'cm')
     #print('B_x = ' + str(B_x))
-    print('As = ' + str(As*cv.convArea('m2', 'cm2')) +'cm²')
-    print(str(cAs.As_barras(As*cv.convArea('m2','cm2'),10))+'Barras de 10 mm')
+    print('As =', round(As*cv.convArea('m2', 'cm2'),2),'cm²')
+    barra = 6.3
+    print(math.ceil(cAs.As_barras(As*cv.convArea('m2','cm2'),barra)),f'Barras de {barra} mm')
     return As
 
 def MRd_da_As():
@@ -92,4 +97,4 @@ def MRd_da_As():
 
 if __name__ == "__main__":
     dim_flexao_simples()
-    MRd_da_As()
+    #MRd_da_As()

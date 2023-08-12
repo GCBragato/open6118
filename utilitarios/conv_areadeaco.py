@@ -32,3 +32,4 @@ def barras_barras_espacamento(phi1,s1,phi2):
     Unidades de entrada: milímetros e centímetros"""
     s2 = 100/(((100/s1)*math.pi*phi1**2/400)/(math.pi*phi2**2/400))
     return s2
+    

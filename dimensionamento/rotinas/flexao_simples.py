@@ -9,7 +9,6 @@ calc_As(fyd [MPa],Md [kN.m],d [m],coefLambda,x [m]):
 
 import os
 import sys
-from traceback import print_tb
 pathUtilitarios = os.getcwd() + "\\utilitarios"
 sys.path.append(pathUtilitarios)
 
