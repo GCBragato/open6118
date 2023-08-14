@@ -1,6 +1,6 @@
 """
-NBR 6118:2014, pg 21 - Seção 8 Propriedades dos materiais
-Classes disponíveis:
+NBR 6118:2014, pg 21 - Seção 8 Propriedades dos materiais\n
+Classes disponíveis:\n
 Concreto e Aco_Passivo
 """
 

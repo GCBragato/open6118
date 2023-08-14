@@ -49,11 +49,11 @@ def dim_flexao_simples():
     #                       INSERIR DADOS AQUI                       #
     ##################################################################
 
-    fck_input = 17.34
-    largura_input = 100*cv.convComprimento('cm','m')
-    altura_input = 5*cv.convComprimento('cm','m')
-    cobrimento_input = 2*cv.convComprimento('cm','m')
-    Mk_input = 0.13*cv.convMomento('tf.m', 'kN.m')
+    fck_input = 3.2
+    largura_input = 19*cv.convComprimento('cm','m')
+    altura_input = 14*cv.convComprimento('cm','m')
+    cobrimento_input = 3*cv.convComprimento('cm','m')
+    Mk_input = 1.5*cv.convMomento('tf.m', 'kN.m')
     Vk_input = 0
     Nk_input = 0
     y_f = 1.4
