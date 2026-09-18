@@ -19,9 +19,12 @@ Casos cobertos:
     - Verificacao de forca cortante sem armadura transversal (item 19.4.1 NBR).
 
 Convencoes:
-    - Concretos do Grupo I (fck <= 50 MPa); diagrama retangular simplificado
-      com y = 0.8x e sigma_cd = 0.85 fcd.
-    - Limite de ductilidade NBR 6118 14.6.4.3: x/d <= 0.45.
+    - Concretos do Grupo I e II (C20 a C90, NBR 6118 8.2.1); diagrama
+      retangular simplificado com y = lambda*x e sigma_cd = alpha_c*eta_c*fcd,
+      lambda/alpha_c/eta_c vindos do nucleo normativo (nucleo_nbr6118.py) e
+      iguais a 0.8/0.85/1.0 para fck <= 40 MPa.
+    - Limite de ductilidade NBR 6118 14.6.4.3: x/d <= 0.45 (fck <= 50 MPa) ou
+      x/d <= 0.35 (fck > 50 MPa), via nucleo_nbr6118.xd_limite_dutilidade.
     - Aco CA-50 (fyk = 500 MPa) por padrao.
     - gama_c = 1.4, gama_s = 1.15, gama_f = 1.4 (combinacao normal).
     - Unidades: kN e cm em todas as funcoes; cargas distribuidas em kN/m^2.
@@ -36,7 +39,13 @@ from __future__ import annotations
 
 import math
 import sys
+import warnings
 from dataclasses import dataclass
+
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import nucleo_nbr6118 as nbr
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import nucleo_nbr6118 as nbr
 
 
 # ---------------------------------------------------------------------------
@@ -48,11 +57,18 @@ GAMA_F = 1.4
 
 E_S = 21000.0          # kN/cm2 (210 GPa).
 GAMA_CONC = 25.0       # kN/m3 (concreto armado).
-EPS_CU = 3.5           # %o.
-LIMITE_BETA_X = 0.45   # NBR 6118 14.6.4.3 para fck <= 50 MPa.
+EPS_CU = 3.5           # %o. Legado: so vale para fck <= 50 (Grupo I); ver
+                       # nucleo_nbr6118.eps_cu para os dois ramos (8.2.10.1).
+LIMITE_BETA_X = 0.45   # NBR 6118 14.6.4.3 para fck <= 50 MPa. Legado: mantido
+                       # para compatibilidade (nome exportado). dimensionar_flexao
+                       # usa nbr.xd_limite_dutilidade(fck), que cobre fck > 50
+                       # com o limite 0.35 da norma (LAJ-02).
 
-# Taxas minimas de armadura (Tabela 17.3 NBR 6118; aplicada com fator 0.67
-# para armadura positiva de laje armada em duas direcoes, conforme Tabela 19.1).
+# Taxas minimas de armadura (Tabela 17.3 NBR 6118), so ate C50. Legado:
+# mantido para compatibilidade; as_min_laje usa nbr.rho_min_flexao(fck), que
+# cobre a Tabela 17.3 completa (C20 a C90, com interpolacao - LAJ-06). O fator
+# 0.67 para armadura positiva de laje armada em duas direcoes (Tabela 19.1)
+# continua aplicado neste modulo.
 RHO_MIN_TABELA = {
     20: 0.00150, 25: 0.00150, 30: 0.00150, 35: 0.00164, 40: 0.00179,
     45: 0.00194, 50: 0.00208,
@@ -63,7 +79,11 @@ RHO_MIN_TABELA = {
 # Helpers
 # ---------------------------------------------------------------------------
 def fcd_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
-    return (fck_mpa / gama_c) * 0.1
+    """Resistencia de calculo a compressao (NBR 6118 12.3.3), em kN/cm2.
+
+    Delega ao nucleo normativo (nbr.fcd; t = 28 dias por padrao).
+    """
+    return nbr.mpa_para_kncm2(nbr.fcd(fck_mpa, gama_c))
 
 
 def fyd_kncm2(fyk_mpa: float, gama_s: float = GAMA_S) -> float:
@@ -71,22 +91,27 @@ def fyd_kncm2(fyk_mpa: float, gama_s: float = GAMA_S) -> float:
 
 
 def fct_m_kncm2(fck_mpa: float) -> float:
-    """Resistencia media a tracao direta (NBR 6118 8.2.5), em kN/cm2."""
-    return 0.3 * fck_mpa ** (2.0 / 3.0) * 0.1
+    """Resistencia media a tracao direta (NBR 6118 8.2.5), em kN/cm2.
+
+    Delega ao nucleo normativo (nbr.fct_m), que cobre os dois ramos de 8.2.5:
+    fck <= 50 MPa e fck > 50 MPa (LAJ-03).
+    """
+    return nbr.mpa_para_kncm2(nbr.fct_m(fck_mpa))
 
 
 def fctk_inf_kncm2(fck_mpa: float) -> float:
-    return 0.7 * fct_m_kncm2(fck_mpa)
+    """fctk,inf (NBR 6118 8.2.5), em kN/cm2. Delega ao nucleo (nbr.fctk_inf)."""
+    return nbr.mpa_para_kncm2(nbr.fctk_inf(fck_mpa))
 
 
 def Ecs_kncm2(fck_mpa: float, alpha_E: float = 1.0) -> float:
     """Modulo de elasticidade secante (NBR 6118 8.2.8), em kN/cm2.
     alpha_E: 1.0 granito/gnaisse, 1.2 basalto/diabasio, 0.9 calcario, 0.7 arenito.
+
+    Delega ao nucleo normativo (nbr.Ecs), que cobre os dois ramos de Eci:
+    fck <= 50 MPa e fck > 50 MPa (LAJ-04).
     """
-    Eci_mpa = alpha_E * 5600.0 * math.sqrt(fck_mpa)
-    alpha_i = min(0.8 + 0.2 * fck_mpa / 80.0, 1.0)
-    Ecs_mpa = alpha_i * Eci_mpa
-    return Ecs_mpa * 0.1
+    return nbr.mpa_para_kncm2(nbr.Ecs(fck_mpa, alpha_E))
 
 
 # ---------------------------------------------------------------------------
@@ -129,11 +154,12 @@ def as_min_laje(
 ) -> float:
     """Armadura minima de flexao em laje (cm2/m).
 
-    Tabela 17.3 NBR (rho_min) com fator 0.67 para armadura positiva em laje
-    armada em duas direcoes (Tabela 19.1 NBR 6118).
+    rho_min da Tabela 17.3 NBR 6118 vem do nucleo normativo (nbr.rho_min_flexao),
+    que cobre C20 a C90 com interpolacao entre classes (LAJ-06; antes, fck > 50
+    MPa caia no valor do C50). O fator 0.67 para armadura positiva em laje
+    armada em duas direcoes (Tabela 19.1 NBR 6118) continua aplicado aqui.
     """
-    fck_int = int(round(fck_mpa))
-    rho = RHO_MIN_TABELA.get(fck_int, 0.00208)
+    rho = nbr.rho_min_flexao(fck_mpa)
     fator = 0.67 if (armadura_positiva and duas_direcoes) else 1.0
     return fator * rho * bw_cm * h_cm
 
@@ -414,8 +440,28 @@ class ResultadoFlexao:
 # ---------------------------------------------------------------------------
 # 1. Laje armada em uma direcao
 # ---------------------------------------------------------------------------
+def gama_n_laje_balanco(h_cm: float) -> float:
+    """Coeficiente adicional gama_n para laje em balanco (NBR 6118 13.2.4.1,
+    Tabela 13.2, PDF p. 94).
+
+    gama_n = 1.95 - 0.05 h para 10 <= h < 19 cm; 1.00 para h >= 19 cm. A NBR
+    6118 13.2.4.1 c) exige espessura minima de 10 cm para laje em balanco;
+    abaixo disso a Tabela 13.2 nao se aplica e a funcao levanta erro (LAJ-07).
+    """
+    h = float(h_cm)
+    if h < 10.0:
+        raise nbr.FaixaNormativaError(
+            f"h = {h:g} cm abaixo do minimo da NBR 6118 13.2.4.1 c) "
+            "para laje em balanco (10 cm)."
+        )
+    if h >= 19.0:
+        return 1.0
+    return 1.95 - 0.05 * h
+
+
 def momentos_uma_direcao(
     p_kn_m2: float, lef_cm: float, vinculacao: str,
+    h_cm: float | None = None,
 ) -> dict[str, float]:
     """Momentos fletores e flecha (caracteristicos) de laje 1 direcao,
     calculada como viga de 1 m de largura no menor vao.
@@ -426,7 +472,15 @@ def momentos_uma_direcao(
       'biengastada'      : Mmax+ = pL^2/24;         M_eng = -pL^2/12
       'balanco'          : M_eng = -pL^2/2;         Mmax = M_eng
 
-    Retorna dict com chaves: M_max_pos, M_eng (kN.cm/m por faixa de 1 m).
+    h_cm (usado so quando vinculacao='balanco'): espessura da laje. Quando
+    informado, aplica o coeficiente adicional gama_n de laje em balanco (NBR
+    6118 13.2.4.1, Tabela 13.2 - LAJ-07) a M_max_pos e M_eng, e devolve o
+    valor usado na chave 'gama_n'. Quando omitido, os esforcos saem sem
+    gama_n (como antes) e a funcao emite ``warnings.warn`` avisando que o
+    coeficiente exigido pela norma nao foi aplicado.
+
+    Retorna dict com chaves: M_max_pos, M_eng (kN.cm/m por faixa de 1 m), e
+    gama_n quando aplicavel (vinculacao='balanco' com h_cm informado).
     """
     p = p_kn_m2 / 100.0     # kN/cm por faixa de 1 m (= kN/m / 100)
     L = lef_cm
@@ -439,7 +493,19 @@ def momentos_uma_direcao(
     if vinculacao == "biengastada":
         return {"M_max_pos": pL2 / 24.0, "M_eng": -pL2 / 12.0}
     if vinculacao == "balanco":
-        return {"M_max_pos": 0.0, "M_eng": -pL2 / 2.0}
+        M_max_pos = 0.0
+        M_eng = -pL2 / 2.0
+        if h_cm is None:
+            warnings.warn(
+                "momentos_uma_direcao('balanco'): gama_n (NBR 6118 13.2.4.1, "
+                "Tabela 13.2) nao foi aplicado porque h_cm nao foi "
+                "informado. O momento de engaste sai sem o coeficiente "
+                "adicional que a norma exige para laje em balanco.",
+                stacklevel=2,
+            )
+            return {"M_max_pos": M_max_pos, "M_eng": M_eng}
+        gn = gama_n_laje_balanco(h_cm)
+        return {"M_max_pos": M_max_pos * gn, "M_eng": M_eng * gn, "gama_n": gn}
     raise ValueError(f"Vinculacao desconhecida: {vinculacao}")
 
 
@@ -559,17 +625,31 @@ def dimensionar_flexao(
     fck_mpa: float, fyk_mpa: float = 500.0, bw_cm: float = 100.0,
     armadura_positiva: bool = True, duas_direcoes: bool = False,
     gama_c: float = GAMA_C, gama_s: float = GAMA_S,
+    gama_n: float = 1.0,
 ) -> ResultadoFlexao:
     """Dimensiona armadura simples para uma faixa de bw (default 1 m).
 
-    Equacao 23 (vigas/lajes): |Md| = 0.68 bw x fcd (d - 0.4 x).
+    Bloco retangular (NBR 6118 17.2.2 e): forca = tensao_retangulo(fck) * bw *
+    (lambda * x); braco = d - lambda * x / 2. Para fck <= 40 MPa (eta_c = 1) e
+    lambda = 0.8 (fck <= 50 MPa), a equacao se reduz a classica
+    |Md| = 0.68 bw x fcd (d - 0.4 x); acima disso entram eta_c e o lambda
+    reduzido do Grupo II (8.2.10.1, 17.2.2 e - LAJ-01), e o limite de x/d passa
+    a vir de nbr.xd_limite_dutilidade (14.6.4.3 - LAJ-02).
+
+    gama_n (13.2.4.1, Tabela 13.2 - LAJ-07): coeficiente adicional de laje em
+    balanco. Default 1.0 (sem majoracao); quem chama aplica
+    ``gama_n_laje_balanco(h_cm)`` aqui quando Md_kncm vier de uma laje em
+    balanco e ainda nao tiver sido majorado (por exemplo, se
+    ``momentos_uma_direcao`` foi usada sem passar h_cm).
     """
-    Md = abs(Md_kncm)
-    fcd = fcd_kncm2(fck_mpa, gama_c)
+    Md = abs(Md_kncm) * gama_n
     fyd = fyd_kncm2(fyk_mpa, gama_s)
 
-    a = 0.272 * fcd * bw_cm
-    b = -0.68 * fcd * bw_cm * d_cm
+    tensao = nbr.mpa_para_kncm2(nbr.tensao_retangulo(fck_mpa, gama_c))  # kN/cm2
+    lam = nbr.lambda_retangulo(fck_mpa)
+
+    a = tensao * bw_cm * lam * lam / 2.0
+    b = -tensao * bw_cm * lam * d_cm
     c = Md
     disc = b * b - 4.0 * a * c
     if disc < 0:
@@ -581,13 +661,14 @@ def dimensionar_flexao(
     x = (-b - math.sqrt(disc)) / (2.0 * a)
     beta_x = x / d_cm
 
+    limite_xd = nbr.xd_limite_dutilidade(fck_mpa)
     erro = ""
-    if beta_x > LIMITE_BETA_X:
-        erro = (f"x/d = {beta_x:.3f} > {LIMITE_BETA_X}. Aumentar h.")
+    if beta_x > limite_xd:
+        erro = (f"x/d = {beta_x:.3f} > {limite_xd:.2f} (NBR 6118 14.6.4.3). "
+                "Aumentar h.")
 
-    eps_yd = (fyd / E_S) * 1000.0
-    x2lim = 0.26 * d_cm
-    x3lim = EPS_CU / (eps_yd + EPS_CU) * d_cm
+    x2lim = nbr.x_lim_dominio_2_3(d_cm, fck_mpa)
+    x3lim = nbr.x_lim_dominio_3_4(d_cm, fck_mpa, fyk_mpa, gama_s)
     if x <= x2lim:
         dom = 2
     elif x <= x3lim:
@@ -595,7 +676,7 @@ def dimensionar_flexao(
     else:
         dom = 4
 
-    As = Md / (fyd * (d_cm - 0.4 * x))
+    As = Md / (fyd * (d_cm - 0.5 * lam * x))
     As_min = as_min_laje(bw_cm, h_cm, fck_mpa,
                          armadura_positiva=armadura_positiva,
                          duas_direcoes=duas_direcoes)
@@ -618,10 +699,10 @@ def cortante_resistente_laje(
     """V_Rd1 = [tau_Rd k (1.2 + 40 rho_1)] bw d   (kN, sem armadura transversal).
 
     Eq. 56-62 da apostila. Se a forca cortante solicitante VSd <= V_Rd1,
-    nao eh necessaria armadura transversal.
+    nao eh necessaria armadura transversal. tau_Rd = 0.25 fctd, com fck
+    limitado a 60 MPa (NBR 6118 19.4.1 - LAJ-05), via nucleo normativo.
     """
-    fctd = fctk_inf_kncm2(fck_mpa) / gama_c   # kN/cm2
-    tau_rd = 0.25 * fctd
+    tau_rd = nbr.mpa_para_kncm2(nbr.tau_Rd(fck_mpa, gama_c))   # kN/cm2
     rho_1 = min(As_long_cm2 / (bw_cm * d_cm), 0.02)
     if metade_armadura_chega_apoio:
         k = max(1.6 - d_cm / 100.0, 1.0)

@@ -15,6 +15,7 @@ import pytest
 
 from dimensionamento.rotinas.flexao_composta_obliqua import (
     Aco,
+    AvisoNBR6118,
     Cabo,
     Concreto,
     CurvaApBilinear,
@@ -147,16 +148,21 @@ def test_pfoc_referencia() -> None:
 
 
 def test_nbr_17_79_conservadora() -> None:
-    """Eq. NBR 17.79: expoente=1.5 deve dar valor menor que expoente=1.0."""
+    """Eq. NBR 17.79: expoente=1.5 deve dar valor menor que expoente=1.0.
+
+    A 17.2.5 da NBR 6118:2026 só prevê α = 1 e α = 1,2 (seção retangular):
+    com 1,5 a função calcula, mas avisa (FCO-12).
+    """
     razao = verificar_fco_simplificado(
         MRxd_kncm=20000, MRyd_kncm=40000,
         Mxd_kncm=10000, Myd_kncm=20000, expoente=1.0,
     )
     assert _aprox(razao, 1.0, 1e-6)
-    razao_2 = verificar_fco_simplificado(
-        MRxd_kncm=20000, MRyd_kncm=40000,
-        Mxd_kncm=10000, Myd_kncm=20000, expoente=1.5,
-    )
+    with pytest.warns(AvisoNBR6118):
+        razao_2 = verificar_fco_simplificado(
+            MRxd_kncm=20000, MRyd_kncm=40000,
+            Mxd_kncm=10000, Myd_kncm=20000, expoente=1.5,
+        )
     assert razao_2 < razao
 
 
@@ -348,14 +354,24 @@ def test_ei_secante_retangular() -> None:
 
 
 def test_ei_secante_diminui_com_momento() -> None:
-    """EI secante diminui (ou estabiliza) conforme Md aumenta (escoamento)."""
+    """EI secante diminui (ou estabiliza) conforme Md aumenta (escoamento).
+
+    NBR 6118:2026, 15.3.1 e Figura 15.1 (FCO-10): a (EI)sec da reta AB é
+    definida no ponto B (M = MRd/γf3) e não depende do momento atuante; o
+    que diminui com o momento é a secante da curva AB (pico 1,10 fcd e
+    N/γf3), a curva usada no cálculo das deformações -- `ponto="Md"`.
+    Antes o teste afirmava a queda na curva de ELU, o que a norma não usa.
+    """
     barras = armadura_perimetral_retangular(30, 60, 2.5, 3, 3, 16.0)
     s = SecaoRetangular(30, 60, 2.5, barras)
     c = Concreto(fck_mpa=25.0)
     a = Aco()
-    EI_baixo = ei_secante(s, c, a, Nsd_kn=400.0, Md_kncm=2000.0, eixo="x", n_grid=40)
-    EI_alto = ei_secante(s, c, a, Nsd_kn=400.0, Md_kncm=10000.0, eixo="x", n_grid=40)
+    EI_baixo = ei_secante(s, c, a, Nsd_kn=400.0, Md_kncm=2000.0, eixo="x", n_grid=40, ponto="Md")
+    EI_alto = ei_secante(s, c, a, Nsd_kn=400.0, Md_kncm=10000.0, eixo="x", n_grid=40, ponto="Md")
     assert EI_alto < EI_baixo
+    EI_B_1 = ei_secante(s, c, a, Nsd_kn=400.0, Md_kncm=2000.0, eixo="x", n_grid=40)
+    EI_B_2 = ei_secante(s, c, a, Nsd_kn=400.0, Md_kncm=10000.0, eixo="x", n_grid=40)
+    assert abs(EI_B_1 / EI_B_2 - 1.0) < 1e-9
 
 
 def test_curva_ap_bilinear() -> None:

@@ -1,11 +1,13 @@
-"""Torcao em Vigas de Concreto Armado (NBR 6118:2023).
+"""Torcao em Vigas de Concreto Armado (NBR 6118:2026).
 
 Implementa o dimensionamento a torcao seguindo a apostila
 "TORCAO EM VIGAS DE CONCRETO ARMADO", Prof. Paulo Sergio Bastos,
-UNESP/Bauru.
+UNESP/Bauru, corrigida contra a NBR 6118:2026 (auditoria de 18/09/2026:
+CRT-04, CRT-05, CRT-06, CRT-07). Grandezas de material (fct,m, fcd, fywd)
+vem de nucleo_nbr6118.
 
 Casos cobertos:
-    - Secao vazada equivalente (Eq. 19/20).
+    - Secao vazada equivalente (Eq. 19/20; 17.5.1.4.1).
     - TRd,2 - diagonais comprimidas (Eq. 22).
     - As/s    - armadura transversal de torcao (Eq. 24).
     - As/ue   - armadura longitudinal de torcao (Eq. 27).
@@ -15,7 +17,8 @@ Casos cobertos:
 Convencoes:
     - fck, fyk em MPa.
     - bw, h, c1 em cm. TSd em kN.cm. As em cm2 ou cm2/m.
-    - 30 deg <= theta <= 45 deg (mesmo do dimensionamento a forca cortante).
+    - 30 deg <= theta <= 45 deg (17.5.1.1, mesma faixa do dimensionamento a
+      forca cortante Modelo II).
 """
 
 from __future__ import annotations
@@ -24,28 +27,56 @@ import math
 import sys
 from dataclasses import dataclass
 
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import nucleo_nbr6118 as nbr
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import nucleo_nbr6118 as nbr
 
-GAMA_C = 1.4
-GAMA_S = 1.15
+
+GAMA_C = nbr.GAMA_C
+GAMA_S = nbr.GAMA_S
 
 FYWD_MAX_KNCM2 = 43.5
 
+THETA_MIN_DEG = 30.0    # 17.5.1.1 - inclinacao das diagonais de torcao
+THETA_MAX_DEG = 45.0
+
+FYWK_TETO_TORCAO_MPA = 500.0   # 17.5.1.2 - teto de fywk nos minimos de torcao
+
 
 def fcd_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
-    return (fck_mpa / gama_c) * 0.1
+    """fcd em kN/cm2 (delega ao nucleo, 12.3.3)."""
+    return nbr.mpa_para_kncm2(nbr.fcd(fck_mpa, gama_c))
 
 
 def fctm_mpa(fck_mpa: float) -> float:
-    return 0.3 * fck_mpa ** (2.0 / 3.0)
+    """fct,m, MPa (NBR 6118 8.2.5; delega ao nucleo).
+
+    CRT-04: copia local sem o ramo fck > 50 subestimava fct,m (e portanto
+    Asw,min/As,min de torcao) acima de C50; agora delega ao nucleo, que
+    cobre os dois ramos (Grupo I e II).
+    """
+    return nbr.fct_m(fck_mpa)
 
 
 def fywd_kncm2(fywk_mpa: float = 500.0,
                gama_s: float = GAMA_S) -> float:
-    return min(fywk_mpa / gama_s, 435.0) * 0.1
+    """fywd em kN/cm2, limitado a 435 MPa (17.4.2.2 b; fyd vem do nucleo)."""
+    return nbr.mpa_para_kncm2(min(nbr.fyd(fywk_mpa, gama_s), 435.0))
 
 
 def alfa_v2(fck_mpa: float) -> float:
-    return 1.0 - fck_mpa / 250.0
+    """alpha_v2 = 1 - fck/250 (17.5.1.5). Delega ao nucleo normativo."""
+    return nbr.alpha_v2(fck_mpa)
+
+
+def _validar_theta_torcao(theta_deg: float) -> None:
+    """17.5.1.1: 30 deg <= theta <= 45 deg (CRT-07; mesma faixa/forma da
+    validacao ja existente em cortante_bastos.modelo_calculo_II)."""
+    if not (THETA_MIN_DEG - 1e-6 <= theta_deg <= THETA_MAX_DEG + 1e-6):
+        raise ValueError(
+            f"theta deve estar entre 30 e 45 deg (recebido {theta_deg})."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -55,27 +86,42 @@ def secao_vazada_retangular(
     bw_cm: float, h_cm: float, c1_cm: float,
     he_adotado_cm: float | None = None,
 ) -> dict:
-    """Define he, Ae e ue para secao retangular cheia (Eq. 19/20).
+    """Define he, Ae e ue para secao retangular cheia (17.5.1.4.1, Eq. 19/20).
 
-    he = A/u (limite superior); he >= 2*c1 (limite inferior).
-    Ae = (bw - he) * (h - he); ue = 2*[(bw - he) + (h - he)].
+    Caso geral (A/u >= 2*c1): he <= A/u (limite superior) e he >= 2*c1
+    (limite inferior); adota-se he = A/u. Ae = (bw-he)*(h-he);
+    ue = 2*[(bw-he)+(h-he)] (eixos no meio da parede equivalente).
+
+    CRT-06 - caso A/u < 2*c1 (secao "cheia" demais para a parede media
+    caber entre a face e o eixo das barras de canto): a norma manda
+    adotar he = A/u, limitado a bw - 2*c1, com Ae e ue determinados pelos
+    eixos das armaduras de canto (retangulo (bw-2c1) x (h-2c1)), e nao
+    mais pela parede de espessura he. Antes desta correcao o codigo
+    adotava he = 2*c1 (o limite inferior, nao o previsto pela norma) com a
+    formula generica de Ae, o que reduzia Ae/TRd2/Asw sem base normativa.
     """
     A = bw_cm * h_cm
     u = 2.0 * (bw_cm + h_cm)
     he_max = A / u
     he_min = 2.0 * c1_cm
+    caso_esbelto = he_max < he_min
     if he_adotado_cm is None:
-        he = he_max if he_max >= he_min else he_min
+        he = min(he_max, bw_cm - 2.0 * c1_cm) if caso_esbelto else he_max
     else:
         he = he_adotado_cm
-    Ae = (bw_cm - he) * (h_cm - he)
-    ue = 2.0 * ((bw_cm - he) + (h_cm - he))
+    if caso_esbelto:
+        Ae = (bw_cm - 2.0 * c1_cm) * (h_cm - 2.0 * c1_cm)
+        ue = 2.0 * ((bw_cm - 2.0 * c1_cm) + (h_cm - 2.0 * c1_cm))
+    else:
+        Ae = (bw_cm - he) * (h_cm - he)
+        ue = 2.0 * ((bw_cm - he) + (h_cm - he))
     return {
         "he_min_cm": he_min,
         "he_max_cm": he_max,
         "he_cm": he,
         "Ae_cm2": Ae,
         "ue_cm": ue,
+        "caso_esbelto": caso_esbelto,
     }
 
 
@@ -85,7 +131,11 @@ def secao_vazada_retangular(
 def TRd2_kncm(fck_mpa: float, Ae_cm2: float, he_cm: float,
               theta_deg: float = 45.0,
               gama_c: float = GAMA_C) -> float:
-    """TRd,2 = 0.5 * alpha_v2 * fcd * Ae * he * sin(2 theta)  (Eq. 22)."""
+    """TRd,2 = 0.5 * alpha_v2 * fcd * Ae * he * sin(2 theta)  (17.5.1.5, Eq. 22).
+
+    CRT-07 (17.5.1.1): 30 deg <= theta <= 45 deg.
+    """
+    _validar_theta_torcao(theta_deg)
     fcd = fcd_kncm2(fck_mpa, gama_c)
     return (0.5 * alfa_v2(fck_mpa) * fcd * Ae_cm2 * he_cm
             * math.sin(2.0 * math.radians(theta_deg)))
@@ -101,7 +151,10 @@ def Asw_torcao_cm2_por_m(
     """Asw/s para torcao (Eq. 24): por unidade de comprimento (cm2/m).
 
     Asw/s = (TSd * tan(theta)) / (2 * Ae * fywd) -> cm2/cm.
+
+    CRT-07 (17.5.1.1): 30 deg <= theta <= 45 deg.
     """
+    _validar_theta_torcao(theta_deg)
     fywd = fywd_kncm2(fywk_mpa, gama_s)
     asw_s = TSd_kncm * math.tan(math.radians(theta_deg)) / (2.0 * Ae_cm2 * fywd)
     return asw_s * 100.0
@@ -114,7 +167,10 @@ def As_long_torcao_cm2_por_m(
     """As,long/ue para torcao (Eq. 27): por unidade de perimetro (cm2/m).
 
     As/ue = TSd / (2 * Ae * fywd * tan(theta)) -> cm2/cm.
+
+    CRT-07 (17.5.1.1): 30 deg <= theta <= 45 deg.
     """
+    _validar_theta_torcao(theta_deg)
     fywd = fywd_kncm2(fywk_mpa, gama_s)
     as_ue = TSd_kncm / (2.0 * Ae_cm2 * fywd
                         * math.tan(math.radians(theta_deg)))
@@ -123,17 +179,24 @@ def As_long_torcao_cm2_por_m(
 
 def Asw_min_cm2_por_m(bw_cm: float, fck_mpa: float,
                       fywk_mpa: float = 500.0) -> float:
-    """Eq. 33: As,90,min = 20 * fctm * bw / fywk  (cm2/m)."""
+    """Eq. 33: As,90,min = 20 * fctm * bw / fywk  (cm2/m).
+
+    CRT-05 (17.5.1.2): fywk e limitado a 500 MPa nesta verificacao (o teto
+    e especifico dos minimos de torcao; nao existe em 17.4.1.1.1, cortante).
+    """
     fctm_kncm2 = fctm_mpa(fck_mpa) * 0.1
-    fywk_kncm2 = fywk_mpa * 0.1
+    fywk_kncm2 = min(fywk_mpa, FYWK_TETO_TORCAO_MPA) * 0.1
     return 20.0 * fctm_kncm2 * bw_cm / fywk_kncm2
 
 
 def As_long_min_cm2_por_m(he_cm: float, fck_mpa: float,
                           fywk_mpa: float = 500.0) -> float:
-    """Eq. 32: As,min = 20 * fctm * he / fywk  (cm2/m)."""
+    """Eq. 32: As,min = 20 * fctm * he / fywk  (cm2/m).
+
+    CRT-05 (17.5.1.2): fywk e limitado a 500 MPa nesta verificacao.
+    """
     fctm_kncm2 = fctm_mpa(fck_mpa) * 0.1
-    fywk_kncm2 = fywk_mpa * 0.1
+    fywk_kncm2 = min(fywk_mpa, FYWK_TETO_TORCAO_MPA) * 0.1
     return 20.0 * fctm_kncm2 * he_cm / fywk_kncm2
 
 

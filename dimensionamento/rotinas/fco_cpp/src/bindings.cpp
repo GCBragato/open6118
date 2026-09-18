@@ -1,5 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <stdexcept>
 #include "geometry.h"
 #include "constitutive.h"
 #include "equilibrium.h"
@@ -21,6 +22,7 @@ static py::dict verif_to_dict(const VerifResult& r) {
     d["MRx_kncm"] = r.MRx_kncm;
     d["MRy_kncm"] = r.MRy_kncm;
     d["MR_kncm"] = r.MR_kncm;
+    if (r.uniaxial) d["uniaxial"] = true;
     if (!r.mensagem.empty()) d["mensagem"] = r.mensagem;
     return d;
 }
@@ -35,7 +37,9 @@ static py::dict radial_to_dict(const RadialResult& r) {
 }
 
 PYBIND11_MODULE(_fco_native, m) {
-    m.doc() = "FCO C++ native backend (open6118)";
+    m.doc() = "FCO C++ native backend (open6118) -- NBR 6118:2026";
+    // 2 = correcoes da NBR 6118:2026; o dispatcher so usa o C++ com >= 2.
+    m.attr("VERSAO_KERNEL") = VERSAO_KERNEL;
 
     py::class_<Barra>(m, "Barra")
         .def(py::init<double, double, double>(),
@@ -67,14 +71,18 @@ PYBIND11_MODULE(_fco_native, m) {
 
     py::class_<Concreto>(m, "Concreto")
         .def(py::init([](double fck, double gama_c) {
+            validar_fck(fck);  // FCO-13: 8.2.1, C20 a C90 (std::invalid_argument -> ValueError)
             Concreto c; c.fck_mpa = fck; c.gama_c = gama_c; return c;
         }), py::arg("fck_mpa"), py::arg("gama_c") = 1.4)
         .def_readwrite("fck_mpa", &Concreto::fck_mpa)
         .def_readwrite("gama_c", &Concreto::gama_c)
         .def_property_readonly("fcd_kncm2", &Concreto::fcd_kncm2)
+        .def_property_readonly("eta_c", &Concreto::eta_c)
         .def_property_readonly("eps_c2_pmilh", &Concreto::eps_c2_pmilh)
         .def_property_readonly("eps_cu_pmilh", &Concreto::eps_cu_pmilh)
-        .def_property_readonly("n_parabola", &Concreto::n_parabola);
+        .def_property_readonly("n_parabola", &Concreto::n_parabola)
+        .def_property_readonly("pivo_C_rel", &Concreto::pivo_c_rel)
+        .def_property_readonly("eps_reta_b_pmilh", &Concreto::eps_reta_b_pmilh);
 
     py::class_<Aco>(m, "Aco")
         .def(py::init([](double fyk, double Es, double gama_s) {

@@ -24,6 +24,11 @@ import math
 import sys
 from dataclasses import dataclass
 
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import nucleo_nbr6118 as nbr
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import nucleo_nbr6118 as nbr
+
 
 GAMA_C = 1.4
 GAMA_S = 1.15
@@ -37,33 +42,44 @@ ETA1_TIPO_ACO = {
 
 # ---------------------------------------------------------------------------
 # Helpers
+#
+# Invólucros de uma linha sobre o núcleo normativo único
+# (nucleo_nbr6118.py): mantidos com o mesmo nome e assinatura para não
+# quebrar quem já chama, mas a fórmula mora só no núcleo agora.
 # ---------------------------------------------------------------------------
 def fctm_mpa(fck_mpa: float) -> float:
-    return 0.3 * fck_mpa ** (2.0 / 3.0)
+    """fct,m, MPa (8.2.5). ANC-07: agora cobre fck > 50 MPa (antes só tinha
+    o ramo 0,3*fck^(2/3), sem o ramo logaritmico do Grupo II)."""
+    return nbr.fct_m(fck_mpa)
 
 
 def fctd_mpa(fck_mpa: float, gama_c: float = GAMA_C) -> float:
-    return 0.7 * fctm_mpa(fck_mpa) / gama_c
+    """fctd = fctk,inf/gama_c, MPa (9.3.2.1, 19.4.1)."""
+    return nbr.fctd(fck_mpa, gama_c)
 
 
 def fyd_mpa(fyk_mpa: float, gama_s: float = GAMA_S) -> float:
-    return fyk_mpa / gama_s
+    """fyd = fyk/gama_s, MPa."""
+    return nbr.fyd(fyk_mpa, gama_s)
 
 
 def eta1(tipo_aco: str) -> float:
+    """eta1 pela categoria do aco (Tabela 8.2): CA-25 1,00; CA-50 2,25;
+    CA-60 1,00."""
     if tipo_aco not in ETA1_TIPO_ACO:
         raise ValueError(f"tipo_aco deve ser CA-25, CA-50 ou CA-60: {tipo_aco}")
-    return ETA1_TIPO_ACO[tipo_aco]
+    return nbr.eta1(tipo_aco)
 
 
 def eta2(boa_aderencia: bool) -> float:
-    return 1.0 if boa_aderencia else 0.7
+    """eta2 = 1,0 em boa aderencia; 0,7 em ma aderencia (9.3.2.1)."""
+    return nbr.eta2(boa_aderencia)
 
 
 def eta3(phi_mm: float) -> float:
-    if phi_mm < 32.0:
-        return 1.0
-    return (132.0 - phi_mm) / 100.0
+    """eta3 = 1,0 para phi < 32 mm; (132 - phi)/100 para phi >= 32 mm
+    (9.3.2.1)."""
+    return nbr.eta3(phi_mm)
 
 
 def fbd_mpa(fck_mpa: float, tipo_aco: str = "CA-50",
@@ -205,7 +221,13 @@ def transpasse_tracionado_cm(
     """l0t = alpha_0t * lb_nec >= l0t,min  (Eq. 6/7).
 
     l0t,min = max(0.3 * alpha_0t * lb, 15*phi, 20 cm)
+
+    ANC-08: emenda por traspasse nao e permitida para phi > 32 mm (9.5.2).
     """
+    if phi_mm > 32.0:
+        raise ValueError(
+            "Emenda por traspasse não é permitida para bitola > 32 mm (9.5.2)."
+        )
     anc = comprimento_ancoragem(
         phi_mm=phi_mm, fck_mpa=fck_mpa, fyk_mpa=fyk_mpa,
         tipo_aco=tipo_aco, boa_aderencia=boa_aderencia,
@@ -228,7 +250,14 @@ def transpasse_comprimido_cm(
     tipo_aco: str = "CA-50", boa_aderencia: bool = True,
     As_calc: float = 1.0, As_ef: float = 1.0,
 ) -> dict:
-    """l0c = lb_nec >= l0c,min = max(0.6*lb, 15*phi, 20 cm)  (Eq. 8/9)."""
+    """l0c = lb_nec >= l0c,min = max(0.6*lb, 15*phi, 20 cm)  (Eq. 8/9).
+
+    ANC-08: emenda por traspasse nao e permitida para phi > 32 mm (9.5.2).
+    """
+    if phi_mm > 32.0:
+        raise ValueError(
+            "Emenda por traspasse não é permitida para bitola > 32 mm (9.5.2)."
+        )
     anc = comprimento_ancoragem(
         phi_mm=phi_mm, fck_mpa=fck_mpa, fyk_mpa=fyk_mpa,
         tipo_aco=tipo_aco, boa_aderencia=boa_aderencia,

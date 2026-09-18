@@ -1,4 +1,4 @@
-"""Flexao Composta Normal (NBR 6118:2023).
+"""Flexao Composta Normal (NBR 6118:2026).
 
 Wrapper sobre o kernel FCO restrito ao caso uniaxial (Myd = 0). Toda a
 mecanica de pivos/dominio/integracao reside em
@@ -46,13 +46,20 @@ def dimensionar_as_fcn(
     Nd_kn: float,
     Md_kncm: float,
     fi_t_mm: float = 5.0,
-    As_total_min_cm2: float = 0.4,
+    As_total_min_cm2: float | None = None,
     As_total_max_cm2: float | None = None,
     tol: float = 0.01,
     iter_max: int = 30,
     n_grid: int = 60,
+    aplicar_as_min_pilar: bool = True,
 ) -> dict:
-    """Dimensiona armadura para flexao composta normal."""
+    """Dimensiona armadura para flexao composta normal.
+
+    Herda de `dimensionar_as_fco` a armadura minima de pilar (17.3.5.3.1):
+    As,min = 0,15*Nd/fyd >= 0,004*Ac. `As_total_min_cm2` e um piso adicional;
+    `aplicar_as_min_pilar=False` so para uso fora de pilar (em viga, o minimo
+    e o de 17.3.5.2.1).
+    """
     return dimensionar_as_fco(
         base_cm=base_cm,
         altura_cm=altura_cm,
@@ -71,4 +78,5 @@ def dimensionar_as_fcn(
         tol=tol,
         iter_max=iter_max,
         n_grid=n_grid,
+        aplicar_as_min_pilar=aplicar_as_min_pilar,
     )

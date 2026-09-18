@@ -1,8 +1,10 @@
-"""Forca Cortante - Vigas em Concreto Armado (NBR 6118:2023).
+"""Forca Cortante - Vigas em Concreto Armado (NBR 6118:2026).
 
 Implementa o dimensionamento da armadura transversal seguindo a apostila
 "DIMENSIONAMENTO DE VIGAS DE CONCRETO ARMADO - FORCA CORTANTE" (Mar/2025),
-Prof. Paulo Sergio Bastos, UNESP/Bauru.
+Prof. Paulo Sergio Bastos, UNESP/Bauru, corrigida contra a NBR 6118:2026
+(auditoria de 18/09/2026: CRT-01, CRT-02, CRT-03, CRT-08). Grandezas de
+material (fct,m, fctd, fcd, fywd) vem de nucleo_nbr6118.
 
 Casos cobertos:
     - Modelo de Calculo I (trelica classica de Ritter-Morsch, theta = 45 deg)
@@ -30,50 +32,71 @@ import math
 import sys
 from dataclasses import dataclass
 
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import nucleo_nbr6118 as nbr
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import nucleo_nbr6118 as nbr
+
 
 # ---------------------------------------------------------------------------
 # Constantes
 # ---------------------------------------------------------------------------
-GAMA_C = 1.4
-GAMA_S = 1.15
+GAMA_C = nbr.GAMA_C
+GAMA_S = nbr.GAMA_S
 GAMA_F = 1.4
 
-FYWD_MAX_KNCM2 = 43.5    # 435 MPa (NBR 6118 17.4.2.2)
+FYWD_MAX_KNCM2 = 43.5    # 435 MPa (NBR 6118 17.4.2.2 b)
+
+ALFA_MIN_DEG = 45.0      # 17.4.1.1.5 - inclinacao dos estribos
+ALFA_MAX_DEG = 90.0
 
 
 # ---------------------------------------------------------------------------
-# Helpers de resistencia
+# Helpers de resistencia (legado: delegam ao nucleo_nbr6118)
 # ---------------------------------------------------------------------------
 def fcd_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
-    """fcd em kN/cm2 a partir de fck em MPa."""
-    return (fck_mpa / gama_c) * 0.1
+    """fcd em kN/cm2 a partir de fck em MPa (delega ao nucleo, 12.3.3)."""
+    return nbr.mpa_para_kncm2(nbr.fcd(fck_mpa, gama_c))
 
 
 def fctm_mpa(fck_mpa: float) -> float:
-    """fct,m = 0.3 * fck^(2/3), MPa (NBR 6118 8.2.5, Grupo I)."""
-    return 0.3 * fck_mpa ** (2.0 / 3.0)
+    """fct,m, MPa (NBR 6118 8.2.5; delega ao nucleo).
+
+    CRT-01: ate C50, fct,m = 0.3*fck^(2/3); acima disso,
+    fct,m = 2.12*ln[1 + 0.1*(fck+8)] (Grupo II). A formula antiga
+    (so o ramo do Grupo I) subestimava Vc e superestimava Asw acima de C50.
+    """
+    return nbr.fct_m(fck_mpa)
 
 
 def fctd_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
-    """fctd = 0.7 * fct,m / gama_c, em kN/cm2."""
-    return 0.7 * fctm_mpa(fck_mpa) / gama_c * 0.1
+    """fctd = fctk,inf / gama_c, em kN/cm2 (delega ao nucleo)."""
+    return nbr.mpa_para_kncm2(nbr.fctd(fck_mpa, gama_c))
 
 
 def fywd_kncm2(fywk_mpa: float, gama_s: float = GAMA_S,
                estribo: bool = True) -> float:
     """Tensao de calculo da armadura transversal (kN/cm2).
-    Limite NBR 6118: 435 MPa para estribos, 0.7*fyd para barras dobradas
-    (sempre <= 435 MPa)."""
-    fywd = fywk_mpa / gama_s
+    Limite NBR 6118 17.4.2.2 b): fyd (nucleo) para estribos, 0.7*fyd para
+    barras dobradas (sempre <= 435 MPa)."""
+    fywd = nbr.fyd(fywk_mpa, gama_s)
     if not estribo:
         fywd = 0.7 * fywd
     fywd = min(fywd, 435.0)
-    return fywd * 0.1
+    return nbr.mpa_para_kncm2(fywd)
 
 
 def alfa_v2(fck_mpa: float) -> float:
-    """alpha_v2 = 1 - fck/250 (Eq. 5.15)."""
-    return 1.0 - fck_mpa / 250.0
+    """alpha_v2 = 1 - fck/250 (Eq. 5.15). Delega ao nucleo normativo."""
+    return nbr.alpha_v2(fck_mpa)
+
+
+def _validar_alfa_estribo(alfa_deg: float) -> None:
+    """17.4.1.1.5: 45 deg <= alfa <= 90 deg (inclinacao dos estribos)."""
+    if not (ALFA_MIN_DEG - 1e-6 <= alfa_deg <= ALFA_MAX_DEG + 1e-6):
+        raise ValueError(
+            f"alfa deve estar entre 45 e 90 deg (recebido {alfa_deg})."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -138,7 +161,11 @@ def modelo_calculo_I(
     Eq. 5.18: VRd2 = 0.27 * v2 * fcd * bw * d
     Eq. 5.20: Vc = Vc0 = 0.6 * fctd * bw * d (flexao simples)
     Eq. 5.25: Asw/s = Vsw / [0.9 * d * fywd * (sin alfa + cos alfa)]
+
+    CRT-03 (17.4.1.1.5): 45 deg <= alfa <= 90 deg, mesma faixa validada em
+    modelo_calculo_II.
     """
+    _validar_alfa_estribo(alfa_deg)
     fcd = fcd_kncm2(fck_mpa, gama_c)
     fctd = fctd_kncm2(fck_mpa, gama_c)
     fywd = fywd_kncm2(fywk_mpa, gama_s, estribo)
@@ -270,8 +297,14 @@ def simplificada_modelo_I(
                      com fcd = fck/gama_c
     Eq. 5.57:  VSd,min = 0.0137 * bw * d * fck^(2/3)
     Eq. 5.59:  Asw = 2.55 * VSd / d - 0.023 * bw * fck^(2/3)   (cm2/m)
+
+    CRT-08: as constantes 0.0137/0.023 da apostila embutem
+    fct,m = 0.3*fck^(2/3) (Grupo I, 8.2.5). Para o resultado continuar
+    identico ate C50 e ficar correto no Grupo II, fck^(2/3) e substituido
+    pelo "fck^(2/3) equivalente" nucleo_nbr6118.fct_m(fck)/0.3 (identidade
+    para fck <= 50; usa o ramo logaritmico do nucleo acima disso).
     """
-    fck23 = fck_mpa ** (2.0 / 3.0)
+    fck23 = nbr.fct_m(fck_mpa) / 0.3
     fcd_mpa = fck_mpa / GAMA_C
     VRd2 = 0.027 * (1.0 - fck_mpa / 250.0) * fcd_mpa * bw_cm * d_cm
     VSd_min = 0.0137 * bw_cm * d_cm * fck23
@@ -358,13 +391,13 @@ def laje_sem_armadura(
 
     VRd1 = [tau_Rd * k * (1.2 + 40 * rho_l) + 0.15 * sigma_cp] * bw * d
     com:
-        tau_Rd = 0.25 * fctd
+        tau_Rd = 0.25 * fctd, com fck limitado a 60 MPa nesta formula
+            (CRT-02, 19.4.1; delega a nucleo_nbr6118.tau_Rd)
         k = |1.6 - d| (d em metros, k >= 1) se as barras tracionadas chegam
             ao apoio; senao k = 1.
         rho_l = As1 / (bw*d) <= 0.02
     """
-    fctd = fctd_kncm2(fck_mpa, gama_c)         # kN/cm2
-    tau_rd = 0.25 * fctd                       # kN/cm2
+    tau_rd = nbr.mpa_para_kncm2(nbr.tau_Rd(fck_mpa, gama_c))   # kN/cm2
     if k_imp:
         k = max(1.0, 1.6 - d_cm / 100.0)
     else:

@@ -12,7 +12,13 @@ Casos cobertos:
 Para cada um:
     - Limites de altura util (45 deg <= beta <= 55 deg)
     - Tensao de compressao nas bielas (junto ao pilar e a estaca)
-    - Tensao limite (Blevot): 1.4/1.75/2.1 * KR * fcd  (2/3/4 estacas)
+    - Tensao limite (Blevot, apostila): 1.4/1.75/2.1 * KR * fcd (2/3/4
+      estacas). Este NAO e um limite da NBR 6118 -- e o criterio adotado
+      por este modulo (decisao 2 do plano de correcao / achado FUN-01).
+      A verificacao equivalente da propria norma (22.3.2: fcd1 = 0,85 *
+      alpha_v2 * fcd no no CCC sob o pilar; fcd3 = 0,72 * alpha_v2 * fcd
+      no no CCT sobre a estaca) sai ao lado, so como informacao, em
+      ResultadoBloco / verifica_bielas_22_3_2 -- nao substitui ok_bielas.
     - Armadura principal
     - Armadura de suspensao
     - Armadura superior e de pele
@@ -30,6 +36,11 @@ import math
 import sys
 from dataclasses import dataclass
 
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import nucleo_nbr6118 as nbr
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import nucleo_nbr6118 as nbr
+
 
 GAMA_C = 1.4
 GAMA_S = 1.15
@@ -37,12 +48,57 @@ GAMA_F = 1.4
 
 
 def fcd_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
-    return (fck_mpa / gama_c) * 0.1
+    """fcd em kN/cm2 (delegado ao nucleo normativo: nbr.fcd, 12.3.3)."""
+    return nbr.mpa_para_kncm2(nbr.fcd(fck_mpa, gama_c))
 
 
 def fyd_kncm2(fyk_mpa: float = 500.0,
               gama_s: float = GAMA_S) -> float:
-    return (fyk_mpa / gama_s) * 0.1
+    """fyd em kN/cm2 (delegado ao nucleo normativo: nbr.fyd)."""
+    return nbr.mpa_para_kncm2(nbr.fyd(fyk_mpa, gama_s))
+
+
+# ---------------------------------------------------------------------------
+# 22.3.2 -- parametros de resistencia das bielas e nos (informativo, FUN-01)
+# ---------------------------------------------------------------------------
+def alpha_v2(fck_mpa: float) -> float:
+    """alpha_v2 = 1 - fck/250, fck em MPa (17.4.2.2, 19.5.3.1, 22.3.2).
+    Delega ao nucleo normativo."""
+    return nbr.alpha_v2(fck_mpa)
+
+
+def fcd1_no_pilar_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
+    """fcd1 = 0,85 * alpha_v2 * fcd -- biela prismatica / no CCC, sob o
+    pilar (22.3.2, PDF p. 204). NAO e o criterio adotado por este modulo
+    (Blevot, ver sigma_lim_2/3/4_estacas etc.); e a verificacao
+    equivalente da propria NBR, calculada aqui so como informacao
+    (decisao 2 do plano de correcao / achado FUN-01)."""
+    return 0.85 * alpha_v2(fck_mpa) * fcd_kncm2(fck_mpa, gama_c)
+
+
+def fcd3_na_estaca_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
+    """fcd3 = 0,72 * alpha_v2 * fcd -- no CCT, atravessado por tirante
+    unico, sobre a estaca (22.3.2, PDF p. 204). Mesma ressalva de
+    fcd1_no_pilar_kncm2: informativo, nao substitui ok_bielas (Blevot)."""
+    return 0.72 * alpha_v2(fck_mpa) * fcd_kncm2(fck_mpa, gama_c)
+
+
+def verifica_bielas_22_3_2(sigma_pil_kncm2: float, sigma_est_kncm2: float,
+                           fck_mpa: float, gama_c: float = GAMA_C) -> dict:
+    """Verificacao informativa das tensoes nas bielas/nos pela NBR 6118
+    22.3.2 (PDF p. 204), ao lado do criterio de Blevot que o modulo usa
+    de fato (ok_bielas, em ResultadoBloco). fcd1 no no do pilar (CCC),
+    fcd3 no no da estaca (CCT); alpha_v2 = 1 - fck/250 (fck em MPa)."""
+    fcd1 = fcd1_no_pilar_kncm2(fck_mpa, gama_c)
+    fcd3 = fcd3_na_estaca_kncm2(fck_mpa, gama_c)
+    razao_pil = sigma_pil_kncm2 / fcd1
+    razao_est = sigma_est_kncm2 / fcd3
+    return {
+        "fcd1_kncm2": fcd1, "fcd3_kncm2": fcd3,
+        "fcd1_MPa": fcd1 * 10.0, "fcd3_MPa": fcd3 * 10.0,
+        "razao_pil_fcd1": razao_pil, "razao_est_fcd3": razao_est,
+        "ok": razao_pil <= 1.0 and razao_est <= 1.0,
+    }
 
 
 def aest_quadrado_equivalente(phi_e_cm: float) -> float:
@@ -78,7 +134,12 @@ def sigma_bielas_2_estacas(Nd_kn: float, Ap_cm2: float, Ae_cm2: float,
 
 def sigma_lim_2_estacas(fck_mpa: float, KR: float = 0.95,
                         gama_c: float = GAMA_C) -> float:
-    """sigma_lim = 1.4 * KR * fcd  (Blevot, 2 estacas)."""
+    """sigma_lim = 1,4 * KR * fcd (2 estacas).
+
+    Coeficiente 1,4 do metodo das bielas de Blevot (apostila) -- NAO da
+    NBR 6118. A verificacao equivalente da norma e a 22.3.2 (ver
+    verifica_bielas_22_3_2 / fcd1_no_pilar_kncm2 / fcd3_na_estaca_kncm2),
+    calculada a parte, so como informacao (decisao 2 / achado FUN-01)."""
     return 1.4 * KR * fcd_kncm2(fck_mpa, gama_c)
 
 
@@ -113,7 +174,10 @@ def sigma_bielas_3_estacas(Nd_kn: float, Ap_cm2: float, Ae_cm2: float,
 
 def sigma_lim_3_estacas(fck_mpa: float, KR: float = 0.95,
                         gama_c: float = GAMA_C) -> float:
-    """sigma_lim = 1.75 * KR * fcd."""
+    """sigma_lim = 1,75 * KR * fcd (3 estacas).
+
+    Coeficiente de Blevot (apostila) -- NAO da NBR. Ver nota em
+    sigma_lim_2_estacas (decisao 2 / achado FUN-01)."""
     return 1.75 * KR * fcd_kncm2(fck_mpa, gama_c)
 
 
@@ -149,7 +213,10 @@ def sigma_bielas_4_estacas(Nd_kn: float, Ap_cm2: float, Ae_cm2: float,
 
 def sigma_lim_4_estacas(fck_mpa: float, KR: float = 0.95,
                         gama_c: float = GAMA_C) -> float:
-    """sigma_lim = 2.1 * KR * fcd."""
+    """sigma_lim = 2,1 * KR * fcd (4 estacas).
+
+    Coeficiente de Blevot (apostila) -- NAO da NBR. Ver nota em
+    sigma_lim_2_estacas (decisao 2 / achado FUN-01)."""
     return 2.1 * KR * fcd_kncm2(fck_mpa, gama_c)
 
 
@@ -183,13 +250,19 @@ def sigma_bielas_5_estacas(Nd_kn: float, Ap_cm2: float, Ae_cm2: float,
 
 def sigma_lim_5_estacas_pil(fck_mpa: float, KR: float = 0.95,
                             gama_c: float = GAMA_C) -> float:
-    """sigma_lim_pil = 2.6 * KR * fcd."""
+    """sigma_lim_pil = 2,6 * KR * fcd (5 estacas, no do pilar).
+
+    Coeficiente de Blevot (apostila) -- NAO da NBR. Ver nota em
+    sigma_lim_2_estacas (decisao 2 / achado FUN-01)."""
     return 2.6 * KR * fcd_kncm2(fck_mpa, gama_c)
 
 
 def sigma_lim_5_estacas_est(fck_mpa: float, KR: float = 0.95,
                             gama_c: float = GAMA_C) -> float:
-    """sigma_lim_est = 2.1 * KR * fcd."""
+    """sigma_lim_est = 2,1 * KR * fcd (5 estacas, no da estaca).
+
+    Coeficiente de Blevot (apostila) -- NAO da NBR. Ver nota em
+    sigma_lim_2_estacas (decisao 2 / achado FUN-01)."""
     return 2.1 * KR * fcd_kncm2(fck_mpa, gama_c)
 
 
@@ -247,6 +320,12 @@ class ResultadoBloco:
     ok_bielas: bool
     As_principal_cm2: float
     As_suspensao_cm2: float
+    # 22.3.2, informativo (decisao 2 / achado FUN-01) -- nao muda ok_bielas
+    fcd1_kncm2: float = 0.0
+    fcd3_kncm2: float = 0.0
+    razao_pil_fcd1: float = 0.0
+    razao_est_fcd3: float = 0.0
+    ok_bielas_22_3_2: bool = True
 
 
 def projetar_bloco(
@@ -256,7 +335,13 @@ def projetar_bloco(
     gama_f: float = GAMA_F, gama_c: float = GAMA_C,
     gama_s: float = GAMA_S, cobrimento_cm: float = 3.0,
 ) -> ResultadoBloco:
-    """Projeta bloco sobre 2, 3 ou 4 estacas, metodo das bielas (Blevot)."""
+    """Projeta bloco sobre 2, 3 ou 4 estacas, metodo das bielas (Blevot).
+
+    ok_bielas usa os limites de Blevot -- o criterio que este modulo
+    adota (decisao 2 do plano de correcao / achado FUN-01). fcd1/fcd3 e
+    razao_pil_fcd1/razao_est_fcd3 trazem, lado a lado, a verificacao
+    equivalente da NBR 22.3.2, so como informacao: nao mudam ok_bielas.
+    """
     if n_estacas not in (2, 3, 4):
         raise ValueError("n_estacas deve ser 2, 3 ou 4")
 
@@ -285,6 +370,7 @@ def projetar_bloco(
         As_p = As_principal_4_estacas(Nd, e_cm, ap_cm, d, fyk_mpa, gama_s)
 
     As_susp = As_suspensao_total(Nd, n_estacas, fyk_mpa, gama_s)
+    info_22_3_2 = verifica_bielas_22_3_2(sigma_pil, sigma_est, fck_mpa, gama_c)
 
     return ResultadoBloco(
         n_estacas=n_estacas, e_cm=e_cm, ap_cm=ap_cm, bp_cm=bp_cm,
@@ -293,6 +379,11 @@ def projetar_bloco(
         sigma_lim_kncm2=sigma_lim,
         ok_bielas=(sigma_pil <= sigma_lim and sigma_est <= sigma_lim),
         As_principal_cm2=As_p, As_suspensao_cm2=As_susp,
+        fcd1_kncm2=info_22_3_2["fcd1_kncm2"],
+        fcd3_kncm2=info_22_3_2["fcd3_kncm2"],
+        razao_pil_fcd1=info_22_3_2["razao_pil_fcd1"],
+        razao_est_fcd3=info_22_3_2["razao_est_fcd3"],
+        ok_bielas_22_3_2=info_22_3_2["ok"],
     )
 
 

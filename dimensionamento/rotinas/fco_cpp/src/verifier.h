@@ -6,6 +6,8 @@
 
 namespace fco {
 
+// Compressao uniforme (reta b): 0,85*eta_c*fcd no concreto e sigma_s(eps_c2)
+// <= fyd no aco (FCO-01, FCO-05).
 double Nd_max_kn(const SecaoRetangular& s, const Concreto& c, const Aco& a);
 double Nd_min_kn(const SecaoRetangular& s, const Aco& a);
 
@@ -17,6 +19,7 @@ struct VerifResult {
     double MRx_kncm;
     double MRy_kncm;
     double MR_kncm;
+    bool uniaxial = false;
     std::string mensagem;
 };
 

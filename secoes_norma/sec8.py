@@ -2,6 +2,16 @@
 NBR 6118:2014, pg 21 - Seção 8 Propriedades dos materiais\n
 Classes disponíveis:\n
 Concreto e Aco_Passivo
+
+LEGADO (auditoria NBR 6118:2026, ver REPO\\AUDITORIA_NBR6118_2026.md): este
+módulo só é usado por dimensionamento/vigas.py (script de estudo do
+Gustavo) e é importado por secoes_norma/sec9.py (também legado, não
+editado aqui). Os cálculos de material agora delegam a
+dimensionamento/nucleo_nbr6118.py, fonte única testada contra a norma
+(tests/test_nucleo_nbr6118.py). Para código novo, prefira o núcleo
+diretamente ou os módulos dimensionamento/*_bastos.py (ex.:
+ancoragem_bastos.py no lugar de sec9.py, cortante_bastos.py no lugar da
+verificação de cortante do legado).
 """
 
 """
@@ -17,6 +27,16 @@ sys.path.append(pathConvUnid)
 import conv_unidades as cv
 import conv_areadeaco as ca
 import math
+
+# Núcleo normativo unico (dimensionamento/nucleo_nbr6118.py), localizado a
+# partir de __file__ (independe do diretorio de trabalho atual).
+_DIMENSIONAMENTO_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "dimensionamento"
+)
+if _DIMENSIONAMENTO_DIR not in sys.path:
+    sys.path.append(_DIMENSIONAMENTO_DIR)
+
+import nucleo_nbr6118 as nbr
 
 class Concreto:
     """Propriedades do Concreto. Insira fck em MPa, t em dias e cimento
@@ -51,29 +71,30 @@ class Concreto:
         self.n,self.Eps_c2,self.Eps_cu = self.Eps_c2_Eps_cu_n()
 
     def fck_j_F(self):
-        s_dic = {
-            'CPI': 0.25,
-            'CPII': 0.25,
-            'CPIII': 0.38,
-            'CPIV': 0.38,
-            'CPV-ARI': 0.2
-            }
-        s = s_dic.get(self.cimento)
-        B1 = math.e**(s*(1-((28/self.t)**(1/2))))
-        fck_j = B1*self.fck
-        return fck_j
+        """Retorna fckj em MPa (12.3.3, PDF p. 90-91). Delega ao núcleo.
+
+        LEG-02: a versão antiga só olhava o cimento para o coeficiente s de
+        β1; a norma manda s = 0,20 também para todo concreto C60 ou
+        superior, qualquer que seja o cimento (fckj −16,5 % em C70/CPIV
+        antes da correção). Valida 20 <= fck <= 90 aqui mesmo (é a primeira
+        conta do __init__), em vez do antigo UnboundLocalError para
+        fck > 90 dentro de Eps_c2_Eps_cu_n.
+        """
+        return nbr.fckj(self.fck, self.t, self.cimento)
 
     def fct_m_F(self):
-        """Retorna ftct_m em MPa"""
+        """Retorna fct_m em MPa (8.2.5, PDF p. 42-43). Delega ao núcleo.
+
+        LEG-04 (= ANC-09): a fórmula antiga era 2,12·ln(1 + 0,11·fckj), da
+        NBR 6118:2014; a de 2023/2026 é 2,12·ln[1 + 0,1·(fckj + 8)]. Usa
+        fckj (não fck) porque já é assim que o legado calculava (correto
+        para fckj >= 7 MPa, 8.2.5); mantém o retorno 0 abaixo disso, que a
+        norma não define e o módulo sempre tratou como concreto verde.
+        """
         if self.fck_j <= 7:
-            fct_m = 0
-            return fct_m
-        if self.fck <= 50:
-            fct_m = 0.3*self.fck_j**(2/3)
-        elif self.fck <= 90:
-            fct_m = 2.12*math.log(1+0.11*self.fck_j)
-        return fct_m
-    
+            return 0.0
+        return nbr.fct_m_idade(self.fck_j)
+
     def fctk_inf_F(self):
         """Retorna ftct_inf em MPa"""
         if self.fck_j <= 7:
@@ -91,45 +112,61 @@ class Concreto:
         return fctk_sup
 
     def E_ci_F(self):
-        """Retorna E_ci em MPa"""
-        if self.fck <= 50:
-            E_ci = ((self.fck_j/self.fck)**(0.5))*self.a_E*5600*self.fck_j**(1/2)
-        elif self.fck <= 90:
-            E_ci = ((self.fck_j/self.fck)**(0.3))*21.5*1000*self.a_E*((self.fck_j/10)+1.25)**(1/3)
-        return E_ci
+        """Retorna E_ci em MPa (8.2.8, PDF p. 44). Delega ao núcleo.
+
+        LEG-05: a versão antiga aplicava o efeito da idade duas vezes —
+        usava fckj tanto no fator (fckj/fck)^expoente quanto dentro da
+        fórmula-base de 28 dias (que deve usar sempre fck). Eci(t) do
+        núcleo já calcula Eci(28) com fck e só depois aplica o fator da
+        idade; com t = 28 (fckj = fck) o fator vira 1 e o resultado é
+        idêntico ao de sempre.
+        """
+        return nbr.Eci_idade(self.fck, self.fck_j, self.a_E)
 
     def E_cs_F(self):
-        """Retorna E_cs em MPa"""
-        a_i = min(0.8+0.2*(self.fck_j/80), 1)
-        E_cs = a_i*self.E_ci
-        return E_cs
+        """Retorna E_cs em MPa (8.2.8). Delega o αi ao núcleo.
+
+        LEG-06: αi usava fckj em vez de fck (−2,7 % aos 7 dias); a norma
+        define αi só em função de fck (idade de projeto), aplicado sobre o
+        Eci(t) já ajustado pela idade.
+        """
+        return nbr.alpha_i(self.fck) * self.E_ci
 
     def fcd_F(self):
-        """Retorna fcd em MPa"""
-        return self.fck/self.y_c
+        """Retorna fcd em MPa (12.3.3 b, PDF p. 90). Delega ao núcleo.
+
+        LEG-03: a versão antiga sempre usava fck/γc, mesmo com t < 28 dias;
+        a norma manda fcd = fckj/γc nesse caso (fcd +46 % aos 7 dias antes
+        da correção, contra a segurança).
+        """
+        return nbr.fcd(self.fck, self.y_c, self.t, self.cimento)
 
     def fctd_F(self):
         """Retorna fctd em MPa"""
         return self.fctk_inf/self.y_c
 
     def Eps_c2_Eps_cu_n(self):
-        """Retorna Eps_c2, Eps_cu em o/oo (por mil) e n"""
-        if self.fck <= 50:
-            n = 2
-            Eps_c2 = 2.0
-            Eps_cu = 3.5
-        elif self.fck <= 90:
-            n = 1.4+23.4*math.pow((90-self.fck)/100, 4)
-            Eps_c2 = 2.0+0.085*math.pow(self.fck-50, 0.53)
-            Eps_cu = 2.6+35*math.pow((90-self.fck)/100, 4)
-        return n, Eps_c2, Eps_cu
+        """Retorna n, Eps_c2, Eps_cu em o/oo (por mil) (8.2.10.1, PDF p. 45).
+
+        Já batia com a norma; passa a delegar ao núcleo para ter fonte
+        única (mesmo critério do resto do módulo).
+        """
+        return nbr.n_parabola(self.fck), nbr.eps_c2(self.fck), nbr.eps_cu(self.fck)
 
     def o_c_de_Eps_c(self,Eps_c,tipo='b'):
         """Retorna a tensão o_c para o Diagrama tensão-deformação
         idealizado. Insira Eps_c em o/oo (por mil)
-        
-        Tipo 'a' = retorna o_c para fck\n
-        Tipo 'b' = retorna o_c para 0.85*fcd
+
+        Tipo 'a' = retorna o_c para fck (didático, sem âncora normativa
+        própria — mantido sem alteração)\n
+        Tipo 'b' = retorna o_c para 0,85*ηc*fcd (Fig. 8.2, 8.2.10.1).
+        Delega ao núcleo.
+
+        LEG-07: faltava o fator ηc no trecho parabólico (C60: +14,5 %,
+        contra a segurança, já a partir de C45).
+        LEG-07b: o patamar (εc2 <= εc <= εcu) devolvia fcd puro em vez de
+        0,85*ηc*fcd — um salto de +17,6 % logo na entrada do patamar,
+        para qualquer fck.
         """
 
         if tipo == 'a':
@@ -139,15 +176,13 @@ class Concreto:
                 o_c = self.fck
             else:
                 o_c = 0
-        elif tipo == 'b':
-            if Eps_c < self.Eps_c2:
-                o_c = 0.85*self.fcd*(1-(1-(Eps_c/self.Eps_c2))**self.n)
-            elif Eps_c <= self.Eps_cu:
-                o_c = self.fcd
-            else:
-                o_c = 0
+            return o_c
 
-        return o_c
+        # tipo == 'b': além de Eps_cu a norma não define o diagrama; este
+        # método (uso didático/legado) devolve 0, como sempre devolveu.
+        if Eps_c > self.Eps_cu:
+            return 0.0
+        return nbr.sigma_c(Eps_c, self.fck, self.y_c)
 
 class Aco_Passivo:
     """Propriedades do Aço Passico. Insira categoria como CA25, CA50 ou
@@ -174,9 +209,16 @@ class Aco_Passivo:
         self.Eps_fyd = self.Eps_fyd_F()
 
     def n_1_F(self):
-        """Retorna aderencia da superfície da barra"""
-        aderencia_dic = {'lisa': 1, 'entalhada': 1.4, 'nervurada': 2.25}
-        return aderencia_dic.get(self.superficie)
+        """Retorna η1 (Tabela 8.2, PDF p. 48). Delega ao núcleo.
+
+        LEG-08: a versão antiga calculava η1 pela superfície da barra
+        (lisa/entalhada/nervurada, regra de 2014); a Tabela 8.2 de
+        2023/2026 define η1 pela CATEGORIA do aço: CA-25 = 1,00,
+        CA-50 = 2,25, CA-60 = 1,00 (o parâmetro ``superficie`` continua
+        aceito, por compatibilidade, mas não influencia mais η1 — mesmo
+        padrão do ANC-01 em ancoragem_bastos.py).
+        """
+        return nbr.eta1(self.catAco)
 
     def fyk_F(self):
         """Retorna tensão de escoamento característica em MPa"""

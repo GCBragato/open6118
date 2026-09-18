@@ -1,5 +1,10 @@
 """
-NBR 6118:2014, pg 32 - Seção 9 Comportamento conjunto dos materiais
+NBR 6118:2026, pg 32 - Seção 9 Comportamento conjunto dos materiais
+
+Legado: mantido por compatibilidade e corrigido contra a NBR 6118:2026
+(auditoria de 18/09/2026, achados ANC-01 a ANC-08); para projetos novos,
+use dimensionamento/ancoragem_bastos.py.
+
 Métodos disponíveis:
 res_ade_pass(),
 res_ade_ati(),
@@ -13,6 +18,20 @@ diam_pino_dobramento_transversal(),
 comp_transpasse_trac(),
 comp_transpasse_comp()
 """
+
+import os
+import sys
+
+# Núcleo normativo único (nucleo_nbr6118.py mora em dimensionamento/, um
+# nível acima de secoes_norma/): usa eta1/eta2/eta3/fctd em vez de repetir
+# as fórmulas de material aqui.
+_DIMENSIONAMENTO_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), '..', 'dimensionamento'
+)
+if _DIMENSIONAMENTO_DIR not in sys.path:
+    sys.path.insert(0, _DIMENSIONAMENTO_DIR)
+
+import nucleo_nbr6118 as nbr
 
 from sec8 import Concreto, Aco_Passivo
 
@@ -32,24 +51,49 @@ Seção 9.3 Verificação da aderência, pg 34.
 """
 
 
-def res_ade_pass(tipo_barra,qual_ader,bitola,fctd):
+_CATEGORIA_POR_TIPO_BARRA = {'lisa': 'CA-25', 'entalhada': 'CA-60', 'nervurada': 'CA-50'}
+
+
+def _boa_aderencia(qual_ader):
+    """Converte 'boa' ou 'má'/'ma' em booleano (True = boa aderência).
+
+    Aceita 'má' (grafia da norma, 9.3.2.1) e 'ma' (sem acento) para má
+    aderência (ANC-06): antes só 'ma' era aceito e 'má' caía no sentinela
+    'erro', que o produto seguinte transformava em TypeError.
+    """
+    chave = str(qual_ader).strip().lower()
+    if chave == 'boa':
+        return True
+    if chave in ('ma', 'má'):
+        return False
+    raise ValueError(f"qual_ader deve ser 'boa' ou 'má' (ou 'ma'): {qual_ader!r}")
+
+
+def res_ade_pass(tipo_barra, qual_ader, bitola, fctd, categoria=None):
     """Retorna o valor da Resistência de aderência de cálculo
-    da armadura passiva (fbd) em MPa
+    da armadura passiva (fbd) em MPa: fbd = eta1*eta2*eta3*fctd (9.3.2.1)
 
     tipo_barra = 'lisa', 'entalhada' ou 'nervurada'\n
-    qual_ader = 'boa' ou 'má' aderência\n
+    qual_ader = 'boa' ou 'má' (ou 'ma') aderência\n
     bitola = diâmetro da barra em mm\n
-    fctd = Resistência de dimensionamento do concreto à tração direta em MPa
+    fctd = Resistência de dimensionamento do concreto à tração direta em MPa\n
+    categoria = 'CA-25', 'CA-50' ou 'CA-60' (Tabela 8.2, PDF p. 48): eta1
+    depende da categoria do aço, não da superfície da barra (ANC-01; a
+    regra antiga, por superfície, era de 2014). Se omitida, é derivada de
+    tipo_barra: lisa -> CA-25, entalhada -> CA-60, nervurada -> CA-50. Uma
+    barra CA-60 nervurada exige categoria='CA-60' explícito, porque a
+    derivação por tipo_barra assume CA-50 para barras nervuradas.
     """
-    
-    tipo_barra_origem = {'lisa': 1, 'entalhada': 1.4, 'nervurada': 2.25}
-    qual_ader_origem = {'boa': 1, 'ma': 0.7}
-    if bitola < 32:
-        n3 = 1
-    else:
-        n3 = (132-bitola)/100
-    n1 = tipo_barra_origem.get(tipo_barra, 'erro')
-    n2 = qual_ader_origem.get(qual_ader, 'erro')
+    if categoria is None:
+        categoria = _CATEGORIA_POR_TIPO_BARRA.get(tipo_barra)
+        if categoria is None:
+            raise ValueError(
+                f"tipo_barra deve ser 'lisa', 'entalhada' ou 'nervurada': {tipo_barra!r}"
+            )
+
+    n1 = nbr.eta1(categoria)
+    n2 = nbr.eta2(_boa_aderencia(qual_ader))
+    n3 = nbr.eta3(bitola)
     fbd = n1*n2*n3*fctd
     return fbd
 
@@ -59,16 +103,19 @@ def res_ade_ati(tipo_fio,qual_ader,fctd):
     da armadura ativa (fbpd) em MPa
 
     tipo_fio = 'fio', 'cordoalha' (de três e sete fios) ou 'dentado'\n
-    qual_ader = 'boa' ou 'má' aderência\n
+    qual_ader = 'boa' ou 'má' (ou 'ma') aderência\n
     fctd = Resistência de dimensionamento do concreto à tração direta em MPa
     calculada na idade de aplicação de protensão para o comprimento de
     transferência ou 28 dias para o comprimento de ancoragem
     """
-    
-    tipo_fio_origem = {'fio': 1, 'cordoalha': 1.2, 'dentado': 1.4}
-    qual_ader_origem = {'boa': 1, 'ma': 0.7}
-    n1 = tipo_fio_origem.get(tipo_fio, 'erro')
-    n2 = qual_ader_origem.get(qual_ader, 'erro')
+
+    tipo_fio_origem = {'fio': 1, 'cordoalha': 1.2, 'dentado': 1.4}  # eta_p1, 9.3.2.2
+    if tipo_fio not in tipo_fio_origem:
+        raise ValueError(
+            f"tipo_fio inválido: {tipo_fio!r}. Use 'fio', 'cordoalha' ou 'dentado'."
+        )
+    n1 = tipo_fio_origem[tipo_fio]
+    n2 = nbr.eta2(_boa_aderencia(qual_ader))
     fbpd = n1*n2*fctd
     return fbpd
 
@@ -77,47 +124,48 @@ def res_ade_ati(tipo_fio,qual_ader,fctd):
 Seção 9.4 Ancoragem das armaduras, pg 35
 """
 
-def diam_pino_dobramento(bitola,tipo_aco):
+_PINO_DOBRAMENTO_TAB_9_1 = {
+    # (faixa_bitola, tipo_aco) -> D/bitola (Tabela 9.1, PDF p. 57)
+    ('<20', 'CA25'): 4, ('<20', 'CA50'): 5, ('<20', 'CA60'): 6,
+    ('>=20', 'CA25'): 5, ('>=20', 'CA50'): 8,   # CA-60 >= 20 mm: sem valor na tabela
+}
+
+
+def diam_pino_dobramento(bitola, tipo_aco):
     """Retorna valor D que multiplicado ao diâmetro da barra resulta no diâmetro
-    do pino de dobramento
+    do pino de dobramento (Tabela 9.1)
 
     bitola = diâmetro da barra em mm\n
     tipo_aco = 'CA25', 'CA50' ou 'CA60'
     """
-
-    if bitola < 20:
-        if tipo_aco == 'CA25':
-            D = 4
-        elif tipo_aco == 'CA50':
-            D = 5
-        elif tipo_aco == 'CA60':
-            D = 6
-    elif bitola >= 20:
-        if tipo_aco == 'CA25':
-            D = 5
-        elif tipo_aco == 'CA50':
-            D = 8
-    else:
-        D = 0
-
-        return D
+    faixa = '<20' if bitola < 20 else '>=20'
+    D = _PINO_DOBRAMENTO_TAB_9_1.get((faixa, tipo_aco))
+    if D is None:
+        raise ValueError(
+            f"Tabela 9.1 não dá o pino de dobramento para {tipo_aco} com "
+            f"bitola {bitola} mm (faixa {faixa} mm)."
+        )
+    return D
 
 
 def comp_ancor_basico(bitola, fyd, fbd):
-    """Retorna o comprimento de ancoragem básico em cm
+    """Retorna o comprimento de ancoragem básico em cm (9.4.2.4)
 
     bitola = diâmetro da barra em mm\n
     fyd = tensão de escoamento de cálculo do aço em MPa\n
     fbd = resistência de aderência de cálculo da armadura passiva em MPa
-    """
-    
-    lb = max((bitola*fyd)/(4*fbd), 25*bitola)
 
-    return lb
+    lb = (bitola/4)*(fyd/fbd) >= 25*bitola: com bitola em mm e fyd, fbd em
+    MPa, o resultado sai em mm; convertido para cm (ANC-02 — antes o valor
+    ficava em mm com rótulo de cm, dez vezes maior que o devido).
+    """
+    lb_mm = max((bitola*fyd)/(4*fbd), 25*bitola)
+
+    return lb_mm/10
 
 
 def comp_ancor_necessario(alfa, lb, as_calc, as_efet, bitola):
-    """Retorna o comprimento de ancoragem necessário em cm
+    """Retorna o comprimento de ancoragem necessário em cm (9.4.2.5)
 
     alfa = 1.0 parra barras sem gancho\n
     alfa = 0.7 para barras tracionadas com gancho, com cobrimento no plano
@@ -128,9 +176,14 @@ def comp_ancor_necessario(alfa, lb, as_calc, as_efet, bitola):
     lb = comprimento de ancoragem básico em cm\n
     as_calc = área de aço calculada em cm²\n
     as_efet = área de aço efetiva em cm²
+
+    lb_min = máx(0,3*lb, 10*bitola, 100 mm), tudo em cm. Com bitola em mm,
+    "10*bitola" em cm é só "bitola" (10*bitola/10); o piso de 100 mm é 10 cm
+    (ANC-02 — antes "10*bitola" ficava sem converter e o piso aparecia como
+    "10", uma casa decimal abaixo dos 100 mm da norma).
     """
 
-    lb_min = max(0.3*lb, 10*bitola, 10)
+    lb_min = max(0.3*lb, bitola, 10.0)
     lb_nec = max(alfa*lb*(as_calc/as_efet), lb_min)
 
     return lb_nec
@@ -150,18 +203,24 @@ def comp_ancor_basico_ativo(bitola, fpyd, fbpd, tipo):
     sete fios
     """
 
+    # 9.4.5.1: lbp = (phi/4)(fpyd/fbpd) para fios; (7 phi/36)(fpyd/fbpd) para
+    # cordoalhas de 3 e 7 fios
     if tipo == 'isolado':
         mult = (1/4)
     elif tipo == 'grupo':
         mult = (7/36)
-    
-    lbp = mult*bitola*fpyd/fbpd
+    else:
+        raise ValueError(f"tipo inválido: {tipo!r}. Use 'isolado' ou 'grupo'.")
+
+    # bitola entra em mm e o resultado sai em cm, como diz a docstring e como
+    # comp_ancor_basico (auditoria ANC-02: antes saía em mm com rótulo de cm)
+    lbp = mult*bitola*fpyd/fbpd/10.0
 
     return lbp
 
 
-def comp_transferencia(lbp, opi, fpyd, tipo):
-    """Retorna o comprimento de transferência em cm
+def comp_transferencia(lbp, opi, fpyd, tipo, liberacao_gradual=True):
+    """Retorna o comprimento de transferência em cm (9.4.5.2)
 
     lbp = comprimento de ancoragem básico para armaduras ativas por aderência
     em cm\n
@@ -169,15 +228,27 @@ def comp_transferencia(lbp, opi, fpyd, tipo):
     em MPa\n
     fpyd = tensão de escoamento de cálculo do aço ativo em MPa\n
     tipo = 'isolado' para fios dentados ou lisos ou 'grupo' para cordoalhas de
-    três ou sete fios
+    três ou sete fios\n
+    liberacao_gradual = True (padrão) quando a liberação do dispositivo de
+    tração, no ato da protensão, é gradual; False (liberação súbita)
+    multiplica o resultado por 1,25 (9.4.5.2 b)
+
+    lbpt = 0,7*lbp*opi/fpyd (fios dentados ou lisos) ou 0,5*lbp*opi/fpyd
+    (cordoalhas de três ou sete fios). ANC-04: antes reusava os coeficientes
+    de lbp (1/4 e 7/36, de 9.4.5.1 — outra fórmula) em vez de 0,7 e 0,5, e
+    não havia o fator 1,25 da liberação súbita.
     """
 
     if tipo == 'isolado':
-        mult = (1/4)
+        mult = 0.7
     elif tipo == 'grupo':
-        mult = (7/36)
-    
+        mult = 0.5
+    else:
+        raise ValueError(f"tipo deve ser 'isolado' ou 'grupo': {tipo!r}")
+
     lbpt = mult*lbp*opi/fpyd
+    if not liberacao_gradual:
+        lbpt = lbpt*1.25
 
     return lbpt
 
@@ -198,35 +269,35 @@ def comp_ancor_necessario_ativo(lbpt, lbp, fpyd, op_inf):
     return lbpd
 
 
+_PINO_DOBRAMENTO_TAB_9_2 = {
+    # (faixa_bitola, tipo_aco) -> D/bitola (Tabela 9.2, PDF p. 60)
+    ('<=10', 'CA25'): 3, ('<=10', 'CA50'): 3, ('<=10', 'CA60'): 3,
+    ('10-20', 'CA25'): 4, ('10-20', 'CA50'): 5,   # CA-60: sem valor na tabela
+    ('>=20', 'CA25'): 5, ('>=20', 'CA50'): 8,     # CA-60: sem valor na tabela
+}
+
+
 def diam_pino_dobramento_transversal(bitola, tipo_aco):
     """Retorna valor D que multiplicado ao diâmetro da barra resulta no diâmetro
-    do pino de dobramento para armaduras transversais
+    do pino de dobramento para armaduras transversais (Tabela 9.2)
 
     bitola = diâmetro da barra em mm\n
     tipo_aco = 'CA25', 'CA50' ou 'CA60'
     """
-
     if bitola <= 10:
-        if tipo_aco == 'CA25':
-            D = 3
-        elif tipo_aco == 'CA50':
-            D = 3
-        elif tipo_aco == 'CA60':
-            D = 3
+        faixa = '<=10'
     elif bitola < 20:
-        if tipo_aco == 'CA25':
-            D = 4
-        elif tipo_aco == 'CA50':
-            D = 5
-    elif bitola >= 20:
-        if tipo_aco == 'CA25':
-            D = 5
-        elif tipo_aco == 'CA50':
-            D = 8
+        faixa = '10-20'
     else:
-        D = 0
+        faixa = '>=20'
 
-        return D
+    D = _PINO_DOBRAMENTO_TAB_9_2.get((faixa, tipo_aco))
+    if D is None:
+        raise ValueError(
+            f"Tabela 9.2 não dá o pino de dobramento de estribos para "
+            f"{tipo_aco} com bitola {bitola} mm (faixa {faixa} mm)."
+        )
+    return D
 
 
 """
@@ -235,12 +306,23 @@ Seção 9.5 Emendas das barras, pg 42
 
 def comp_transpasse_trac(porc_emen, lb_nec, lb, bitola):
     """Retorna o comprimento de transpasse para barras tracionadas em cm
+    (9.5.2.2.1)
 
     porc_emen = proporção de barras emendadas na mesma seção em %\n
     lb_nec = comprimento de ancoragem necessário em cm\n
     lb = comprimento de ancoragem básico em cm\n
     bitola = diâmetro da barra em mm
+
+    l0t_min = máx(0,3*alfa0t*lb, 15*bitola, 200 mm), tudo em cm. Com bitola
+    em mm, "15*bitola" em cm é 1,5*bitola (ANC-03 — antes usava 15*bitola
+    sem converter, o que misturava escalas na mesma comparação com o piso
+    de 200 mm). Emenda por traspasse não é permitida para bitola > 32 mm
+    (9.5.2, ANC-08).
     """
+    if bitola > 32:
+        raise ValueError(
+            "Emenda por traspasse não é permitida para bitola > 32 mm (9.5.2)."
+        )
 
     if porc_emen <= 20:
         alfa0t = 1.2
@@ -253,7 +335,7 @@ def comp_transpasse_trac(porc_emen, lb_nec, lb, bitola):
     elif porc_emen > 50:
         alfa0t = 2.0
 
-    l0t_min = max(0.3*alfa0t*lb, 15*bitola, 20)
+    l0t_min = max(0.3*alfa0t*lb, 1.5*bitola, 20.0)
     l0t = max(alfa0t*lb_nec, l0t_min)
 
     return l0t
@@ -261,13 +343,22 @@ def comp_transpasse_trac(porc_emen, lb_nec, lb, bitola):
 
 def comp_transpasse_comp(lb_nec, lb, bitola):
     """Retorna o comprimento de transpasse para barras comprimidas em cm
+    (9.5.2.3)
 
     lb_nec = comprimento de ancoragem necessário em cm\n
     lb = comprimento de ancoragem básico em cm\n
     bitola = diâmetro da barra em mm
-    """
 
-    l0c_min = max(0.6*lb, 15*bitola, 20)
+    l0c_min = máx(0,6*lb, 15*bitola, 200 mm), tudo em cm — mesma conversão
+    de bitola do comp_transpasse_trac (ANC-03). Emenda por traspasse não é
+    permitida para bitola > 32 mm (9.5.2, ANC-08).
+    """
+    if bitola > 32:
+        raise ValueError(
+            "Emenda por traspasse não é permitida para bitola > 32 mm (9.5.2)."
+        )
+
+    l0c_min = max(0.6*lb, 1.5*bitola, 20.0)
     l0c = max(lb_nec, l0c_min)
 
     return l0c

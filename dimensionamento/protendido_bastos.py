@@ -1,8 +1,10 @@
-"""Concreto Protendido - Fundamentos (NBR 6118:2023).
+"""Concreto Protendido - Fundamentos (NBR 6118:2026).
 
 Implementa as analises elasticas e perdas de protensao seguindo a apostila
 "FUNDAMENTOS DO CONCRETO PROTENDIDO", Prof. Paulo Sergio Bastos,
-UNESP/Bauru.
+UNESP/Bauru. As grandezas de material (fct,m, Eci, Ecs, o diagrama
+retangular e o limite de dutilidade) delegam ao nucleo normativo
+(nucleo_nbr6118.py), que segue a NBR 6118:2026.
 
 Casos cobertos:
     - Tensoes elasticas em viga protendida (Eq. 1.7-1.12)
@@ -12,6 +14,8 @@ Casos cobertos:
     - Perda por relaxacao do aco (Eq. 5.11-5.13)
     - Perda por encurtamento elastico imediato do concreto (Eq. 5.56)
     - Perda por retracao/fluencia simplificada (Eq. 5.16, 5.17)
+    - Perda progressiva simplificada com interacao retracao+fluencia+
+      relaxacao (NBR 6118 9.6.3.4.2)
 
 Convencoes:
     - fck, fyk em MPa.
@@ -26,6 +30,11 @@ import math
 import sys
 from dataclasses import dataclass
 
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import nucleo_nbr6118 as nbr
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import nucleo_nbr6118 as nbr
+
 
 GAMA_C = 1.4
 GAMA_S = 1.15
@@ -38,8 +47,9 @@ E_P_MPA = 200000.0    # aco de protensao (NBR 6118 8.4.5)
 # Resistencias e modulos
 # ---------------------------------------------------------------------------
 def fctm_mpa(fck_mpa: float) -> float:
-    """fct,m = 0.3 * fck^(2/3) (Grupo I)."""
-    return 0.3 * fck_mpa ** (2.0 / 3.0)
+    """fct,m, MPa - delega ao nucleo (nbr.fct_m). Inclui o ramo de fck > 50
+    (8.2.5); corrige PRO-01, que so tinha a formula do Grupo I."""
+    return nbr.fct_m(fck_mpa)
 
 
 def fct_flexao_mpa(fck_mpa: float, alpha: float = 1.5) -> float:
@@ -49,17 +59,14 @@ def fct_flexao_mpa(fck_mpa: float, alpha: float = 1.5) -> float:
 
 
 def Eci_mpa(fck_mpa: float, agregado: str = "granito") -> float:
-    """Modulo inicial."""
-    aE = {"granito": 1.0, "basalto": 1.2, "calcario": 0.9,
-          "arenito": 0.7}.get(agregado.lower(), 1.0)
-    if fck_mpa <= 50.0:
-        return aE * 5600.0 * math.sqrt(fck_mpa)
-    return 21500.0 * aE * (fck_mpa / 10.0 + 1.25) ** (1.0 / 3.0)
+    """Modulo de elasticidade tangente inicial Eci, MPa - delega ao nucleo
+    (nbr.Eci). Inclui o ramo de fck > 50 (8.2.8); corrige PRO-01."""
+    return nbr.Eci(fck_mpa, nbr.alpha_E(agregado))
 
 
 def Ecs_mpa(fck_mpa: float, agregado: str = "granito") -> float:
-    alpha_i = min(1.0, 0.8 + 0.2 * fck_mpa / 80.0)
-    return alpha_i * Eci_mpa(fck_mpa, agregado)
+    """Modulo de deformacao secante Ecs, MPa - delega ao nucleo (nbr.Ecs)."""
+    return nbr.Ecs(fck_mpa, nbr.alpha_E(agregado))
 
 
 # ---------------------------------------------------------------------------
@@ -129,13 +136,64 @@ def forca_protensao_excentrica(sigma_alvo_base_kncm2: float,
 # ---------------------------------------------------------------------------
 # Perdas de protensao
 # ---------------------------------------------------------------------------
+# Tabela 8.3 (NBR 6118 8.4.8, PDF p. 51) - psi_1000 (%) por tipo de armadura
+# (fio ou cordoalha), categoria de relaxacao (RN normal, RB baixa) e razao
+# sigma_pi/fptk. "Barras" tem uma unica coluna (sem RN/RB).
+TABELA_8_3_PSI_1000 = {
+    ("cordoalha", "RN"): {0.5: 0.0, 0.6: 3.5, 0.7: 7.0, 0.8: 12.0},
+    ("cordoalha", "RB"): {0.5: 0.0, 0.6: 1.3, 0.7: 2.5, 0.8: 3.5},
+    ("fio", "RN"):       {0.5: 0.0, 0.6: 2.5, 0.7: 5.0, 0.8: 8.5},
+    ("fio", "RB"):       {0.5: 0.0, 0.6: 1.0, 0.7: 2.0, 0.8: 3.0},
+}
+TABELA_8_3_PSI_1000_BARRA = {0.5: 0.0, 0.6: 1.5, 0.7: 4.0, 0.8: 7.0}
+
+
+def psi_1000(tipo: str, relaxacao: str, sigma_pi_sobre_fptk: float) -> float:
+    """psi_1000 (%) pela Tabela 8.3 (NBR 6118 8.4.8), por interpolacao linear
+    entre as linhas de sigma_pi/fptk tabeladas. O texto de 8.4.8 define
+    psi_1000 exatamente nessa faixa (tensoes de 0,5 fptk a 0,8 fptk); fora
+    dela levanta ValueError, a norma nao cobre.
+
+    tipo = 'fio', 'cordoalha' ou 'barra'; relaxacao = 'RN' ou 'RB'
+    (ignorada para 'barra', que a tabela só dá numa coluna).
+    Corrige PRO-04: os valores antigos de PSI_1000_TIPICOS não eram os da
+    Tabela 8.3."""
+    tipo_key = tipo.strip().lower()
+    if tipo_key == "barra":
+        tabela = TABELA_8_3_PSI_1000_BARRA
+    else:
+        if tipo_key not in ("fio", "cordoalha"):
+            raise ValueError(
+                f"tipo desconhecido: {tipo!r}. Use 'fio', 'cordoalha' ou 'barra'."
+            )
+        relax_key = relaxacao.strip().upper()
+        if relax_key not in ("RN", "RB"):
+            raise ValueError(f"relaxacao desconhecida: {relaxacao!r}. Use 'RN' ou 'RB'.")
+        tabela = TABELA_8_3_PSI_1000[(tipo_key, relax_key)]
+
+    razao = float(sigma_pi_sobre_fptk)
+    pontos = sorted(tabela)
+    if razao < pontos[0] or razao > pontos[-1]:
+        raise ValueError(
+            f"sigma_pi/fptk = {razao:g} fora da faixa da Tabela 8.3 "
+            f"({pontos[0]:g} a {pontos[-1]:g})."
+        )
+    for r0, r1 in zip(pontos, pontos[1:]):
+        if r0 <= razao <= r1:
+            v0, v1 = tabela[r0], tabela[r1]
+            return v0 + (v1 - v0) * (razao - r0) / (r1 - r0)
+    raise AssertionError("Faixa de σpi/fptk inalcançável.")  # pragma: no cover
+
+
 PSI_1000_TIPICOS = {
-    # (tipo, classe): psi_1000 em % a 80% fptk (NBR 6118 Tabela 8.3)
-    ("CP-175", "RN"): 5.0,
-    ("CP-175", "RB"): 2.5,
-    ("CP-190", "RN"): 8.5,
+    # (categoria comercial, relaxacao) -> psi_1000 (%) a 0,8 fptk, Tabela 8.3.
+    # CP-175 e fio; CP-190 e CP-210 sao cordoalhas (ver propriedades_cordoalha
+    # abaixo). Corrige PRO-04 (valores antigos nao eram os da Tabela 8.3).
+    ("CP-175", "RN"): 8.5,
+    ("CP-175", "RB"): 3.0,
+    ("CP-190", "RN"): 12.0,
     ("CP-190", "RB"): 3.5,
-    ("CP-210", "RN"): 7.0,
+    ("CP-210", "RN"): 12.0,
     ("CP-210", "RB"): 3.5,
 }
 
@@ -159,7 +217,14 @@ def psi_infinito(psi_1000_percent: float) -> float:
 
 def perda_relaxacao_kncm2(psi_percent: float,
                           sigma_pi_kncm2: float) -> float:
-    """delta sigma_pr = psi/100 * sigma_pi  (Eq. 5.10)."""
+    """delta sigma_pr = psi/100 * sigma_pi  (Eq. 5.10).
+
+    Parcela ISOLADA de relaxacao. A NBR 6118 9.6.3.4.2 nao soma esta parcela
+    com perda_retracao_kncm2 e perda_fluencia_kncm2: a perda progressiva
+    exige considerar a interacao entre as tres causas (ha um denominador de
+    interacao). Para o processo da norma use perda_progressiva_simplificada
+    (corrige a lacuna PRO-07 - a soma das isoladas superestimou a perda em
+    +41% no achado)."""
     return psi_percent / 100.0 * sigma_pi_kncm2
 
 
@@ -167,17 +232,22 @@ def perda_encurtamento_elastico_kncm2(
     sigma_cp_kncm2: float, fck_mpa: float, agregado: str = "granito",
     Ep_mpa: float = E_P_MPA,
 ) -> float:
-    """delta sigma_p,enc = (Ep/Ec) * sigma_cp  (Eq. 5.56).
+    """delta sigma_p,enc = alpha_p * sigma_cp  (Eq. 5.56), com
+    alpha_p = Ep/Eci (NBR 6118 9.1 e 9.6.3.3.2.1). Corrige PRO-03, que usava
+    Ecs em vez de Eci.
     sigma_cp = tensao no concreto ao nivel do CG da armadura."""
-    Ec = Ecs_mpa(fck_mpa, agregado)
-    alpha_p = Ep_mpa / Ec
+    Eci = Eci_mpa(fck_mpa, agregado)
+    alpha_p = Ep_mpa / Eci
     return alpha_p * sigma_cp_kncm2
 
 
 def perda_retracao_kncm2(eps_cs_permil: float,
                          Ep_mpa: float = E_P_MPA) -> float:
     """delta sigma_pcs = eps_cs * Ep  (Eq. 5.16).
-    eps_cs em por mil (deformacao de retracao no infinito)."""
+    eps_cs em por mil (deformacao de retracao no infinito).
+
+    Parcela ISOLADA de retracao - ver nota de perda_relaxacao_kncm2 sobre
+    nao somar as tres parcelas isoladas (9.6.3.4.2, PRO-07)."""
     eps = eps_cs_permil / 1000.0
     return abs(eps) * Ep_mpa * 0.1  # MPa -> kN/cm2
 
@@ -185,10 +255,96 @@ def perda_retracao_kncm2(eps_cs_permil: float,
 def perda_fluencia_kncm2(phi_inf: float, sigma_c_to_kncm2: float,
                          fck_mpa: float, agregado: str = "granito",
                          Ep_mpa: float = E_P_MPA) -> float:
-    """delta sigma_pcc = (Ep/Ec) * phi * sigma_c(to)  (Eq. 5.17/5.18)."""
-    Ec = Ecs_mpa(fck_mpa, agregado)
-    alpha_p = Ep_mpa / Ec
+    """delta sigma_pcc = alpha_p * phi * sigma_c(to)  (Eq. 5.17/5.18), com
+    alpha_p = Ep/Eci. Corrige PRO-03, que usava Ecs em vez de Eci.
+
+    Parcela ISOLADA de fluencia - ver nota de perda_relaxacao_kncm2 sobre
+    nao somar as tres parcelas isoladas (9.6.3.4.2, PRO-07)."""
+    Eci = Eci_mpa(fck_mpa, agregado)
+    alpha_p = Ep_mpa / Eci
     return alpha_p * phi_inf * abs(sigma_c_to_kncm2)
+
+
+# ---------------------------------------------------------------------------
+# Perda progressiva simplificada (9.6.3.4.2 - fases unicas de operacao)
+# ---------------------------------------------------------------------------
+def perda_progressiva_simplificada(
+    eps_cs_permil: float, psi_percent: float, phi_inf: float,
+    sigma_c_p0g_mpa: float, sigma_p0_mpa: float,
+    Ap_cm2: float, Ac_cm2: float, Ic_cm4: float, ep_cm: float,
+    fck_mpa: float, agregado: str = "granito", Ep_mpa: float = E_P_MPA,
+    t0_dias: float = 28.0, cimento: str = "CPII",
+    Eci_t0_mpa: float | None = None,
+) -> float:
+    """Perda progressiva de protensao pelo processo simplificado da NBR 6118
+    9.6.3.4.2 (fases unicas de operacao; PDF p. 71-73), considerando a
+    interacao entre retracao, fluencia do concreto e relaxacao do aco -
+    ao contrario de somar as tres parcelas isoladas (perda_retracao_kncm2 +
+    perda_fluencia_kncm2 + perda_relaxacao_kncm2), que NAO e o processo da
+    norma (superestimou a perda em +41% no achado que motivou esta funcao -
+    lacuna PRO-07).
+
+    delta_sigma_p(t,t0) = [|eps_cs|*Ep + alpha_p(t)*sigma_c,p0g*phi + sigma_p0*chi]
+                          / [chi_p + chi_c*alpha_p*eta*rho_p]
+    com:
+        chi        = -ln(1 - psi/100)   (coeficiente de fluencia do aco)
+        chi_c      = 1 + 0,5*phi
+        chi_p      = 1 + chi
+        eta        = 1 + ep^2*Ac/Ic
+        rho_p      = Ap/Ac
+        alpha_p    = Ep/Eci             (idade >= 28 dias; 9.1)
+        alpha_p(t) = Ep/Eci(t)          (idade t0 < 28 dias; 9.1 e PDF p. 72)
+    Para t0 >= 28 dias, alpha_p(t) = alpha_p. Para t0 < 28 dias,
+    Eci(t0) = (fckj/fck)^0,5 (ou ^0,3)*Eci (8.2.8), com fckj = beta1*fck
+    (12.3.3, pelo cimento). A estimativa de 8.2.8 vale de 7 a 28 dias; abaixo
+    de 7 dias informe Eci_t0_mpa (de ensaio).
+
+    Unidades - todas as tensoes desta funcao em MPa (nao kN/cm2 como o
+    resto do modulo), para casar direto com a formula da norma:
+        eps_cs_permil   : retracao entre t0 e t (negativa), em per mil (8.2.11).
+        psi_percent     : coeficiente de relaxacao do aco psi(t,t0), em %
+                          (psi_infinito ou psi_t_em_dias/psi_t_em_horas).
+        phi_inf         : coeficiente de fluencia do concreto phi(t,t0)
+                          (phi_eps_cs_NBR).
+        sigma_c_p0g_mpa : tensao no concreto junto ao cabo resultante apos
+                          as perdas imediatas e a carga permanente em t0,
+                          MPa, positiva se compressao.
+        sigma_p0_mpa    : tensao na armadura ativa apos as perdas imediatas
+                          em t0, MPa, sempre positiva (tracao).
+        Ap_cm2, Ac_cm2, Ic_cm4, ep_cm : area do cabo resultante, area e
+                          inercia do concreto e excentricidade do cabo
+                          resultante em relacao ao CG da secao de concreto.
+        fck_mpa, agregado : para alpha_p = Ep/Eci.
+        t0_dias, cimento  : idade do concreto na protensao/carregamento e o
+                          cimento (para beta1), para alpha_p(t).
+        Eci_t0_mpa      : Eci(t0) de ensaio; substitui a estimativa.
+
+    Retorna delta_sigma_p em MPa (perda de tensao na armadura ativa)."""
+    Eci = Eci_mpa(fck_mpa, agregado)
+    alpha_p = Ep_mpa / Eci
+    if Eci_t0_mpa is not None:
+        alpha_p_t = Ep_mpa / Eci_t0_mpa
+    elif t0_dias >= 28.0:
+        alpha_p_t = alpha_p
+    elif t0_dias >= 7.0:
+        fckj_t0 = nbr.fckj(fck_mpa, t0_dias, cimento)
+        alpha_p_t = Ep_mpa / nbr.Eci_idade(fck_mpa, fckj_t0, nbr.alpha_E(agregado))
+    else:
+        raise nbr.FaixaNormativaError(
+            f"t0 = {t0_dias:g} dias: a estimativa de Eci(t) de 8.2.8 vale de 7 a 28 "
+            "dias. Informe Eci_t0_mpa (módulo de elasticidade medido na idade t0)."
+        )
+    chi = -math.log(1.0 - psi_percent / 100.0)
+    chi_c = 1.0 + 0.5 * phi_inf
+    chi_p = 1.0 + chi
+    eta = 1.0 + ep_cm ** 2 * Ac_cm2 / Ic_cm4
+    rho_p = Ap_cm2 / Ac_cm2
+
+    numerador = (abs(eps_cs_permil) / 1000.0 * Ep_mpa
+                 + alpha_p_t * sigma_c_p0g_mpa * phi_inf
+                 + sigma_p0_mpa * chi)
+    denominador = chi_p + chi_c * alpha_p * eta * rho_p
+    return numerador / denominador
 
 
 # ---------------------------------------------------------------------------
@@ -231,11 +387,12 @@ def fct_admissivel_traçao_kncm2(fck_mpa: float, secao: str = "T") -> float:
     secao = 'T' ou 'duplo-T'  -> alpha = 1.2
     secao = 'I' ou 'T-invertido' -> alpha = 1.3
     secao = 'retangular'     -> alpha = 1.5
-    fct = alpha * 0.7 * 0.3 * fck^(2/3)  (em MPa); resultado em kN/cm2."""
+    fct = alpha * 0.7 * fct,m  (fct,m do nucleo, com o ramo de fck > 50 -
+    8.2.5; corrige PRO-01); resultado em kN/cm2."""
     alpha = {"t": 1.2, "duplo-t": 1.2, "duplo t": 1.2,
              "i": 1.3, "t-invertido": 1.3, "t invertido": 1.3,
              "retangular": 1.5}.get(secao.lower(), 1.5)
-    fct_mpa = alpha * 0.7 * 0.3 * fck_mpa ** (2.0 / 3.0)
+    fct_mpa = alpha * 0.7 * nbr.fct_m(fck_mpa)
     return fct_mpa * 0.1
 
 
@@ -377,33 +534,50 @@ def MRd_secao_retangular_protendida(
     Ap_cm2: float, As_cm2: float, As_linha_cm2: float,
     fck_mpa: float, sigma_pd_mpa: float = 1520.0,
     fyk_mpa: float = 500.0, gama_c: float = GAMA_C,
-    gama_s: float = GAMA_S, alpha_c: float = 0.85,
+    gama_s: float = GAMA_S, alpha_c: float | None = None,
 ) -> dict:
     """Momento fletor resistente MRd no ELU para secao retangular com
-    armaduras Ap, As e A's.
+    armaduras Ap, As e A's, com o diagrama retangular de 17.2.2 e) da
+    NBR 6118: y = lambda*x e tensao constante alpha_c*etac*fcd, ambos
+    dependentes de fck para fck > 50 (corrige PRO-05, que usava
+    lambda = 0,8 e alpha_c*fcd fixos, sem etac).
 
-    Eq. 6.10: x = (sigma_pd*Ap + fyd*As - fyd*A's) / (alpha_c * fcd_kncm * 0.8 * bw)
-    Eq. 6.11: MRd = sigma_pd*Ap*(dp - 0.4x) + fyd*As*(ds - 0.4x)
-                  + fyd*A's*(0.4x - d')
+    Eq. 6.10: x = (sigma_pd*Ap + fyd*As - fyd*A's) / (tensao_kncm2 * lambda * bw)
+    Eq. 6.11: MRd = sigma_pd*Ap*(dp - lambda/2*x) + fyd*As*(ds - lambda/2*x)
+                  + fyd*A's*(lambda/2*x - d')
 
     sigma_pd e o valor de tensao na armadura de protensao no ELU
     (estimado, geralmente ~1.520 MPa para CP-190 RB).
+    alpha_c=None (padrao) usa o alpha_c(fck) do nucleo (0,85 ate C50,
+    decrescente acima - 17.2.2 e). Um valor explicito substitui so o
+    alpha_c, mantendo etac e fcd do nucleo (compatibilidade com chamadas
+    antigas que passavam alpha_c=0.85).
+    "ductil" usa o limite x/d de 14.6.4.3 (0,45 ate C50; 0,35 acima -
+    corrige PRO-06, que usava 0,45 fixo).
     Resultado: MRd em kN.cm.
     """
-    fcd = fck_mpa / gama_c * 0.1     # kN/cm2
-    fyd = fyk_mpa / gama_s * 0.1     # kN/cm2
+    fyd_kncm = fyk_mpa / gama_s * 0.1     # kN/cm2
     sigma_pd_kncm = sigma_pd_mpa * 0.1
-    num = sigma_pd_kncm * Ap_cm2 + fyd * As_cm2 - fyd * As_linha_cm2
-    den = alpha_c * fcd * 0.8 * bw_cm
+    lam = nbr.lambda_retangulo(fck_mpa)
+    if alpha_c is None:
+        tensao_kncm2 = nbr.mpa_para_kncm2(nbr.tensao_retangulo(fck_mpa, gama_c))
+    else:
+        tensao_kncm2 = nbr.mpa_para_kncm2(
+            alpha_c * nbr.eta_c(fck_mpa) * nbr.fcd(fck_mpa, gama_c))
+
+    num = sigma_pd_kncm * Ap_cm2 + fyd_kncm * As_cm2 - fyd_kncm * As_linha_cm2
+    den = tensao_kncm2 * lam * bw_cm
     x = num / den
-    MRd = (sigma_pd_kncm * Ap_cm2 * (dp_cm - 0.4 * x)
-           + fyd * As_cm2 * (ds_cm - 0.4 * x)
-           + fyd * As_linha_cm2 * (0.4 * x - d_linha_cm))
+    braco = lam / 2.0 * x
+    MRd = (sigma_pd_kncm * Ap_cm2 * (dp_cm - braco)
+           + fyd_kncm * As_cm2 * (ds_cm - braco)
+           + fyd_kncm * As_linha_cm2 * (braco - d_linha_cm))
+    xd = x / max(dp_cm, ds_cm)
     return {
         "x_cm": x,
         "MRd_kncm": MRd,
-        "x_d": x / max(dp_cm, ds_cm),
-        "ductil": x / max(dp_cm, ds_cm) <= 0.45,
+        "x_d": xd,
+        "ductil": xd <= nbr.xd_limite_dutilidade(fck_mpa),
     }
 
 
@@ -422,7 +596,8 @@ def perda_encurtamento_cabos_restantes_kncm2(
     fck_mpa: float, agregado: str = "granito",
     Ep_mpa: float = E_P_MPA,
 ) -> float:
-    """delta sigma_p = alpha_p * (n-1)/(2n) * sigma_cpog  (Eq. 5.62, NBR 9.6.3.3.2.1).
+    """delta sigma_p = alpha_p * (n-1)/(2n) * sigma_cpog  (Eq. 5.62, NBR 9.6.3.3.2.1),
+    com alpha_p = Ep/Eci. Corrige PRO-03, que usava Ecs em vez de Eci.
 
     Perda media por cabo na pos-tensao quando os cabos sao estirados
     sucessivamente. sigma_cpog = tensao no concreto adjacente ao cabo
@@ -431,8 +606,8 @@ def perda_encurtamento_cabos_restantes_kncm2(
     """
     if n_cabos < 1:
         raise ValueError("n_cabos deve ser >= 1")
-    Ec = Ecs_mpa(fck_mpa, agregado)
-    alpha_p = Ep_mpa / Ec
+    Eci = Eci_mpa(fck_mpa, agregado)
+    alpha_p = Ep_mpa / Eci
     return alpha_p * (n_cabos - 1) / (2.0 * n_cabos) * abs(sigma_cpog_kncm2)
 
 
@@ -480,37 +655,97 @@ def perda_escorregamento_kncm2(delta_anc_m: float, X_m: float,
 
 
 # ---------------------------------------------------------------------------
-# Anexo A NBR 6118 - Retracao e fluencia (versao simplificada com tabela)
+# NBR 6118 8.2.11 - Retracao e fluencia (Tabela 8.1, versao simplificada)
 # ---------------------------------------------------------------------------
-# Tabela 8.2 NBR 6118 - valores tipicos para fluencia phi e retracao eps_cs
-# (extraidos para condicoes correntes - umidade 70%, abatimento 5-9 cm)
-TABELA_FLUENCIA_RETRACAO = {
-    # (umidade %, h_fic_cm): (phi_inf, eps_cs_inf_per_mil)
-    # Valores tipicos NBR 6118 8.2.11 (concreto C20-C45):
-    (40, 20): (4.4, -0.44),
-    (40, 60): (3.9, -0.39),
-    (55, 20): (3.8, -0.39),
-    (55, 60): (3.3, -0.33),
-    (75, 20): (2.8, -0.33),
-    (75, 60): (2.4, -0.28),
-    (90, 20): (2.0, -0.15),
-    (90, 60): (1.9, -0.12),
+# Tabela 8.1 (NBR 6118:2026 8.2.11, PDF p. 47), transcrita por completo.
+# phi(t_inf,t0) depende da classe do concreto (bloco "C20-C45" x "C50-C90");
+# eps_cs(t_inf,t0) e comum as duas classes. Cada par de valores e
+# (h_fic=20 cm, h_fic=60 cm). Eixos: t0 em dias (5, 30, 60) e umidade media
+# ambiente em % (40, 55, 75, 90). Corrige PRO-02 (versao antiga: 8 pares
+# fixos, sem eixo de t0 nem separacao por classe de concreto).
+TABELA_8_1_PHI = {
+    "C20-C45": {
+        5.0:  {40.0: (4.6, 3.8), 55.0: (3.9, 3.3), 75.0: (2.8, 2.4), 90.0: (2.0, 1.9)},
+        30.0: {40.0: (3.4, 3.0), 55.0: (2.9, 2.6), 75.0: (2.2, 2.0), 90.0: (1.6, 1.5)},
+        60.0: {40.0: (2.9, 2.7), 55.0: (2.5, 2.3), 75.0: (1.9, 1.8), 90.0: (1.4, 1.4)},
+    },
+    "C50-C90": {
+        5.0:  {40.0: (2.7, 2.4), 55.0: (2.4, 2.1), 75.0: (1.9, 1.8), 90.0: (1.6, 1.5)},
+        30.0: {40.0: (2.0, 1.8), 55.0: (1.7, 1.6), 75.0: (1.4, 1.3), 90.0: (1.1, 1.1)},
+        60.0: {40.0: (1.7, 1.6), 55.0: (1.5, 1.4), 75.0: (1.2, 1.2), 90.0: (1.0, 1.0)},
+    },
 }
+TABELA_8_1_EPS_CS = {
+    5.0:  {40.0: (-0.53, -0.47), 55.0: (-0.48, -0.43), 75.0: (-0.36, -0.32), 90.0: (-0.18, -0.15)},
+    30.0: {40.0: (-0.44, -0.45), 55.0: (-0.41, -0.41), 75.0: (-0.33, -0.31), 90.0: (-0.17, -0.15)},
+    60.0: {40.0: (-0.39, -0.43), 55.0: (-0.36, -0.40), 75.0: (-0.30, -0.31), 90.0: (-0.17, -0.15)},
+}
+_T0_TAB_8_1 = (5.0, 30.0, 60.0)
+_UMIDADE_TAB_8_1 = (40.0, 55.0, 75.0, 90.0)
+_HFIC_TAB_8_1 = (20.0, 60.0)
+
+
+def _bloco_classe_tabela_8_1(fck_mpa: float) -> str:
+    """Bloco de classe da Tabela 8.1: 'C20-C45' ou 'C50-C90'. A tabela não
+    tem classe padrão entre C45 e C50; fck nesse vão (46 a 49 MPa) é tratado
+    como 'C50-C90' (bloco mais próximo por cima)."""
+    return "C20-C45" if fck_mpa <= 45.0 else "C50-C90"
+
+
+def _interp_1d(x: float, pontos: tuple, valores: dict) -> float:
+    """Interpolacao linear de 1 variavel entre pontos tabelados consecutivos.
+    x fora de [pontos[0], pontos[-1]] levanta ValueError."""
+    if x < pontos[0] or x > pontos[-1]:
+        raise ValueError(
+            f"Valor {x:g} fora da faixa da Tabela 8.1 "
+            f"({pontos[0]:g} a {pontos[-1]:g})."
+        )
+    for p0, p1 in zip(pontos, pontos[1:]):
+        if p0 <= x <= p1:
+            v0, v1 = valores[p0], valores[p1]
+            return v0 + (v1 - v0) * (x - p0) / (p1 - p0)
+    raise AssertionError("Faixa inalcançável.")  # pragma: no cover
+
+
+def _interp_tabela_8_1(tabela: dict, umidade_pct: float, h_fic_cm: float,
+                       to_dias: float) -> float:
+    """Interpolacao linear em t0, umidade e espessura ficticia (8.2.11:
+    'podem ser obtidos, por interpolacao linear, a partir da Tabela 8.1')."""
+    if to_dias < _T0_TAB_8_1[0] or to_dias > _T0_TAB_8_1[-1]:
+        raise ValueError(
+            f"t0 = {to_dias:g} dias fora da faixa da Tabela 8.1 "
+            f"({_T0_TAB_8_1[0]:g} a {_T0_TAB_8_1[-1]:g} dias)."
+        )
+
+    def valor_no_t0(t0: float) -> float:
+        linha = tabela[t0]
+        por_umidade = {
+            u: _interp_1d(h_fic_cm, _HFIC_TAB_8_1, {20.0: par[0], 60.0: par[1]})
+            for u, par in linha.items()
+        }
+        return _interp_1d(umidade_pct, _UMIDADE_TAB_8_1, por_umidade)
+
+    valores_por_t0 = {t0: valor_no_t0(t0) for t0 in _T0_TAB_8_1}
+    return _interp_1d(to_dias, _T0_TAB_8_1, valores_por_t0)
 
 
 def phi_eps_cs_NBR(umidade_pct: float, h_fic_cm: float,
-                   to_dias: float = 30.0) -> tuple[float, float]:
-    """Estima phi_inf e eps_cs_inf por interpolacao na Tabela 8.2 da
-    NBR 6118 (item 8.2.11). h_fic = espessura ficticia = 2*Ac/u_ar.
+                   to_dias: float = 30.0, fck_mpa: float = 30.0) -> tuple[float, float]:
+    """phi_inf e eps_cs_inf pela Tabela 8.1 da NBR 6118 (8.2.11, PDF p. 47),
+    por interpolacao linear em t0, umidade e espessura ficticia
+    h_fic = 2*Ac/u_ar. Corrige PRO-02: a versao antiga ignorava to_dias e a
+    classe do concreto (8 pares fixos).
+
+    phi(t_inf,t0) depende da classe do concreto (bloco escolhido por
+    fck_mpa: C20-C45 ou C50-C90); eps_cs(t_inf,t0) e comum as duas classes.
+    to_dias, umidade_pct ou h_fic_cm fora da faixa tabelada (t0: 5 a 60
+    dias; umidade: 40 a 90 %; h_fic: 20 a 60 cm) levantam ValueError.
 
     Retorna (phi_inf, eps_cs_inf_permil)."""
-    # arredonda umidade aos pontos da tabela
-    umidades = sorted({k[0] for k in TABELA_FLUENCIA_RETRACAO})
-    espessuras = sorted({k[1] for k in TABELA_FLUENCIA_RETRACAO})
-    # vizinho mais proximo nas duas dimensoes
-    u_ref = min(umidades, key=lambda u: abs(u - umidade_pct))
-    h_ref = min(espessuras, key=lambda h: abs(h - h_fic_cm))
-    return TABELA_FLUENCIA_RETRACAO[(u_ref, h_ref)]
+    bloco = _bloco_classe_tabela_8_1(fck_mpa)
+    phi = _interp_tabela_8_1(TABELA_8_1_PHI[bloco], umidade_pct, h_fic_cm, to_dias)
+    eps = _interp_tabela_8_1(TABELA_8_1_EPS_CS, umidade_pct, h_fic_cm, to_dias)
+    return phi, eps
 
 
 def h_ficticia_cm(Ac_cm2: float, u_ar_cm: float, gama_humid: float = 1.0) -> float:
@@ -528,21 +763,34 @@ def MRd_secao_T_protendida(
     Ap_cm2: float, As_cm2: float, As_linha_cm2: float,
     fck_mpa: float, sigma_pd_mpa: float = 1520.0,
     fyk_mpa: float = 500.0, gama_c: float = GAMA_C,
-    gama_s: float = GAMA_S, alpha_c: float = 0.85,
+    gama_s: float = GAMA_S, alpha_c: float | None = None,
 ) -> dict:
-    """MRd para secao T protendida (Eq. 6.16, 6.17).
+    """MRd para secao T protendida (Eq. 6.16, 6.17), com lambda, tensao do
+    bloco (alpha_c*etac*fcd) e limite de dutilidade dependentes de fck para
+    fck > 50 (corrige PRO-05/PRO-06 - ver MRd_secao_retangular_protendida).
 
-    Inicialmente assume secao retangular bf. Se 0.8x <= hf, retorna esse
+    Inicialmente assume secao retangular bf. Se lambda*x <= hf, retorna esse
     resultado. Caso contrario aplica formula T:
-       x = (sigma_pd*Ap + fyd*As - 0.85*alpha_c*fcd*(bf-bw)*hf - fyd*A's)
-            / (alpha_c * fcd * 0.8 * bw)
-       MRd = 0.85*alpha_c*fcd*(bf-bw)*hf*(0.4x - 0.5*hf)
-             + sigma_pd*Ap*(dp - 0.4x) + fyd*As*(ds - 0.4x)
-             + fyd*A's*(0.4x - d')
+       x = (sigma_pd*Ap + fyd*As - tensao_kncm2*(bf-bw)*hf - fyd*A's)
+            / (tensao_kncm2 * lambda * bw)
+       MRd = tensao_kncm2*(bf-bw)*hf*(lambda/2*x - 0.5*hf)
+             + sigma_pd*Ap*(dp - lambda/2*x) + fyd*As*(ds - lambda/2*x)
+             + fyd*A's*(lambda/2*x - d')
+    A mesa recebe a mesma tensao alpha_c*etac*fcd da nervura: com a mesa
+    comprimida a largura nao diminui em direcao a borda comprimida (17.2.2 e).
+    O codigo antigo multiplicava a mesa por um 0,85 extra (0,72*fcd em vez de
+    0,85*fcd; achado PRO-09 da consolidacao, a favor da seguranca, ~3 % em MRd).
+    alpha_c=None (padrao) usa o alpha_c(fck) do nucleo; um valor explicito
+    substitui so o alpha_c, mantendo etac e fcd do nucleo (compatibilidade).
     """
-    fcd = fck_mpa / gama_c * 0.1
-    fyd = fyk_mpa / gama_s * 0.1
+    fyd_kncm = fyk_mpa / gama_s * 0.1
     sigma_pd_kncm = sigma_pd_mpa * 0.1
+    lam = nbr.lambda_retangulo(fck_mpa)
+    if alpha_c is None:
+        tensao_kncm2 = nbr.mpa_para_kncm2(nbr.tensao_retangulo(fck_mpa, gama_c))
+    else:
+        tensao_kncm2 = nbr.mpa_para_kncm2(
+            alpha_c * nbr.eta_c(fck_mpa) * nbr.fcd(fck_mpa, gama_c))
 
     # 1) Tentativa retangular bf
     r_ret = MRd_secao_retangular_protendida(
@@ -551,25 +799,27 @@ def MRd_secao_T_protendida(
         fck_mpa=fck_mpa, sigma_pd_mpa=sigma_pd_mpa, fyk_mpa=fyk_mpa,
         gama_c=gama_c, gama_s=gama_s, alpha_c=alpha_c,
     )
-    if 0.8 * r_ret["x_cm"] <= hf_cm:
+    if lam * r_ret["x_cm"] <= hf_cm:
         r_ret["secao"] = "T-como-retangular-bf"
         return r_ret
 
-    # 2) LN na nervura - Eq. 6.16
-    Rcc_mes = 0.85 * alpha_c * fcd * (bf_cm - bw_cm) * hf_cm
-    num = (sigma_pd_kncm * Ap_cm2 + fyd * As_cm2
-           - Rcc_mes - fyd * As_linha_cm2)
-    den = alpha_c * fcd * 0.8 * bw_cm
+    # 2) LN na nervura - Eq. 6.16, com a mesma tensao na mesa (17.2.2 e; PRO-09)
+    Rcc_mes = tensao_kncm2 * (bf_cm - bw_cm) * hf_cm
+    num = (sigma_pd_kncm * Ap_cm2 + fyd_kncm * As_cm2
+           - Rcc_mes - fyd_kncm * As_linha_cm2)
+    den = tensao_kncm2 * lam * bw_cm
     x = num / den
-    MRd = (Rcc_mes * (0.4 * x - 0.5 * hf_cm)
-           + sigma_pd_kncm * Ap_cm2 * (dp_cm - 0.4 * x)
-           + fyd * As_cm2 * (ds_cm - 0.4 * x)
-           + fyd * As_linha_cm2 * (0.4 * x - d_linha_cm))
+    braco = lam / 2.0 * x
+    MRd = (Rcc_mes * (braco - 0.5 * hf_cm)
+           + sigma_pd_kncm * Ap_cm2 * (dp_cm - braco)
+           + fyd_kncm * As_cm2 * (ds_cm - braco)
+           + fyd_kncm * As_linha_cm2 * (braco - d_linha_cm))
+    xd = x / max(dp_cm, ds_cm)
     return {
         "x_cm": x,
         "MRd_kncm": MRd,
-        "x_d": x / max(dp_cm, ds_cm),
-        "ductil": x / max(dp_cm, ds_cm) <= 0.45,
+        "x_d": xd,
+        "ductil": xd <= nbr.xd_limite_dutilidade(fck_mpa),
         "secao": "T-LN-nervura",
     }
 
@@ -593,20 +843,30 @@ def fuso_limite_excentricidade(
     sigma_tr_tot  : tensao admissivel a tracao apos perdas (>0)
     sigma_c_tot   : tensao admissivel a compressao apos perdas (<0)
 
+    Nao e item da NBR 6118 (apostila, item 4.6.2) - a norma nao impõe este
+    metodo. As quatro equacoes foram re-derivadas em 09/2026 isolando ep em
+    sigma_base_topo (a convencao de sinais deste modulo: compressao
+    negativa, tracao positiva, sinal_P=-1): as originais tinham sinal
+    trocado e nao reproduziam a tensao-alvo ao realimentar ep em
+    sigma_base_topo (achado PRO-08).
+
     Retorna ep_min e ep_max (cm) e os 4 limites individuais.
     """
-    yt = Wt_cm3 / Wb_cm3 if False else 0  # nao usado
     eta_t = Ac_cm2 / Wt_cm3
     eta_b = Ac_cm2 / Wb_cm3
 
-    # Eq. 4.77 (transferencia, fibra topo, tracao admissivel)
-    ep_77 = Mo_kncm / Po_kn + Wt_cm3 * sigma_tr_o_kncm2 / Po_kn - 1.0 / eta_t
-    # Eq. 4.78 (transferencia, fibra base, compressao admissivel)
-    ep_78 = Mo_kncm / Po_kn + Wb_cm3 * sigma_c_o_kncm2 / Po_kn + 1.0 / eta_b
-    # Eq. 4.79 (apos perdas, fibra topo, compressao admissivel)
-    ep_79 = Mtot_kncm / (R * Po_kn) + Wt_cm3 * sigma_c_tot_kncm2 / (R * Po_kn) - 1.0 / eta_t
-    # Eq. 4.80 (apos perdas, fibra base, tracao admissivel)
-    ep_80 = Mtot_kncm / (R * Po_kn) + Wb_cm3 * sigma_tr_tot_kncm2 / (R * Po_kn) + 1.0 / eta_b
+    # Eq. 4.77 (transferencia, fibra topo, tracao admissivel): isola ep de
+    # sigma_t(Po, Mo, ep) = -Po/Ac + Po*ep/Wt - Mo/Wt = sigma_tr_o
+    ep_77 = Mo_kncm / Po_kn + Wt_cm3 * sigma_tr_o_kncm2 / Po_kn + 1.0 / eta_t
+    # Eq. 4.78 (transferencia, fibra base, compressao admissivel): isola ep de
+    # sigma_b(Po, Mo, ep) = -Po/Ac - Po*ep/Wb + Mo/Wb = sigma_c_o
+    ep_78 = Mo_kncm / Po_kn - Wb_cm3 * sigma_c_o_kncm2 / Po_kn - 1.0 / eta_b
+    # Eq. 4.79 (apos perdas, fibra topo, compressao admissivel): isola ep de
+    # sigma_t(R*Po, Mtot, ep) = -R*Po/Ac + R*Po*ep/Wt - Mtot/Wt = sigma_c_tot
+    ep_79 = Mtot_kncm / (R * Po_kn) + Wt_cm3 * sigma_c_tot_kncm2 / (R * Po_kn) + 1.0 / eta_t
+    # Eq. 4.80 (apos perdas, fibra base, tracao admissivel): isola ep de
+    # sigma_b(R*Po, Mtot, ep) = -R*Po/Ac - R*Po*ep/Wb + Mtot/Wb = sigma_tr_tot
+    ep_80 = Mtot_kncm / (R * Po_kn) - Wb_cm3 * sigma_tr_tot_kncm2 / (R * Po_kn) - 1.0 / eta_b
 
     # ep_min: maior dos limites inferiores (4.77, 4.79 - fibra topo)
     ep_min = max(ep_77, ep_79)
@@ -824,13 +1084,14 @@ def test_relaxacao_infinito() -> None:
 
 
 def test_perda_encurtamento_elastico() -> None:
-    """Ep=200 GPa, C50 -> Ec ~ 39.6 GPa (granito), alpha_p ~ 5.05.
+    """alpha_p = Ep/Eci (NBR 6118 9.1, 9.6.3.3.2.1 - corrige PRO-03, que usava
+    Ecs). Ep=200 GPa, C50 -> Eci ~ 39.6 GPa (granito), alpha_p ~ 5.05.
     sigma_cp = 1.0 kN/cm2 (10 MPa) -> perda = 5.05 kN/cm2 = 50.5 MPa."""
     p = perda_encurtamento_elastico_kncm2(
         sigma_cp_kncm2=1.0, fck_mpa=50.0,
     )
-    Ec = Ecs_mpa(50.0)
-    alpha_p_esperado = E_P_MPA / Ec
+    Eci = Eci_mpa(50.0)
+    alpha_p_esperado = E_P_MPA / Eci
     assert _aprox(p, alpha_p_esperado * 1.0, 0.01), f"p={p}"
     print(f"  OK  Perda enc.elast (sigma_cp=10 MPa, C50): "
           f"{p*10:.2f} MPa  (alpha_p={alpha_p_esperado:.3f})")
@@ -845,11 +1106,12 @@ def test_perda_retracao() -> None:
 
 
 def test_perda_fluencia() -> None:
-    """phi=2.0, sigma_c(to)=10 MPa, C50 -> alpha_p~5.05; perda = 10.1 kN/cm2 = 101 MPa."""
+    """alpha_p = Ep/Eci (corrige PRO-03, que usava Ecs). phi=2.0,
+    sigma_c(to)=10 MPa, C50 -> alpha_p~5.05; perda = 10.1 kN/cm2 = 101 MPa."""
     p = perda_fluencia_kncm2(phi_inf=2.0, sigma_c_to_kncm2=1.0,
                               fck_mpa=50.0)
-    Ec = Ecs_mpa(50.0)
-    expected = (E_P_MPA / Ec) * 2.0 * 1.0
+    Eci = Eci_mpa(50.0)
+    expected = (E_P_MPA / Eci) * 2.0 * 1.0
     assert _aprox(p, expected, 0.01)
     print(f"  OK  Perda fluencia: {p:.3f} kN/cm2 ({p*10:.1f} MPa)")
 
@@ -1012,14 +1274,15 @@ def test_Pi_de_P() -> None:
 
 
 def test_perda_cabos_restantes_n4() -> None:
-    """n=4 cabos, sigma_cpog=10 MPa, C40 (Ec=32 GPa, alpha_p=6.25):
+    """alpha_p = Ep/Eci (corrige PRO-03, que usava Ecs). n=4 cabos,
+    sigma_cpog=10 MPa, C40 (Eci ~ 35.4 GPa, alpha_p ~ 5.65):
     delta = alpha_p * (n-1)/(2n) * sigma_cpog
-          = 6.25 * 3/8 * 1.0 = 2.34 kN/cm2 = 23.4 MPa."""
+          = 5.65 * 3/8 * 1.0 = 2.12 kN/cm2 = 21.2 MPa."""
     p = perda_encurtamento_cabos_restantes_kncm2(
         n_cabos=4, sigma_cpog_kncm2=1.0, fck_mpa=40.0,
     )
-    Ec = Ecs_mpa(40.0)
-    expected = (E_P_MPA / Ec) * (3.0 / 8.0) * 1.0
+    Eci = Eci_mpa(40.0)
+    expected = (E_P_MPA / Eci) * (3.0 / 8.0) * 1.0
     assert _aprox(p, expected, 0.01), f"p={p}"
     print(f"  OK  Perda cabos restantes (n=4): {p:.3f} kN/cm2 "
           f"({p*10:.1f} MPa)")
@@ -1077,12 +1340,15 @@ def test_h_ficticia() -> None:
 
 
 def test_phi_eps_cs_NBR() -> None:
-    """Tabela 8.2 NBR 6118 simplificada: U=75%, h_fic=20:
-    phi_inf=2.8, eps_cs=-0.33 permil."""
+    """Tabela 8.1 NBR 6118:2026 (8.2.11, PDF p.47): U=75%, h_fic=20cm,
+    to=30d (padrao), fck=30 (padrao, bloco C20-C45): phi_inf=2.2,
+    eps_cs=-0.33 permil. Corrige PRO-02: a versao antiga ignorava to_dias e
+    dava 2.8 (valor de t0=5, nao t0=30) para este ponto."""
     phi, eps = phi_eps_cs_NBR(umidade_pct=75.0, h_fic_cm=20.0)
-    assert _aprox(phi, 2.8, 0.01)
+    assert _aprox(phi, 2.2, 0.01)
     assert _aprox(eps, -0.33, 0.001)
-    print(f"  OK  phi_inf(75%, 20cm) = {phi}, eps_cs = {eps} permil")
+    print(f"  OK  phi_inf(75%, 20cm, t0=30, C20-C45) = {phi}, "
+          f"eps_cs = {eps} permil")
 
 
 def test_MRd_secao_T_LN_mesa() -> None:
@@ -1115,10 +1381,12 @@ def test_MRd_secao_T_LN_nervura() -> None:
     )
     # Verifica que retornou como T-LN-nervura
     assert r["secao"] == "T-LN-nervura"
-    # Verifica balanco de forcas:
+    # Verifica balanco de forcas, com a mesma tensao 0,85*fcd na mesa e na
+    # nervura (17.2.2 e; PRO-09: o 0,85 extra da mesa foi removido):
     fcd = 30.0 / 1.4 * 0.1
-    Rcc_mes = 0.85 * 0.85 * fcd * (120 - 20) * 5.0
+    Rcc_mes = 0.85 * fcd * (120 - 20) * 5.0
     Rcc_nerv = 0.85 * fcd * 0.8 * r["x_cm"] * 20.0
+    assert _aprox(r["x_cm"], 45.96, 0.05), f"x={r['x_cm']:.2f}"
     Rpt = 150.0 * 15.0
     assert _aprox(Rcc_mes + Rcc_nerv, Rpt, 1.0), \
         f"Cc_mes+Cc_nerv={Rcc_mes+Rcc_nerv:.1f} vs Rpt={Rpt}"
@@ -1127,21 +1395,44 @@ def test_MRd_secao_T_LN_nervura() -> None:
 
 
 def test_fuso_limite_basico() -> None:
-    """Fuso limite consistente: ep_min <= ep_max para uma secao bem
-    dimensionada. Viga retangular 30x60, Po=300 kN, Mo=1000, Mtot=5000,
-    R=0.85, tensoes admissiveis padrao."""
-    Ac = 30 * 60
-    Wb = Wt = 30 * 60 ** 2 / 6
+    """PRO-08: as 4 equacoes de fuso_limite_excentricidade foram
+    re-derivadas isolando ep em sigma_base_topo (as originais tinham sinal
+    trocado; o teste antigo so conferia se as chaves existiam). Entrada do
+    achado: Po=800, Mo=4000, Ac=1800, Wb=Wt=18000, R=0.85, Mtot=9000,
+    sigma_tr_o=0.10, sigma_c_o=-1.6, sigma_tr_tot=0.12, sigma_c_tot=-1.5.
+    Esperado: ep_77=+17,25; ep_78=+31,00; ep_79=-16,47; ep_80=+0,059 cm -
+    e cada um deve, ao realimentar sigma_base_topo, reproduzir a
+    tensao-alvo correspondente."""
+    Po, Mo, Mtot, R = 800.0, 4000.0, 9000.0, 0.85
+    Ac, Wb, Wt = 1800.0, 18000.0, 18000.0
+    sigma_tr_o, sigma_c_o = 0.10, -1.6
+    sigma_tr_tot, sigma_c_tot = 0.12, -1.5
+
     fuso = fuso_limite_excentricidade(
-        Po_kn=300.0, Mo_kncm=1000.0, Mtot_kncm=5000.0,
-        Ac_cm2=Ac, Wb_cm3=Wb, Wt_cm3=Wt,
-        R=0.85,
-        sigma_tr_o_kncm2=0.20, sigma_c_o_kncm2=-1.5,
-        sigma_tr_tot_kncm2=0.20, sigma_c_tot_kncm2=-1.5,
+        Po_kn=Po, Mo_kncm=Mo, Mtot_kncm=Mtot,
+        Ac_cm2=Ac, Wb_cm3=Wb, Wt_cm3=Wt, R=R,
+        sigma_tr_o_kncm2=sigma_tr_o, sigma_c_o_kncm2=sigma_c_o,
+        sigma_tr_tot_kncm2=sigma_tr_tot, sigma_c_tot_kncm2=sigma_c_tot,
     )
-    assert "ep_min_cm" in fuso and "ep_max_cm" in fuso
-    print(f"  OK  Fuso limite: ep in [{fuso['ep_min_cm']:.2f}, "
-          f"{fuso['ep_max_cm']:.2f}] cm  (viavel={fuso['viavel']})")
+    assert _aprox(fuso["ep_77_top_o"], 17.25, 0.005), fuso["ep_77_top_o"]
+    assert _aprox(fuso["ep_78_base_o"], 31.00, 0.005), fuso["ep_78_base_o"]
+    assert _aprox(fuso["ep_79_top_tot"], -16.47, 0.005), fuso["ep_79_top_tot"]
+    assert _aprox(fuso["ep_80_base_tot"], 0.059, 0.005), fuso["ep_80_base_tot"]
+
+    # Realimenta cada ep em sigma_base_topo: tem que reproduzir a tensao-alvo.
+    _, st_o = sigma_base_topo(Po, fuso["ep_77_top_o"], Mo, Ac, Wb, Wt)
+    assert _aprox(st_o, sigma_tr_o, 1e-6), f"st_o={st_o}"
+    sb_o, _ = sigma_base_topo(Po, fuso["ep_78_base_o"], Mo, Ac, Wb, Wt)
+    assert _aprox(sb_o, sigma_c_o, 1e-6), f"sb_o={sb_o}"
+    _, st_tot = sigma_base_topo(R * Po, fuso["ep_79_top_tot"], Mtot, Ac, Wb, Wt)
+    assert _aprox(st_tot, sigma_c_tot, 1e-6), f"st_tot={st_tot}"
+    sb_tot, _ = sigma_base_topo(R * Po, fuso["ep_80_base_tot"], Mtot, Ac, Wb, Wt)
+    assert _aprox(sb_tot, sigma_tr_tot, 1e-6), f"sb_tot={sb_tot}"
+
+    print(f"  OK  Fuso limite (sinais corrigidos): "
+          f"ep_77={fuso['ep_77_top_o']:.2f}, ep_78={fuso['ep_78_base_o']:.2f}, "
+          f"ep_79={fuso['ep_79_top_tot']:.2f}, "
+          f"ep_80={fuso['ep_80_base_tot']:.3f} cm")
 
 
 def test_secao_minima_excentricidade_variavel() -> None:

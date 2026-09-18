@@ -3,6 +3,13 @@ Este módulo converte unidades comumente usadas na NBR 6118.\n
 Métodos disponíveis:
 convComprimento(), convForca(), convArea(), convVolume(), convPressao(),
 convInercia(), convCargaLinear(), convMomento()
+
+LEG-12: a conversão de força usa g = 10 m/s² (1 tf = 10 kN), não
+g = 9,80665 m/s² (1 tf = 9,80665 kN). É convenção deliberada do escritório
+BRGT (erro de +2% frente ao g padrão) e não é exigida nem proibida pela
+NBR 6118, que não trata de conversão tf/kN. Mantida de propósito; se algum
+dia for preciso o valor "exato", troque o 10.0 de 'tf' abaixo por 9.80665
+(e ajuste 'kgf'/'gf' na mesma proporção).
 """
 
 """
@@ -17,7 +24,7 @@ comprimento = {
     'pol' : 39.3701
     }
 
-#Força
+#Força (LEG-12: g = 10 m/s2, 1 tf = 10 kN - ver nota no topo do modulo)
 forca = {
     'N' : 10000.0,
     'kN' : 10.0,
@@ -193,4 +200,4 @@ def convMomento(de, para):
 #print((500*1000000/1.15)*convPressao('N/m2','tf/cm2'))
 #print(convMomento('tf.cm','tf.m'))
 #print(22.56/2*convForca('kN','tf'))
-print(convPressao('kN/m2','tf/m2'))
+#print(convPressao('kN/m2','tf/m2'))  # LEG-13: estava ativo, imprimia "0.1" a cada import

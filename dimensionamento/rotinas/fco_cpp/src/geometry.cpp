@@ -24,7 +24,8 @@ InclResult h_inc_yp_max(const SecaoRetangular& s, double alpha) {
 }
 
 double d_inc(const SecaoRetangular& s, double alpha, double yp_max) {
-    if (s.barras.empty()) return 1.0;
+    // Sem armadura nao ha pivo A (Figura 17.1): d = 0 elimina o dominio 2.
+    if (s.barras.empty()) return 0.0;
     const double cos_a = std::cos(alpha);
     const double sin_a = std::sin(alpha);
     double s_max = 0.0;

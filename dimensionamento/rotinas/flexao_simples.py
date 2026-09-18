@@ -14,16 +14,32 @@ sys.path.append(pathUtilitarios)
 
 import conv_unidades as cv
 
+# Núcleo normativo unico (dimensionamento/nucleo_nbr6118.py). A partir de
+# dimensionamento/rotinas/, a pasta pai e' dimensionamento/ (onde o nucleo
+# mora); localizado a partir de __file__, independe do diretorio de
+# trabalho atual.
+_DIMENSIONAMENTO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _DIMENSIONAMENTO_DIR not in sys.path:
+    sys.path.append(_DIMENSIONAMENTO_DIR)
+
+import nucleo_nbr6118 as nbr
+
 def calc_a_c_coef_lambda(fck):
-    """Retorna a_c e o coeficiente lamba
-    Unidades de entrada: MPa"""
-    if fck <= 50:
-        a_c = 1
-        coefLambda = 0.8
-    elif fck <= 90:
-        a_c = 0.85*(1-(fck-50)/200)
-        coefLambda = 0.8-(fck-50)/400
-    return a_c, coefLambda
+    """Retorna a_c e o coeficiente lambda
+    Unidades de entrada: MPa
+
+    a_c e' o coeficiente que multiplica fcd no bloco retangular (17.2.2 e,
+    8.2.10.1): a tensao do bloco e' alpha_c*etac*fcd, nao so' alpha_c*fcd,
+    e por isso a_c aqui e' o produto alpha_c*etac (etac < 1 ja a partir de
+    C45). coefLambda = lambda (y = lambda*x). Delega ao nucleo.
+
+    LEG-11: a versao no disco (alteracao local nao commitada) usava
+    a_c = 1 para fck <= 50 (regressao de -5% a -8% no As frente ao HEAD).
+    A versao do HEAD usava a_c = 0,85 sem etac, ja errada a partir de C45
+    (-0,6% a -1,4% em C45/C50, crescendo bastante acima de C50). As duas
+    foram substituidas por esta.
+    """
+    return nbr.alpha_c(fck) * nbr.eta_c(fck), nbr.lambda_retangulo(fck)
 
 def calc_x(d,fcd,Md,largura,a_c,coefLambda):
     """Retorna a altura da linha neutra (x) em metros

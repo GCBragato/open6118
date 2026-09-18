@@ -1,54 +1,82 @@
-"""Flexao Composta Obliqua (NBR 6118:2023).
+"""Flexao Composta Obliqua (NBR 6118:2026).
 
 Verificacao e dimensionamento de pilares retangulares submetidos a Nd,
 Mxd e Myd. Metodologia baseada na monografia "PCalc" (Cardoso Jr., 2014)
 e no projeto open-source PFOC (Daniel D. Grossmann).
 
 Estrategia:
-    - Materiais NBR: parabola-retangulo (concreto), bilinear (aco).
+    - Materiais NBR: parabola-retangulo (concreto, pico 0,85*eta_c*fcd,
+      Figura 8.2 e 17.2.2 e), bilinear (aco).
     - Integracao 2D vetorizada (fibras) sobre a secao retangular,
       com strain calculada a partir da posicao da LN inclinada.
     - Solver duplo aninhado:
         * Interno: brentq em x_LN dado alpha, tal que Nc + Ns = Nd.
-        * Externo: brentq em alpha tal que arctan(MR_y/MR_x) = arctan(Myd/Mxd).
-    - Pre-flight: calcula Nd_max (compressao pura) e Nd_min (tracao pura);
-      valida Nd antes de chamar solver.
+        * Externo: brentq em alpha tal que a direcao de (MRx, MRy) seja a
+          de (Mxd, Myd), COM SINAL: alpha e buscado no circulo inteiro, o
+          que vale para secao e armadura assimetricas (17.2.1).
+    - Pre-flight: calcula Nd_max (compressao pura, reta b da Figura 17.1) e
+      Nd_min (tracao pura); valida Nd antes de chamar solver.
     - Fallback uniaxial: se um momento e nulo, fixa alpha e roda so o
-      solver interno.
+      solver interno (se a secao nao for simetrica em relacao ao plano de
+      flexao, cai no solver geral).
     - Diagnostico estruturado: dict com status, x_LN, alpha, residuo.
 
 Convencoes:
     - fck em MPa. Geometria em cm. Forcas em kN, momentos em kN.cm.
     - Coords das barras: cartesianas, centradas no centroide da secao.
-    - Mxd em torno do eixo x (causa flexao no plano y).
-    - Myd em torno do eixo y (causa flexao no plano x).
+    - Mxd em torno do eixo x (causa flexao no plano y). Mxd > 0 comprime +y.
+    - Myd em torno do eixo y (causa flexao no plano x). Myd > 0 comprime +x.
     - alpha = angulo (rad) da LN com o eixo x. alpha=0 -> LN horizontal,
-      flexao apenas em torno de x. alpha=pi/2 -> LN vertical.
+      +y comprimido; alpha=pi -> -y comprimido; alpha=-pi/2 -> +x
+      comprimido; alpha=+pi/2 -> -x comprimido.
     - Compressao positiva.
+
+Material e parametros da norma: vem do nucleo normativo
+(`dimensionamento/nucleo_nbr6118.py`): eta_c, eps_c2, eps_cu, n, fcd, Eci,
+fct e a posicao do pivo C. fck fora de 20 a 90 MPa levanta
+`FaixaNormativaError` (8.2.1).
 
 Validacoes embutidas:
     - PFOC __main__ (40.3x71.5, Nd=1150, Mdx=8625, Mdy=23000) -> razao=1.29.
     - Quadrada simetrica com Mxd=Myd -> alpha=45 graus, MRx=MRy.
     - Uniaxial (Myd=0): cross-check contra solver interno fixado em alpha=0.
-    - NBR 17.79 cross-check: deve ser conservador relativamente ao numerico.
+    - NBR 17.2.5 (processo aproximado): deve ser conservador em relacao ao
+      numerico.
+    - tests/test_fco_nbr2026.py: integrador por fibras independente (C20 a
+      C90), secao assimetrica e paridade Python x C++.
 """
 
 from __future__ import annotations
 
 import math
+import os
 import sys
+import warnings
 from dataclasses import dataclass, field
-from functools import cached_property
+from functools import cached_property, lru_cache
 from typing import Protocol, runtime_checkable
 
 import numpy as np
 from scipy.optimize import brentq
 
+try:  # importado como pacote (dimensionamento.rotinas.xxx)
+    from dimensionamento import nucleo_nbr6118 as nbr
+except ModuleNotFoundError:  # executado como script: poe dimensionamento/ no sys.path
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import nucleo_nbr6118 as nbr
 
-GAMA_C = 1.4
-GAMA_S = 1.15
-ES_KNCM2 = 21000.0    # modulo de elasticidade do aco
-ALPHA_C = 0.85        # coeficiente do bloco de tensao do concreto
+
+GAMA_C = nbr.GAMA_C
+GAMA_S = nbr.GAMA_S
+ES_KNCM2 = nbr.ES_MPA / 10.0   # modulo de elasticidade do aco (210 GPa, 8.3.5)
+ALPHA_C = 0.85        # coeficiente 0,85 do pico 0,85*eta_c*fcd (Figura 8.2)
+EPS_SU = nbr.EPS_SU   # alongamento-limite da armadura no pivo A (Figura 17.1), por mil
+GAMA_F3 = nbr.GAMA_F3  # 15.3.1 -- formulacao de seguranca da relacao momento-curvatura
+TOL_UNIAXIAL = 1e-6   # |M perpendicular|/|M| abaixo disso = flexao normal
+
+
+class AvisoNBR6118(UserWarning):
+    """Aviso de uso fora do que a NBR 6118:2026 preve (o calculo prossegue)."""
 
 
 # ---------------------------------------------------------------------------
@@ -69,29 +97,39 @@ class CurvaC(Protocol):
 
 @dataclass
 class CurvaCParabolaRetangulo:
-    """Parabola-retangulo NBR 6118:2023 (compressao apenas; tracao -> 0).
+    """Parabola-retangulo NBR 6118:2026 (compressao apenas; tracao -> 0).
 
-    Curva default para ELU. Valida tanto para fck <= 50 MPa (n=2, eps_c2=2,
-    eps_cu=3.5) quanto para concretos de alta resistencia (n, eps_c2, eps_cu
-    variaveis -- veja Concreto).
+    Curva default para ELU (Figura 8.2): pico alpha_c*eta_c*fcd, com
+    alpha_c = 0,85 e eta_c = 1 ate C40 e (40/fck)^(1/3) acima (17.2.2 e).
+    Valida para C20 a C90 (n, eps_c2, eps_cu variaveis -- veja Concreto,
+    que ja monta a curva com o eta_c do nucleo). Quem montar a curva a mao
+    deve passar `eta_c` (o padrao 1,0 so vale ate C40).
+
+    Alem de eps_cu a norma nao define o diagrama; a curva mantem o patamar
+    (uso numerico em solvers), como `nucleo_nbr6118.sigma_c`.
     """
     fcd_kncm2: float
     eps_c2_pmilh: float
     eps_cu_pmilh: float
     n_parabola: float
     alpha_c: float = ALPHA_C
+    eta_c: float = 1.0
+
+    @property
+    def pico_kncm2(self) -> float:
+        """Tensao do patamar, alpha_c*eta_c*fcd (kN/cm^2)."""
+        return self.alpha_c * self.eta_c * self.fcd_kncm2
 
     def sigma(self, eps: np.ndarray) -> np.ndarray:
         sigma = np.zeros_like(eps)
+        pico = self.pico_kncm2
         mask_par = (eps > 0.0) & (eps <= self.eps_c2_pmilh)
         mask_rect = eps > self.eps_c2_pmilh
         if mask_par.any():
             arg = np.clip(1.0 - eps[mask_par] / self.eps_c2_pmilh, 0.0, 1.0)
-            sigma[mask_par] = self.alpha_c * self.fcd_kncm2 * (
-                1.0 - arg ** self.n_parabola
-            )
+            sigma[mask_par] = pico * (1.0 - arg ** self.n_parabola)
         if mask_rect.any():
-            sigma[mask_rect] = self.alpha_c * self.fcd_kncm2
+            sigma[mask_rect] = pico
         return sigma
 
 
@@ -101,7 +139,8 @@ class CurvaCParabolaRetanguloComTracao:
 
     Para analises onde a contribuicao da tracao do concreto importa (ELS-W
     no estagio I, validacoes pre-fissuracao). Modelo SECC tipo 2 adaptado:
-        Compressao: parabola-retangulo NBR (igual a ParabolaRetangulo).
+        Compressao: parabola-retangulo NBR (igual a ParabolaRetangulo,
+            pico alpha_c*eta_c*fcd -- passe `eta_c` acima de C40).
         Tracao:
             - Ramo linear de 0 ate -0.9*fctk em eps_ct2 = 0.9*fctk/Eci*1000.
             - Ramo decrescente de -0.9*fctk ate -fctk em -eps_ctu (default 0.15).
@@ -114,19 +153,19 @@ class CurvaCParabolaRetanguloComTracao:
     Eci_kncm2: float
     eps_ctu_pmilh: float = 0.15
     alpha_c: float = ALPHA_C
+    eta_c: float = 1.0
 
     def sigma(self, eps: np.ndarray) -> np.ndarray:
         sigma = np.zeros_like(eps)
+        pico = self.alpha_c * self.eta_c * self.fcd_kncm2
         # Compressao: parabola + retangulo (mesmo da ParabolaRetangulo)
         mask_par = (eps > 0.0) & (eps <= self.eps_c2_pmilh)
         mask_rect = eps > self.eps_c2_pmilh
         if mask_par.any():
             arg = np.clip(1.0 - eps[mask_par] / self.eps_c2_pmilh, 0.0, 1.0)
-            sigma[mask_par] = self.alpha_c * self.fcd_kncm2 * (
-                1.0 - arg ** self.n_parabola
-            )
+            sigma[mask_par] = pico * (1.0 - arg ** self.n_parabola)
         if mask_rect.any():
-            sigma[mask_rect] = self.alpha_c * self.fcd_kncm2
+            sigma[mask_rect] = pico
         # Tracao: ramo linear -> branda
         eps_ct2 = 0.9 * self.fctk_kncm2 / self.Eci_kncm2 * 1000.0
         mask_lin_t = (eps < 0.0) & (eps >= -eps_ct2)
@@ -145,55 +184,79 @@ class CurvaCParabolaRetanguloComTracao:
 # ---------------------------------------------------------------------------
 @dataclass
 class Concreto:
-    """Concreto NBR 6118:2023. Imutavel por convencao (nao alterar fck apos
+    """Concreto NBR 6118:2026. Imutavel por convencao (nao alterar fck apos
     construcao -- as cached_property nao sao recalculadas).
 
+    Os parametros do material vem do nucleo normativo (`nucleo_nbr6118`):
+    fcd, eta_c, eps_c2, eps_cu, n, Eci, fct e a posicao do pivo C. fck fora
+    de 20 a 90 MPa levanta `FaixaNormativaError` (8.2.1).
+
     O parametro `curva` permite plugar uma curva constitutiva custom. Se
-    nao informado, usa a parabola-retangulo NBR derivada de fck.
+    nao informado, usa a parabola-retangulo NBR derivada de fck (pico
+    0,85*eta_c*fcd). Os limites de deformacao (eps_c2, eps_cu, pivo C)
+    continuam sendo os da norma para o fck informado.
     """
     fck_mpa: float
     gama_c: float = GAMA_C
     curva: CurvaC | None = None
 
+    def __post_init__(self):
+        # FCO-13: 8.2.1 -- a norma vale de C20 a C90.
+        nbr.validar_fck(self.fck_mpa)
+
     @cached_property
     def fcd_kncm2(self) -> float:
-        return (self.fck_mpa / self.gama_c) * 0.1
+        return nbr.mpa_para_kncm2(nbr.fcd(self.fck_mpa, self.gama_c))
+
+    @cached_property
+    def eta_c(self) -> float:
+        """eta_c da Figura 8.2: 1,0 ate C40; (40/fck)^(1/3) acima."""
+        return nbr.eta_c(self.fck_mpa)
 
     @cached_property
     def eps_c2_pmilh(self) -> float:
         """Deformacao de inicio do patamar plastico (em por mil)."""
-        if self.fck_mpa <= 50.0:
-            return 2.0
-        return 2.0 + 0.085 * (self.fck_mpa - 50.0) ** 0.53
+        return nbr.eps_c2(self.fck_mpa)
 
     @cached_property
     def eps_cu_pmilh(self) -> float:
         """Deformacao ultima do concreto (em por mil)."""
-        if self.fck_mpa <= 50.0:
-            return 3.5
-        return 2.6 + 35.0 * ((90.0 - self.fck_mpa) / 100.0) ** 4
+        return nbr.eps_cu(self.fck_mpa)
 
     @cached_property
     def n_parabola(self) -> float:
-        if self.fck_mpa <= 50.0:
-            return 2.0
-        return 1.4 + 23.4 * ((90.0 - self.fck_mpa) / 100.0) ** 4
+        return nbr.n_parabola(self.fck_mpa)
+
+    @cached_property
+    def pivo_C_rel(self) -> float:
+        """Profundidade do pivo C / h: (eps_cu - eps_c2)/eps_cu (Figura 17.1)."""
+        return nbr.pivo_C_distancia_relativa(self.fck_mpa)
+
+    @cached_property
+    def eps_reta_b_pmilh(self) -> float:
+        """Encurtamento uniforme da reta b (compressao centrada), por mil.
+
+        eps_c2 (Figura 17.1). Em C90 a norma da eps_c2 = 2,6006 > eps_cu = 2,6;
+        adota-se o menor dos dois.
+        """
+        return nbr.eps_compressao_uniforme(self.fck_mpa)
 
     @cached_property
     def Eci_kncm2(self) -> float:
         """Modulo de elasticidade tangente inicial (NBR 8.2.8). kN/cm^2."""
         # alphaE = 1.0 (granito); para outros agregados, usuario pode passar
         # uma curva custom via `curva`.
-        return 5600.0 * math.sqrt(self.fck_mpa) / 100.0  # MPa -> kN/cm^2
+        return nbr.mpa_para_kncm2(nbr.Eci(self.fck_mpa))
+
+    @cached_property
+    def fctm_kncm2(self) -> float:
+        """Resistencia media a tracao direta (NBR 8.2.5). kN/cm^2."""
+        return nbr.mpa_para_kncm2(nbr.fct_m(self.fck_mpa))
 
     @cached_property
     def fctk_inf_kncm2(self) -> float:
         """Resistencia a tracao caracteristica inferior (NBR 8.2.5). kN/cm^2."""
-        if self.fck_mpa <= 50.0:
-            fctm_mpa = 0.3 * self.fck_mpa ** (2.0 / 3.0)
-        else:
-            fctm_mpa = 2.12 * math.log(1.0 + 0.11 * self.fck_mpa)
-        return 0.7 * fctm_mpa / 10.0
+        return nbr.mpa_para_kncm2(nbr.fctk_inf(self.fck_mpa))
 
     @cached_property
     def _curva_efetiva(self) -> CurvaC:
@@ -204,6 +267,7 @@ class Concreto:
             eps_c2_pmilh=self.eps_c2_pmilh,
             eps_cu_pmilh=self.eps_cu_pmilh,
             n_parabola=self.n_parabola,
+            eta_c=self.eta_c,
         )
 
 
@@ -390,7 +454,13 @@ class Secao:
 
     Cabos de protensao (opcional): adicione via `cabos`. Cada Cabo carrega
     sua pre-deformacao e curva sigma-eps. A integracao soma a contribuicao
-    dos cabos ao equilibrio.
+    dos cabos ao equilibrio. Com cabos, fck >= 25 MPa (8.2.1).
+
+    Secao com mais de um concreto: um unico plano de deformacao para a
+    secao toda (17.2.2 a); cada concreto respeita os proprios limites
+    (eps_cu na sua fibra mais comprimida e eps_c2 no seu pivo C, a
+    (eps_cu - eps_c2)/eps_cu * h abaixo dessa fibra). Barras e cabos
+    descontam o concreto da parte em que estao.
     """
     partes: tuple[Parte, ...]
     barras: tuple[Barra, ...] = field(default_factory=tuple)
@@ -407,6 +477,19 @@ class Secao:
         else:
             arr = np.zeros((0, 3))
         self._barras_xyA = arr  # type: ignore[attr-defined]
+        if self.cabos:
+            # 8.2.1: concreto com armadura ativa -- C25 no minimo.
+            for parte in self.partes:
+                nbr.validar_fck(parte.concreto.fck_mpa, protendido=True)
+        # Parte que contem cada barra/cabo (para descontar o concreto certo).
+        self._barras_parte = np.array(  # type: ignore[attr-defined]
+            [_indice_parte(self.partes, b.x_cm, b.y_cm) for b in self.barras],
+            dtype=int,
+        )
+        self._cabos_parte = np.array(  # type: ignore[attr-defined]
+            [_indice_parte(self.partes, c.x_cm, c.y_cm) for c in self.cabos],
+            dtype=int,
+        )
 
     @classmethod
     def retangular(
@@ -465,6 +548,40 @@ def _polygon_bbox(
     return (min(xs), min(ys), max(xs), max(ys))
 
 
+def _ponto_no_poligono(
+    x: float, y: float, polygon: tuple[tuple[float, float], ...], tol: float = 1e-9,
+) -> bool:
+    """Ponto dentro do poligono (ray casting); ponto na borda conta como dentro."""
+    n = len(polygon)
+    for i in range(n - 1):
+        x0, y0 = polygon[i]
+        x1, y1 = polygon[i + 1]
+        dx, dy = x1 - x0, y1 - y0
+        L2 = dx * dx + dy * dy
+        if L2 == 0.0:
+            continue
+        t = ((x - x0) * dx + (y - y0) * dy) / L2
+        if -tol <= t <= 1.0 + tol and abs((x - x0) * dy - (y - y0) * dx) <= tol * math.sqrt(L2):
+            return True
+    dentro = False
+    for i in range(n - 1):
+        x0, y0 = polygon[i]
+        x1, y1 = polygon[i + 1]
+        if (y0 > y) != (y1 > y):
+            x_cruz = x0 + (y - y0) * (x1 - x0) / (y1 - y0)
+            if x < x_cruz:
+                dentro = not dentro
+    return dentro
+
+
+def _indice_parte(partes, x: float, y: float) -> int:
+    """Indice da primeira parte que contem (x, y); 0 se nenhuma contiver."""
+    for i, parte in enumerate(partes):
+        if _ponto_no_poligono(x, y, parte.polygon):
+            return i
+    return 0
+
+
 def _list_y_split(polygon: tuple[tuple[float, float], ...]) -> list[float]:
     """Y dos vertices unicos + arestas horizontais. Usado para criar faixas
     de discretizacao alinhadas com mudancas de geometria (cantos)."""
@@ -494,9 +611,19 @@ def _discretiza_parte(
 
     Algoritmo SECC: lamelas horizontais (faixas de altura ~dy) cruzadas com o
     poligono, depois subdivisao em sublamelas em x para precisao FCO.
-    Retorna ndarray (N, 3) com colunas (x_centro, y_centro, dA).
+    Retorna ndarray (N, 3) com colunas (x_centro, y_centro, dA) -- somente
+    leitura: a malha depende so da geometria e fica em cache.
     """
-    poly = parte.polygon
+    return _discretiza_poligono(
+        tuple(tuple(float(c) for c in p) for p in parte.polygon),
+        int(n_dy_total), int(n_dx_lamela), float(h_total),
+    )
+
+
+@lru_cache(maxsize=256)
+def _discretiza_poligono(
+    poly: tuple[tuple[float, float], ...], n_dy_total: int, n_dx_lamela: int, h_total: float,
+) -> np.ndarray:
     list_y = _list_y_split(poly)
     elementos: list[tuple[float, float, float]] = []
 
@@ -518,9 +645,9 @@ def _discretiza_parte(
                     dA = dx_local * dy_local
                     elementos.append((x_centro, yi, dA))
 
-    if not elementos:
-        return np.zeros((0, 3))
-    return np.array(elementos, dtype=float)
+    arr = np.array(elementos, dtype=float) if elementos else np.zeros((0, 3))
+    arr.setflags(write=False)
+    return arr
 
 
 # ---------------------------------------------------------------------------
@@ -544,9 +671,13 @@ def _h_inc_yp_max(secao: SecaoRetangular, alpha: float) -> tuple[float, float]:
 
 def _d_inc(secao: SecaoRetangular, alpha: float, yp_max: float) -> float:
     """Profundidade da barra mais distante da face comprimida (cm).
-    Usada como d para definir o pivo A do dominio 2."""
+    Usada como d para definir o pivo A do dominio 2.
+
+    Sem armadura, nao ha pivo A (Figura 17.1): devolve 0, e a ruptura fica
+    sempre governada pelo encurtamento do concreto (pivos B e C).
+    """
     if secao._barras_xyA.shape[0] == 0:
-        return 1.0
+        return 0.0
     cos_a, sin_a = math.cos(alpha), math.sin(alpha)
     x_b = secao._barras_xyA[:, 0]
     y_b = secao._barras_xyA[:, 1]
@@ -571,14 +702,50 @@ def _h_inc_yp_max_pol(secao: Secao, alpha: float) -> tuple[float, float]:
 
 
 def _d_inc_pol(secao: Secao, alpha: float, yp_max: float) -> float:
-    if secao._barras_xyA.shape[0] == 0:
-        return 1.0
+    """Profundidade da armadura mais tracionada -- barras passivas e cabos --
+    a partir da face comprimida (pivo A, Figura 17.1).
+
+    Nos cabos, o limite de 10 por mil vale para o acrescimo de deformacao
+    (17.2.2 b), que e a deformacao do concreto no nivel do cabo. Sem
+    armadura nenhuma, nao ha pivo A: devolve 0.
+    """
     cos_a, sin_a = math.cos(alpha), math.sin(alpha)
-    x_b = secao._barras_xyA[:, 0]
-    y_b = secao._barras_xyA[:, 1]
-    yp_b = -x_b * sin_a + y_b * cos_a
-    s_b = yp_max - yp_b
-    return float(s_b.max())
+    s_max = None
+    if secao._barras_xyA.shape[0] > 0:
+        x_b = secao._barras_xyA[:, 0]
+        y_b = secao._barras_xyA[:, 1]
+        s_max = float((yp_max - (-x_b * sin_a + y_b * cos_a)).max())
+    for c in secao.cabos:
+        s_c = yp_max - (-c.x_cm * sin_a + c.y_cm * cos_a)
+        s_max = s_c if s_max is None else max(s_max, s_c)
+    return 0.0 if s_max is None else float(s_max)
+
+
+def _zonas_concreto_pol(
+    secao: Secao, alpha: float, yp_max: float,
+) -> list[tuple[float, float, float, float]]:
+    """Zonas da secao com os mesmos limites de deformacao (eps_c2, eps_cu).
+
+    Devolve (s_topo, eps_c2, eps_cu, pivo_c_rel) por zona, sendo s_topo a
+    profundidade do ponto mais comprimido da zona, medida perpendicularmente
+    a LN. Concretos ate C50 tem os mesmos limites (2 e 3,5 por mil) e caem
+    na mesma zona.
+    """
+    cos_a, sin_a = math.cos(alpha), math.sin(alpha)
+    grupos: dict[tuple[float, float], list[float]] = {}
+    for parte in secao.partes:
+        c = parte.concreto
+        chave = (c.eps_c2_pmilh, c.eps_cu_pmilh)
+        topo = max(-x * sin_a + y * cos_a for x, y in parte.polygon)
+        g = grupos.get(chave)
+        if g is None:
+            grupos[chave] = [topo, c.pivo_C_rel]
+        else:
+            g[0] = max(g[0], topo)
+    return [
+        (yp_max - topo, ec2, ecu, rho)
+        for (ec2, ecu), (topo, rho) in grupos.items()
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -591,19 +758,67 @@ def _strain(
     d_inc: float,
     eps_c2: float,
     eps_cu: float,
+    pivo_c_rel: float | None = None,
 ) -> np.ndarray | float:
     """Deformacao (em por mil) numa fibra a profundidade s da face mais
-    comprimida. s=0 e a face. Vetorizada.
+    comprimida. s=0 e a face. Vetorizada. Figura 17.1 da NBR 6118:2026:
+
+        - dominio 2: pivo A, -10 por mil na armadura mais tracionada (s = d_inc);
+        - dominios 3, 4 e 4a: pivo B, eps_cu na face (s = 0);
+        - dominio 5: pivo C, eps_c2 a (eps_cu - eps_c2)/eps_cu * h da face.
+
+    `pivo_c_rel` e a profundidade do pivo C dividida por h
+    (`nucleo_nbr6118.pivo_C_distancia_relativa`); sem ele, e calculado de
+    eps_c2 e eps_cu pela mesma expressao. Vale 3/7 so ate C50 (FCO-02).
+    Em C90 a norma da eps_c2 > eps_cu: o pivo C cai na face e usa-se
+    min(eps_c2, eps_cu), o que mantem a deformacao continua em x = h.
+    Sem armadura (d_inc = 0) nao ha dominio 2.
     """
-    x_lim_2_3 = eps_cu / (eps_cu + 10.0) * d_inc
+    if pivo_c_rel is None:
+        pivo_c_rel = max(0.0, (eps_cu - eps_c2) / eps_cu)
+    x_lim_2_3 = eps_cu / (eps_cu + EPS_SU) * d_inc
     if x_LN <= x_lim_2_3:
-        # Dominio 2: pivo A -> eps = 10 por mil em s=d_inc.
-        return 10.0 * (x_LN - s) / (d_inc - x_LN)
+        # Dominio 2: pivo A -> eps = -10 por mil em s=d_inc.
+        return EPS_SU * (x_LN - s) / (d_inc - x_LN)
     if x_LN <= h_inc:
         # Dominio 3/4/4a: pivo B -> eps = eps_cu em s=0.
         return eps_cu * (x_LN - s) / x_LN
-    # Dominio 5: pivo C -> eps = eps_c2 em s = 3*h_inc/7.
-    return eps_c2 * (x_LN - s) / (x_LN - 3.0 * h_inc / 7.0)
+    # Dominio 5: pivo C -> eps = eps_c2 em s = pivo_c_rel*h_inc.
+    return min(eps_c2, eps_cu) * (x_LN - s) / (x_LN - pivo_c_rel * h_inc)
+
+
+def _strain_zonas(
+    s: np.ndarray | float,
+    x_LN: float,
+    h_inc: float,
+    d_inc: float,
+    zonas: list[tuple[float, float, float, float]],
+) -> np.ndarray | float:
+    """Deformacao num plano UNICO para a secao inteira (17.2.2 a), com mais
+    de um concreto (FCO-15).
+
+    O plano e eps(s) = k*(x_LN - s), com a maior curvatura k que respeita
+    ao mesmo tempo, para cada concreto: -10 por mil na armadura mais
+    tracionada (pivo A); eps_cu na fibra mais comprimida desse concreto
+    (pivo B); e eps_c2 no pivo C desse concreto, a
+    (eps_cu - eps_c2)/eps_cu * h abaixo da sua fibra mais comprimida, com h
+    a altura da secao (dominio 5). Com um concreto so, e exatamente a
+    Figura 17.1 (`_strain`). A compressao uniforme fica limitada ao menor
+    eps_c2 entre os concretos.
+    """
+    if len(zonas) == 1:
+        _, ec2, ecu, rho = zonas[0]
+        return _strain(s, x_LN, h_inc, d_inc, ec2, ecu, rho)
+    ks = []
+    if d_inc > x_LN:
+        ks.append(EPS_SU / (d_inc - x_LN))
+    for s_topo, ec2, ecu, rho in zonas:
+        if x_LN > s_topo:
+            ks.append(ecu / (x_LN - s_topo))
+        s_c = s_topo + rho * h_inc
+        if x_LN > s_c:
+            ks.append(min(ec2, ecu) / (x_LN - s_c))
+    return min(ks) * (x_LN - s)
 
 
 # ---------------------------------------------------------------------------
@@ -615,17 +830,20 @@ def _sigma_concreto(
     eps_c2: float,
     eps_cu: float,
     n_par: float,
+    eta_c: float = 1.0,
 ) -> np.ndarray:
     """Parabola-retangulo NBR. Tracao -> 0. Vetorizado.
 
     Mantida para compatibilidade. Novas chamadas devem usar
-    `concreto._curva_efetiva.sigma(eps)` diretamente.
+    `concreto._curva_efetiva.sigma(eps)` diretamente (que ja tem o eta_c).
+    Acima de C40, passe `eta_c` (o padrao 1,0 so vale ate C40).
     """
     return CurvaCParabolaRetangulo(
         fcd_kncm2=fcd,
         eps_c2_pmilh=eps_c2,
         eps_cu_pmilh=eps_cu,
         n_parabola=n_par,
+        eta_c=eta_c,
     ).sigma(eps)
 
 
@@ -680,7 +898,7 @@ def _integrar_concreto(
     Yp = -X * sin_a + Y * cos_a
     S = yp_max - Yp
 
-    eps = _strain(S, x_LN, h_inc, d_inc, eps_c2, eps_cu)
+    eps = _strain(S, x_LN, h_inc, d_inc, eps_c2, eps_cu, concreto.pivo_C_rel)
     sigma = curva.sigma(eps)
 
     Nc = float(sigma.sum() * dA)
@@ -729,7 +947,7 @@ def _esforcos_barras(
     yp_b = -x_b * sin_a + y_b * cos_a
     s_b = yp_max - yp_b
 
-    eps_b = _strain(s_b, x_LN, h_inc, d_inc, eps_c2, eps_cu)
+    eps_b = _strain(s_b, x_LN, h_inc, d_inc, eps_c2, eps_cu, concreto.pivo_C_rel)
 
     sigma_s = _sigma_aco(eps_b, aco.fyd_kncm2, aco.Es_kncm2, aco.eps_yd_pmilh)
     sigma_c = curva.sigma(eps_b)
@@ -765,13 +983,15 @@ def _integrar_concreto_pol(
 ) -> tuple[float, float, float]:
     """Integra (Nc, Mxc, Myc) sobre todas as partes da Secao poligonal.
 
-    Cada parte usa seu proprio Concreto (curva, fcd, eps_c2, eps_cu).
+    Um unico plano de deformacao para a secao inteira (17.2.2 a); cada
+    parte usa a curva do seu proprio Concreto (FCO-15).
     """
     if x_LN <= 0.0:
         return 0.0, 0.0, 0.0
 
     h_inc, yp_max = _h_inc_yp_max_pol(secao, alpha)
     d_inc = _d_inc_pol(secao, alpha, yp_max)
+    zonas = _zonas_concreto_pol(secao, alpha, yp_max)
     cos_a, sin_a = math.cos(alpha), math.sin(alpha)
 
     _, y_min_global, _, y_max_global = _bbox_secao(secao)
@@ -787,9 +1007,7 @@ def _integrar_concreto_pol(
         dA = elements[:, 2]
         Yp = -X * sin_a + Y * cos_a
         S = yp_max - Yp
-        eps_c2 = parte.concreto.eps_c2_pmilh
-        eps_cu = parte.concreto.eps_cu_pmilh
-        eps = _strain(S, x_LN, h_inc, d_inc, eps_c2, eps_cu)
+        eps = _strain_zonas(S, x_LN, h_inc, d_inc, zonas)
         sigma = parte.concreto._curva_efetiva.sigma(eps)
         Nc_total += float((sigma * dA).sum())
         Mxc_total += float((sigma * Y * dA).sum())
@@ -815,6 +1033,19 @@ def _bbox_secao(secao: Secao) -> tuple[float, float, float, float]:
     return x_min, y_min, x_max, y_max
 
 
+def _sigma_c_nas_partes(
+    secao: Secao, idx_parte: np.ndarray, eps: np.ndarray,
+) -> np.ndarray:
+    """Tensao no concreto em pontos (barras/cabos), cada um com a curva do
+    concreto da parte que o contem."""
+    eps = np.asarray(eps, dtype=float)
+    sig = np.zeros_like(eps)
+    for i in np.unique(idx_parte):
+        m = idx_parte == i
+        sig[m] = secao.partes[int(i)].concreto._curva_efetiva.sigma(eps[m])
+    return sig
+
+
 def _esforcos_barras_pol(
     secao: Secao,
     aco: Aco,
@@ -823,9 +1054,9 @@ def _esforcos_barras_pol(
 ) -> tuple[float, float, float]:
     """Esforcos das barras na Secao poligonal.
 
-    Para a subtracao do concreto deslocado (sigma_c em cada barra), usa o
-    concreto da PRIMEIRA parte (simplificacao: assume todas as barras na
-    mesma parte; relevante apenas se houver multi-fck).
+    Deformacao do mesmo plano unico do concreto. Para a subtracao do
+    concreto deslocado (sigma_c em cada barra), usa o concreto da parte que
+    contem a barra (a primeira parte, se nenhuma contiver).
     """
     if secao._barras_xyA.shape[0] == 0:
         return 0.0, 0.0, 0.0
@@ -842,19 +1073,17 @@ def _esforcos_barras_pol(
         Mys = float((sigma_s * A_b * x_b).sum())
         return Ns, Mxs, Mys
 
-    concreto = secao.partes[0].concreto
     h_inc, yp_max = _h_inc_yp_max_pol(secao, alpha)
     d_inc = _d_inc_pol(secao, alpha, yp_max)
+    zonas = _zonas_concreto_pol(secao, alpha, yp_max)
     cos_a, sin_a = math.cos(alpha), math.sin(alpha)
     yp_b = -x_b * sin_a + y_b * cos_a
     s_b = yp_max - yp_b
 
-    eps_c2 = concreto.eps_c2_pmilh
-    eps_cu = concreto.eps_cu_pmilh
-    eps_b = _strain(s_b, x_LN, h_inc, d_inc, eps_c2, eps_cu)
+    eps_b = _strain_zonas(s_b, x_LN, h_inc, d_inc, zonas)
 
     sigma_s = _sigma_aco(eps_b, aco.fyd_kncm2, aco.Es_kncm2, aco.eps_yd_pmilh)
-    sigma_c = concreto._curva_efetiva.sigma(eps_b)
+    sigma_c = _sigma_c_nas_partes(secao, secao._barras_parte, eps_b)
     delta = sigma_s - sigma_c
 
     Ns = float((delta * A_b).sum())
@@ -871,8 +1100,8 @@ def _esforcos_cabos_pol(
     """Esforcos das cordoalhas de protensao (pre-aderidas).
 
     Convencao: ε_efetiva_cabo = ε_concreto_local - ε_pre.
-    Para σ_c subtraido na posicao do cabo, usa o concreto da primeira parte
-    (assumicao: cabos estao na parte principal).
+    Para σ_c subtraido na posicao do cabo, usa o concreto da parte que
+    contem o cabo (a primeira parte, se nenhuma contiver).
     """
     if not secao.cabos:
         return 0.0, 0.0, 0.0
@@ -894,24 +1123,21 @@ def _esforcos_cabos_pol(
         Myp = float((sigma_p * A_p * x_p).sum())
         return Np, Mxp, Myp
 
-    concreto = secao.partes[0].concreto
     h_inc, yp_max = _h_inc_yp_max_pol(secao, alpha)
     d_inc = _d_inc_pol(secao, alpha, yp_max)
+    zonas = _zonas_concreto_pol(secao, alpha, yp_max)
     cos_a, sin_a = math.cos(alpha), math.sin(alpha)
     yp_p = -x_p * sin_a + y_p * cos_a
     s_p = yp_max - yp_p
 
-    eps_concreto_p = _strain(
-        s_p, x_LN, h_inc, d_inc,
-        concreto.eps_c2_pmilh, concreto.eps_cu_pmilh,
-    )
+    eps_concreto_p = _strain_zonas(s_p, x_LN, h_inc, d_inc, zonas)
     eps_efetiva = eps_concreto_p - eps_pre
 
     sigma_p = np.array([
         float(_cabo_curva(c).sigma(np.array([eps_efetiva[i]]))[0])
         for i, c in enumerate(secao.cabos)
     ])
-    sigma_c_p = concreto._curva_efetiva.sigma(eps_concreto_p)
+    sigma_c_p = _sigma_c_nas_partes(secao, secao._cabos_parte, eps_concreto_p)
     delta_p = sigma_p - sigma_c_p
 
     Np = float((delta_p * A_p).sum())
@@ -991,6 +1217,80 @@ def _esforcos_internos_els(
     return Nc + Ns, Mxc + Mxs, Myc + Mys
 
 
+def _concreto_curva_15_3_1(concreto: Concreto) -> Concreto:
+    """Concreto com a curva da relacao momento-curvatura da Figura 15.1:
+    parabola-retangulo com pico 1,10*fcd (mesmos eps_c2, eps_cu e n)."""
+    return Concreto(
+        fck_mpa=concreto.fck_mpa,
+        gama_c=concreto.gama_c,
+        curva=CurvaCParabolaRetangulo(
+            fcd_kncm2=concreto.fcd_kncm2,
+            eps_c2_pmilh=concreto.eps_c2_pmilh,
+            eps_cu_pmilh=concreto.eps_cu_pmilh,
+            n_parabola=concreto.n_parabola,
+            alpha_c=1.10,
+            eta_c=1.0,
+        ),
+    )
+
+
+def _estado_els_eixo(
+    secao: SecaoRetangular,
+    concreto: Concreto,
+    aco: Aco,
+    N_kn: float,
+    M_kncm: float,
+    eixo: str,
+    n_grid: int = 60,
+) -> tuple[float, float, float, float]:
+    """Estado de deformacao (eps_cg, kx, ky) com N e M em torno de `eixo`.
+
+    Curvatura so em torno de `eixo` (brentq aninhados: eps_cg para N e a
+    curvatura para M). Se a secao nao for simetrica em relacao ao plano de
+    flexao, refina com o solver 3x3 (`solver_els`), com o momento na outra
+    direcao nulo. Devolve (eps_cg, kx, ky, k_eixo) em por mil e por mil/cm.
+    """
+    ext = max(secao.base_cm, secao.altura_cm)
+
+    def forcas(e0: float, k: float) -> tuple[float, float, float]:
+        kx, ky = (k, 0.0) if eixo == "x" else (0.0, k)
+        Nr, Mxr, Myr = _esforcos_internos_els(secao, concreto, aco, e0, kx, ky, n_grid)
+        return (Nr, Mxr, Myr) if eixo == "x" else (Nr, Myr, Mxr)
+
+    def e0_de_k(k: float) -> float:
+        lim = 20.0 + abs(k) * ext
+        return brentq(lambda e0: forcas(e0, k)[0] - N_kn, -lim, lim, xtol=1e-10, rtol=1e-12)
+
+    def resid(k: float) -> float:
+        return forcas(e0_de_k(k), k)[1] - M_kncm
+
+    r0 = resid(0.0)
+    if r0 == 0.0:
+        k_sol = 0.0
+    else:
+        passo = 1e-3 if r0 < 0.0 else -1e-3
+        k_a, k_b = 0.0, passo
+        while resid(k_b) * r0 > 0.0:
+            k_a, k_b = k_b, 2.0 * k_b
+            if abs(k_b) > 50.0:
+                raise ValueError(
+                    f"Estado de deformação não encontrado para N = {N_kn:.1f} kN e "
+                    f"M = {M_kncm:.1f} kN·cm (momento acima da capacidade da curva)."
+                )
+        k_sol = brentq(resid, min(k_a, k_b), max(k_a, k_b), xtol=1e-12, rtol=1e-11)
+    e0 = e0_de_k(k_sol)
+    _, _, M_perp = forcas(e0, k_sol)
+    kx, ky = (k_sol, 0.0) if eixo == "x" else (0.0, k_sol)
+    if abs(M_perp) > 1e-4 * max(abs(M_kncm), 1.0):
+        Mx, My = (M_kncm, 0.0) if eixo == "x" else (0.0, M_kncm)
+        r = solver_els(secao, concreto, aco, N_kn, Mx, My, n_grid=n_grid,
+                       x0=(e0, kx, ky))
+        if not r["convergiu"]:
+            raise ValueError(f"Estado de deformação não convergiu: {r.get('mensagem')}")
+        e0, kx, ky = r["eps_cg_pmilh"], r["kx_pmilh_cm"], r["ky_pmilh_cm"]
+    return e0, kx, ky, (kx if eixo == "x" else ky)
+
+
 def ei_secante(
     secao: SecaoRetangular,
     concreto: Concreto,
@@ -999,32 +1299,65 @@ def ei_secante(
     Md_kncm: float,
     eixo: str,
     n_grid: int = 60,
+    gama_f3: float = GAMA_F3,
+    ponto: str = "B",
 ) -> float:
-    """EI secante (kN.cm^2) = Md / (1/r), calculado pela seca FCO sob (Nsd, Md).
+    """Rigidez secante (EI)sec, kN.cm^2, pela 15.3.1 e Figura 15.1 (NBR 6118:2026).
 
-    Necessario para metodos rigorosos de 2a ordem (P3/P4/P5 do PCalc) em
-    `pilares_bastos.py`. Resolve estado de deformacao ELS (Newton-Raphson 3x3)
-    e retorna `Md / curvatura`.
+    A relacao momento-curvatura usada no calculo das deformacoes (curva
+    cheia AB) e obtida com pico de 1,10*fcd no concreto e forca normal
+    NRd/gama_f3, com NRd = NSd e gama_f3 = 1,1. O ponto B dessa curva tem
+    M = MRd/gama_f3, sendo MRd o momento resistente de calculo (curva de
+    ELU, 0,85*eta_c*fcd) para NRd, no eixo e no sentido de Md. A reta AB
+    define (EI)sec = (MRd/gama_f3)/(1/r)_B.
+
+    ponto="B"  (padrao): (EI)sec da reta AB. Nao depende de |Md|; Md so
+        informa o sentido do momento (importa em armadura assimetrica).
+    ponto="Md": secante da curva AB no ponto M = |Md|/gama_f3 (a propria
+        curva AB e a usada no calculo das deformacoes); exige |Md| <= MRd.
 
     eixo: 'x' -> Md em torno de x (gera curvatura kx);
           'y' -> Md em torno de y (gera curvatura ky).
+
+    Necessario para metodos de 2a ordem (P3/P4/P5 do PCalc) em
+    `pilares_bastos.py`.
     """
     if eixo not in ("x", "y"):
-        raise ValueError(f"eixo deve ser 'x' ou 'y', got {eixo!r}")
+        raise ValueError(f"eixo deve ser 'x' ou 'y', recebido {eixo!r}.")
+    if ponto not in ("B", "Md"):
+        raise ValueError(f"ponto deve ser 'B' ou 'Md', recebido {ponto!r}.")
 
-    Mx = Md_kncm if eixo == "x" else 0.0
-    My = Md_kncm if eixo == "y" else 0.0
-    r = solver_els(secao, concreto, aco, Nsd_kn, Mx, My, n_grid=n_grid)
+    sentido = 1.0 if Md_kncm >= 0.0 else -1.0
+    theta = (0.0 if sentido > 0 else math.pi) if eixo == "x" else (
+        math.pi / 2.0 if sentido > 0 else -math.pi / 2.0)
+    try:
+        if not _origem_dentro_ret(secao, concreto, aco, Nsd_kn, n_grid):
+            raise ValueError(MSG_ORIGEM_FORA.format(Nd=Nsd_kn))
+        _, _, Mx_r, My_r, _ = _resolver_direcao_ret(
+            secao, concreto, aco, Nsd_kn, theta, n_grid)
+    except ValueError as e:
+        raise ValueError(f"MRd não encontrado para NSd = {Nsd_kn:.1f} kN: {e}") from e
+    MRd = math.hypot(Mx_r, My_r)
 
-    if not r["convergiu"]:
-        raise ValueError(f"ELS nao convergiu: {r.get('mensagem')}")
+    if ponto == "B":
+        M_alvo = MRd / gama_f3
+    else:
+        if abs(Md_kncm) > MRd * (1.0 + 1e-9):
+            raise ValueError(
+                f"|Md| = {abs(Md_kncm):.1f} kN·cm acima de MRd = {MRd:.1f} kN·cm: "
+                "fora da curva momento-curvatura (15.3.1)."
+            )
+        M_alvo = abs(Md_kncm) / gama_f3
+    if M_alvo <= 0.0:
+        return float("inf")
 
-    k = r["kx_pmilh_cm"] if eixo == "x" else r["ky_pmilh_cm"]
+    concreto_ab = _concreto_curva_15_3_1(concreto)
+    _, _, _, k = _estado_els_eixo(
+        secao, concreto_ab, aco, Nsd_kn / gama_f3, sentido * M_alvo, eixo, n_grid)
     # k em "por mil"/cm -> 1/cm dividindo por 1000
     if abs(k) < 1e-12:
         return float("inf")
-    inv_r_cm = abs(k) * 1e-3
-    return abs(Md_kncm) / inv_r_cm
+    return M_alvo / (abs(k) * 1e-3)
 
 
 def solver_els(
@@ -1037,6 +1370,7 @@ def solver_els(
     n_grid: int = 60,
     tol: float = 1e-3,
     iter_max: int = 100,
+    x0: tuple[float, float, float] | None = None,
 ) -> dict:
     """Resolve estado de deformacao em ELS por Newton-Raphson 3x3.
 
@@ -1046,6 +1380,9 @@ def solver_els(
         - Verificacao de tensao maxima no concreto (NBR 17.2.2).
         - Verificacao de deformacao no aco (controle de fissuracao).
         - Calculo de EI secante (necessario para metodos rigorosos de 2a ordem).
+
+    Usa a curva de ELU do concreto (lacuna registrada: sem estadios I e II
+    normativos). `x0` e a estimativa inicial (eps_cg, kx, ky); padrao zeros.
 
     Retorna dict com diagnostico:
         eps_cg_pmilh, kx_pmilh_cm, ky_pmilh_cm,
@@ -1062,7 +1399,7 @@ def solver_els(
         )
         return [Nr - Nsd_kn, Mxr - Mxd_kncm, Myr - Myd_kncm]
 
-    x0 = np.array([0.0, 0.0, 0.0])
+    x0 = np.array([0.0, 0.0, 0.0] if x0 is None else list(x0), dtype=float)
     sol, info, ier, msg = fsolve(
         F, x0, full_output=True, xtol=tol, maxfev=iter_max * 10
     )
@@ -1098,9 +1435,17 @@ def solver_els(
 # Pre-flight: faixa viavel de Nd
 # ---------------------------------------------------------------------------
 def Nd_max_kn(secao: SecaoRetangular, concreto: Concreto, aco: Aco) -> float:
-    """Nd maximo: compressao pura, eps = eps_c2 em toda a secao."""
-    Ac_liq = secao.Ac_cm2 - secao.As_total_cm2
-    return ALPHA_C * concreto.fcd_kncm2 * Ac_liq + aco.fyd_kncm2 * secao.As_total_cm2
+    """Nd maximo: compressao uniforme (reta b da Figura 17.1).
+
+    Encurtamento eps_c2 na secao inteira: concreto no pico 0,85*eta_c*fcd
+    (Figura 8.2 -- FCO-01) e aco com sigma_s(eps_c2) <= fyd (8.3.6 --
+    FCO-05; no CA-50, 2 por mil dao 420 MPa, abaixo de fyd = 435 MPa).
+    """
+    eps_b = np.array([concreto.eps_reta_b_pmilh])
+    sig_c = float(concreto._curva_efetiva.sigma(eps_b)[0])
+    sig_s = float(_sigma_aco(eps_b, aco.fyd_kncm2, aco.Es_kncm2, aco.eps_yd_pmilh)[0])
+    As = secao.As_total_cm2
+    return sig_c * (secao.Ac_cm2 - As) + sig_s * As
 
 
 def Nd_min_kn(secao: SecaoRetangular, aco: Aco) -> float:
@@ -1112,24 +1457,22 @@ def Nd_min_kn(secao: SecaoRetangular, aco: Aco) -> float:
 # ---------------------------------------------------------------------------
 # Solvers
 # ---------------------------------------------------------------------------
-def _solve_x_LN(
-    secao: SecaoRetangular,
-    concreto: Concreto,
-    aco: Aco,
-    alpha: float,
-    Nd: float,
-    n_grid: int = 80,
-    n_sample: int = 40,
-) -> float:
+EPS_ALPHA = 1e-3               # folga nas pontas da faixa do quadrante (rad)
+PASSO_ALPHA = math.pi / 16.0   # passo da busca de alpha no circulo inteiro
+
+
+def _solve_x_generico(residual, h_inc: float, Nd: float, n_sample: int = 40,
+                      contexto: str = "") -> float:
     """brentq em N(x_LN) - Nd = 0. Amostra n_sample pontos, escolhe primeiro
-    intervalo com troca de sinal."""
-    h_inc, _ = _h_inc_yp_max(secao, alpha)
+    intervalo com troca de sinal.
+
+    No dominio 5 o esforco normal so chega a reta b (Nd_max) quando x_LN
+    tende ao infinito; se a amostragem ate 20h nao alcanca Nd, a busca segue
+    para x_LN de 100h a 10^6 h (FCO-05: o pre-teste aprovava e o solver
+    quebrava).
+    """
     x_min = 1e-3
     x_max = 5.0 * h_inc
-
-    def residual(x: float) -> float:
-        N, _, _ = esforcos_resistentes(secao, concreto, aco, alpha, x, n_grid)
-        return N - Nd
 
     xs = np.linspace(x_min, x_max, n_sample)
     Ns = np.array([residual(x) for x in xs])
@@ -1142,13 +1485,164 @@ def _solve_x_LN(
         Ns = np.array([residual(x) for x in xs])
         sign_changes = np.where(np.diff(np.sign(Ns)) != 0)[0]
         if len(sign_changes) == 0:
+            if Ns[-1] < 0.0:
+                x_a, r_a = float(xs[-1]), float(Ns[-1])
+                for fator in (1e2, 1e3, 1e4, 1e6):
+                    x_b = fator * h_inc
+                    r_b = residual(x_b)
+                    if r_b >= 0.0:
+                        return float(brentq(residual, x_a, x_b, xtol=1e-4, rtol=1e-6))
+                    x_a, r_a = x_b, r_b
+                if r_a >= -1e-6 * max(1.0, abs(Nd)):
+                    return x_a  # compressao praticamente uniforme (reta b)
             raise ValueError(
-                f"Sem raiz para x_LN: alpha={math.degrees(alpha):.1f}°, "
-                f"Nd={Nd:.1f} kN, N range=[{Ns.min():.1f}, {Ns.max():.1f}] kN."
+                f"Sem raiz para x_LN{contexto}: Nd = {Nd:.1f} kN fora da faixa de N "
+                f"alcançada pelos domínios 2 a 5, [{Nd + Ns.min():.1f}, "
+                f"{Nd + Ns.max():.1f}] kN."
             )
 
     i = int(sign_changes[0])
     return float(brentq(residual, xs[i], xs[i + 1], xtol=1e-4, rtol=1e-6))
+
+
+def _solve_x_LN(
+    secao: SecaoRetangular,
+    concreto: Concreto,
+    aco: Aco,
+    alpha: float,
+    Nd: float,
+    n_grid: int = 80,
+    n_sample: int = 40,
+) -> float:
+    """brentq em N(x_LN) - Nd = 0 (ver `_solve_x_generico`)."""
+    h_inc, _ = _h_inc_yp_max(secao, alpha)
+
+    def residual(x: float) -> float:
+        N, _, _ = esforcos_resistentes(secao, concreto, aco, alpha, x, n_grid)
+        return N - Nd
+
+    return _solve_x_generico(residual, h_inc, Nd, n_sample,
+                             f" (α = {math.degrees(alpha):.1f}°)")
+
+
+def _wrap_pi(a: float) -> float:
+    """Leva a diferenca de dois angulos para (-pi, pi] (sem mexer se ja estiver)."""
+    if a > math.pi:
+        a -= 2.0 * math.pi
+    elif a <= -math.pi:
+        a += 2.0 * math.pi
+    return a
+
+
+def _resolver_direcao(esforcos, solve_x, theta_d: float):
+    """Plano ultimo com N = Nd e momento resistente na direcao theta_d.
+
+    theta_d = atan2(Myd, Mxd), COM SINAL (FCO-03): o solver busca alpha no
+    circulo inteiro, o que vale para secao e armadura assimetricas.
+    `esforcos(alpha, x)` -> (N, Mx, My); `solve_x(alpha)` -> x_LN para Nd.
+
+    1. Flexao normal (theta_d sobre um eixo): LN paralela ao eixo; aceita se
+       o momento resistente sair na direcao pedida (secao simetrica em
+       relacao ao plano de flexao).
+    2. Faixa do quadrante de theta_d (para Mxd, Myd > 0 e a faixa
+       [-pi/2, 0] de sempre).
+    3. Busca no circulo inteiro, em passos de pi/16, a partir da LN
+       perpendicular a direcao do momento.
+
+    Devolve (alpha, x_LN, Mx, My, uniaxial). Levanta ValueError se nao achar.
+    """
+    c_d, s_d = math.cos(theta_d), math.sin(theta_d)
+
+    def avaliar(alpha: float) -> tuple[float, float, float]:
+        x = solve_x(alpha)
+        _, Mx, My = esforcos(alpha, x)
+        return x, Mx, My
+
+    def desvio(alpha: float) -> float:
+        _, Mx, My = avaliar(alpha)
+        return _wrap_pi(math.atan2(My, Mx) - theta_d)
+
+    def desvio_seguro(alpha: float) -> float:
+        try:
+            return desvio(alpha)
+        except (ValueError, RuntimeError):
+            return float("nan")
+
+    def aceitar(alpha: float):
+        x, Mx, My = avaliar(alpha)
+        if abs(_wrap_pi(math.atan2(My, Mx) - theta_d)) < 1e-2:
+            return _wrap_pi(alpha), x, Mx, My, False
+        return None
+
+    # 1) Flexao normal.
+    alpha_fixo = None
+    if abs(s_d) < TOL_UNIAXIAL:
+        alpha_fixo = 0.0 if c_d > 0.0 else math.pi
+    elif abs(c_d) < TOL_UNIAXIAL:
+        alpha_fixo = -math.pi / 2.0 if s_d > 0.0 else math.pi / 2.0
+    if alpha_fixo is not None:
+        x, Mx, My = avaliar(alpha_fixo)
+        MR = math.hypot(Mx, My)
+        if (MR > 0.0 and Mx * c_d + My * s_d > 0.0
+                and abs(Mx * s_d - My * c_d) <= TOL_UNIAXIAL * MR):
+            return alpha_fixo, x, Mx, My, True
+
+    # 2) Faixa do quadrante.
+    q = math.floor(theta_d / (math.pi / 2.0))
+    base = q * (math.pi / 2.0)
+    a_lo, a_hi = -base - math.pi / 2.0 + EPS_ALPHA, -base - EPS_ALPHA
+    f_lo, f_hi = desvio_seguro(a_lo), desvio_seguro(a_hi)
+    if math.isfinite(f_lo) and math.isfinite(f_hi) and f_lo * f_hi <= 0.0:
+        try:
+            r = aceitar(float(brentq(desvio, a_lo, a_hi, xtol=1e-4, rtol=1e-5)))
+        except (ValueError, RuntimeError):
+            r = None
+        if r is not None:
+            return r
+
+    # 3) Circulo inteiro.
+    alpha0 = -theta_d
+    f0 = desvio_seguro(alpha0)
+    if f0 == 0.0:
+        r = aceitar(alpha0)
+        if r is not None:
+            return r
+    sentido = 1.0 if not (f0 < 0.0) else -1.0
+    for s in (sentido, -sentido):
+        a_ant, f_ant = alpha0, f0
+        for i in range(1, 17):
+            a_i = alpha0 + s * i * PASSO_ALPHA
+            f_i = desvio_seguro(a_i)
+            if (math.isfinite(f_ant) and math.isfinite(f_i) and f_ant * f_i <= 0.0
+                    and abs(f_ant) < math.pi / 2.0 and abs(f_i) < math.pi / 2.0):
+                try:
+                    r = aceitar(float(brentq(desvio, min(a_ant, a_i), max(a_ant, a_i),
+                                             xtol=1e-4, rtol=1e-5)))
+                except (ValueError, RuntimeError):
+                    r = None
+                if r is not None:
+                    return r
+            a_ant, f_ant = a_i, f_i
+    raise ValueError(
+        f"Solver alpha sem bracketing: nenhuma posição da LN leva o momento "
+        f"resistente à direção θ = {math.degrees(theta_d):.1f}°."
+    )
+
+
+def _resolver_direcao_ret(
+    secao: SecaoRetangular,
+    concreto: Concreto,
+    aco: Aco,
+    Nd: float,
+    theta_d: float,
+    n_grid: int = 80,
+):
+    """`_resolver_direcao` para SecaoRetangular."""
+    return _resolver_direcao(
+        lambda a, x: esforcos_resistentes(secao, concreto, aco, a, x, n_grid),
+        lambda a: _solve_x_LN(secao, concreto, aco, a, Nd, n_grid),
+        theta_d,
+    )
 
 
 def _solve_alpha(
@@ -1159,29 +1653,73 @@ def _solve_alpha(
     theta_d: float,
     n_grid: int = 80,
 ) -> tuple[float, float]:
-    """brentq em theta(alpha) - theta_d = 0. Retorna (alpha, x_LN)."""
-    eps_a = 1e-3
+    """Retorna (alpha, x_LN) do plano ultimo com momento na direcao theta_d.
 
-    def residual(alpha: float) -> float:
-        x = _solve_x_LN(secao, concreto, aco, alpha, Nd, n_grid)
-        _, Mx, My = esforcos_resistentes(secao, concreto, aco, alpha, x, n_grid)
-        theta_r = math.atan2(abs(My), abs(Mx))
-        return theta_r - theta_d
+    theta_d = atan2(MRy, MRx), com sinal (qualquer quadrante). Para
+    Mxd, Myd > 0 (theta_d entre 0 e pi/2) a busca e a de sempre, em
+    [-pi/2, 0] (compressao em +x, +y).
+    """
+    alpha, x, _, _, _ = _resolver_direcao_ret(secao, concreto, aco, Nd, theta_d, n_grid)
+    return alpha, x
 
-    # Convencao: Mxd e Myd positivos -> compressao em (+x, +y) -> alpha < 0.
-    # Faixa de busca: [-pi/2, 0]. Em alpha=0: theta_r=0 (so MRx). Em alpha=-pi/2:
-    # theta_r=pi/2 (so MRy).
-    a_lo, a_hi = -math.pi / 2.0 + eps_a, -eps_a
-    f_lo = residual(a_lo)
-    f_hi = residual(a_hi)
-    if f_lo * f_hi > 0:
-        raise ValueError(
-            f"Solver alpha sem bracketing: f({math.degrees(a_lo):.1f}°)={f_lo:.3f}, "
-            f"f({math.degrees(a_hi):.1f}°)={f_hi:.3f}, theta_d={math.degrees(theta_d):.1f}°."
-        )
-    alpha_sol = float(brentq(residual, a_lo, a_hi, xtol=1e-4, rtol=1e-5))
-    x_sol = _solve_x_LN(secao, concreto, aco, alpha_sol, Nd, n_grid)
-    return alpha_sol, x_sol
+
+def _esforcos_uniformes_ret(
+    secao: SecaoRetangular, concreto: Concreto, aco: Aco, eps: float,
+) -> tuple[float, float, float]:
+    """(N, Mx, My) com deformacao uniforme eps (por mil) na secao inteira."""
+    e = np.array([eps], dtype=float)
+    sc = float(concreto._curva_efetiva.sigma(e)[0])
+    ss = float(_sigma_aco(e, aco.fyd_kncm2, aco.Es_kncm2, aco.eps_yd_pmilh)[0])
+    arr = secao._barras_xyA
+    if arr.shape[0] == 0:
+        return sc * secao.Ac_cm2, 0.0, 0.0
+    As = float(arr[:, 2].sum())
+    return (sc * (secao.Ac_cm2 - As) + ss * As,
+            (ss - sc) * float((arr[:, 2] * arr[:, 1]).sum()),
+            (ss - sc) * float((arr[:, 2] * arr[:, 0]).sum()))
+
+
+def _origem_dentro(esforcos_unif, resolver, Nd: float, eps_b: float, escala_M: float) -> bool:
+    """O ponto (Nd, 0, 0) esta dentro da envoltoria resistente com N = Nd?
+
+    Com secao ou armadura assimetrica (ou mais de um concreto), o centro
+    plastico nao coincide com o centroide e, perto de Nd_max, a envoltoria
+    de N fixo pode nao conter a origem: nem o momento nulo e resistido.
+    Um ponto interior C e o estado de deformacao uniforme com N = Nd
+    (admissivel, nao ultimo). Se C estiver na origem, ela esta dentro;
+    senao, pela convexidade, a origem esta dentro se e so se o raio que
+    parte dela no sentido oposto a C encontra a envoltoria.
+    """
+    N_lo = esforcos_unif(-EPS_SU)[0]
+    N_hi = esforcos_unif(eps_b)[0]
+    if not (N_lo < Nd < N_hi):
+        return True  # fora dessa faixa decidem o pre-teste e o solver
+    eps_N = brentq(lambda e: esforcos_unif(e)[0] - Nd, -EPS_SU, eps_b,
+                   xtol=1e-12, rtol=4.0 * np.finfo(float).eps)
+    _, Cx, Cy = esforcos_unif(eps_N)
+    if math.hypot(Cx, Cy) <= 1e-9 * escala_M:
+        return True
+    try:
+        resolver(math.atan2(-Cy, -Cx))
+    except (ValueError, RuntimeError):
+        return False
+    return True
+
+
+def _origem_dentro_ret(secao, concreto, aco, Nd, n_grid) -> bool:
+    return _origem_dentro(
+        lambda e: _esforcos_uniformes_ret(secao, concreto, aco, e),
+        lambda th: _resolver_direcao_ret(secao, concreto, aco, Nd, th, n_grid),
+        Nd, concreto.eps_reta_b_pmilh,
+        max(abs(Nd), Nd_max_kn(secao, concreto, aco)) * max(secao.base_cm, secao.altura_cm),
+    )
+
+
+MSG_ORIGEM_FORA = (
+    "Com Nd = {Nd:.1f} kN nem o momento nulo é resistido: o centro plástico "
+    "da seção não coincide com o centroide e a envoltória resistente para "
+    "esse Nd não contém a origem."
+)
 
 
 # ---------------------------------------------------------------------------
@@ -1195,12 +1733,19 @@ def momento_resistente_fco(
     theta_d_rad: float,
     n_grid: int = 80,
 ) -> dict:
-    """Calcula (MRx, MRy) tal que arctan(MRy/MRx) = theta_d_rad e Nr = Nd."""
-    alpha, x_LN = _solve_alpha(secao, concreto, aco, Nd_kn, theta_d_rad, n_grid)
-    _, Mx, My = esforcos_resistentes(secao, concreto, aco, alpha, x_LN, n_grid)
+    """Calcula (MRx, MRy) tal que arctan(MRy/MRx) = theta_d_rad e Nr = Nd.
+
+    theta_d_rad = atan2(MRy, MRx) em qualquer quadrante: 0 -> +Mx,
+    pi/2 -> +My, pi -> -Mx, -pi/2 -> -My. MRx_kncm e MRy_kncm sao os
+    modulos; Mx_kncm e My_kncm, os valores com sinal.
+    """
+    alpha, x_LN, Mx, My, _ = _resolver_direcao_ret(
+        secao, concreto, aco, Nd_kn, theta_d_rad, n_grid)
     return {
         "MRx_kncm": abs(Mx),
         "MRy_kncm": abs(My),
+        "Mx_kncm": Mx,
+        "My_kncm": My,
         "MR_kncm": math.hypot(Mx, My),
         "alpha_rad": alpha,
         "alpha_graus": math.degrees(alpha),
@@ -1217,13 +1762,17 @@ def _verificar_uniaxial(
     alpha: float,
     n_grid: int = 80,
 ) -> dict:
-    """Verifica seção com flexão composta normal (alpha fixo)."""
+    """Verifica seção com flexão composta normal (alpha fixo).
+
+    Mantida por compatibilidade: `verificar_fco` já trata a flexão normal
+    (com sinal) em `_resolver_direcao`.
+    """
     x_LN = _solve_x_LN(secao, concreto, aco, alpha, Nd_kn, n_grid)
     _, Mx, My = esforcos_resistentes(secao, concreto, aco, alpha, x_LN, n_grid)
     Mr = math.hypot(Mx, My)
     razao = Mr / abs(Md_kncm) if abs(Md_kncm) > 0 else float("inf")
     return {
-        "status": "OK" if razao >= 0.99 else "NAO_VERIFICA",
+        "status": _status_razao(razao),
         "razao": razao,
         "alpha_rad": alpha,
         "alpha_graus": math.degrees(alpha),
@@ -1249,6 +1798,17 @@ def verificar_fco(
         - alpha_rad / alpha_graus
         - x_LN_cm
         - MRx_kncm / MRy_kncm
+
+    Os sinais de Mxd e Myd são respeitados (FCO-03): a resistência é
+    calculada na direção de (Mxd, Myd), o que vale para seção e armadura
+    assimétricas. O momento mínimo de 11.3.3.4.3 não é aplicado aqui: a
+    envoltória mínima fica em `verificacao_pilar.py`.
+
+    Seção ou armadura assimétrica com Nd alto: se o centro plástico não
+    coincide com o centroide, a envoltória de N fixo pode não conter a
+    origem -- nem Nd centrado é resistido. Nesse caso a função devolve
+    NAO_VERIFICA com razão 0 (e, em pilar, a envoltória mínima da
+    Figura 11.3, que envolve a origem, também não seria atendida).
     """
     Nd_max = Nd_max_kn(secao, concreto, aco)
     Nd_min = Nd_min_kn(secao, aco)
@@ -1256,13 +1816,13 @@ def verificar_fco(
         return {
             "status": "FORA_RANGE",
             "razao": -1.0,
-            "mensagem": f"Nd={Nd_kn:.1f} > Nd_max={Nd_max:.1f} (compressao pura).",
+            "mensagem": f"Nd = {Nd_kn:.1f} kN > Nd,máx = {Nd_max:.1f} kN (compressão uniforme).",
         }
     if Nd_kn < Nd_min:
         return {
             "status": "FORA_RANGE",
             "razao": -1.0,
-            "mensagem": f"Nd={Nd_kn:.1f} < Nd_min={Nd_min:.1f} (tracao pura).",
+            "mensagem": f"Nd = {Nd_kn:.1f} kN < Nd,mín = {Nd_min:.1f} kN (tração uniforme).",
         }
 
     Md_total = math.hypot(Mxd_kncm, Myd_kncm)
@@ -1275,40 +1835,41 @@ def verificar_fco(
             "comentario": "Compressao/tracao sem flexao.",
         }
 
-    if abs(Myd_kncm) / Md_total < 1e-6:
-        return _verificar_uniaxial(
-            secao, concreto, aco, Nd_kn, abs(Mxd_kncm), 0.0, n_grid
-        )
-    if abs(Mxd_kncm) / Md_total < 1e-6:
-        return _verificar_uniaxial(
-            secao, concreto, aco, Nd_kn, abs(Myd_kncm), -math.pi / 2.0, n_grid
-        )
-
-    theta_d = math.atan2(abs(Myd_kncm), abs(Mxd_kncm))
-
+    theta_d = math.atan2(Myd_kncm, Mxd_kncm)
     try:
-        alpha_sol, x_sol = _solve_alpha(
+        if not _origem_dentro_ret(secao, concreto, aco, Nd_kn, n_grid):
+            return {"status": "NAO_VERIFICA", "razao": 0.0,
+                    "mensagem": MSG_ORIGEM_FORA.format(Nd=Nd_kn)}
+        alpha_sol, x_sol, Mx_r, My_r, uniaxial = _resolver_direcao_ret(
             secao, concreto, aco, Nd_kn, theta_d, n_grid
         )
-    except ValueError as e:
+    except (ValueError, RuntimeError) as e:
         return {"status": "NAO_CONVERGIU", "razao": -1.0, "mensagem": str(e)}
 
-    _, Mx_r, My_r = esforcos_resistentes(
-        secao, concreto, aco, alpha_sol, x_sol, n_grid
-    )
+    return _resultado_verificacao(alpha_sol, x_sol, Mx_r, My_r, Md_total, uniaxial)
+
+
+def _status_razao(razao: float) -> str:
+    """OK so com MR >= MS (17.2.1): razao >= 1, sem folga (FCO-11)."""
+    return "OK" if razao >= 1.0 else "NAO_VERIFICA"
+
+
+def _resultado_verificacao(alpha, x_LN, Mx_r, My_r, Md_total, uniaxial) -> dict:
     Mr = math.hypot(Mx_r, My_r)
     razao = Mr / Md_total
-
-    return {
-        "status": "OK" if razao >= 0.99 else "NAO_VERIFICA",
+    r = {
+        "status": _status_razao(razao),
         "razao": razao,
-        "alpha_rad": alpha_sol,
-        "alpha_graus": math.degrees(alpha_sol),
-        "x_LN_cm": x_sol,
+        "alpha_rad": alpha,
+        "alpha_graus": math.degrees(alpha),
+        "x_LN_cm": x_LN,
         "MRx_kncm": abs(Mx_r),
         "MRy_kncm": abs(My_r),
         "MR_kncm": Mr,
     }
+    if uniaxial:
+        r["uniaxial"] = True
+    return r
 
 
 def verificar_fco_simplificado(
@@ -1317,18 +1878,29 @@ def verificar_fco_simplificado(
     Mxd_kncm: float,
     Myd_kncm: float,
     expoente: float = 1.0,
+    secao_retangular: bool = True,
 ) -> float:
-    """Equacao de interacao simplificada (NBR 17.79):
+    """Equacao de interacao simplificada (NBR 6118:2026, 17.2.5):
 
         (Mxd/MRxd)^a + (Myd/MRyd)^a <= 1.0
 
     Retorna valor da soma. <= 1.0 verifica.
-    expoente=1.0 (a favor da seguranca, retangular). Tipicos:
-        - 1.0 retangular (NBR conservador)
-        - 1.2 a 2.0 sao valores de Bresler/CEB para retangulares
+    A norma preve a = 1 em geral (a favor da seguranca) e a = 1,2 para
+    secao retangular. Valores de 1,2 a 2,0 aparecem em Bresler/CEB, mas
+    nao na NBR: acima de 1,2 (ou acima de 1 com `secao_retangular=False`)
+    a funcao calcula e emite `AvisoNBR6118`.
     """
     if MRxd_kncm <= 0 or MRyd_kncm <= 0:
         raise ValueError("MRxd e MRyd devem ser positivos.")
+    limite = 1.2 if secao_retangular else 1.0
+    if expoente > limite:
+        warnings.warn(
+            f"Expoente α = {expoente:g} acima do previsto na 17.2.5 da NBR 6118:2026 "
+            f"para {'seção retangular (α = 1,2)' if secao_retangular else 'seção não retangular (α = 1)'}; "
+            "o resultado fica contra a segurança em relação à norma.",
+            AvisoNBR6118,
+            stacklevel=2,
+        )
     return (abs(Mxd_kncm) / MRxd_kncm) ** expoente + (
         abs(Myd_kncm) / MRyd_kncm
     ) ** expoente
@@ -1355,7 +1927,8 @@ def razao_dc_radial(
 
     Algoritmo: para cada lambda candidato, verifica se a envoltoria de momentos
     em Nd_alvo = lambda*Nd na direcao (Mxd, Myd) tem norma == lambda*|MS|.
-    Brentq em lambda.
+    Brentq em lambda. A direcao respeita os sinais de Mxd e Myd (FCO-03) e
+    a flexao normal (Mxd ou Myd nulo) usa a LN paralela ao eixo (FCO-18).
     """
     MS = math.hypot(Mxd_kncm, Myd_kncm)
     Nrd_max = Nd_max_kn(secao, concreto, aco)
@@ -1379,7 +1952,7 @@ def razao_dc_radial(
             "comentario": "Sem flexao: razao = Nd / Nrd.",
         }
 
-    theta_d = math.atan2(abs(Myd_kncm), abs(Mxd_kncm))
+    theta_d = math.atan2(Myd_kncm, Mxd_kncm)
 
     # lambda_max axial: nao podemos ultrapassar Nrd_max nem ir abaixo de Nrd_min
     if Nd_kn > 1e-6:
@@ -1394,11 +1967,10 @@ def razao_dc_radial(
         if Nd_target > Nrd_max - 1e-3 or Nd_target < Nrd_min + 1e-3:
             return -lam * MS - 1.0
         try:
-            alpha, x_LN = _solve_alpha(
+            if not _origem_dentro_ret(secao, concreto, aco, Nd_target, n_grid):
+                return -lam * MS - 1.0  # nem (lam*Nd, 0, 0) e resistido
+            _, _, Mx_r, My_r, _ = _resolver_direcao_ret(
                 secao, concreto, aco, Nd_target, theta_d, n_grid
-            )
-            _, Mx_r, My_r = esforcos_resistentes(
-                secao, concreto, aco, alpha, x_LN, n_grid
             )
             MR = math.hypot(Mx_r, My_r)
         except (ValueError, RuntimeError):
@@ -1435,7 +2007,9 @@ def razao_dc_radial(
                     "status": "OK", "razao_dc": 1.0 / hi, "lambda": hi,
                     "comentario": "Envoltoria axial atingida (lam_max).",
                 }
-            lo, hi = hi, new_hi
+            if math.isfinite(gh):
+                lo = hi  # so avanca lo onde g(lo) > 0 e finito
+            hi = new_hi
         else:
             return {
                 "status": "NAO_CONVERGIU", "razao_dc": float("nan"),
@@ -1512,17 +2086,46 @@ def dimensionar_as_fco(
     Mxd_kncm: float,
     Myd_kncm: float,
     fi_t_mm: float = 5.0,
-    As_total_min_cm2: float = 0.4,
+    As_total_min_cm2: float | None = None,
     As_total_max_cm2: float | None = None,
     tol: float = 0.01,
     iter_max: int = 30,
     n_grid: int = 60,
+    aplicar_as_min_pilar: bool = True,
 ) -> dict:
     """Itera area total da armadura ate razao=1.0. Geometria das barras
-    permanece fixa (perimetral PFOC); apenas a area de cada barra varia."""
+    permanece fixa (perimetral PFOC); apenas a area de cada barra varia.
+
+    Armadura minima de pilar (17.3.5.3.1, FCO-09): As,min = 0,15*Nd/fyd >=
+    0,004*Ac, sempre aplicada (`aplicar_as_min_pilar=False` so para quem
+    usa a rotina fora de pilar). `As_total_min_cm2` e um piso adicional do
+    usuario: vale o maior dos dois. As,max padrao = 8 % Ac (17.3.5.3.2 --
+    inclui a regiao de emendas; fora dela o limite pratico e 4 %).
+
+    O As devolvido tem sempre razao >= 1 (a bissecao para em
+    1 <= razao < 1 + tol).
+    """
     n_barras_total = 2 * (nx + ny) - 4
     if As_total_max_cm2 is None:
         As_total_max_cm2 = 0.08 * base_cm * altura_cm  # 8% (NBR limite superior)
+    As_min_norma = (As_min_pilar_cm2(base_cm * altura_cm, Nd_kn, aco)
+                    if aplicar_as_min_pilar else 0.0)
+    if As_total_min_cm2 is None:
+        As_min = As_min_norma if aplicar_as_min_pilar else 0.4
+    else:
+        As_min = max(As_total_min_cm2, As_min_norma)
+    extras = {"As_min_cm2": As_min, "As_min_norma_cm2": As_min_norma}
+    if As_min > As_total_max_cm2:
+        return {
+            "status": "INVIAVEL",
+            "As_total_cm2": As_min,
+            "razao": float("nan"),
+            "comentario": (
+                f"As,mín = {As_min:.2f} cm² acima de As,máx = "
+                f"{As_total_max_cm2:.2f} cm² (17.3.5.3)."
+            ),
+            **extras,
+        }
 
     def razao_para_As(As_total: float) -> float:
         area_unit = As_total / n_barras_total
@@ -1536,7 +2139,7 @@ def dimensionar_as_fco(
             return -1.0
         return r["razao"]
 
-    lo, hi = As_total_min_cm2, As_total_max_cm2
+    lo, hi = As_min, As_total_max_cm2
     r_lo = razao_para_As(lo)
     r_hi = razao_para_As(hi)
 
@@ -1545,7 +2148,8 @@ def dimensionar_as_fco(
             "status": "OK",
             "As_total_cm2": lo,
             "razao": r_lo,
-            "comentario": "As minimo ja resiste.",
+            "comentario": "As mínimo já resiste.",
+            **extras,
         }
     if r_hi < 1.0:
         return {
@@ -1555,48 +2159,87 @@ def dimensionar_as_fco(
             "comentario": (
                 f"Mesmo com As={hi:.1f} cm^2 (8% Ac) razao={r_hi:.3f} < 1."
             ),
+            **extras,
         }
 
+    r_hi_atual = r_hi
     for _ in range(iter_max):
         mid = 0.5 * (lo + hi)
         r_mid = razao_para_As(mid)
-        if abs(r_mid - 1.0) < tol:
-            return {"status": "OK", "As_total_cm2": mid, "razao": r_mid}
+        if 1.0 <= r_mid < 1.0 + tol:
+            return {"status": "OK", "As_total_cm2": mid, "razao": r_mid, **extras}
         if r_mid < 1.0:
             lo = mid
         else:
-            hi = mid
+            hi, r_hi_atual = mid, r_mid
     return {
         "status": "OK",
         "As_total_cm2": hi,
-        "razao": razao_para_As(hi),
-        "comentario": f"Convergencia parcial em {iter_max} iter.",
+        "razao": r_hi_atual,
+        "comentario": f"Convergência parcial em {iter_max} iterações.",
+        **extras,
     }
+
+
+def As_min_pilar_cm2(Ac_cm2: float, Nd_kn: float, aco: Aco) -> float:
+    """Armadura longitudinal minima de pilar, cm² (17.3.5.3.1):
+
+        As,min = 0,15*Nd/fyd >= 0,004*Ac
+
+    Com Nd de tracao (Nd < 0) sobra o piso de 0,004*Ac.
+    """
+    # Mesma expressao de nbr.As_min_pilar_cm2, mas com o fyd do objeto Aco
+    # (que pode ter gama_s ou fyk proprios).
+    return max(0.15 * max(Nd_kn, 0.0) / aco.fyd_kncm2, 0.004 * Ac_cm2)
 
 
 # ---------------------------------------------------------------------------
 # API alta-nivel para Secao poligonal
 # ---------------------------------------------------------------------------
-def Nd_max_kn_pol(secao: Secao, aco: Aco) -> float:
-    """Nd maximo (compressao pura) para Secao poligonal.
+def _eps_reta_b_pol(secao: Secao) -> float:
+    """Encurtamento uniforme da reta b com plano unico: o menor eps_c2 (e
+    eps_cu) entre os concretos da secao."""
+    return min(p.concreto.eps_reta_b_pmilh for p in secao.partes)
 
-    Soma alpha_c * fcd * Ac_liq de cada parte + fyd * As_total das barras.
+
+def Nd_max_kn_pol(secao: Secao, aco: Aco) -> float:
+    """Nd maximo (compressao uniforme, reta b da Figura 17.1) para Secao
+    poligonal.
+
+    Encurtamento uniforme eps_b (plano unico: o menor eps_c2 dos
+    concretos). Concreto de cada parte na sua curva (0,85*eta_c*fcd --
+    FCO-01); barras com sigma_s(eps_b) <= fyd (FCO-05); cabos com a curva
+    do aco de protensao no alongamento eps_b - eps_pre (17.2.4.2.1 --
+    FCO-06). Barras e cabos descontam o concreto da parte em que estao.
     """
+    eps_b = _eps_reta_b_pol(secao)
+    e = np.array([eps_b])
     total = 0.0
     for parte in secao.partes:
-        ac_parte = _polygon_area(parte.polygon)
-        # Ac liquido da parte: subtrai a area das barras (aproximacao -- assume
-        # que todas as barras estao na primeira parte).
-        if parte is secao.partes[0]:
-            ac_parte -= secao.As_total_cm2
-        total += ALPHA_C * parte.concreto.fcd_kncm2 * ac_parte
-    total += aco.fyd_kncm2 * secao.As_total_cm2
+        total += float(parte.concreto._curva_efetiva.sigma(e)[0]) * _polygon_area(parte.polygon)
+    if secao._barras_xyA.shape[0] > 0:
+        A_b = secao._barras_xyA[:, 2]
+        eps_bs = np.full(A_b.shape[0], eps_b)
+        sig_s = _sigma_aco(eps_bs, aco.fyd_kncm2, aco.Es_kncm2, aco.eps_yd_pmilh)
+        sig_c = _sigma_c_nas_partes(secao, secao._barras_parte, eps_bs)
+        total += float(((sig_s - sig_c) * A_b).sum())
+    for i, c in enumerate(secao.cabos):
+        sig_p = float(_cabo_curva(c).sigma(np.array([eps_b - c.eps_pre_pmilh]))[0])
+        conc = secao.partes[int(secao._cabos_parte[i])].concreto
+        sig_c = float(conc._curva_efetiva.sigma(e)[0])
+        total += (sig_p - sig_c) * c.area_cm2
     return total
 
 
 def Nd_min_kn_pol(secao: Secao, aco: Aco) -> float:
-    """Nd minimo (tracao pura) para Secao poligonal."""
-    return -aco.fyd_kncm2 * secao.As_total_cm2
+    """Nd minimo (tracao pura, reta a) para Secao poligonal: barras em
+    -fyd e cabos com a curva no alongamento -10 - eps_pre por mil
+    (17.2.4.2.1 -- FCO-06). Retorna valor negativo."""
+    total = -aco.fyd_kncm2 * secao.As_total_cm2
+    for c in secao.cabos:
+        sig_p = float(_cabo_curva(c).sigma(np.array([-EPS_SU - c.eps_pre_pmilh]))[0])
+        total += sig_p * c.area_cm2
+    return total
 
 
 def _solve_x_LN_pol(
@@ -1607,30 +2250,77 @@ def _solve_x_LN_pol(
     n_sample: int = 40,
 ) -> float:
     h_inc, _ = _h_inc_yp_max_pol(secao, alpha)
-    x_min = 1e-3
-    x_max = 5.0 * h_inc
 
     def residual(x: float) -> float:
         N, _, _ = esforcos_resistentes_pol(secao, aco, alpha, x)
         return N - Nd
 
-    xs = np.linspace(x_min, x_max, n_sample)
-    Ns = np.array([residual(x) for x in xs])
-    sign_changes = np.where(np.diff(np.sign(Ns)) != 0)[0]
+    return _solve_x_generico(residual, h_inc, Nd, n_sample,
+                             f" (seção poligonal, α = {math.degrees(alpha):.1f}°)")
 
-    if len(sign_changes) == 0:
-        x_max *= 4.0
-        xs = np.linspace(x_min, x_max, n_sample)
-        Ns = np.array([residual(x) for x in xs])
-        sign_changes = np.where(np.diff(np.sign(Ns)) != 0)[0]
-        if len(sign_changes) == 0:
-            raise ValueError(
-                f"Sem raiz para x_LN (pol): alpha={math.degrees(alpha):.1f}°, "
-                f"Nd={Nd:.1f} kN, N range=[{Ns.min():.1f}, {Ns.max():.1f}] kN."
-            )
 
-    i = int(sign_changes[0])
-    return float(brentq(residual, xs[i], xs[i + 1], xtol=1e-4, rtol=1e-6))
+def _resolver_direcao_pol(secao: Secao, aco: Aco, Nd: float, theta_d: float):
+    """`_resolver_direcao` para Secao poligonal."""
+    return _resolver_direcao(
+        lambda a, x: esforcos_resistentes_pol(secao, aco, a, x),
+        lambda a: _solve_x_LN_pol(secao, aco, a, Nd),
+        theta_d,
+    )
+
+
+def _polygon_area_centroide(
+    polygon: tuple[tuple[float, float], ...],
+) -> tuple[float, float, float]:
+    """(area > 0, x_c, y_c) do poligono fechado."""
+    A2 = Sx6 = Sy6 = 0.0
+    for i in range(len(polygon) - 1):
+        x0, y0 = polygon[i]
+        x1, y1 = polygon[i + 1]
+        cr = x0 * y1 - x1 * y0
+        A2 += cr
+        Sy6 += (x0 + x1) * cr
+        Sx6 += (y0 + y1) * cr
+    if A2 == 0.0:
+        return 0.0, 0.0, 0.0
+    return abs(A2) / 2.0, Sy6 / (3.0 * A2), Sx6 / (3.0 * A2)
+
+
+def _esforcos_uniformes_pol(secao: Secao, aco: Aco, eps: float) -> tuple[float, float, float]:
+    """(N, Mx, My) com deformacao uniforme eps (por mil) na Secao poligonal."""
+    e = np.array([eps], dtype=float)
+    N = Mx = My = 0.0
+    for parte in secao.partes:
+        A, xc, yc = _polygon_area_centroide(parte.polygon)
+        sc = float(parte.concreto._curva_efetiva.sigma(e)[0])
+        N += sc * A
+        Mx += sc * A * yc
+        My += sc * A * xc
+    arr = secao._barras_xyA
+    if arr.shape[0] > 0:
+        eb = np.full(arr.shape[0], float(eps))
+        d = (_sigma_aco(eb, aco.fyd_kncm2, aco.Es_kncm2, aco.eps_yd_pmilh)
+             - _sigma_c_nas_partes(secao, secao._barras_parte, eb)) * arr[:, 2]
+        N += float(d.sum())
+        Mx += float((d * arr[:, 1]).sum())
+        My += float((d * arr[:, 0]).sum())
+    for i, c in enumerate(secao.cabos):
+        sp = float(_cabo_curva(c).sigma(np.array([eps - c.eps_pre_pmilh]))[0])
+        sc = float(secao.partes[int(secao._cabos_parte[i])].concreto._curva_efetiva.sigma(e)[0])
+        d = (sp - sc) * c.area_cm2
+        N += d
+        Mx += d * c.y_cm
+        My += d * c.x_cm
+    return N, Mx, My
+
+
+def _origem_dentro_pol(secao: Secao, aco: Aco, Nd: float) -> bool:
+    x0, y0, x1, y1 = _bbox_secao(secao)
+    escala = max(abs(Nd), Nd_max_kn_pol(secao, aco)) * math.hypot(x1 - x0, y1 - y0)
+    return _origem_dentro(
+        lambda e: _esforcos_uniformes_pol(secao, aco, e),
+        lambda th: _resolver_direcao_pol(secao, aco, Nd, th),
+        Nd, _eps_reta_b_pol(secao), escala,
+    )
 
 
 def _solve_alpha_pol(
@@ -1639,26 +2329,9 @@ def _solve_alpha_pol(
     Nd: float,
     theta_d: float,
 ) -> tuple[float, float]:
-    eps_a = 1e-3
-
-    def residual(alpha: float) -> float:
-        x = _solve_x_LN_pol(secao, aco, alpha, Nd)
-        _, Mx, My = esforcos_resistentes_pol(secao, aco, alpha, x)
-        theta_r = math.atan2(abs(My), abs(Mx))
-        return theta_r - theta_d
-
-    a_lo, a_hi = -math.pi / 2.0 + eps_a, -eps_a
-    f_lo = residual(a_lo)
-    f_hi = residual(a_hi)
-    if f_lo * f_hi > 0:
-        raise ValueError(
-            f"Solver alpha (pol) sem bracketing: f({math.degrees(a_lo):.1f}°)="
-            f"{f_lo:.3f}, f({math.degrees(a_hi):.1f}°)={f_hi:.3f}, "
-            f"theta_d={math.degrees(theta_d):.1f}°."
-        )
-    alpha_sol = float(brentq(residual, a_lo, a_hi, xtol=1e-4, rtol=1e-5))
-    x_sol = _solve_x_LN_pol(secao, aco, alpha_sol, Nd)
-    return alpha_sol, x_sol
+    """(alpha, x_LN) com momento na direcao theta_d = atan2(MRy, MRx), com sinal."""
+    alpha, x, _, _, _ = _resolver_direcao_pol(secao, aco, Nd, theta_d)
+    return alpha, x
 
 
 def verificar_fco_pol(
@@ -1668,20 +2341,24 @@ def verificar_fco_pol(
     Mxd_kncm: float,
     Myd_kncm: float,
 ) -> dict:
-    """Versao Secao poligonal de verificar_fco. Suporta multi-fck."""
+    """Versao Secao poligonal de verificar_fco. Suporta multi-fck.
+
+    Respeita os sinais de Mxd e Myd (FCO-03): vale para seções L, T, U e
+    armaduras assimétricas em qualquer orientação.
+    """
     Nd_max = Nd_max_kn_pol(secao, aco)
     Nd_min = Nd_min_kn_pol(secao, aco)
     if Nd_kn > Nd_max:
         return {
             "status": "FORA_RANGE",
             "razao": -1.0,
-            "mensagem": f"Nd={Nd_kn:.1f} > Nd_max={Nd_max:.1f}.",
+            "mensagem": f"Nd = {Nd_kn:.1f} kN > Nd,máx = {Nd_max:.1f} kN (compressão uniforme).",
         }
     if Nd_kn < Nd_min:
         return {
             "status": "FORA_RANGE",
             "razao": -1.0,
-            "mensagem": f"Nd={Nd_kn:.1f} < Nd_min={Nd_min:.1f}.",
+            "mensagem": f"Nd = {Nd_kn:.1f} kN < Nd,mín = {Nd_min:.1f} kN (tração uniforme).",
         }
 
     Md_total = math.hypot(Mxd_kncm, Myd_kncm)
@@ -1694,59 +2371,17 @@ def verificar_fco_pol(
             "comentario": "Compressao/tracao sem flexao.",
         }
 
-    if abs(Myd_kncm) / Md_total < 1e-6:
-        x_LN = _solve_x_LN_pol(secao, aco, 0.0, Nd_kn)
-        _, Mx, My = esforcos_resistentes_pol(secao, aco, 0.0, x_LN)
-        Mr = math.hypot(Mx, My)
-        razao = Mr / abs(Mxd_kncm)
-        return {
-            "status": "OK" if razao >= 0.99 else "NAO_VERIFICA",
-            "razao": razao,
-            "alpha_rad": 0.0,
-            "alpha_graus": 0.0,
-            "x_LN_cm": x_LN,
-            "MRx_kncm": abs(Mx),
-            "MRy_kncm": abs(My),
-            "uniaxial": True,
-        }
-
-    if abs(Mxd_kncm) / Md_total < 1e-6:
-        alpha = -math.pi / 2.0
-        x_LN = _solve_x_LN_pol(secao, aco, alpha, Nd_kn)
-        _, Mx, My = esforcos_resistentes_pol(secao, aco, alpha, x_LN)
-        Mr = math.hypot(Mx, My)
-        razao = Mr / abs(Myd_kncm)
-        return {
-            "status": "OK" if razao >= 0.99 else "NAO_VERIFICA",
-            "razao": razao,
-            "alpha_rad": alpha,
-            "alpha_graus": math.degrees(alpha),
-            "x_LN_cm": x_LN,
-            "MRx_kncm": abs(Mx),
-            "MRy_kncm": abs(My),
-            "uniaxial": True,
-        }
-
-    theta_d = math.atan2(abs(Myd_kncm), abs(Mxd_kncm))
+    theta_d = math.atan2(Myd_kncm, Mxd_kncm)
     try:
-        alpha_sol, x_sol = _solve_alpha_pol(secao, aco, Nd_kn, theta_d)
-    except ValueError as e:
+        if not _origem_dentro_pol(secao, aco, Nd_kn):
+            return {"status": "NAO_VERIFICA", "razao": 0.0,
+                    "mensagem": MSG_ORIGEM_FORA.format(Nd=Nd_kn)}
+        alpha_sol, x_sol, Mx_r, My_r, uniaxial = _resolver_direcao_pol(
+            secao, aco, Nd_kn, theta_d)
+    except (ValueError, RuntimeError) as e:
         return {"status": "NAO_CONVERGIU", "razao": -1.0, "mensagem": str(e)}
 
-    _, Mx_r, My_r = esforcos_resistentes_pol(secao, aco, alpha_sol, x_sol)
-    Mr = math.hypot(Mx_r, My_r)
-    razao = Mr / Md_total
-
-    return {
-        "status": "OK" if razao >= 0.99 else "NAO_VERIFICA",
-        "razao": razao,
-        "alpha_rad": alpha_sol,
-        "alpha_graus": math.degrees(alpha_sol),
-        "x_LN_cm": x_sol,
-        "MRx_kncm": abs(Mx_r),
-        "MRy_kncm": abs(My_r),
-        "MR_kncm": Mr,
-    }
+    return _resultado_verificacao(alpha_sol, x_sol, Mx_r, My_r, Md_total, uniaxial)
 
 
 def momento_resistente_fco_pol(
@@ -1755,12 +2390,16 @@ def momento_resistente_fco_pol(
     Nd_kn: float,
     theta_d_rad: float,
 ) -> dict:
-    """Calcula (MRx, MRy) tal que arctan(MRy/MRx) = theta_d_rad e Nr = Nd."""
-    alpha, x_LN = _solve_alpha_pol(secao, aco, Nd_kn, theta_d_rad)
-    _, Mx, My = esforcos_resistentes_pol(secao, aco, alpha, x_LN)
+    """Calcula (MRx, MRy) tal que arctan(MRy/MRx) = theta_d_rad e Nr = Nd.
+
+    theta_d_rad em qualquer quadrante (ver `momento_resistente_fco`).
+    """
+    alpha, x_LN, Mx, My, _ = _resolver_direcao_pol(secao, aco, Nd_kn, theta_d_rad)
     return {
         "MRx_kncm": abs(Mx),
         "MRy_kncm": abs(My),
+        "Mx_kncm": Mx,
+        "My_kncm": My,
         "MR_kncm": math.hypot(Mx, My),
         "alpha_rad": alpha,
         "alpha_graus": math.degrees(alpha),
@@ -1844,7 +2483,7 @@ def main(argv: list[str] | None = None) -> int:
     import json
 
     p = argparse.ArgumentParser(
-        description="Verificacao FCO retangular (NBR 6118:2023)."
+        description="Verificação FCO retangular (NBR 6118:2026)."
     )
     p.add_argument("--base", type=float, required=True, help="Base (cm)")
     p.add_argument("--altura", type=float, required=True, help="Altura (cm)")

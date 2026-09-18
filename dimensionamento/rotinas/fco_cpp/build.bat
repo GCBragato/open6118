@@ -4,7 +4,8 @@ call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliar
 cd /d "%~dp0"
 
 echo Compilando fco_cpp...
-cl.exe /O2 /EHsc /std:c++17 /MD /LD /DNDEBUG ^
+rem /utf-8: fontes e mensagens (com acento) em UTF-8.
+cl.exe /utf-8 /O2 /EHsc /std:c++17 /MD /LD /DNDEBUG ^
     /I"C:\Users\gusta\AppData\Local\Programs\Python\Python313\Include" ^
     /I"C:\Users\gusta\AppData\Local\Programs\Python\Python313\Lib\site-packages\pybind11\include" ^
     src\geometry.cpp src\constitutive.cpp src\equilibrium.cpp src\solver.cpp src\verifier.cpp src\bindings.cpp ^

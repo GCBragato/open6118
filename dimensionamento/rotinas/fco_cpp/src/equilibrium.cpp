@@ -13,7 +13,8 @@ Esforcos integrar_concreto(
     const double eps_c2 = concreto.eps_c2_pmilh();
     const double eps_cu = concreto.eps_cu_pmilh();
     const double n_par = concreto.n_parabola();
-    const double fcd = concreto.fcd_kncm2();
+    const double pico = concreto.pico_kncm2();        // 0,85*eta_c*fcd (FCO-01)
+    const double pivo_c = concreto.pivo_c_rel();      // Figura 17.1 (FCO-02)
 
     const InclResult ir = h_inc_yp_max(secao, alpha);
     const double h_inc = ir.h_inc;
@@ -31,7 +32,6 @@ Esforcos integrar_concreto(
 
     double Nc = 0.0, Mxc = 0.0, Myc = 0.0;
 
-    // Pre-compute centros de y
     // Loop x outer, y inner -> cache amigavel mas igual ao Python
     for (int i = 0; i < nx; ++i) {
         const double x = -b * 0.5 + dx * (i + 0.5);
@@ -39,15 +39,14 @@ Esforcos integrar_concreto(
             const double y = -h * 0.5 + dy * (j + 0.5);
             const double yp = -x * sin_a + y * cos_a;
             const double s = yp_max - yp;
-            const double eps = strain_pmilh(s, x_LN, h_inc, d_inc_, eps_c2, eps_cu);
-            const double sigma = sigma_concreto(eps, fcd, eps_c2, eps_cu, n_par);
-            const double dF = sigma * dA;
-            Nc += dF;
-            Mxc += dF * y;
-            Myc += dF * x;
+            const double eps = strain_pmilh(s, x_LN, h_inc, d_inc_, eps_c2, eps_cu, pivo_c);
+            const double sigma = sigma_concreto(eps, pico, eps_c2, n_par);
+            Nc += sigma;
+            Mxc += sigma * y;
+            Myc += sigma * x;
         }
     }
-    return {Nc, Mxc, Myc};
+    return {Nc * dA, Mxc * dA, Myc * dA};
 }
 
 Esforcos esforcos_barras(
@@ -64,12 +63,13 @@ Esforcos esforcos_barras(
     const double eps_c2 = concreto.eps_c2_pmilh();
     const double eps_cu = concreto.eps_cu_pmilh();
     const double n_par = concreto.n_parabola();
-    const double fcd = concreto.fcd_kncm2();
+    const double pico = concreto.pico_kncm2();
+    const double pivo_c = concreto.pivo_c_rel();
 
     if (x_LN <= 0.0) {
         // Tracao pura: todas barras eps -> -10 por mil
         double Ns = 0.0, Mxs = 0.0, Mys = 0.0;
-        const double sig_s = sigma_aco(-10.0, fyd, Es, eps_yd);
+        const double sig_s = sigma_aco(-EPS_SU, fyd, Es, eps_yd);
         for (const auto& b : secao.barras) {
             const double F = sig_s * b.area_cm2;
             Ns += F;
@@ -91,9 +91,9 @@ Esforcos esforcos_barras(
     for (const auto& b : secao.barras) {
         const double yp_b = -b.x_cm * sin_a + b.y_cm * cos_a;
         const double s_b = yp_max - yp_b;
-        const double eps_b = strain_pmilh(s_b, x_LN, h_inc, d_inc_, eps_c2, eps_cu);
+        const double eps_b = strain_pmilh(s_b, x_LN, h_inc, d_inc_, eps_c2, eps_cu, pivo_c);
         const double sig_s = sigma_aco(eps_b, fyd, Es, eps_yd);
-        const double sig_c = sigma_concreto(eps_b, fcd, eps_c2, eps_cu, n_par);
+        const double sig_c = sigma_concreto(eps_b, pico, eps_c2, n_par);
         const double delta = sig_s - sig_c;
         const double F = delta * b.area_cm2;
         Ns += F;

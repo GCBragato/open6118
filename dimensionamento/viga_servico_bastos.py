@@ -23,7 +23,13 @@ from __future__ import annotations
 
 import math
 import sys
+import warnings
 from dataclasses import dataclass
+
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import nucleo_nbr6118 as nbr
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import nucleo_nbr6118 as nbr
 
 
 GAMA_C = 1.4
@@ -143,23 +149,64 @@ def I_II_secao_T(bf_cm: float, bw_cm: float, hf_cm: float, d_cm: float,
 # ---------------------------------------------------------------------------
 def decalagem_modelo_I(d_cm: float, VSd_kn: float, Vc_kn: float,
                        alfa_deg: float = 90.0) -> float:
-    """Decalagem a_l (cm) - Modelo I, estribos a 90 deg (Eq. 31).
+    """Decalagem a_l (cm) - Modelo I, banzo tracionado (NBR 6118:2026
+    17.4.2.2 c), PDF p. 158; generaliza a Eq. 31 da apostila, que so
+    cobria estribos a 90 graus).
 
-    a_l = 0.5 * d * VSd / (VSd - Vc)  >=  0.5 * d
-    Limites NBR: a_l >= 0.5*d para flexao simples; a_l <= d.
+    a_l = d, para |VSd,max| <= |Vc| (antes devolvia 0.5*d - VIG-05: erro de
+    -50% no caso VSd=45, Vc=49.6, d=46).
+
+    Caso geral (cotg(alfa), antes ignorado - VIG-06):
+        a_l = d*[VSd,max/(2*(VSd,max - Vc))*(1 + cotg alfa) - cotg alfa] <= d
+
+    Pisos da norma: a_l >= 0.5*d no caso geral; a_l >= 0.2*d para estribos
+    inclinados a 45 graus.
     """
-    if VSd_kn - Vc_kn <= 0.0:
-        return 0.5 * d_cm
-    a = 0.5 * d_cm * VSd_kn / (VSd_kn - Vc_kn)
-    return max(min(a, d_cm), 0.5 * d_cm)
+    if abs(VSd_kn) <= abs(Vc_kn):
+        return d_cm
+    cot_a = 0.0 if alfa_deg == 90.0 else 1.0 / math.tan(math.radians(alfa_deg))
+    a = d_cm * (VSd_kn / (2.0 * (VSd_kn - Vc_kn)) * (1.0 + cot_a) - cot_a)
+    piso = 0.2 * d_cm if abs(alfa_deg - 45.0) < 1e-9 else 0.5 * d_cm
+    return max(min(a, d_cm), piso)
 
 
 def decalagem_modelo_II(d_cm: float, theta_deg: float = 30.0,
-                        alfa_deg: float = 90.0) -> float:
-    """Decalagem a_l (cm) - Modelo II, estribos verticais (Eq. 34).
-    a_l = 0.5 * cot(theta) * d   (apostila simplifica fazendo Vc = 0)."""
-    cot_t = 1.0 / math.tan(math.radians(theta_deg))
-    return 0.5 * cot_t * d_cm
+                        alfa_deg: float = 90.0,
+                        VSd_kn: float | None = None,
+                        Vc_kn: float | None = None) -> float:
+    """Decalagem a_l (cm) - Modelo II, banzo tracionado (NBR 6118:2026
+    17.4.2.3 c), PDF p. 159: "mantidas a notacao e as limitacoes definidas
+    em 17.4.2.2").
+
+    Formula completa (usada quando VSd_kn e Vc_kn sao informados; Vc = Vc1
+    na flexao simples, 17.4.1.1):
+        a_l = 0.5*d*[VSd,max/(VSd,max - Vc)*(cotg theta + cotg alfa) - cotg alfa] <= d
+    a_l = d, para |VSd,max| <= |Vc|. Pisos: a_l >= 0.5*d no caso geral;
+    a_l >= 0.2*d para estribos inclinados a 45 graus.
+
+    Sem VSd_kn e Vc_kn a formula da norma nao pode ser calculada (falta
+    Vc). A apostila simplifica fazendo Vc = 0 (a_l = 0.5*cotg(theta)*d),
+    mas isso sempre SUBESTIMA a_l - contra a seguranca (VIG-07: -13,4% no
+    caso d=46, theta=30, VSd=153, Vc=49.6, onde o correto e a_l = d).
+    Em vez de repetir esse atalho, a funcao avisa e devolve o limite
+    conservador a_l = d.
+    """
+    piso = 0.2 * d_cm if abs(alfa_deg - 45.0) < 1e-9 else 0.5 * d_cm
+    if VSd_kn is None or Vc_kn is None:
+        warnings.warn(
+            "decalagem_modelo_II sem VSd_kn/Vc_kn: a formula completa da "
+            "NBR 6118:2026 17.4.2.3 c) exige Vc (= Vc1 na flexao simples). "
+            "O atalho antigo (Vc = 0) subestima a_l; adotado o limite "
+            "conservador a_l = d. Informe VSd_kn e Vc_kn para o valor exato.",
+            stacklevel=2,
+        )
+        return d_cm
+    if abs(VSd_kn) <= abs(Vc_kn):
+        return d_cm
+    cot_t = 0.0 if theta_deg == 90.0 else 1.0 / math.tan(math.radians(theta_deg))
+    cot_a = 0.0 if alfa_deg == 90.0 else 1.0 / math.tan(math.radians(alfa_deg))
+    a = 0.5 * d_cm * (VSd_kn / (VSd_kn - Vc_kn) * (cot_t + cot_a) - cot_a)
+    return max(min(a, d_cm), piso)
 
 
 # ---------------------------------------------------------------------------
@@ -180,8 +227,14 @@ class ResultadoFissuracao:
 
 
 def fctm_kncm2(fck_mpa: float) -> float:
-    """fct,m em kN/cm2."""
-    return 0.3 * fck_mpa ** (2.0 / 3.0) * 0.1
+    """fct,m em kN/cm2, delegado ao nucleo normativo (8.2.5).
+
+    Antes sempre 0,3*fck^(2/3) (valido so ate C50); a NBR 6118:2026 usa
+    2,12*ln[1 + 0,1*(fck + 8)] acima disso (nbr.fct_m). Usada em
+    abertura_fissura_wk (wk2): sem o ramo, fctm saia alto demais para
+    fck > 50 e wk2 saia baixo demais - 9,5% (C70) a 16,3% (C90), contra a
+    seguranca (VIG-10)."""
+    return nbr.mpa_para_kncm2(nbr.fct_m(fck_mpa))
 
 
 # ---------------------------------------------------------------------------
@@ -244,6 +297,26 @@ def sigma_si_aproximada(Md_ser_kncm: float, d_cm: float,
                         As_cm2: float) -> float:
     """sigma_si = Md,ser / (0.85 * d * As)  (Eq. 89, kN/cm2)."""
     return Md_ser_kncm / (0.85 * d_cm * As_cm2)
+
+
+def sigma_si_estadio_II(Md_ser_kncm: float, d_cm: float, x_II_cm: float,
+                        I_II_cm4: float, alpha_e_val: float) -> float:
+    """sigma_si na armadura tracionada, Estadio II (secao fissurada), kN/cm2.
+
+    sigma_si = alpha_e * Md,ser * (d - x_II) / I_II, pela mecanica da secao
+    transformada fissurada. Usa x_II e I_II ja calculados por
+    x_II_retangular/x_II_secao_T e I_II_retangular/I_II_secao_T (o chamador
+    escolhe a formula pela forma da secao).
+
+    NBR 6118 17.3.3.2/17.3.3.3 pedem sigma_si no Estadio II para o calculo
+    de wk. sigma_si_aproximada() (Eq. 89 da apostila) usa braco fixo 0.85d
+    e fica a favor da seguranca (VIG-09, escolha documentada: +12,3% no
+    exemplo da apostila item 17.1 - viga-ponte); esta funcao usa a rigidez
+    fissurada real e reproduz o valor da norma nesse exemplo (22.43 kN/cm2
+    contra os 25.18 kN/cm2 de sigma_si_aproximada). Nao substitui
+    sigma_si_aproximada, que continua disponivel para o calculo rapido.
+    """
+    return alpha_e_val * Md_ser_kncm * (d_cm - x_II_cm) / I_II_cm4
 
 
 def abertura_fissura_wk(
@@ -335,23 +408,48 @@ def test_x_II_secao_T_apostila() -> None:
 
 
 def test_decalagem_modelo_I() -> None:
-    """Apostila: a_l minimo = 0.5*d. Quando Vsd >> Vc, a_l aprox d."""
+    """NBR 6118:2026 17.4.2.2 c). Com alfa=90 (cotg=0) o caso geral se
+    reduz a 0.5*d*VSd/(VSd-Vc), igual a apostila; por isso a1/a2 nao mudam
+    (atualizado apenas o comentario, para a formula certa). Casos novos:
+    a3 cobre VIG-05 (|VSd|<=|Vc| -> a_l = d, antes 0.5d) e a4 cobre VIG-06
+    (cotg(alfa), antes ignorado)."""
     d = 46.0
     a1 = decalagem_modelo_I(d_cm=d, VSd_kn=153.0, Vc_kn=49.6)
-    # 0.5 * 46 * 153/(153-49.6) = 23 * 1.480 = 34.04 cm; <= d
+    # d*[153/(2*(153-49.6))*(1+0) - 0] = 46*153/206.8 = 34.04 cm; <= d
     assert _aprox(a1, 34.04, 0.5), f"a_l={a1:.2f}"
-    # caso Vsd ~ Vc -> a_l limitado a d
+    # caso Vsd ~ Vc (mas ainda > Vc) -> formula geral estoura d e e limitada a d
     a2 = decalagem_modelo_I(d_cm=d, VSd_kn=51.0, Vc_kn=49.6)
     assert _aprox(a2, d, 0.5), f"a_l={a2:.2f}"
+    # VIG-05: |VSd| <= |Vc| -> a_l = d (achado: d=46,VSd=45,Vc=49.6 -> 46.0;
+    # o codigo antigo devolvia 23.0 = 0.5d, -50%).
+    a3 = decalagem_modelo_I(d_cm=d, VSd_kn=45.0, Vc_kn=49.6)
+    assert _aprox(a3, d, 0.01), f"a_l={a3:.2f}"
+    # VIG-06: cotg(alfa) com alfa=45 (achado: d=46,VSd=153,Vc=49.6,alfa=45
+    # -> 22.07; o codigo antigo ignorava alfa e devolvia 34.03).
+    a4 = decalagem_modelo_I(d_cm=d, VSd_kn=153.0, Vc_kn=49.6, alfa_deg=45.0)
+    assert _aprox(a4, 22.07, 0.05), f"a_l={a4:.2f}"
     print(f"  OK  Modelo I: a_l(VSd=153,Vc=49.6) = {a1:.2f} cm  "
-          f"a_l(VSd=51) = {a2:.2f} cm")
+          f"a_l(VSd=51) = {a2:.2f} cm  a_l(VSd=45,|VSd|<=|Vc|) = {a3:.2f} cm  "
+          f"a_l(alfa=45) = {a4:.2f} cm")
 
 
 def test_decalagem_modelo_II() -> None:
-    """Modelo II theta=30: a_l = 0.5 * cot(30) * d = 0.866*d."""
-    a = decalagem_modelo_II(d_cm=46.0, theta_deg=30.0)
-    assert _aprox(a, 39.84, 0.1), f"a_l={a:.2f}"
-    print(f"  OK  Modelo II theta=30: a_l = {a:.2f} cm")
+    """NBR 6118:2026 17.4.2.3 c). Sem VSd_kn/Vc_kn a formula com Vc=0 da
+    apostila subestima a_l (VIG-07): a funcao agora avisa e devolve o
+    limite conservador a_l = d, em vez do antigo 0.5*cotg(theta)*d = 39.84.
+    Com VSd_kn/Vc_kn informados (achado: d=46, theta=30, VSd=153, Vc=49.6),
+    o valor correto e a_l = d = 46.0 cm (o raw da formula, 58.94, e limitado
+    a d) - o codigo antigo dava 39.84 (-13,4%)."""
+    with warnings.catch_warnings(record=True) as avisos:
+        warnings.simplefilter("always")
+        a_sem_dados = decalagem_modelo_II(d_cm=46.0, theta_deg=30.0)
+    assert _aprox(a_sem_dados, 46.0, 0.01), f"a_l={a_sem_dados:.2f}"
+    assert len(avisos) == 1 and issubclass(avisos[0].category, UserWarning)
+
+    a = decalagem_modelo_II(d_cm=46.0, theta_deg=30.0, VSd_kn=153.0, Vc_kn=49.6)
+    assert _aprox(a, 46.0, 0.05), f"a_l={a:.2f}"
+    print(f"  OK  Modelo II theta=30 (sem VSd/Vc, avisa e usa d): "
+          f"a_l = {a_sem_dados:.2f} cm;  (VSd=153,Vc=49.6): a_l = {a:.2f} cm")
 
 
 def test_fissuracao_apostila_ex17_1() -> None:

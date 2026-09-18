@@ -37,7 +37,8 @@ struct InclResult {
 
 InclResult h_inc_yp_max(const SecaoRetangular& s, double alpha);
 
-// Distancia inclinada: para a barra mais tracionada, distancia em relacao a fibra mais comprimida
+// Distancia inclinada: para a barra mais tracionada, distancia em relacao a fibra mais comprimida.
+// Sem barras devolve 0 (sem pivo A).
 double d_inc(const SecaoRetangular& s, double alpha, double yp_max);
 
 }  // namespace fco
