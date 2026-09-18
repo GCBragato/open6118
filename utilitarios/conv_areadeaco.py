@@ -6,7 +6,7 @@ convInercia(), convCargaLinear(), convMomento()
 """
 
 import math
-import conv_unidades
+#import conv_unidades
 
 def barras_barras(nBar1, phi1, phi2):
     """Converte a quantidade de barras de um diâmetro para outro
@@ -21,15 +21,16 @@ def As_barras(As,phi):
     return nBar
 
 def barras_As(nBar,phi):
-    """Retorna a área de aço de dada quantidade de barras
+    """Retorna a área de aço de dada quantidade de barras em cm²
     Unidades de entrada: unidades e milímetros"""
     As = nBar*math.pi*phi**2/400
     return As
 
 def barras_barras_espacamento(phi1,s1,phi2):
     """Retorna o espaçamento equivalente, dado uma bitola e espaçamentos
-    referência e o espaçamento da bitola desejada
+    referência e o espaçamento da bitola desejada em centímetros
     Unidades de entrada: milímetros e centímetros"""
     s2 = 100/(((100/s1)*math.pi*phi1**2/400)/(math.pi*phi2**2/400))
     return s2
-    
+
+#print(As_barras(6.866, 32))

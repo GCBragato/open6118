@@ -18,7 +18,7 @@ def calc_a_c_coef_lambda(fck):
     """Retorna a_c e o coeficiente lamba
     Unidades de entrada: MPa"""
     if fck <= 50:
-        a_c = 0.85
+        a_c = 1
         coefLambda = 0.8
     elif fck <= 90:
         a_c = 0.85*(1-(fck-50)/200)
@@ -33,7 +33,7 @@ def calc_x(d,fcd,Md,largura,a_c,coefLambda):
     return x
 
 def calc_B_x(x,d):
-    """Retorna a relação x/d (Bx) e o estádio da seção
+    """Retorna a relação x/d (Bx)
     Unidades de entrada: metros"""
     B_x = x/d
     return B_x

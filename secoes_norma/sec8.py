@@ -221,6 +221,7 @@ class Aco_Passivo:
 #print(C.o_c_de_Eps_c(3.5,'a'))
 
 A = Aco_Passivo()
+#print(A.fyk)
 # #print(teste)
 # #print(A.fyk)
 #print(A.Eps_fyd)

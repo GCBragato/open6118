@@ -187,8 +187,10 @@ def convMomento(de, para):
     multiplicador = multForca * multComprimento
     return multiplicador
 
-#print(6*convPesoProprio('kgf/cm3', 'tf/m3'))
+#print(1.04*convPesoProprio('kgf/cm3', 'tf/m3'))
 #print(6000*(.1*.1))
 #print(93636*convCargaLinear('kN/m','tf/m'))
-#print(2.5*convPressao('kgf/cm2','tf/m2'))
+#print((500*1000000/1.15)*convPressao('N/m2','tf/cm2'))
 #print(convMomento('tf.cm','tf.m'))
+#print(22.56/2*convForca('kN','tf'))
+print(convPressao('kN/m2','tf/m2'))
