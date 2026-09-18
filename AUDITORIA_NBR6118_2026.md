@@ -1,6 +1,6 @@
 # Auditoria do open6118 contra a NBR 6118:2026 — e plano de correção
 
-> **Situação:** os 73 defeitos foram corrigidos em 18/09/2026 — ver [CORRECOES_NBR6118_2026.md](CORRECOES_NBR6118_2026.md).
+> **Situação:** os 73 defeitos foram corrigidos em 18/09/2026 — ver [CORRECOES_NBR6118_2026.md](CORRECOES_NBR6118_2026.md). O plano para implementar o resto da norma (seções 7 e 8 abaixo) está em [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.md).
 
 - **Data:** 18/09/2026
 - **Norma:** ABNT NBR 6118:2026, 5ª edição (11/03/2026). Equivale à NBR 6118:2023 Versão Corrigida 2:2024 mais a Emenda 1.
