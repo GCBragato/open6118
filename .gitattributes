@@ -1,0 +1,11 @@
+# Texto é guardado no repositório com fim de linha LF e sai assim na pasta de
+# trabalho, em qualquer máquina, independentemente do core.autocrlf de cada uma.
+* text=auto eol=lf
+
+# O cmd.exe precisa de CRLF nos .bat.
+*.bat text eol=crlf
+
+# Binários: nunca converter fim de linha nem tentar mostrar diff de texto.
+*.pyd binary
+*.png binary
+*.pdf binary
