@@ -534,23 +534,23 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `19.4.1-decalagem-al-15d` | 19.4.1 | 182 | Deslocamento da lei de decalagem em lajes (al=1,5d) | implementado | média | P | P15 |
 | `19.4.2-modelo-cortante-laje` | 19.4.2 | 182 | Lajes com armadura para força cortante aplicam os critérios de 17.4.2 | implementado | alta | P |  |
 | `19.4.2-fywd-max-laje` | 19.4.2 | 182 | Limite de tensão no estribo de laje por espessura (fywd reduzido) | implementado | alta | P | P15 |
-| `19.5.1-modelo-calculo-puncao` | 19.5.1 | 182 | Modelo de cálculo de punção: superfícies críticas C, C' e C'' | ausente | alta | M | P19 |
-| `19.5.2.1-tsd-pilar-interno-simetrico` | 19.5.2.1 | 183 | Tensão solicitante de punção em pilar interno com carregamento simétrico | ausente | alta | P | P19 |
-| `19.5.2.2-tsd-pilar-interno-momento` | 19.5.2.2 | 184 | Tensão solicitante de punção em pilar interno com efeito de momento | ausente | alta | M | P19 |
-| `19.5.2.2-tabela19.2-K` | 19.5.2.2 / Tabela 19.2 | 184 | Tabela 19.2 - coeficiente K | ausente | alta | P | P19 |
-| `19.5.2.2-wp-retangular` | 19.5.2.2 | 184 | Wp do perímetro crítico - pilar retangular | ausente | alta | P | P19 |
-| `19.5.2.2-wp-circular` | 19.5.2.2 | 184 | Wp do perímetro crítico - pilar circular | ausente | média | P | P19 |
+| `19.5.1-modelo-calculo-puncao` | 19.5.1 | 182 | Modelo de cálculo de punção: superfícies críticas C, C' e C'' | implementado | alta | M | P19 |
+| `19.5.2.1-tsd-pilar-interno-simetrico` | 19.5.2.1 | 183 | Tensão solicitante de punção em pilar interno com carregamento simétrico | implementado | alta | P | P19 |
+| `19.5.2.2-tsd-pilar-interno-momento` | 19.5.2.2 | 184 | Tensão solicitante de punção em pilar interno com efeito de momento | implementado | alta | M | P19 |
+| `19.5.2.2-tabela19.2-K` | 19.5.2.2 / Tabela 19.2 | 184 | Tabela 19.2 - coeficiente K | implementado | alta | P | P19 |
+| `19.5.2.2-wp-retangular` | 19.5.2.2 | 184 | Wp do perímetro crítico - pilar retangular | implementado | alta | P | P19 |
+| `19.5.2.2-wp-circular` | 19.5.2.2 | 184 | Wp do perímetro crítico - pilar circular | implementado | média | P | P19 |
 | `19.5.2.2-wp-integral-generico` | 19.5.2.2 | 184 | Wp por integração numérica do perímetro crítico (forma qualquer) | ausente | baixa | M | P20 |
-| `19.5.2.3-pilar-borda-sem-momento-paralelo` | 19.5.2.3 a) | 185 | tSd em pilar de borda sem momento paralelo à borda livre | ausente | alta | M | P19 |
-| `19.5.2.3-pilar-borda-com-momento-paralelo` | 19.5.2.3 b) | 185 | tSd em pilar de borda com momento paralelo à borda livre | ausente | alta | M | P19 |
-| `19.5.2.4-pilar-canto` | 19.5.2.4 | 186 | Verificação de punção em pilar de canto | ausente | alta | M | P19 |
+| `19.5.2.3-pilar-borda-sem-momento-paralelo` | 19.5.2.3 a) | 185 | tSd em pilar de borda sem momento paralelo à borda livre | implementado | alta | M | P19 |
+| `19.5.2.3-pilar-borda-com-momento-paralelo` | 19.5.2.3 b) | 185 | tSd em pilar de borda com momento paralelo à borda livre | implementado | alta | M | P19 |
+| `19.5.2.4-pilar-canto` | 19.5.2.4 | 186 | Verificação de punção em pilar de canto | implementado | alta | M | P19 |
 | `19.5.2.5-capitel` | 19.5.2.5 | 187 | Verificação de punção com capitel (contornos C1' e C2') | ausente | média | M | P20 |
 | `19.5.2.6-contorno-reentrancia` | 19.5.2.6 | 187 | Perímetro crítico em contorno C com reentrâncias | ausente | baixa | M | P20 |
 | `19.5.2.6-contorno-abertura` | 19.5.2.6 | 187 | Perímetro crítico junto a abertura na laje | ausente | alta | M | P20 |
 | `19.5.2.7-interacao-normal-tangencial` | 19.5.2.7 | 188 | Dispensa de verificação da interação entre flexão e punção | não computável | alta | P |  |
-| `19.5.3.1-trd2-compressao-diagonal` | 19.5.3.1 | 188 | Tensão resistente de compressão diagonal do concreto no contorno C (punção) | ausente | alta | P | P19 |
-| `19.5.3.2-trd1-sem-armadura` | 19.5.3.2 | 188 | Tensão resistente na superfície crítica C' sem armadura de punção | ausente | alta | M | P19 |
-| `19.5.3.3-trd3-com-armadura` | 19.5.3.3 | 189 | Tensão resistente na superfície crítica C' com armadura de punção | ausente | alta | M | P19 |
+| `19.5.3.1-trd2-compressao-diagonal` | 19.5.3.1 | 188 | Tensão resistente de compressão diagonal do concreto no contorno C (punção) | implementado | alta | P | P19 |
+| `19.5.3.2-trd1-sem-armadura` | 19.5.3.2 | 188 | Tensão resistente na superfície crítica C' sem armadura de punção | implementado | alta | M | P19 |
+| `19.5.3.3-trd3-com-armadura` | 19.5.3.3 | 189 | Tensão resistente na superfície crítica C' com armadura de punção | implementado | alta | M | P19 |
 | `19.5.3.4-superficie-c2linha` | 19.5.3.4 | 190 | Definição geométrica da superfície crítica C'' e disposição da armadura de punção | ausente | alta | M | P20 |
 | `19.5.3.5-armadura-puncao-obrigatoria` | 19.5.3.5 | 191 | Armadura de punção obrigatória por robustez (estabilidade global) | ausente | alta | P | P20 |
 | `19.5.4-colapso-progressivo` | 19.5.4 | 191 | Armadura de flexão inferior contra colapso progressivo na ligação laje-pilar | ausente | alta | P | P20 |

@@ -148,7 +148,8 @@
    "nome": "Punção: solicitação e resistência",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/puncao_nbr6118.py"
+   "modulo": "dimensionamento/puncao_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P20",
@@ -11142,7 +11143,7 @@
    "pagina_pdf": 182,
    "titulo": "Modelo de cálculo de punção: superfícies críticas C, C' e C''",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P19",
@@ -11151,7 +11152,20 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Item descritivo; guia a arquitetura do módulo futuro.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P19",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_puncao",
+     "ResultadoPuncao"
+    ],
+    "testes": [
+     "test_19_5_1_modelo_tres_contornos",
+     "test_verificar_interno_sem_c2linha_nao_fecha"
+    ],
+    "observacao": "C (τRd2), C′ (τRd1/τRd3) e C″ só quando a armadura é necessária. O traçado de C″ fica no P20: aqui u″ (e Wp″ quando há momento) é informado pelo chamador. Sem u″, com armadura necessária, ok é falso."
+   }
   },
   {
    "id": "19.5.2.1-tsd-pilar-interno-simetrico",
@@ -11159,7 +11173,7 @@
    "pagina_pdf": 183,
    "titulo": "Tensão solicitante de punção em pilar interno com carregamento simétrico",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P19",
@@ -11169,7 +11183,25 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "FSd=500kN, u=200cm, d=20cm -> tSd=0,125kN/cm2=1,25MPa.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P19",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tau_Sd_mpa",
+     "tau_Sd_interno_mpa",
+     "d_medio_cm",
+     "perimetro_critico_cm",
+     "perimetro_critico_circular_cm"
+    ],
+    "testes": [
+     "test_19_5_2_1_tau_sd_simetrico",
+     "test_19_5_2_1_d_medio",
+     "test_19_5_2_1_perimetros_interno",
+     "test_19_5_2_1_entradas_invalidas"
+    ],
+    "observacao": "Redução de FSd pela carga na face oposta: o chamador passa FSd já reduzida (documentado)."
+   }
   },
   {
    "id": "19.5.2.2-tsd-pilar-interno-momento",
@@ -11177,7 +11209,7 @@
    "pagina_pdf": 184,
    "titulo": "Tensão solicitante de punção em pilar interno com efeito de momento",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P19",
@@ -11192,7 +11224,23 @@
     "19.5.2.2-wp-circular"
    ],
    "teste_sugerido": "MSd=0 deve reduzir ao caso simétrico.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P19",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tau_Sd_mpa",
+     "tau_Sd_interno_mpa",
+     "tau_Sd_interno_circular_mpa"
+    ],
+    "testes": [
+     "test_19_5_2_2_tau_sd_com_momento",
+     "test_19_5_2_2_momento_nulo_reduz_ao_simetrico",
+     "test_19_5_2_2_circular",
+     "test_verificar_interno_com_momento_nos_dois_planos"
+    ],
+    "observacao": "Momentos nos dois planos em pilar interno: verificar_puncao soma as duas parcelas K·MSd/(Wp·d). É escolha da biblioteca, análoga a 19.5.2.3 b, e está declarada na docstring."
+   }
   },
   {
    "id": "19.5.2.2-tabela19.2-K",
@@ -11200,7 +11248,7 @@
    "pagina_pdf": 184,
    "titulo": "Tabela 19.2 - coeficiente K",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P19",
@@ -11210,7 +11258,23 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "C1/C2=1,5 (interpolado) -> K=0,65.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P19",
+    "data": "19/09/2026",
+    "funcoes": [
+     "TABELA_19_2_K",
+     "K",
+     "K_CIRCULAR"
+    ],
+    "testes": [
+     "test_tabela_19_2_todas_as_celulas",
+     "test_tabela_19_2_intermediarios",
+     "test_tabela_19_2_fora_da_faixa",
+     "test_tabela_19_2_circular"
+    ],
+    "observacao": "Interpolação linear por padrão; interpolar=False usa o degrau superior. Fora de 0,5 a 3,0 levanta FaixaNormativaError. A memória registra qual opção foi usada."
+   }
   },
   {
    "id": "19.5.2.2-wp-retangular",
@@ -11218,7 +11282,7 @@
    "pagina_pdf": 184,
    "titulo": "Wp do perímetro crítico - pilar retangular",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P19",
@@ -11228,7 +11292,19 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "C1=C2=40cm, d=15cm: conferir passo a passo contra cálculo manual.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P19",
+    "data": "19/09/2026",
+    "funcoes": [
+     "Wp_retangular_cm2"
+    ],
+    "testes": [
+     "test_19_5_2_2_wp_retangular_40_40_15",
+     "test_19_5_2_2_wp_retangular_igual_integral"
+    ],
+    "observacao": "contorno='C' dá Wp sobre u0 (C1²/2 + C1·C2), que é a leitura literal de '19.5.2 com u0 em lugar de u'."
+   }
   },
   {
    "id": "19.5.2.2-wp-circular",
@@ -11236,7 +11312,7 @@
    "pagina_pdf": 184,
    "titulo": "Wp do perímetro crítico - pilar circular",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P19",
@@ -11246,7 +11322,18 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "D=40cm, d=15cm -> Wp=10000.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P19",
+    "data": "19/09/2026",
+    "funcoes": [
+     "Wp_circular_cm2"
+    ],
+    "testes": [
+     "test_19_5_2_2_wp_circular"
+    ],
+    "observacao": "(D+4d)²; em C, D²."
+   }
   },
   {
    "id": "19.5.2.2-wp-integral-generico",
@@ -11274,7 +11361,7 @@
    "pagina_pdf": 185,
    "titulo": "tSd em pilar de borda sem momento paralelo à borda livre",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P19",
@@ -11287,7 +11374,28 @@
     "19.5.2.2-wp-retangular"
    ],
    "teste_sugerido": "MSd=MSd* -> MSd1=0, tSd=FSd/(u**d).",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P19",
+    "data": "19/09/2026",
+    "funcoes": [
+     "u_estrela_cm",
+     "a_estrela_cm",
+     "excentricidade_u_estrela_cm",
+     "MSd1_borda_kncm",
+     "Wp1_borda_cm2",
+     "tau_Sd_borda_mpa"
+    ],
+    "testes": [
+     "test_19_5_2_3_u_estrela_borda",
+     "test_19_5_2_3_perimetro_borda",
+     "test_19_5_2_3_wp1_wp2_e_excentricidade_por_integracao",
+     "test_19_5_2_3a_msd_igual_msd_estrela",
+     "test_19_5_2_3a_caso_montado_a_mao",
+     "test_verificar_borda_usa_u_estrela"
+    ],
+    "observacao": "Wp1 e e* não têm fórmula fechada na norma: foram deduzidos da integral ∫|e|dℓ e da geometria da Figura 19.3, e os testes os conferem por integração numérica independente. No contorno C de pilar de borda a norma não detalha u0. A biblioteca usa u0 = 2C1 + C2, Wp sobre u0 e MSd inteiro, sem o desconto de MSd*, o que fica a favor da segurança."
+   }
   },
   {
    "id": "19.5.2.3-pilar-borda-com-momento-paralelo",
@@ -11295,7 +11403,7 @@
    "pagina_pdf": 185,
    "titulo": "tSd em pilar de borda com momento paralelo à borda livre",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P19",
@@ -11308,7 +11416,21 @@
     "19.5.2.2-tabela19.2-K"
    ],
    "teste_sugerido": "MSd2=0 deve reduzir ao caso a).",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P19",
+    "data": "19/09/2026",
+    "funcoes": [
+     "Wp2_borda_cm2",
+     "tau_Sd_borda_mpa"
+    ],
+    "testes": [
+     "test_19_5_2_3b_msd2_nulo_reduz_ao_caso_a",
+     "test_19_5_2_3b_com_momento_paralelo",
+     "test_19_5_2_3b_k2_fora_da_tabela"
+    ],
+    "observacao": "K2 com C2/(2C1) na Tabela 19.2; Wp2 deduzido da integral e conferido numericamente."
+   }
   },
   {
    "id": "19.5.2.4-pilar-canto",
@@ -11316,7 +11438,7 @@
    "pagina_pdf": 186,
    "titulo": "Verificação de punção em pilar de canto",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P19",
@@ -11328,7 +11450,25 @@
     "19.5.2.3-pilar-borda-sem-momento-paralelo"
    ],
    "teste_sugerido": "Pilar de canto quadrado com momentos iguais: as duas verificações devem coincidir por simetria.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P19",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tau_Sd_canto_mpa",
+     "Wp1_canto_cm2",
+     "u_estrela_cm",
+     "excentricidade_u_estrela_cm",
+     "verificar_puncao"
+    ],
+    "testes": [
+     "test_19_5_2_4_u_estrela_e_wp_canto",
+     "test_19_5_2_4_canto_simetrico",
+     "test_19_5_2_4_canto_montado_a_mao",
+     "test_19_5_2_4_canto_retangular_duas_bordas"
+    ],
+    "observacao": "Uma verificação por borda livre, trocando C1 e C2 e o momento; verificar_puncao adota a maior τSd. u* = a1 + a2 + πd, com cada a limitado pelo lado do pilar ao longo do qual corre (Figura 19.4)."
+   }
   },
   {
    "id": "19.5.2.5-capitel",
@@ -11409,7 +11549,7 @@
    "pagina_pdf": 188,
    "titulo": "Tensão resistente de compressão diagonal do concreto no contorno C (punção)",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P19",
@@ -11423,7 +11563,22 @@
     "19.5.2.1-tsd-pilar-interno-simetrico"
    ],
    "teste_sugerido": "C25, fcd=17,86MPa: tRd2=0,27*(1-25/250)*17,86=4,34MPa; conferir também ampliado 20% (5,21MPa).",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P19",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tau_Rd2_mpa",
+     "verificar_puncao"
+    ],
+    "testes": [
+     "test_19_5_3_1_tau_rd2_c25",
+     "test_19_5_3_1_tau_rd2_faixa",
+     "test_19_5_3_1_fora_da_faixa",
+     "test_verificar_contorno_c_governa"
+    ],
+    "observacao": "Reusa nucleo.alpha_v2 e nucleo.fcd. A ampliação de 20% é opcional (ampliar_20pct) e só é aceita para pilar interno; as condições de vão e de abertura ficam com o chamador."
+   }
   },
   {
    "id": "19.5.3.2-trd1-sem-armadura",
@@ -11431,7 +11586,7 @@
    "pagina_pdf": 188,
    "titulo": "Tensão resistente na superfície crítica C' sem armadura de punção",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P19",
@@ -11443,7 +11598,25 @@
     "19.5.2.1-tsd-pilar-interno-simetrico"
    ],
    "teste_sugerido": "C25, rho=0,01, d=20cm, sigma_cp=0: ke=2,0 (teto); tRd1=0,13*2*(100*0,01*25)^(1/3)=0,760MPa. Conferir tetos de rho e ke.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P19",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tau_Rd1_mpa",
+     "rho_puncao",
+     "ke_puncao",
+     "sigma_cp_puncao_mpa"
+    ],
+    "testes": [
+     "test_19_5_3_2_tau_rd1_c25",
+     "test_19_5_3_2_ke_teto",
+     "test_19_5_3_2_rho",
+     "test_19_5_3_2_sigma_cp",
+     "test_19_5_3_2_tau_rd1_com_sigma_cp"
+    ],
+    "observacao": "Teto de ρ (0,02) e de ke (2) aplicados. σcp é zerado quando σcp,x ou σcp,y <= 1 MPa, com teto de 3,5 MPa. Quem calcula ρx e ρy na largura do pilar + 3d é o chamador."
+   }
   },
   {
    "id": "19.5.3.3-trd3-com-armadura",
@@ -11451,7 +11624,7 @@
    "pagina_pdf": 189,
    "titulo": "Tensão resistente na superfície crítica C' com armadura de punção",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P19",
@@ -11464,7 +11637,25 @@
     "19.4.2-fywd-max-laje"
    ],
    "teste_sugerido": "Com Asw=0 NÃO reduz a tRd1 (coeficiente 0,10 vs 0,13) — descontinuidade real da norma; registrar isso no teste em vez de esperar continuidade.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P19",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tau_Rd3_mpa",
+     "fywd_max_puncao_mpa"
+    ],
+    "testes": [
+     "test_19_5_3_3_tau_rd3_caso_a_mao",
+     "test_19_5_3_3_asw_nulo_nao_reduz_a_tau_rd1",
+     "test_19_5_3_3_sr_limite",
+     "test_19_5_3_3_alfa",
+     "test_19_5_3_3_teto_fywd",
+     "test_19_5_3_3_fywd_limitado",
+     "test_verificar_interno_com_armadura_e_c2linha"
+    ],
+    "observacao": "sr > 0,75d levanta erro. O fywd usado é o menor entre o informado e o teto (300 MPa para studs, 250 MPa para estribos). Com h > 15 cm entra a reta de 19.4.2 (cortante.fywd_max_laje_mpa, P15): estribos seguem a reta; studs ficam com max(300, reta), leitura da biblioteca. A descontinuidade 0,10 × 0,13 está comentada e testada."
+   }
   },
   {
    "id": "19.5.3.4-superficie-c2linha",
