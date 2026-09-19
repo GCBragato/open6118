@@ -223,7 +223,8 @@
    "nome": "Protensão: força, limites e perdas",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/protendido_nbr6118.py (extensão)"
+   "modulo": "dimensionamento/protendido_nbr6118.py (extensão)",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P31",
@@ -2485,7 +2486,7 @@
    "pagina_pdf": 67,
    "titulo": "Força média na armadura de protensão Pt(x)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P30",
@@ -2500,7 +2501,21 @@
     "protendido_nbr6118.perda_progressiva_simplificada"
    ],
    "teste_sugerido": "Caso trivial sem perdas (DP0=DPt=0): Pt(x)=Pi. Depois, somar uma perda de atrito conhecida e conferir Pt(x)=Pi-DP.",
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P30",
+    "data": "19/09/2026",
+    "funcoes": [
+     "protendido_nbr6118.forca_media_kn"
+    ],
+    "testes": [
+     "test_9611_sem_perdas_Pt_igual_Pi",
+     "test_9611_com_perda_por_atrito_conhecida",
+     "test_9611_P0_e_Pt_com_parcelas",
+     "test_9611_fora_da_faixa"
+    ],
+    "observacao": "Pt(x) = Pi − ΔP0(x) − ΔPt(x). Cada perda aceita número ou sequência de parcelas. Com ΔPt = 0 a função devolve P0(x). Perda negativa ou Pt <= 0 levanta FaixaNormativaError."
+   }
   },
   {
    "id": "9.6.1.2.1-sigma-pi-limites",
@@ -2508,7 +2523,7 @@
    "pagina_pdf": 67,
    "titulo": "Valores-limites de σpi na saída do aparelho de tração",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P30",
@@ -2518,7 +2533,24 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "fptk=1900 MPa (CP-190): sigma_pi_max = 1463 MPa (pre-tracionada) e 1406 MPa (pos aderente).",
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P30",
+    "data": "19/09/2026",
+    "funcoes": [
+     "protendido_nbr6118.sigma_pi_limite_mpa",
+     "protendido_nbr6118.verificar_sigma_pi",
+     "protendido_nbr6118.TABELA_9_6_1_2_1_SIGMA_PI"
+    ],
+    "testes": [
+     "test_96121_quatro_limites",
+     "test_96121_valores_do_teste_sugerido_CP190",
+     "test_96121_tabela_como_dado",
+     "test_96121_verificacao_dos_dois_lados_do_limite",
+     "test_96121_entradas_invalidas"
+    ],
+    "observacao": "Os quatro limites são 0,77, 0,74, 0,80 e 0,72·fptk. Com aco='barra' vale a alínea d) em qualquer sistema. A verificação usa seguranca.verificar_seguranca. A assinatura não tem fpyk, porque o texto de 2026 não tem condição em fpyk."
+   }
   },
   {
    "id": "9.6.1.2.2-sigma-p0-termino",
@@ -2526,7 +2558,7 @@
    "pagina_pdf": 67,
    "titulo": "Verificação de σp0(x) ao término da protensão",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P30",
@@ -2536,7 +2568,18 @@
    "depende_de": [
     "9.6.1.2.1-sigma-pi-limites"
    ],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P30",
+    "data": "19/09/2026",
+    "funcoes": [
+     "protendido_nbr6118.verificar_sigma_p0"
+    ],
+    "testes": [
+     "test_96122_sigma_p0_limite_b"
+    ],
+    "observacao": "σp0(x) <= 0,74·fptk (limite de 9.6.1.2.1-b), para armadura pré ou pós-tracionada, como diz o texto."
+   }
   },
   {
    "id": "9.6.1.2.3-tolerancia-execucao",
@@ -2544,7 +2587,7 @@
    "pagina_pdf": 67,
    "titulo": "Tolerância de execução - majoração de σpi",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P30",
@@ -2554,7 +2597,21 @@
    "depende_de": [
     "9.6.1.2.1-sigma-pi-limites"
    ],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P30",
+    "data": "19/09/2026",
+    "funcoes": [
+     "protendido_nbr6118.tolerancia_execucao"
+    ],
+    "testes": [
+     "test_96123_tolerancia_dentro",
+     "test_96123_tensao_acima_de_110_por_cento",
+     "test_96123_mais_de_50_por_cento_dos_cabos",
+     "test_96123_lista_vazia"
+    ],
+    "observacao": "Em cada cabo, σpi <= 1,10·0,74·fptk. O número de cabos acima de 0,74·fptk tem de ser <= 50 % dos cabos. A exigência de segurança nas ancoragens não é calculável e fica registrada na memória."
+   }
   },
   {
    "id": "9.6.1.3-Pk-caracteristico",
@@ -2562,7 +2619,7 @@
    "pagina_pdf": 68,
    "titulo": "Valores característicos superior/inferior da força de protensão",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P30",
@@ -2573,7 +2630,20 @@
     "9.6.1.1-forca-media"
    ],
    "teste_sugerido": "Pt=1000 kN -> sup=1050, inf=950 kN.",
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P30",
+    "data": "19/09/2026",
+    "funcoes": [
+     "protendido_nbr6118.Pk_sup_inf_kn"
+    ],
+    "testes": [
+     "test_9613_perda_acima_de_035_Pi",
+     "test_9613_perda_igual_035_Pi_fica_valor_medio",
+     "test_9613_obra_especial"
+    ],
+    "observacao": "Com perda máxima > 0,35·Pi ou obra especial: sup = 1,05·Pt e inf = 0,95·Pt. Com perda de exatamente 0,35·Pi fica o valor médio. Devolve dataclass frozen com memória."
+   }
   },
   {
    "id": "9.6.1.4-Pd-calculo",
@@ -2581,7 +2651,7 @@
    "pagina_pdf": 68,
    "titulo": "Valor de cálculo da força de protensão",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P30",
@@ -2593,7 +2663,18 @@
     "9.6.1.1-forca-media",
     "11.7.1-gama_p"
    ],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P30",
+    "data": "19/09/2026",
+    "funcoes": [
+     "protendido_nbr6118.Pd_kn"
+    ],
+    "testes": [
+     "test_9614_Pd"
+    ],
+    "observacao": "Pd = γp·Pt. Sem γp explícito, usa acoes_nbr6118.gama_f_tabela_11_1(combinacao, 'protensao', D/F) (P4), que dá 1,2 ou 0,9. Aceita gama_p explícito, para o ato da protensão e para M0."
+   }
   },
   {
    "id": "9.6.2.1-generalidades-qualitativo",
@@ -2700,7 +2781,7 @@
    "pagina_pdf": 70,
    "titulo": "Perda por encurtamento do concreto entre grupos de cabos sucessivos (pós-tração)",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P30",
@@ -2713,7 +2794,22 @@
     "nucleo.Eci_idade",
     "nucleo.fckj"
    ],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P30",
+    "data": "19/09/2026",
+    "funcoes": [
+     "protendido_nbr6118.perda_encurtamento_cabos_restantes_kncm2",
+     "protendido_nbr6118.alpha_p_t"
+    ],
+    "testes": [
+     "test_963321_padrao_mantem_alpha_p_28_dias",
+     "test_963321_alpha_p_t_aos_7_dias",
+     "test_963321_alpha_p_t_interior_e_ensaio",
+     "test_963321_abaixo_de_7_dias_sem_ensaio_levanta"
+    ],
+    "observacao": "Entraram três parâmetros no fim da assinatura: t0_dias=None, cimento='CPII' e Eci_t0_mpa=None. αp(t) = Ep/Eci(t0), com nucleo.Eci_idade e nucleo.fckj. O padrão reproduz o comportamento antigo (Eci de 28 dias). Abaixo de 7 dias, sem valor de ensaio, levanta FaixaNormativaError."
+   }
   },
   {
    "id": "9.6.3.3.2.2-perda-atrito",
@@ -2737,7 +2833,7 @@
    "pagina_pdf": 71,
    "titulo": "Coeficientes de atrito μ e de perda por curvatura k",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P30",
@@ -2748,7 +2844,20 @@
    "depende_de": [
     "9.6.3.3.2.2-perda-atrito"
    ],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P30",
+    "data": "19/09/2026",
+    "funcoes": [
+     "protendido_nbr6118.TABELA_MU_K",
+     "protendido_nbr6118.coeficientes_atrito"
+    ],
+    "testes": [
+     "test_963322_tabela_mu_k",
+     "test_963322_contato_desconhecido"
+    ],
+    "observacao": "Os 5 valores de μ estão na tabela. O caso μ = 0,07 (bainha de polipropileno lubrificada) fica separado, com k = 0,065·μ; nos demais, k = 0,01·μ. Os valores alimentam perda_atrito_kn."
+   }
   },
   {
    "id": "9.6.3.3.2.3-deslizamento-qualitativo",
@@ -2792,7 +2901,7 @@
    "pagina_pdf": 72,
    "titulo": "Variação de deformação do aço e do concreto entre t0 e t",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P30",
@@ -2803,7 +2912,20 @@
    "depende_de": [
     "9.6.3.4.2-processo-simplificado"
    ],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P30",
+    "data": "19/09/2026",
+    "funcoes": [
+     "protendido_nbr6118.deformacoes_aco_concreto"
+    ],
+    "testes": [
+     "test_96342_deformacoes_valor_a_mao",
+     "test_96342_compatibilidade_com_processo_simplificado",
+     "test_96342_fora_da_faixa"
+    ],
+    "observacao": "Devolve Δεpt e Δεct em ‰, com χ, χp, χc e a memória. Δσc é parâmetro de entrada. Um teste confere, por dedução própria e não por texto da norma, que Δεpt + Δεct = 0 com o Δσp de perda_progressiva_simplificada e Δσc = η·ρp·Δσp."
+   }
   },
   {
    "id": "9.6.3.4.3-processo-aproximado-RN",
@@ -2811,7 +2933,7 @@
    "pagina_pdf": 73,
    "titulo": "Perda progressiva - processo aproximado, aço de relaxação normal (RN)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P30",
@@ -2822,7 +2944,23 @@
     "nucleo.Eci_mpa"
    ],
    "teste_sugerido": "Aplicavel se a retracao nao diferir de [-8e-5.phi(inf,t0)] em mais de 25%; comparar resultado com perda_progressiva_simplificada no mesmo caso.",
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P30",
+    "data": "19/09/2026",
+    "funcoes": [
+     "protendido_nbr6118.perda_progressiva_aproximada_pct",
+     "protendido_nbr6118.TABELA_9_6_3_4_3_APROXIMADO"
+    ],
+    "testes": [
+     "test_96343_RN_e_RB_ponto_interior",
+     "test_96343_phi_nulo_da_termo_constante",
+     "test_96343_condicao_retracao_25_por_cento_passa",
+     "test_96343_condicao_retracao_25_por_cento_falha",
+     "test_96343_aco_desconhecido"
+    ],
+    "observacao": "18,1 + (αp/47)·φ^1,57·(3 + σc,p0g), em %. Condição: |εcs| a no máximo 25 % de 8·10^−5·φ; exatamente 25 % passa, e fora disso levanta FaixaNormativaError. As condições de 9.6.3.4.2 (fases únicas) não são verificáveis e ficam na docstring. O nome leva o sufixo _pct porque a função devolve porcentagem."
+   }
   },
   {
    "id": "9.6.3.4.3-processo-aproximado-RB",
@@ -2830,7 +2968,7 @@
    "pagina_pdf": 73,
    "titulo": "Perda progressiva - processo aproximado, aço de relaxação baixa (RB)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P30",
@@ -2840,7 +2978,20 @@
    "depende_de": [
     "nucleo.Eci_mpa"
    ],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P30",
+    "data": "19/09/2026",
+    "funcoes": [
+     "protendido_nbr6118.perda_progressiva_aproximada_pct"
+    ],
+    "testes": [
+     "test_96343_RN_e_RB_ponto_interior",
+     "test_96343_phi_nulo_da_termo_constante",
+     "test_96343_condicao_retracao_25_por_cento_passa"
+    ],
+    "observacao": "7,4 + (αp/18,7)·φ^1,07·(3 + σc,p0g), em %. É a mesma função, com aco='RB'."
+   }
   },
   {
    "id": "9.6.3.4.4-metodo-geral",
@@ -2899,7 +3050,7 @@
    "pagina_pdf": 74,
    "titulo": "Isenção de relaxação para tensões inferiores a 0,5 fptk",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P30",
@@ -2909,7 +3060,21 @@
    "formula_ou_regra": "se sigma_pi < 0,5 fptk: Dsigma_pr = 0",
    "conferido_na_imagem": true,
    "depende_de": [],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P30",
+    "data": "19/09/2026",
+    "funcoes": [
+     "protendido_nbr6118.psi_1000"
+    ],
+    "testes": [
+     "test_96345_abaixo_de_05_fptk_devolve_zero",
+     "test_96345_acima_de_05_continua_tabela_8_3",
+     "test_96345_fora_da_tabela_levanta",
+     "test_protendido_nbr2026.py::test_PRO04_abaixo_de_0_5_devolve_zero"
+    ],
+    "observacao": "Para 0 <= σpi/fptk < 0,5 devolve 0. Acima de 0,8 ou com razão negativa continua levantando ValueError. σpi = 0,5·fptk exato dá 0."
+   }
   },
   {
    "id": "10.1-criterios-seguranca",

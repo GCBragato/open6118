@@ -174,10 +174,17 @@ def test_PRO04_interpolacao_linear_entre_linhas():
     assert PT.psi_1000("cordoalha", "RN", 0.65) == pytest.approx(5.25)
 
 
-@pytest.mark.parametrize("razao", [0.49, 0.0, 0.81, 1.0])
+@pytest.mark.parametrize("razao", [0.81, 1.0])
 def test_PRO04_fora_da_faixa_0_5_a_0_8_levanta(razao):
     with pytest.raises(ValueError):
         PT.psi_1000("cordoalha", "RN", razao)
+
+
+@pytest.mark.parametrize("razao", [0.49, 0.0])
+def test_PRO04_abaixo_de_0_5_devolve_zero(razao):
+    # P30 (9.6.3.4.5, PDF p. 74): abaixo de 0,5 fptk não há perda por
+    # relaxação. Antes do P30 estes casos levantavam ValueError.
+    assert PT.psi_1000("cordoalha", "RN", razao) == 0.0
 
 
 def test_PRO04_PSI_1000_TIPICOS_atualizada():

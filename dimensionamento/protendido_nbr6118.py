@@ -155,8 +155,11 @@ TABELA_8_3_PSI_1000_BARRA = {0.5: 0.0, 0.6: 1.5, 0.7: 4.0, 0.8: 7.0}
 def psi_1000(tipo: str, relaxacao: str, sigma_pi_sobre_fptk: float) -> float:
     """psi_1000 (%) pela Tabela 8.3 (NBR 6118 8.4.8), por interpolacao linear
     entre as linhas de sigma_pi/fptk tabeladas. O texto de 8.4.8 define
-    psi_1000 exatamente nessa faixa (tensoes de 0,5 fptk a 0,8 fptk); fora
-    dela levanta ValueError, a norma nao cobre.
+    psi_1000 exatamente nessa faixa (tensoes de 0,5 fptk a 0,8 fptk).
+    Abaixo de 0,5 fptk devolve 0: "para tensões inferiores a 0,5 fptk,
+    admite-se que não haja perda de tensão por relaxação" (9.6.3.4.5,
+    PDF p. 74; P30 — antes levantava ValueError). Acima de 0,8 fptk (ou
+    razão negativa) levanta ValueError, a norma não cobre.
 
     tipo = 'fio', 'cordoalha' ou 'barra'; relaxacao = 'RN' ou 'RB'
     (ignorada para 'barra', que a tabela só dá numa coluna).
@@ -177,6 +180,8 @@ def psi_1000(tipo: str, relaxacao: str, sigma_pi_sobre_fptk: float) -> float:
 
     razao = float(sigma_pi_sobre_fptk)
     pontos = sorted(tabela)
+    if 0.0 <= razao < pontos[0]:
+        return 0.0  # 9.6.3.4.5 (P30): sem perda por relaxação abaixo de 0,5 fptk
     if razao < pontos[0] or razao > pontos[-1]:
         raise ValueError(
             f"sigma_pi/fptk = {razao:g} fora da faixa da Tabela 8.3 "
@@ -599,9 +604,13 @@ def perda_encurtamento_cabos_restantes_kncm2(
     n_cabos: int, sigma_cpog_kncm2: float,
     fck_mpa: float, agregado: str = "granito",
     Ep_mpa: float = E_P_MPA,
+    t0_dias: float | None = None, cimento: str = "CPII",
+    Eci_t0_mpa: float | None = None,
 ) -> float:
-    """delta sigma_p = alpha_p * (n-1)/(2n) * sigma_cpog  (Eq. 5.62, NBR 9.6.3.3.2.1),
-    com alpha_p = Ep/Eci. Corrige PRO-03, que usava Ecs em vez de Eci.
+    """delta sigma_p = alpha_p(t) * (n-1)/(2n) * sigma_cpog  (Eq. 5.62, NBR 9.6.3.3.2.1,
+    PDF p. 70), com alpha_p(t) = Ep/Eci(t0) (P30, via alpha_p_t). Sem t0_dias
+    nem Eci_t0_mpa usa alpha_p = Ep/Eci de 28 dias (comportamento anterior).
+    Corrige PRO-03, que usava Ecs em vez de Eci.
 
     Perda media por cabo na pos-tensao quando os cabos sao estirados
     sucessivamente. sigma_cpog = tensao no concreto adjacente ao cabo
@@ -610,8 +619,7 @@ def perda_encurtamento_cabos_restantes_kncm2(
     """
     if n_cabos < 1:
         raise ValueError("n_cabos deve ser >= 1")
-    Eci = Eci_mpa(fck_mpa, agregado)
-    alpha_p = Ep_mpa / Eci
+    alpha_p = alpha_p_t(fck_mpa, t0_dias, cimento, agregado, Ep_mpa, Eci_t0_mpa)
     return alpha_p * (n_cabos - 1) / (2.0 * n_cabos) * abs(sigma_cpog_kncm2)
 
 
@@ -1584,6 +1592,511 @@ def dutilidade_aco_ativo(eps_uk_pmilh: float, minimo_pmilh: float) -> Dutilidade
         eps_uk_pmilh=float(eps_uk_pmilh), minimo_pmilh=float(minimo_pmilh),
         ok=ok, governante=governante, memoria=memoria,
     )
+
+
+# === P30: Protensão — força, limites e perdas (9.6.1 e 9.6.3, p. 67-74) ===
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import acoes_nbr6118 as _acoes_p30
+    import seguranca_nbr6118 as _seg_p30
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import acoes_nbr6118 as _acoes_p30
+    from dimensionamento import seguranca_nbr6118 as _seg_p30
+
+from typing import Iterable as _Iterable_p30
+
+
+def _fmt_p30(x: float) -> str:
+    """Número para a memória de cálculo, com vírgula decimal."""
+    return f"{x:.6g}".replace(".", ",")
+
+
+# 9.6.1.2.1 (PDF p. 67) — σpi na saída do aparelho de tração, em fração de fptk.
+# Válidos para aços que atendam às ABNT NBR 7482 e ABNT NBR 7483.
+TABELA_9_6_1_2_1_SIGMA_PI = {
+    "pre_tracionada": 0.77,           # a) armadura pré-tracionada
+    "pos_tracionada_aderente": 0.74,  # b) armadura pós-tracionada aderente
+    "pos_tracionada_nao_aderente": 0.80,  # c) armadura pós-tracionada não aderente
+    "barra_cp85_105": 0.72,           # d) barras de aço CP-85/105
+}
+_ALINEA_9_6_1_2_1 = {
+    "pre_tracionada": "a", "pos_tracionada_aderente": "b",
+    "pos_tracionada_nao_aderente": "c", "barra_cp85_105": "d",
+}
+_ALIAS_SISTEMA_P30 = {
+    "pre": "pre_tracionada", "pretracionada": "pre_tracionada",
+    "pretracao": "pre_tracionada", "pre_tracionada": "pre_tracionada",
+    "pos_aderente": "pos_tracionada_aderente", "posaderente": "pos_tracionada_aderente",
+    "pos_tracionada_aderente": "pos_tracionada_aderente",
+    "postracionadaaderente": "pos_tracionada_aderente",
+    "pos_nao_aderente": "pos_tracionada_nao_aderente",
+    "posnaoaderente": "pos_tracionada_nao_aderente",
+    "pos_tracionada_nao_aderente": "pos_tracionada_nao_aderente",
+    "postracionadanaoaderente": "pos_tracionada_nao_aderente",
+}
+_ALIAS_ACO_P30 = {
+    "fio_cordoalha": "fio_cordoalha", "fio": "fio_cordoalha", "cordoalha": "fio_cordoalha",
+    "barra": "barra_cp85_105", "barra_cp85_105": "barra_cp85_105",
+    "cp85/105": "barra_cp85_105", "cp-85/105": "barra_cp85_105",
+}
+
+# 9.6.1.2.3 (PDF p. 67) — tolerância de execução na pós-tração.
+MAJORACAO_TOLERANCIA_EXECUCAO = 1.10   # "majorados em até 10 %"
+FRACAO_MAX_CABOS_TOLERANCIA = 0.50     # "até o limite de 50 % dos cabos"
+
+# 9.6.1.3 (PDF p. 68) — valores característicos superior e inferior.
+LIMITE_PERDA_PK_SOBRE_PI = 0.35
+FATOR_PK_SUP = 1.05
+FATOR_PK_INF = 0.95
+
+
+def _chave_p30(texto: str) -> str:
+    import unicodedata
+    s = unicodedata.normalize("NFKD", str(texto)).encode("ascii", "ignore").decode()
+    return s.strip().lower().replace("-", "_").replace(" ", "_")
+
+
+def _sistema_p30(sistema: str) -> str:
+    k = _chave_p30(sistema)
+    if k in _ALIAS_SISTEMA_P30:
+        return _ALIAS_SISTEMA_P30[k]
+    k2 = k.replace("_", "")
+    if k2 in _ALIAS_SISTEMA_P30:
+        return _ALIAS_SISTEMA_P30[k2]
+    raise ValueError(
+        f"Sistema de protensão desconhecido: {sistema!r}. Use 'pre_tracionada', "
+        "'pos_tracionada_aderente' ou 'pos_tracionada_nao_aderente'.")
+
+
+def _aco_p30(aco: str) -> str:
+    k = _chave_p30(aco)
+    if k in _ALIAS_ACO_P30:
+        return _ALIAS_ACO_P30[k]
+    raise ValueError(
+        f"Aço de protensão desconhecido: {aco!r}. Use 'fio_cordoalha' ou 'barra' (CP-85/105).")
+
+
+def _positivo_p30(valor: float, nome: str) -> float:
+    v = float(valor)
+    if not v > 0.0:
+        raise nbr.FaixaNormativaError(f"{nome} = {v:g}: tem de ser positivo.")
+    return v
+
+
+def sigma_pi_limite_mpa(fptk_mpa: float, sistema: str,
+                        aco: str = "fio_cordoalha") -> float:
+    """Limite de σpi na saída do aparelho de tração, MPa (9.6.1.2.1).
+
+    Por ocasião da aplicação da força Pi (PDF p. 67):
+        a) armadura pré-tracionada:           σpi = 0,77·fptk
+        b) armadura pós-tracionada aderente:  σpi = 0,74·fptk
+        c) armadura pós-tracionada não aderente: σpi = 0,80·fptk
+        d) barras de aço CP-85/105:           σpi = 0,72·fptk
+    Valores válidos para aços que atendam às ABNT NBR 7482 e ABNT NBR 7483.
+
+    sistema: 'pre_tracionada', 'pos_tracionada_aderente' ou
+    'pos_tracionada_nao_aderente' (aceita 'pre', 'pos_aderente',
+    'pos_nao_aderente'). aco: 'fio_cordoalha' (padrão) ou 'barra' — com
+    'barra' vale a alínea d), qualquer que seja o sistema. fptk em MPa.
+
+    O texto de 2026 dá o limite só em função de fptk; não há mais a condição
+    em fpyk da edição anterior.
+    """
+    fptk = _positivo_p30(fptk_mpa, "fptk")
+    chave = "barra_cp85_105" if _aco_p30(aco) == "barra_cp85_105" else _sistema_p30(sistema)
+    return TABELA_9_6_1_2_1_SIGMA_PI[chave] * fptk
+
+
+@dataclass(frozen=True)
+class ResultadoTensaoProtensao:
+    """Verificação de tensão na armadura ativa (9.6.1.2)."""
+    sigma_mpa: float
+    limite_mpa: float
+    fracao_fptk: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_sigma_pi(sigma_pi_mpa: float, fptk_mpa: float, sistema: str,
+                       aco: str = "fio_cordoalha") -> ResultadoTensaoProtensao:
+    """Verifica σpi na saída do aparelho de tração contra 9.6.1.2.1 (PDF p. 67).
+
+    σpi <= limite de sigma_pi_limite_mpa (0,77, 0,74, 0,80 ou 0,72·fptk).
+    Tensões em MPa. A comparação usa seguranca_nbr6118.verificar_seguranca
+    (igualdade passa).
+    """
+    sigma = float(sigma_pi_mpa)
+    lim = sigma_pi_limite_mpa(fptk_mpa, sistema, aco)
+    fptk = float(fptk_mpa)
+    chave = "barra_cp85_105" if _aco_p30(aco) == "barra_cp85_105" else _sistema_p30(sistema)
+    frac = TABELA_9_6_1_2_1_SIGMA_PI[chave]
+    alinea = _ALINEA_9_6_1_2_1[chave]
+    r = _seg_p30.verificar_seguranca(lim, sigma, rotulo="σpi x limite", item="9.6.1.2.1")
+    governante = ("σpi dentro do limite" if r.ok
+                  else f"σpi acima do limite da alínea {alinea})")
+    memoria = (
+        f"9.6.1.2.1-{alinea}) (p. 67): limite σpi = {_fmt_p30(frac)}·fptk = "
+        f"{_fmt_p30(frac)}·{_fmt_p30(fptk)} = {_fmt_p30(lim)} MPa.",
+        f"σpi = {_fmt_p30(sigma)} MPa {'<=' if r.ok else '>'} {_fmt_p30(lim)} MPa -> "
+        f"{'ok' if r.ok else 'não ok'}.",
+    )
+    return ResultadoTensaoProtensao(sigma, lim, frac, r.ok, governante, memoria)
+
+
+def verificar_sigma_p0(sigma_p0_mpa: float, fptk_mpa: float) -> ResultadoTensaoProtensao:
+    """Verifica σp0(x) ao término da operação de protensão (9.6.1.2.2, PDF p. 67).
+
+    "A tensão σp0(x) da armadura pré-tracionada ou pós-tracionada, decorrente
+    da força P0(x), não pode superar os limites estabelecidos em
+    9.6.1.2.1-b)": σp0(x) <= 0,74·fptk, qualquer que seja o sistema.
+    Tensões em MPa.
+    """
+    sigma = float(sigma_p0_mpa)
+    fptk = _positivo_p30(fptk_mpa, "fptk")
+    frac = TABELA_9_6_1_2_1_SIGMA_PI["pos_tracionada_aderente"]
+    lim = frac * fptk
+    r = _seg_p30.verificar_seguranca(lim, sigma, rotulo="σp0 x limite", item="9.6.1.2.2")
+    governante = "σp0 dentro do limite" if r.ok else "σp0 acima de 0,74·fptk"
+    memoria = (
+        f"9.6.1.2.2 (p. 67): σp0(x) <= limite de 9.6.1.2.1-b) = 0,74·fptk = "
+        f"0,74·{_fmt_p30(fptk)} = {_fmt_p30(lim)} MPa.",
+        f"σp0 = {_fmt_p30(sigma)} MPa {'<=' if r.ok else '>'} {_fmt_p30(lim)} MPa -> "
+        f"{'ok' if r.ok else 'não ok'}.",
+    )
+    return ResultadoTensaoProtensao(sigma, lim, frac, r.ok, governante, memoria)
+
+
+@dataclass(frozen=True)
+class ResultadoToleranciaExecucao:
+    """Verificação da tolerância de execução (9.6.1.2.3)."""
+    n_cabos: int
+    n_cabos_majorados: int
+    n_max_majorados: float
+    limite_base_mpa: float
+    limite_majorado_mpa: float
+    sigma_max_mpa: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def tolerancia_execucao(sigmas_pi_mpa: _Iterable_p30[float],
+                        fptk_mpa: float) -> ResultadoToleranciaExecucao:
+    """Tolerância de execução na pós-tração: majoração de σpi (9.6.1.2.3, PDF p. 67).
+
+    Constatadas irregularidades na protensão decorrentes de falhas
+    executivas em elementos com armadura pós-tracionada, a força em
+    qualquer cabo pode ser elevada, limitando σpi aos valores de
+    9.6.1.2.1-b) majorados em até 10 %, até o limite de 50 % dos cabos:
+        σpi <= 1,10·0,74·fptk = 0,814·fptk   em cada cabo;
+        nº de cabos com σpi > 0,74·fptk <= 0,50·n.
+    O texto remete à alínea b) também na pós-tração não aderente; a função
+    segue o texto. A condição "desde que seja garantida a segurança da
+    estrutura, principalmente nas regiões das ancoragens" não é verificada
+    aqui e fica registrada na memória.
+
+    sigmas_pi_mpa: σpi de cada cabo do elemento, MPa. fptk em MPa.
+    """
+    sigmas = [float(s) for s in sigmas_pi_mpa]
+    if not sigmas:
+        raise ValueError("Informe o σpi de pelo menos um cabo.")
+    fptk = _positivo_p30(fptk_mpa, "fptk")
+    base = TABELA_9_6_1_2_1_SIGMA_PI["pos_tracionada_aderente"] * fptk
+    majorado = MAJORACAO_TOLERANCIA_EXECUCAO * base
+    tol = 1e-9 * max(1.0, abs(base))
+    n = len(sigmas)
+    n_acima = sum(1 for s in sigmas if s > base + tol)
+    n_max = FRACAO_MAX_CABOS_TOLERANCIA * n
+    s_max = max(sigmas)
+    ok_tensao = s_max <= majorado + tol
+    ok_cabos = n_acima <= n_max + 1e-9
+    ok = ok_tensao and ok_cabos
+    if not ok_tensao:
+        governante = "σpi acima de 1,10 vez o limite de 9.6.1.2.1-b)"
+    elif not ok_cabos:
+        governante = "mais de 50 % dos cabos com σpi majorado"
+    else:
+        governante = "dentro da tolerância de execução"
+    memoria = (
+        f"9.6.1.2.3 (p. 67): limite base 9.6.1.2.1-b) = 0,74·{_fmt_p30(fptk)} = "
+        f"{_fmt_p30(base)} MPa; majorado = 1,10·{_fmt_p30(base)} = {_fmt_p30(majorado)} MPa.",
+        f"σpi,máx = {_fmt_p30(s_max)} MPa {'<=' if ok_tensao else '>'} "
+        f"{_fmt_p30(majorado)} MPa.",
+        f"Cabos com σpi acima do limite base: {n_acima} de {n}; máximo 0,50·{n} = "
+        f"{_fmt_p30(n_max)} -> {'ok' if ok_cabos else 'não ok'}.",
+        "Condição da norma não verificada aqui: garantir a segurança da estrutura, "
+        "principalmente nas regiões das ancoragens.",
+    )
+    return ResultadoToleranciaExecucao(n, n_acima, n_max, base, majorado, s_max,
+                                       ok, governante, memoria)
+
+
+def _soma_perdas_p30(perdas, nome: str) -> float:
+    if isinstance(perdas, (int, float)):
+        valores = [float(perdas)]
+    else:
+        valores = [float(p) for p in perdas]
+    for v in valores:
+        if v < 0.0:
+            raise nbr.FaixaNormativaError(
+                f"{nome}: perda negativa ({v:g} kN); as perdas entram em módulo.")
+    return sum(valores)
+
+
+def forca_media_kn(Pi_kn: float, perdas_imediatas_kn=0.0,
+                   perdas_progressivas_kn=0.0) -> float:
+    """Força média na armadura de protensão Pt(x), kN (9.6.1.1, PDF p. 67).
+
+        Pt(x) = P0(x) − ΔPt(x) = Pi − ΔP0(x) − ΔPt(x)
+        P0(x) = Pi − ΔP0(x)
+
+    Pi é a força na saída do aparelho de tração; perdas_imediatas_kn é ΔP0(x)
+    (atrito, acomodação da ancoragem, encurtamento imediato) e
+    perdas_progressivas_kn é ΔPt(x) (retração, fluência e relaxação), na
+    mesma abscissa x. Cada perda pode ser um número ou uma sequência de
+    parcelas, que são somadas; todas em kN e em módulo (>= 0). Com
+    perdas_progressivas_kn = 0 a função devolve P0(x). Pt(x) <= 0 levanta
+    FaixaNormativaError (perdas maiores que a força aplicada).
+    """
+    Pi = _positivo_p30(Pi_kn, "Pi")
+    dP0 = _soma_perdas_p30(perdas_imediatas_kn, "ΔP0(x)")
+    dPt = _soma_perdas_p30(perdas_progressivas_kn, "ΔPt(x)")
+    Pt = Pi - dP0 - dPt
+    if not Pt > 0.0:
+        raise nbr.FaixaNormativaError(
+            f"Pt(x) = {Pi:g} − {dP0:g} − {dPt:g} = {Pt:g} kN: as perdas não podem "
+            "igualar ou superar a força Pi.")
+    return Pt
+
+
+@dataclass(frozen=True)
+class ForcaCaracteristicaProtensao:
+    """Valores característicos da força de protensão (9.6.1.3)."""
+    Pt_kn: float
+    Pk_sup_kn: float
+    Pk_inf_kn: float
+    perda_max_kn: float
+    limite_perda_kn: float
+    usa_sup_inf: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def Pk_sup_inf_kn(Pt_kn: float, perda_max_kn: float, Pi_kn: float,
+                  obra_especial: bool = False) -> ForcaCaracteristicaProtensao:
+    """Valores característicos Pk,t(x) superior e inferior (9.6.1.3, PDF p. 68).
+
+    Para as obras em geral, Pk,t(x) = Pt(x) (valor médio), exceto quando a
+    perda máxima [ΔP0(x) + ΔPt(x)]máx > 0,35·Pi. Nesse caso, e nas obras
+    especiais projetadas por normas específicas que considerem os valores
+    superior e inferior (obra_especial=True):
+        [Pk,t(x)]sup = 1,05·Pt(x)
+        [Pk,t(x)]inf = 0,95·Pt(x)
+    Perda exatamente igual a 0,35·Pi não é "maior que": fica o valor médio.
+    Forças em kN.
+    """
+    Pt = _positivo_p30(Pt_kn, "Pt(x)")
+    Pi = _positivo_p30(Pi_kn, "Pi")
+    perda = float(perda_max_kn)
+    if perda < 0.0:
+        raise nbr.FaixaNormativaError(f"Perda máxima = {perda:g} kN: tem de ser >= 0.")
+    limite = LIMITE_PERDA_PK_SOBRE_PI * Pi
+    acima = perda > limite * (1.0 + 1e-12)
+    usa = acima or bool(obra_especial)
+    if usa:
+        sup, inf = FATOR_PK_SUP * Pt, FATOR_PK_INF * Pt
+        governante = ("perda máxima > 0,35·Pi" if acima else "obra especial")
+    else:
+        sup = inf = Pt
+        governante = "valor médio (perda máxima <= 0,35·Pi)"
+    memoria = (
+        f"9.6.1.3 (p. 68): [ΔP0 + ΔPt]máx = {_fmt_p30(perda)} kN; 0,35·Pi = "
+        f"0,35·{_fmt_p30(Pi)} = {_fmt_p30(limite)} kN.",
+        (f"[Pk,t]sup = 1,05·{_fmt_p30(Pt)} = {_fmt_p30(sup)} kN; "
+         f"[Pk,t]inf = 0,95·{_fmt_p30(Pt)} = {_fmt_p30(inf)} kN ({governante})." if usa else
+         f"Pk,t(x) = Pt(x) = {_fmt_p30(Pt)} kN ({governante})."),
+    )
+    return ForcaCaracteristicaProtensao(Pt, sup, inf, perda, limite, usa, governante, memoria)
+
+
+def Pd_kn(Pt_kn: float, gama_p: float | None = None, combinacao: str = "normal",
+          favoravel: bool = False) -> float:
+    """Valor de cálculo da força de protensão Pd,t(x) = γp·Pt(x), kN (9.6.1.4, PDF p. 68).
+
+    γp é o da Seção 11 (Tabela 11.1, coluna p): sem gama_p explícito, é lido
+    de acoes_nbr6118.gama_f_tabela_11_1(combinacao, 'protensao', 'D' ou 'F')
+    — 1,2 desfavorável e 0,9 favorável nas três combinações. Situações com γp
+    próprio (ato da protensão, 17.2.4.3.1; M0, 17.4.2.2) passam o valor em
+    gama_p. Força em kN.
+    """
+    Pt = _positivo_p30(Pt_kn, "Pt(x)")
+    if gama_p is None:
+        g = _acoes_p30.gama_f_tabela_11_1(combinacao, "protensao", "F" if favoravel else "D")
+    else:
+        g = _positivo_p30(gama_p, "γp")
+    return g * Pt
+
+
+# 9.6.3.3.2.2 (PDF p. 71) — coeficiente de atrito aparente μ (1/rad) e
+# coeficiente k de perda por metro (1/m), na falta de dados experimentais:
+# k = 0,065·μ para a bainha de polipropileno lubrificada e 0,01·μ nos outros casos.
+TABELA_MU_K = {
+    # contato: (μ, fator de k em k = fator·μ)
+    "cabo_concreto_sem_bainha": (0.50, 0.01),
+    "barra_ou_fio_com_mossas_bainha_metalica": (0.30, 0.01),
+    "fio_liso_ou_cordoalha_bainha_metalica": (0.20, 0.01),
+    "fio_liso_ou_cordoalha_bainha_metalica_lubrificada": (0.10, 0.01),
+    "cordoalha_bainha_polipropileno_lubrificada": (0.07, 0.065),
+}
+
+
+def coeficientes_atrito(contato: str) -> tuple[float, float]:
+    """(μ em 1/rad, k em 1/m) para a perda por atrito (9.6.3.3.2.2, PDF p. 71).
+
+    Na falta de dados experimentais:
+        μ = 0,50 entre cabo e concreto (sem bainha);
+        μ = 0,30 entre barras ou fios com mossas ou saliências e bainha metálica;
+        μ = 0,20 entre fios lisos ou cordoalhas e bainha metálica;
+        μ = 0,10 entre fios lisos ou cordoalhas e bainha metálica lubrificada;
+        μ = 0,07 entre a cordoalha e a bainha de polipropileno lubrificada;
+        k = 0,065·μ (1/m) para a bainha de polipropileno lubrificada e
+        k = 0,01·μ (1/m) para os outros casos.
+    contato: uma das chaves de TABELA_MU_K. Os valores alimentam
+    perda_atrito_kn(Pi, mu, theta, k, x).
+    """
+    k = _chave_p30(contato)
+    if k not in TABELA_MU_K:
+        raise ValueError(
+            f"Contato desconhecido: {contato!r}. Opções: {', '.join(TABELA_MU_K)}.")
+    mu, fator = TABELA_MU_K[k]
+    return mu, fator * mu
+
+
+def alpha_p_t(fck_mpa: float, t0_dias: float | None = None, cimento: str = "CPII",
+              agregado: str = "granito", Ep_mpa: float = E_P_MPA,
+              Eci_t0_mpa: float | None = None) -> float:
+    """Razão αp(t) = Ep/Eci(t) na idade t0 do concreto (9.6.3.4.2, PDF p. 72).
+
+    Eci(t) pela estimativa de 8.2.8 (nucleo.Eci_idade), com fckj = β1·fck
+    (nucleo.fckj, pelo cimento). Sem t0 (None) ou com t0 >= 28 dias devolve
+    αp = Ep/Eci. A estimativa vale de 7 a 28 dias: abaixo de 7 dias informe
+    Eci_t0_mpa (de ensaio), que substitui a estimativa em qualquer idade.
+    """
+    if Eci_t0_mpa is not None:
+        return Ep_mpa / _positivo_p30(Eci_t0_mpa, "Eci(t0)")
+    alpha_e = nbr.alpha_E(agregado)
+    if t0_dias is None or float(t0_dias) >= 28.0:
+        return Ep_mpa / nbr.Eci(fck_mpa, alpha_e)
+    if float(t0_dias) >= 7.0:
+        fckj_t0 = nbr.fckj(fck_mpa, t0_dias, cimento)
+        return Ep_mpa / nbr.Eci_idade(fck_mpa, fckj_t0, alpha_e)
+    raise nbr.FaixaNormativaError(
+        f"t0 = {float(t0_dias):g} dias: a estimativa de Eci(t) de 8.2.8 vale de 7 a 28 "
+        "dias. Informe Eci_t0_mpa (módulo de elasticidade medido na idade t0).")
+
+
+@dataclass(frozen=True)
+class DeformacoesAcoConcreto:
+    """Variações de deformação do aço e do concreto entre t0 e t (9.6.3.4.2)."""
+    deps_pt_pmil: float
+    deps_ct_pmil: float
+    chi: float
+    chi_p: float
+    chi_c: float
+    memoria: tuple[str, ...]
+
+
+def deformacoes_aco_concreto(
+    sigma_p0_mpa: float, delta_sigma_p_mpa: float,
+    sigma_c_p0g_mpa: float, delta_sigma_c_mpa: float,
+    phi: float, psi_percent: float, eps_cs_permil: float,
+    fck_mpa: float, agregado: str = "granito", Ep_mpa: float = E_P_MPA,
+    Eci_28_mpa: float | None = None,
+) -> DeformacoesAcoConcreto:
+    """Δεpt(t,t0) e Δεct(t,t0) do processo simplificado (9.6.3.4.2, PDF p. 72).
+
+        Δεpt(t,t0) = σp0/Ep·χ(t,t0) − Δσp(t,t0)/Ep·χp
+        Δεct(t,t0) = σc,p0g/Eci·φ(t,t0) − Δσc(t,t0)/Eci·χc + |εcs(t,t0)|
+    com χ(t,t0) = −ln[1 − ψ(t,t0)], χc = 1 + 0,5·φ(t,t0), χp = 1 + χ(t,t0).
+
+    Tensões em MPa (σp0 e Δσp positivas; σc,p0g positiva se compressão;
+    Δσc é a variação da tensão do concreto adjacente ao cabo entre t0 e t);
+    ψ em %; εcs em ‰ (entra em módulo). Eci é o de 28 dias (nucleo.Eci,
+    com o agregado) ou Eci_28_mpa, se informado. Devolve Δεpt e Δεct em ‰.
+
+    Conferência (dedução, não texto da norma): com Δσp da fórmula de
+    9.6.3.4.2 e Δσc = η·ρp·Δσp, tem-se Δεpt + Δεct = 0 quando αp(t) = αp.
+    """
+    psi = float(psi_percent)
+    if not 0.0 <= psi < 100.0:
+        raise nbr.FaixaNormativaError(f"ψ = {psi:g} %: tem de estar em [0, 100).")
+    if float(phi) < 0.0:
+        raise nbr.FaixaNormativaError(f"φ = {float(phi):g}: tem de ser >= 0.")
+    Eci = (_positivo_p30(Eci_28_mpa, "Eci") if Eci_28_mpa is not None
+           else nbr.Eci(fck_mpa, nbr.alpha_E(agregado)))
+    chi = -math.log(1.0 - psi / 100.0)
+    chi_c = 1.0 + 0.5 * phi
+    chi_p = 1.0 + chi
+    deps_pt = (sigma_p0_mpa / Ep_mpa * chi - delta_sigma_p_mpa / Ep_mpa * chi_p) * 1000.0
+    deps_ct = (sigma_c_p0g_mpa / Eci * phi - delta_sigma_c_mpa / Eci * chi_c) * 1000.0 \
+        + abs(eps_cs_permil)
+    memoria = (
+        f"9.6.3.4.2 (p. 72): χ = −ln(1 − {_fmt_p30(psi / 100.0)}) = {_fmt_p30(chi)}; "
+        f"χp = {_fmt_p30(chi_p)}; χc = 1 + 0,5·{_fmt_p30(phi)} = {_fmt_p30(chi_c)}.",
+        f"Δεpt = {_fmt_p30(sigma_p0_mpa)}/{_fmt_p30(Ep_mpa)}·{_fmt_p30(chi)} − "
+        f"{_fmt_p30(delta_sigma_p_mpa)}/{_fmt_p30(Ep_mpa)}·{_fmt_p30(chi_p)} = "
+        f"{_fmt_p30(deps_pt)} ‰.",
+        f"Δεct = {_fmt_p30(sigma_c_p0g_mpa)}/{_fmt_p30(Eci)}·{_fmt_p30(phi)} − "
+        f"{_fmt_p30(delta_sigma_c_mpa)}/{_fmt_p30(Eci)}·{_fmt_p30(chi_c)} + "
+        f"{_fmt_p30(abs(eps_cs_permil))} ‰ = {_fmt_p30(deps_ct)} ‰.",
+    )
+    return DeformacoesAcoConcreto(deps_pt, deps_ct, chi, chi_p, chi_c, memoria)
+
+
+# 9.6.3.4.3 (PDF p. 73) — processo aproximado: coeficientes (a, b, c) de
+# Δσp/σp0 [%] = a + (αp/b)·[φ(t∞,t0)]^c·(3 + σc,p0g).
+TABELA_9_6_3_4_3_APROXIMADO = {
+    "RN": (18.1, 47.0, 1.57),
+    "RB": (7.4, 18.7, 1.07),
+}
+TOLERANCIA_RETRACAO_APROXIMADO = 0.25   # "não difira em mais de 25 %"
+COEF_RETRACAO_APROXIMADO = -8.0e-5      # εcs de referência = −8·10^−5·φ(∞,t0)
+
+
+def perda_progressiva_aproximada_pct(
+    aco: str, phi_inf: float, sigma_c_p0g_mpa: float, eps_cs_permil: float,
+    fck_mpa: float, agregado: str = "granito", Ep_mpa: float = E_P_MPA,
+) -> float:
+    """Perda progressiva pelo processo aproximado, Δσp(t∞,t0)/σp0 em % (9.6.3.4.3, PDF p. 73).
+
+        a) aço RN: Δσp/σp0 = 18,1 + (αp/47)·[φ(t∞,t0)]^1,57·(3 + σc,p0g)
+        b) aço RB: Δσp/σp0 = 7,4 + (αp/18,7)·[φ(t∞,t0)]^1,07·(3 + σc,p0g)
+    com σc,p0g em MPa, positiva se compressão, e αp = Ep/Eci (Eci de 28 dias,
+    pelo fck e o agregado). Perda por fluência, retração e relaxação juntas.
+
+    Condição de aplicação: as mesmas de 9.6.3.4.2 (fases únicas de operação,
+    cabo resultante — não verificadas aqui) e a retração não pode diferir em
+    mais de 25 % do valor −8·10^−5·φ(∞,t0). eps_cs_permil é a retração em ‰
+    (comparada em módulo com 0,08·φ ‰); fora da condição levanta
+    FaixaNormativaError. Diferença de exatamente 25 % é aceita.
+    aco: 'RN' ou 'RB'. Devolve a perda em % de σp0.
+    """
+    chave = str(aco).strip().upper()
+    if chave not in TABELA_9_6_3_4_3_APROXIMADO:
+        raise ValueError(f"Aço {aco!r} desconhecido: use 'RN' ou 'RB'.")
+    phi = float(phi_inf)
+    if phi < 0.0:
+        raise nbr.FaixaNormativaError(f"φ(t∞,t0) = {phi:g}: tem de ser >= 0.")
+    ref_pmil = abs(COEF_RETRACAO_APROXIMADO) * phi * 1000.0
+    eps = abs(float(eps_cs_permil))
+    if abs(eps - ref_pmil) > TOLERANCIA_RETRACAO_APROXIMADO * ref_pmil * (1.0 + 1e-9) + 1e-15:
+        raise nbr.FaixaNormativaError(
+            f"Processo aproximado (9.6.3.4.3) não se aplica: |εcs| = {eps:g} ‰ difere em "
+            f"mais de 25 % de 8·10^−5·φ(∞,t0) = {ref_pmil:g} ‰. Use o processo "
+            "simplificado de 9.6.3.4.2 (perda_progressiva_simplificada).")
+    a, b, c = TABELA_9_6_3_4_3_APROXIMADO[chave]
+    alpha_p = Ep_mpa / nbr.Eci(fck_mpa, nbr.alpha_E(agregado))
+    return a + alpha_p / b * phi ** c * (3.0 + float(sigma_c_p0g_mpa))
 
 
 if __name__ == "__main__":

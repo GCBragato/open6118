@@ -123,30 +123,30 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `9.5.2.5-emenda-traspasse-feixe` | 9.5.2.5 | 64 | Emendas por traspasse em feixes de barras | ausente | baixa | M | P27 |
 | `9.5.3-emendas-luvas` | 9.5.3 | 65 | Emendas mecânicas por luvas | ausente | média | P | P27 |
 | `9.5.4-emendas-solda` | 9.5.4 | 65 | Emendas por solda — tipos, geometria e resistência | ausente | média | P | P27 |
-| `9.6.1.1-forca-media` | 9.6.1.1 | 67 | Força média na armadura de protensão Pt(x) | ausente | média | P | P30 |
-| `9.6.1.2.1-sigma-pi-limites` | 9.6.1.2.1 | 67 | Valores-limites de σpi na saída do aparelho de tração | ausente | média | P | P30 |
-| `9.6.1.2.2-sigma-p0-termino` | 9.6.1.2.2 | 67 | Verificação de σp0(x) ao término da protensão | ausente | média | P | P30 |
-| `9.6.1.2.3-tolerancia-execucao` | 9.6.1.2.3 | 67 | Tolerância de execução - majoração de σpi | ausente | baixa | P | P30 |
-| `9.6.1.3-Pk-caracteristico` | 9.6.1.3 | 68 | Valores característicos superior/inferior da força de protensão | ausente | baixa | P | P30 |
-| `9.6.1.4-Pd-calculo` | 9.6.1.4 | 68 | Valor de cálculo da força de protensão | ausente | média | P | P30 |
+| `9.6.1.1-forca-media` | 9.6.1.1 | 67 | Força média na armadura de protensão Pt(x) | implementado | média | P | P30 |
+| `9.6.1.2.1-sigma-pi-limites` | 9.6.1.2.1 | 67 | Valores-limites de σpi na saída do aparelho de tração | implementado | média | P | P30 |
+| `9.6.1.2.2-sigma-p0-termino` | 9.6.1.2.2 | 67 | Verificação de σp0(x) ao término da protensão | implementado | média | P | P30 |
+| `9.6.1.2.3-tolerancia-execucao` | 9.6.1.2.3 | 67 | Tolerância de execução - majoração de σpi | implementado | baixa | P | P30 |
+| `9.6.1.3-Pk-caracteristico` | 9.6.1.3 | 68 | Valores característicos superior/inferior da força de protensão | implementado | baixa | P | P30 |
+| `9.6.1.4-Pd-calculo` | 9.6.1.4 | 68 | Valor de cálculo da força de protensão | implementado | média | P | P30 |
 | `9.6.2.1-generalidades-qualitativo` | 9.6.2.1 | 68 | Distância de regularização - critério geral | não computável | baixa | P |  |
 | `9.6.2.2-angulo-beta-difusao` | 9.6.2.2 | 68 | Ângulo de difusão da protensão em pós-tração | ausente | média | P | P31 |
 | `9.6.2.3-lp-regularizacao` | 9.6.2.3 | 69 | Distância de regularização lp em elementos pré-tracionados | ausente | média | P | P31 |
 | `9.6.3.1-generalidades-perdas-qualitativo` | 9.6.3.1 | 69 | Perdas de protensão a prever no projeto | não computável | baixa | P |  |
 | `9.6.3.2-perdas-iniciais-qualitativo` | 9.6.3.2 | 69 | Perdas iniciais da força de protensão (pré-tração) | não computável | baixa | P |  |
 | `9.6.3.3.1-encurtamento-pretracao` | 9.6.3.3.1 | 70 | Perda imediata por deformação do concreto na pré-tração | implementado | média | P |  |
-| `9.6.3.3.2.1-encurtamento-postracao` | 9.6.3.3.2.1 | 70 | Perda por encurtamento do concreto entre grupos de cabos sucessivos (pós-tração) | parcial | média | P | P30 |
+| `9.6.3.3.2.1-encurtamento-postracao` | 9.6.3.3.2.1 | 70 | Perda por encurtamento do concreto entre grupos de cabos sucessivos (pós-tração) | implementado | média | P | P30 |
 | `9.6.3.3.2.2-perda-atrito` | 9.6.3.3.2.2 | 70 | Perda de protensão por atrito cabo-bainha (pós-tração) | implementado | média | P |  |
-| `9.6.3.3.2.2-tabela-mu-k` | 9.6.3.3.2.2 | 71 | Coeficientes de atrito μ e de perda por curvatura k | ausente | média | P | P30 |
+| `9.6.3.3.2.2-tabela-mu-k` | 9.6.3.3.2.2 | 71 | Coeficientes de atrito μ e de perda por curvatura k | implementado | média | P | P30 |
 | `9.6.3.3.2.3-deslizamento-qualitativo` | 9.6.3.3.2.3 | 71 | Perda por deslizamento da armadura e acomodação da ancoragem | não computável | média | P |  |
 | `9.6.3.4.2-processo-simplificado` | 9.6.3.4.2 | 71 | Perda progressiva combinada - processo simplificado (fases únicas) | implementado | média | M |  |
-| `9.6.3.4.2-deformacoes-aco-concreto` | 9.6.3.4.2 | 72 | Variação de deformação do aço e do concreto entre t0 e t | ausente | baixa | P | P30 |
-| `9.6.3.4.3-processo-aproximado-RN` | 9.6.3.4.3 | 73 | Perda progressiva - processo aproximado, aço de relaxação normal (RN) | ausente | média | P | P30 |
-| `9.6.3.4.3-processo-aproximado-RB` | 9.6.3.4.3 | 73 | Perda progressiva - processo aproximado, aço de relaxação baixa (RB) | ausente | média | P | P30 |
+| `9.6.3.4.2-deformacoes-aco-concreto` | 9.6.3.4.2 | 72 | Variação de deformação do aço e do concreto entre t0 e t | implementado | baixa | P | P30 |
+| `9.6.3.4.3-processo-aproximado-RN` | 9.6.3.4.3 | 73 | Perda progressiva - processo aproximado, aço de relaxação normal (RN) | implementado | média | P | P30 |
+| `9.6.3.4.3-processo-aproximado-RB` | 9.6.3.4.3 | 73 | Perda progressiva - processo aproximado, aço de relaxação baixa (RB) | implementado | média | P | P30 |
 | `9.6.3.4.4-metodo-geral` | 9.6.3.4.4 | 73 | Método geral de cálculo das perdas progressivas (fases diferentes) | ausente | baixa | G | P43 |
 | `9.6.3.4.5-psi-t` | 9.6.3.4.5 | 74 | Coeficiente de relaxação do aço no tempo ψ(t,t0) | implementado | média | P |  |
 | `9.6.3.4.5-psi-infinito` | 9.6.3.4.5 | 74 | Relaxação no tempo infinito ψ(t∞, t0) | implementado | média | P |  |
-| `9.6.3.4.5-psi-limite-tensao-minima` | 9.6.3.4.5 | 74 | Isenção de relaxação para tensões inferiores a 0,5 fptk | ausente | média | P | P30 |
+| `9.6.3.4.5-psi-limite-tensao-minima` | 9.6.3.4.5 | 74 | Isenção de relaxação para tensões inferiores a 0,5 fptk | implementado | média | P | P30 |
 
 ## Seção 10
 
