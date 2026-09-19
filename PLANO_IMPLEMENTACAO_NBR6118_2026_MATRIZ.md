@@ -45,25 +45,25 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | Id | Item | Pág. | O que é | Situação | Prior. | Compl. | Pacote |
 |---|---|---|---|---|---|---|---|
 | `8.2.1-classes-concreto-faixa` | 8.2.1 | 41 | Classes de resistência do concreto (grupos I e II, até C90) e faixa mínima com/sem armadura ativa | implementado | alta | P |  |
-| `8.2.2-massa-especifica-concreto` | 8.2.2 | 42 | Massa específica do concreto simples e armado | ausente | média | P | P2 |
-| `8.2.3-dilatacao-termica-concreto` | 8.2.3 | 42 | Coeficiente de dilatação térmica do concreto | ausente | baixa | P | P2 |
-| `8.2.5-fct-conversao-ensaios-indiretos` | 8.2.5 | 42 | fct a partir de ensaios indiretos (fct,sp ou fct,f) | ausente | baixa | P | P2 |
+| `8.2.2-massa-especifica-concreto` | 8.2.2 | 42 | Massa específica do concreto simples e armado | implementado | média | P | P2 |
+| `8.2.3-dilatacao-termica-concreto` | 8.2.3 | 42 | Coeficiente de dilatação térmica do concreto | implementado | baixa | P | P2 |
+| `8.2.5-fct-conversao-ensaios-indiretos` | 8.2.5 | 42 | fct a partir de ensaios indiretos (fct,sp ou fct,f) | implementado | baixa | P | P2 |
 | `8.2.5-fctm-fctkinf-fctksup-fctd` | 8.2.5 | 42 | fct,m, fctk,inf, fctk,sup e fctd em função de fck | implementado | alta | P |  |
-| `8.2.6-resistencia-multiaxial` | 8.2.6 | 42 | Resistência do concreto no estado multiaxial de tensões | ausente | baixa | P | P2 |
+| `8.2.6-resistencia-multiaxial` | 8.2.6 | 42 | Resistência do concreto no estado multiaxial de tensões | implementado | baixa | P | P2 |
 | `8.2.7-fadiga-concreto-referencia` | 8.2.7 | 43 | Resistência à fadiga do concreto (remete a 11.4.2.3 e 23.5.4) | não computável | baixa | P |  |
 | `8.2.8-Eci-Ecs-alphai-idade` | 8.2.8 | 44 | Eci, Ecs, αi e Eci em idade menor que 28 dias | implementado | alta | P |  |
-| `8.2.9-poisson-Gc` | 8.2.9 | 45 | Coeficiente de Poisson e módulo de elasticidade transversal Gc | parcial | baixa | P | P2 |
+| `8.2.9-poisson-Gc` | 8.2.9 | 45 | Coeficiente de Poisson e módulo de elasticidade transversal Gc | implementado | baixa | P | P2 |
 | `8.2.10.1-diagrama-parabola-retangulo` | 8.2.10.1 (Figura 8.2) | 45 | Diagrama tensão-deformação idealizado do concreto na compressão (parábola-retângulo) | implementado | alta | M |  |
-| `8.2.10.1-fig8.3-diagrama-nao-linear` | 8.2.10.1 (Figura 8.3) | 46 | Diagrama tensão-deformação para análise não linear (curta duração) | ausente | baixa | M | P2 |
-| `8.2.10.2-fig8.4-diagrama-bilinear-tracao` | 8.2.10.2 (Figura 8.4) | 46 | Diagrama tensão-deformação bilinear de tração do concreto não fissurado | ausente | média | P | P2 |
+| `8.2.10.1-fig8.3-diagrama-nao-linear` | 8.2.10.1 (Figura 8.3) | 46 | Diagrama tensão-deformação para análise não linear (curta duração) | implementado | baixa | M | P2 |
+| `8.2.10.2-fig8.4-diagrama-bilinear-tracao` | 8.2.10.2 (Figura 8.4) | 46 | Diagrama tensão-deformação bilinear de tração do concreto não fissurado | implementado | média | P | P2 |
 | `8.2.11-tabela8.1` | 8.2.11 | 47 | Tabela 8.1 - valores característicos de φ(t∞,t0) e εcs(t∞,t0) | implementado | alta | M |  |
 | `8.3.1-fyk-categoria` | 8.3.1 | 47 | Categorias do aço de armadura passiva e fyk | implementado | alta | P |  |
 | `8.3.2-tab8.2-eta1-aderencia` | 8.3.2 (Tabela 8.2) | 48 | Tabela 8.2 - η1 por categoria de aço | implementado | alta | P |  |
-| `8.3.3-8.4.2-massa-especifica-aco` | 8.3.3, 8.4.2 | 48 | Massa específica do aço passivo e ativo | ausente | baixa | P | P2 |
-| `8.3.4-8.4.3-dilatacao-termica-aco` | 8.3.4, 8.4.3 | 48 | Coeficiente de dilatação térmica do aço passivo e ativo | ausente | baixa | P | P2 |
+| `8.3.3-8.4.2-massa-especifica-aco` | 8.3.3, 8.4.2 | 48 | Massa específica do aço passivo e ativo | implementado | baixa | P | P2 |
+| `8.3.4-8.4.3-dilatacao-termica-aco` | 8.3.4, 8.4.3 | 48 | Coeficiente de dilatação térmica do aço passivo e ativo | implementado | baixa | P | P2 |
 | `8.3.5-8.4.4-modulo-elasticidade-aco` | 8.3.5, 8.4.4 | 48 | Módulo de elasticidade do aço passivo (Es) e ativo (Ep) | implementado | alta | P |  |
 | `8.3.6-fig8.5-diagrama-aco-passivo` | 8.3.6 (Figura 8.5) | 48 | Diagrama tensão-deformação bilinear do aço passivo (tração e compressão) | implementado | alta | P |  |
-| `8.3.7-dutilidade-aco-passivo` | 8.3.7 | 49 | Classificação de dutilidade do aço passivo | ausente | baixa | P | P2 |
+| `8.3.7-dutilidade-aco-passivo` | 8.3.7 | 49 | Classificação de dutilidade do aço passivo | implementado | baixa | P | P2 |
 | `8.3.8-fadiga-aco-passivo-referencia` | 8.3.8 | 49 | Resistência à fadiga do aço passivo (remete a 23.5.5) | não computável | baixa | P |  |
 | `8.3.9-soldabilidade-aco` | 8.3.9 | 49 | Soldabilidade do aço e critérios de ensaio da emenda soldada | não computável | baixa | P |  |
 | `8.4.1-classificacao-aco-ativo` | 8.4.1 | 49 | Classificação do aço de armadura ativa (fios/cordoalhas, RN/RB) | parcial | média | P | P3 |
@@ -296,7 +296,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.6.6.4-diafragma-rigido` | 14.6.6.4 | 115 | Critério para considerar a laje como diafragma rígido em seu plano | ausente | alta | P | P14 |
 | `14.7.1-hipoteses-placas` | 14.7.1 | 115 | Hipóteses básicas de estruturas de placas (seção plana em faixas estreitas, plano médio) | não computável | baixa | P |  |
 | `14.7.2.2-vao-efetivo-laje` | 14.7.2.2 | 116 | Vão efetivo de lajes/placas (mesma fórmula lef = l0+a1+a2 de 14.6.2.4) | implementado | alta | P |  |
-| `14.7.3-poisson-placas` | 14.7.3 | 116 | Coeficiente de Poisson para análise elástica de placas (ν = 0,2) | ausente | baixa | P | P2 |
+| `14.7.3-poisson-placas` | 14.7.3 | 116 | Coeficiente de Poisson para análise elástica de placas (ν = 0,2) | implementado | baixa | P | P2 |
 | `14.7.3.1-rigidez-estadio-I-placas` | 14.7.3.1 | 116 | Rigidez do Estádio I para verificação de flecha em placas (momento fletor menor que o de fissuração) | ausente | alta | P | P45 |
 | `14.7.3.2-redistribuicao-lajes` | 14.7.3.2 | 116 | Limites de x/d para redistribuição de momentos em placas (mesmas fórmulas de 14.6.4.3) | ausente | alta | P | P13 |
 | `14.7.4-xd-limite-plastico-laje` | 14.7.4 | 116 | Limite de x/d para dispensa de verificação de rotação na análise plástica de lajes (charneiras) | ausente | média | P | P13 |

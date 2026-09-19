@@ -13,7 +13,8 @@
    "nome": "Propriedades complementares dos materiais",
    "onda": 1,
    "prioridade": "media",
-   "modulo": "dimensionamento/nucleo_nbr6118.py"
+   "modulo": "dimensionamento/nucleo_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P3",
@@ -613,7 +614,7 @@
    "pagina_pdf": 42,
    "titulo": "Massa específica do concreto simples e armado",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P2",
@@ -623,7 +624,25 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Valores fixos: 2400 e 2500 kg/m3.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P2",
+    "data": "19/09/2026",
+    "funcoes": [
+     "MASSA_ESPECIFICA_CONCRETO_SIMPLES_KG_M3",
+     "MASSA_ESPECIFICA_CONCRETO_ARMADO_KG_M3",
+     "MASSA_ESPECIFICA_CONCRETO_MIN_KG_M3",
+     "MASSA_ESPECIFICA_CONCRETO_MAX_KG_M3",
+     "massa_especifica_concreto_armado_kg_m3"
+    ],
+    "testes": [
+     "test_massa_especifica_concreto_valores_fixos",
+     "test_massa_especifica_concreto_faixa_normal",
+     "test_massa_especifica_concreto_armado_com_simples_conhecida",
+     "test_massa_especifica_concreto_armado_acrescimo_fora_da_faixa"
+    ],
+    "observacao": "Constantes 2400/2500 kg/m3 e a faixa 2000-2800 kg/m3 (concreto de massa especifica normal). Funcao extra para o caso com massa real do simples conhecida (armado = simples + 100 a 150 kg/m3), com FaixaNormativaError fora do acrescimo permitido."
+   }
   },
   {
    "id": "8.2.3-dilatacao-termica-concreto",
@@ -631,7 +650,7 @@
    "pagina_pdf": 42,
    "titulo": "Coeficiente de dilatação térmica do concreto",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P2",
@@ -641,7 +660,18 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Valor fixo 1e-5/C.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P2",
+    "data": "19/09/2026",
+    "funcoes": [
+     "ALFA_TERMICO_CONCRETO"
+    ],
+    "testes": [
+     "test_alfa_termico_concreto"
+    ],
+    "observacao": "Constante 1e-5/C, conferida na imagem da p.42 (a norma nao da faixa de temperatura para o concreto, so para o aco)."
+   }
   },
   {
    "id": "8.2.5-fct-conversao-ensaios-indiretos",
@@ -649,7 +679,7 @@
    "pagina_pdf": 42,
    "titulo": "fct a partir de ensaios indiretos (fct,sp ou fct,f)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P2",
@@ -659,7 +689,20 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "fct,sp=3,0 -> fct=2,7; fct,f=4,0 -> fct=2,8.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P2",
+    "data": "19/09/2026",
+    "funcoes": [
+     "fct_de_ensaio"
+    ],
+    "testes": [
+     "test_fct_de_ensaio_fct_sp",
+     "test_fct_de_ensaio_fct_f",
+     "test_fct_de_ensaio_exige_exatamente_um"
+    ],
+    "observacao": "fct = 0,9*fct,sp ou 0,7*fct,f; a funcao exige exatamente um dos dois parametros (nunca os dois nem nenhum)."
+   }
   },
   {
    "id": "8.2.5-fctm-fctkinf-fctksup-fctd",
@@ -684,7 +727,7 @@
    "pagina_pdf": 42,
    "titulo": "Resistência do concreto no estado multiaxial de tensões",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P2",
@@ -696,7 +739,23 @@
     "8.2.5-fctm-fctkinf-fctksup-fctd"
    ],
    "teste_sugerido": "fck=25, sigma1=-2MPa vs fctk~1,8MPa.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P2",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_tensao_multiaxial",
+     "ResultadoTensaoMultiaxial"
+    ],
+    "testes": [
+     "test_verificar_tensao_multiaxial_dentro_dos_limites",
+     "test_verificar_tensao_multiaxial_sigma1_no_limite_de_tracao",
+     "test_verificar_tensao_multiaxial_sigma1_viola_tracao",
+     "test_verificar_tensao_multiaxial_sigma3_no_limite_de_compressao",
+     "test_verificar_tensao_multiaxial_exige_ordem_sigma3_sigma2_sigma1"
+    ],
+    "observacao": "sigma1 >= -fctk e sigma3 <= fck + 4*sigma1 (Figura 8.1). Decisao de projeto: o 'fctk' sem subscrito da imagem foi lido como fctk,inf (8.2.5), por ser o valor a favor da seguranca e por ser essa a leitura ja usada no nucleo (fctd = fctk,inf/gama_c). A funcao valida que sigma3>=sigma2>=sigma1 antes de aplicar os limites."
+   }
   },
   {
    "id": "8.2.7-fadiga-concreto-referencia",
@@ -737,7 +796,7 @@
    "pagina_pdf": 45,
    "titulo": "Coeficiente de Poisson e módulo de elasticidade transversal Gc",
    "tipo": "limite",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P2",
@@ -750,7 +809,19 @@
     "8.2.8-Eci-Ecs-alphai-idade"
    ],
    "teste_sugerido": "Valor fixo nu=0,2.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P2",
+    "data": "19/09/2026",
+    "funcoes": [
+     "POISSON_CONCRETO"
+    ],
+    "testes": [
+     "test_poisson_concreto",
+     "test_Gc_ja_usa_2_4_consistente_com_poisson"
+    ],
+    "observacao": "Gc = Ecs/2,4 ja existia e nao foi tocado; so faltava a constante nomeada POISSON_CONCRETO = 0,2, que este pacote acrescenta."
+   }
   },
   {
    "id": "8.2.10.1-diagrama-parabola-retangulo",
@@ -777,7 +848,7 @@
    "pagina_pdf": 46,
    "titulo": "Diagrama tensão-deformação para análise não linear (curta duração)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "M",
    "pacote": "P2",
@@ -789,7 +860,24 @@
     "8.2.8-Eci-Ecs-alphai-idade"
    ],
    "teste_sugerido": "C30: fcm=38; eps_c1=0,7*38^0,31 permil.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P2",
+    "data": "19/09/2026",
+    "funcoes": [
+     "sigma_c_nao_linear",
+     "_eps_c1_pmil_fig_8_3",
+     "_eps_cu1_pmil_fig_8_3"
+    ],
+    "testes": [
+     "test_sigma_c_nao_linear_zero_e_negativo",
+     "test_sigma_c_nao_linear_pico_em_eps_c1_igual_fcm",
+     "test_sigma_c_nao_linear_ponto_interior",
+     "test_sigma_c_nao_linear_eps_cu1_fck_ate_50_usa_eps_cu",
+     "test_sigma_c_nao_linear_eps_cu1_fck_acima_de_50"
+    ],
+    "observacao": "sigma_c/fcm=(k*eta-eta^2)/[1+(k-2)*eta], k=1,05*Ecm*|eps_c1|/fcm, eps_c1=0,7*fcm^0,31<=2,8 permil. eps_cu1 usa eps_cu(fck) existente quando fck<=50 (fck obtido de volta de fcm=fck+8) e formula propria acima. Decisao de leitura: a norma so usa o simbolo 'Ecm' nesta figura, sem defini-lo em outro lugar; foi lido como o Eci de 8.2.8 (mesma leitura do proprio brief do pacote, que ja nomeia o parametro Eci_mpa). Teste confere continuidade e pico exato em fcm no ponto eps_c1."
+   }
   },
   {
    "id": "8.2.10.2-fig8.4-diagrama-bilinear-tracao",
@@ -797,7 +885,7 @@
    "pagina_pdf": 46,
    "titulo": "Diagrama tensão-deformação bilinear de tração do concreto não fissurado",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P2",
@@ -810,7 +898,22 @@
     "8.2.8-Eci-Ecs-alphai-idade"
    ],
    "teste_sugerido": "fctk=1,8MPa, Eci=28000: eps a 0,9fctk=0,0579permil; depois reta ate (0,15permil;1,8MPa).",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P2",
+    "data": "19/09/2026",
+    "funcoes": [
+     "sigma_ct",
+     "EPS_CT_MAX_FIG_8_4"
+    ],
+    "testes": [
+     "test_sigma_ct_zero",
+     "test_sigma_ct_primeiro_trecho_elastico",
+     "test_sigma_ct_segundo_trecho_ate_ponto_final",
+     "test_sigma_ct_fora_da_faixa"
+    ],
+    "observacao": "Primeiro trecho sigma_ct=Eci*eps_ct ate 0,9*fctk; segundo trecho ate o ponto final (0,15 permil; fctk). Mesma decisao de leitura de 8.2.6: 'fctk' sem subscrito lido como fctk,inf. Eci usa o agregado padrao (alpha_e=1,0); a docstring avisa para montar a reta na mao com outro agregado."
+   }
   },
   {
    "id": "8.2.11-tabela8.1",
@@ -869,7 +972,7 @@
    "pagina_pdf": 48,
    "titulo": "Massa específica do aço passivo e ativo",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P2",
@@ -879,7 +982,18 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Valor fixo 7850 kg/m3.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P2",
+    "data": "19/09/2026",
+    "funcoes": [
+     "MASSA_ESPECIFICA_ACO_KG_M3"
+    ],
+    "testes": [
+     "test_massa_especifica_aco"
+    ],
+    "observacao": "7850 kg/m3, mesmo valor para passivo (8.3.3) e ativo (8.4.2), confirmado nas duas paginas da imagem."
+   }
   },
   {
    "id": "8.3.4-8.4.3-dilatacao-termica-aco",
@@ -887,7 +1001,7 @@
    "pagina_pdf": 48,
    "titulo": "Coeficiente de dilatação térmica do aço passivo e ativo",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P2",
@@ -897,7 +1011,24 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Valor fixo 1e-5/C.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P2",
+    "data": "19/09/2026",
+    "funcoes": [
+     "ALFA_TERMICO_ACO",
+     "alfa_termico_aco"
+    ],
+    "testes": [
+     "test_alfa_termico_aco_valor_fixo",
+     "test_alfa_termico_aco_passivo_dentro_da_faixa",
+     "test_alfa_termico_aco_passivo_fora_da_faixa",
+     "test_alfa_termico_aco_ativo_dentro_da_faixa",
+     "test_alfa_termico_aco_ativo_fora_da_faixa",
+     "test_alfa_termico_aco_tipo_desconhecido"
+    ],
+    "observacao": "1e-5/C para os dois tipos, com faixa de validade diferente por tipo (-20 a 150C passivo, -20 a 100C ativo), levantando FaixaNormativaError quando a temperatura informada sai da faixa do tipo."
+   }
   },
   {
    "id": "8.3.5-8.4.4-modulo-elasticidade-aco",
@@ -943,7 +1074,7 @@
    "pagina_pdf": 49,
    "titulo": "Classificação de dutilidade do aço passivo",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P2",
@@ -955,7 +1086,20 @@
     "8.3.1-fyk-categoria"
    ],
    "teste_sugerido": "Comparar fst/fy e euk com minimos NBR7480.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P2",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dutilidade_aco_passivo",
+     "DUTILIDADE_ACO_CATEGORIA"
+    ],
+    "testes": [
+     "test_dutilidade_aco_passivo",
+     "test_dutilidade_aco_passivo_categoria_desconhecida"
+    ],
+    "observacao": "CA-25/CA-50 -> 'alta', CA-60 -> 'normal', como a norma descreve. Ressalva documentada na docstring e nas pendencias: a classificacao real depende dos minimos de fst/fy e eps_uk da ABNT NBR 7480, dado de ensaio do lote que esta biblioteca nao tem; a funcao classifica so pela categoria declarada, que e exatamente a assinatura pedida pelo brief do pacote."
+   }
   },
   {
    "id": "8.3.8-fadiga-aco-passivo-referencia",
@@ -4506,7 +4650,7 @@
    "pagina_pdf": 116,
    "titulo": "Coeficiente de Poisson para análise elástica de placas (ν = 0,2)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P2",
@@ -4514,7 +4658,18 @@
    "o_que_calcula": "Valor fixo do coeficiente de Poisson a adotar na teoria da elasticidade aplicada a placas de concreto.",
    "formula_ou_regra": "nu = 0,2",
    "conferido_na_imagem": true,
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P2",
+    "data": "19/09/2026",
+    "funcoes": [
+     "POISSON_CONCRETO"
+    ],
+    "testes": [
+     "test_poisson_concreto"
+    ],
+    "observacao": "Mesma constante POISSON_CONCRETO = 0,2 de 8.2.9, reaproveitada aqui como o brief pediu (constante unica para os dois itens)."
+   }
   },
   {
    "id": "14.7.3.1-rigidez-estadio-I-placas",

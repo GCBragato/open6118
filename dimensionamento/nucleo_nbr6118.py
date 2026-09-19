@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import math
 import unicodedata
+from dataclasses import dataclass
 
 # ---------------------------------------------------------------------------
 # Constantes
@@ -709,3 +710,254 @@ def phi_eps_cs_NBR(umidade_pct: float, h_fic_cm: float,
     phi = _interp_tabela_8_1(TABELA_8_1_PHI[bloco], umidade_pct, h_fic_cm, to_dias)
     eps = _interp_tabela_8_1(TABELA_8_1_EPS_CS, umidade_pct, h_fic_cm, to_dias)
     return phi, eps
+
+
+# ---------------------------------------------------------------------------
+# === P2: Propriedades complementares dos materiais ===
+# ---------------------------------------------------------------------------
+# Massa específica do concreto — 8.2.2 (PDF p. 42)
+MASSA_ESPECIFICA_CONCRETO_MIN_KG_M3 = 2000.0   # 8.2.2 — faixa do concreto de massa específica normal
+MASSA_ESPECIFICA_CONCRETO_MAX_KG_M3 = 2800.0
+MASSA_ESPECIFICA_CONCRETO_SIMPLES_KG_M3 = 2400.0   # 8.2.2 — na falta de valor real, concreto simples
+MASSA_ESPECIFICA_CONCRETO_ARMADO_KG_M3 = 2500.0    # 8.2.2 — na falta de valor real, concreto armado
+MASSA_ESPECIFICA_CONCRETO_ACRESCIMO_MIN_KG_M3 = 100.0   # 8.2.2 — acréscimo sobre o simples real conhecido
+MASSA_ESPECIFICA_CONCRETO_ACRESCIMO_MAX_KG_M3 = 150.0
+
+
+def massa_especifica_concreto_armado_kg_m3(rho_simples_kg_m3: float,
+                                           acrescimo_kg_m3: float = 125.0) -> float:
+    """Massa específica do concreto armado a partir da do concreto simples conhecida, kg/m³ (8.2.2).
+
+    ρ_armado = ρ_simples + acréscimo, com o acréscimo entre 100 kg/m³ e
+    150 kg/m³ (o padrão usado aqui, 125 kg/m³, é o meio da faixa; a norma não
+    dá um valor único). Fora dessa faixa levanta ``FaixaNormativaError``. Na
+    falta de ρ_simples real, use direto as constantes
+    ``MASSA_ESPECIFICA_CONCRETO_SIMPLES_KG_M3`` (2400) e
+    ``MASSA_ESPECIFICA_CONCRETO_ARMADO_KG_M3`` (2500).
+    """
+    if not (MASSA_ESPECIFICA_CONCRETO_ACRESCIMO_MIN_KG_M3 <= acrescimo_kg_m3
+            <= MASSA_ESPECIFICA_CONCRETO_ACRESCIMO_MAX_KG_M3):
+        raise FaixaNormativaError(
+            f"Acréscimo de {acrescimo_kg_m3:g} kg/m³ fora da faixa de 8.2.2 "
+            f"({MASSA_ESPECIFICA_CONCRETO_ACRESCIMO_MIN_KG_M3:g} a "
+            f"{MASSA_ESPECIFICA_CONCRETO_ACRESCIMO_MAX_KG_M3:g} kg/m³)."
+        )
+    return float(rho_simples_kg_m3) + float(acrescimo_kg_m3)
+
+
+# ---------------------------------------------------------------------------
+# Dilatação térmica e Poisson do concreto — 8.2.3, 8.2.9, 14.7.3 (PDF p. 42, 45, 116)
+# ---------------------------------------------------------------------------
+ALFA_TERMICO_CONCRETO = 1.0e-5   # 1/°C (8.2.3)
+POISSON_CONCRETO = 0.2           # 8.2.9 (tensão de compressão < 0,5·fc e de tração < fct) e 14.7.3 (placas)
+
+
+# ---------------------------------------------------------------------------
+# fct de ensaios indiretos — 8.2.5 (PDF p. 42)
+# ---------------------------------------------------------------------------
+def fct_de_ensaio(fct_sp_mpa: float | None = None, fct_f_mpa: float | None = None) -> float:
+    """fct direta a partir de ensaio indireto, MPa (8.2.5).
+
+    fct = 0,9·fct,sp (tração indireta, ABNT NBR 7222) ou fct = 0,7·fct,f
+    (tração na flexão, ABNT NBR 12142). Informe exatamente um dos dois.
+    """
+    if (fct_sp_mpa is None) == (fct_f_mpa is None):
+        raise ValueError("Informe exatamente um dos dois: fct_sp_mpa ou fct_f_mpa.")
+    if fct_sp_mpa is not None:
+        return 0.9 * float(fct_sp_mpa)
+    return 0.7 * float(fct_f_mpa)
+
+
+# ---------------------------------------------------------------------------
+# Resistência no estado multiaxial de tensões — 8.2.6, Figura 8.1 (PDF p. 43)
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class ResultadoTensaoMultiaxial:
+    sigma1_mpa: float
+    sigma2_mpa: float
+    sigma3_mpa: float
+    fck_mpa: float
+    fctk_mpa: float
+    sigma3_lim_mpa: float
+    ok_tracao: bool
+    ok_compressao: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_tensao_multiaxial(sigma1_mpa: float, sigma2_mpa: float, sigma3_mpa: float,
+                                fck_mpa: float) -> ResultadoTensaoMultiaxial:
+    """Verifica as tensões principais no estado multiaxial, MPa (8.2.6, Figura 8.1).
+
+    Com as tensões principais ordenadas σ3 >= σ2 >= σ1 (compressão positiva,
+    tração negativa):
+        σ1 >= −fctk
+        σ3 <= fck + 4·σ1
+    fctk é tomado como fctk,inf (8.2.5): a norma não diz qual dos dois usar
+    aqui, e fctk,inf é o valor a favor da segurança, como em fctd = fctk,inf/γc.
+    """
+    s1, s2, s3 = float(sigma1_mpa), float(sigma2_mpa), float(sigma3_mpa)
+    if not (s3 >= s2 - 1e-9 and s2 >= s1 - 1e-9):
+        raise ValueError(
+            "As tensões principais devem vir ordenadas σ3 >= σ2 >= σ1 "
+            f"(recebido σ1={s1:g}, σ2={s2:g}, σ3={s3:g})."
+        )
+    fck = validar_fck(fck_mpa)
+    fctk = fctk_inf(fck)
+    ok_tracao = s1 >= -fctk - 1e-9
+    sigma3_lim = fck + 4.0 * s1
+    ok_compressao = s3 <= sigma3_lim + 1e-9
+    ok = ok_tracao and ok_compressao
+    if not ok_tracao:
+        governante = "σ1 < −fctk,inf (8.2.6)"
+    elif not ok_compressao:
+        governante = "σ3 > fck + 4·σ1 (8.2.6)"
+    else:
+        governante = "dentro dos limites de 8.2.6"
+    memoria = (
+        f"8.2.6: σ1={s1:g} MPa, σ2={s2:g} MPa, σ3={s3:g} MPa, "
+        f"fck={fck:g} MPa, fctk,inf={fctk:.4g} MPa.",
+        f"σ1 >= −fctk,inf: {s1:g} >= {-fctk:.4g} -> {'ok' if ok_tracao else 'não ok'}.",
+        f"σ3 <= fck + 4·σ1: {s3:g} <= {sigma3_lim:.4g} -> {'ok' if ok_compressao else 'não ok'}.",
+    )
+    return ResultadoTensaoMultiaxial(
+        sigma1_mpa=s1, sigma2_mpa=s2, sigma3_mpa=s3, fck_mpa=fck, fctk_mpa=fctk,
+        sigma3_lim_mpa=sigma3_lim, ok_tracao=ok_tracao, ok_compressao=ok_compressao,
+        ok=ok, governante=governante, memoria=memoria,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Diagrama tensão-deformação para análise não linear — 8.2.10.1, Figura 8.3 (PDF p. 46)
+# ---------------------------------------------------------------------------
+def _eps_c1_pmil_fig_8_3(fcm_mpa: float) -> float:
+    """εc1 = 0,7·fcm^0,31 <= 2,8 ‰ (Figura 8.3)."""
+    return min(0.7 * float(fcm_mpa) ** 0.31, 2.8)
+
+
+def _eps_cu1_pmil_fig_8_3(fcm_mpa: float) -> float:
+    """εcu1 da Figura 8.3: εcu (8.2.10.1) se fck <= 50 MPa; fórmula própria acima disso.
+
+    fck é obtido de volta de fcm = fck + 8 (a relação que a própria Figura 8.3
+    manda usar).
+    """
+    fcm = float(fcm_mpa)
+    fck = fcm - 8.0
+    if fck <= 50.0:
+        return eps_cu(fck)
+    return 2.8 + 27.0 * ((98.0 - fcm) / 100.0) ** 4
+
+
+def sigma_c_nao_linear(eps_c_pmil: float, fcm_mpa: float, Eci_mpa: float) -> float:
+    """Tensão do diagrama para análise não linear de curta duração, MPa (8.2.10.1, Figura 8.3).
+
+    σc/fcm = (k·η − η²)/[1 + (k−2)·η], com
+    k = 1,05·Ecm·|εc1|/fcm (εc1 em ‰, convertido para adimensional),
+    η = εc/εc1, εc1 = 0,7·fcm^0,31 <= 2,8 ‰.
+    A norma chama o módulo de ``Ecm`` só nesta figura; em nenhum outro lugar
+    da 6118:2026 há um Ecm distinto de Eci (8.2.8), então ``Eci_mpa`` aqui é
+    o Eci de 8.2.8. fcm = fck + 8 (MPa) é calculado pelo chamador e passado
+    pronto, porque esta função não recebe fck.
+    Deformação de compressão positiva; tração devolve 0 (mesma convenção do
+    diagrama parábola-retângulo). Além de εcu1 levanta ``FaixaNormativaError``.
+    O diagrama é contínuo em εc1 (onde vale exatamente fcm, o pico) porque em
+    η=1 a expressão (k−1)/(k−1) vale 1 para qualquer k.
+    """
+    fcm = float(fcm_mpa)
+    eps = float(eps_c_pmil)
+    if eps <= 0.0:
+        return 0.0
+    eps_c1 = _eps_c1_pmil_fig_8_3(fcm)
+    eps_cu1 = _eps_cu1_pmil_fig_8_3(fcm)
+    if eps > eps_cu1 + 1e-9:
+        raise FaixaNormativaError(
+            f"εc = {eps:g} ‰ além de εcu1 = {eps_cu1:.4g} ‰ (Figura 8.3)."
+        )
+    k = 1.05 * float(Eci_mpa) * (eps_c1 / 1000.0) / fcm
+    eta = eps / eps_c1
+    return fcm * (k * eta - eta ** 2) / (1.0 + (k - 2.0) * eta)
+
+
+# ---------------------------------------------------------------------------
+# Diagrama bilinear de tração — 8.2.10.2, Figura 8.4 (PDF p. 46)
+# ---------------------------------------------------------------------------
+EPS_CT_MAX_FIG_8_4 = 0.15   # ‰ — ponto final do diagrama, onde σct = fctk
+
+
+def sigma_ct(eps_ct_pmil: float, fck_mpa: float) -> float:
+    """Tensão do diagrama bilinear de tração do concreto não fissurado, MPa (8.2.10.2, Figura 8.4).
+
+    Para σct <= 0,9·fctk: reta elástica σct = Eci·εct (εct em ‰, /1000 para
+    adimensionalizar). Daí até o ponto final (0,15 ‰; fctk): segunda reta.
+    fctk é tomado como fctk,inf (8.2.5), pela mesma razão de 8.2.6: a norma
+    não diz qual dos dois usar, e fctk,inf é o valor a favor da segurança.
+    Eci é o de 8.2.8 com o agregado padrão (αE = 1,0); para outro agregado,
+    informe o Eci correto e monte a reta na mão com os dois pontos aqui
+    descritos. εct em ‰, tração positiva; fora de [0; 0,15 ‰] levanta
+    ``FaixaNormativaError``.
+    """
+    eps = float(eps_ct_pmil)
+    if not (0.0 <= eps <= EPS_CT_MAX_FIG_8_4 + 1e-9):
+        raise FaixaNormativaError(
+            f"εct = {eps:g} ‰ fora da faixa da Figura 8.4 (0 a {EPS_CT_MAX_FIG_8_4:g} ‰)."
+        )
+    fck = validar_fck(fck_mpa)
+    fctk = fctk_inf(fck)
+    eci = Eci(fck)
+    sigma_transicao = 0.9 * fctk
+    eps_transicao = sigma_transicao / eci * 1000.0
+    if eps <= eps_transicao:
+        return eci * eps / 1000.0
+    return sigma_transicao + (fctk - sigma_transicao) * (eps - eps_transicao) / (EPS_CT_MAX_FIG_8_4 - eps_transicao)
+
+
+# ---------------------------------------------------------------------------
+# Aço passivo e ativo — massa específica, dilatação térmica e dutilidade
+# 8.3.3, 8.3.4, 8.3.7, 8.4.2, 8.4.3 (PDF p. 48-50)
+# ---------------------------------------------------------------------------
+MASSA_ESPECIFICA_ACO_KG_M3 = 7850.0   # 8.3.3 (passivo) e 8.4.2 (ativo)
+
+ALFA_TERMICO_ACO = 1.0e-5   # 1/°C (8.3.4 passivo, 8.4.3 ativo)
+_FAIXA_TEMPERATURA_ALFA_ACO = {   # (temperatura mínima, máxima), °C
+    "passivo": (-20.0, 150.0),
+    "ativo": (-20.0, 100.0),
+}
+
+
+def alfa_termico_aco(tipo: str = "passivo", temperatura_c: float | None = None) -> float:
+    """Coeficiente de dilatação térmica do aço, 1/°C (8.3.4 passivo; 8.4.3 ativo).
+
+    Vale 1·10⁻⁵/°C entre −20 °C e 150 °C para armadura passiva e entre
+    −20 °C e 100 °C para armadura ativa. ``temperatura_c`` é opcional; quando
+    informada e fora da faixa do tipo, levanta ``FaixaNormativaError``.
+    """
+    chave = _chave(tipo)
+    if chave not in _FAIXA_TEMPERATURA_ALFA_ACO:
+        raise ValueError(f"Tipo de armadura desconhecido: {tipo!r}. Use 'passivo' ou 'ativo'.")
+    if temperatura_c is not None:
+        tmin, tmax = _FAIXA_TEMPERATURA_ALFA_ACO[chave]
+        t = float(temperatura_c)
+        if not (tmin <= t <= tmax):
+            raise FaixaNormativaError(
+                f"Temperatura de {t:g} °C fora da faixa de validade do coeficiente de "
+                f"dilatação térmica do aço {tipo} ({tmin:g} a {tmax:g} °C)."
+            )
+    return ALFA_TERMICO_ACO
+
+
+DUTILIDADE_ACO_CATEGORIA = {"ca25": "alta", "ca50": "alta", "ca60": "normal"}
+
+
+def dutilidade_aco_passivo(categoria: str) -> str:
+    """Classifica a dutilidade do aço passivo pela categoria, 'alta' ou 'normal' (8.3.7).
+
+    CA-25 e CA-50 são considerados de alta dutilidade, e CA-60 de dutilidade
+    normal, desde que atendam aos mínimos de fst/fy e εuk da ABNT NBR 7480
+    (dados do lote do fabricante, fora do escopo desta função e desta
+    biblioteca: aqui a classificação é só pela categoria declarada).
+    """
+    chave = _chave(categoria)
+    if chave not in DUTILIDADE_ACO_CATEGORIA:
+        raise ValueError(f"Categoria de aço desconhecida: {categoria!r}. Use CA-25, CA-50 ou CA-60.")
+    return DUTILIDADE_ACO_CATEGORIA[chave]
