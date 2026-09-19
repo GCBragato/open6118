@@ -4519,7 +4519,7 @@
    "id": "14.7.3.1-rigidez-estadio-I-placas",
    "item_norma": "14.7.3.1",
    "pagina_pdf": 116,
-   "titulo": "Rigidez do Estadio I para verificação de flecha em placas (momento fletor menor que o de fissuração)",
+   "titulo": "Rigidez do Estádio I para verificação de flecha em placas (momento fletor menor que o de fissuração)",
    "tipo": "qualitativo",
    "status": "ausente",
    "prioridade": "alta",
@@ -4641,7 +4641,7 @@
   {
    "id": "14.7.7-lajes-nervuradas-grelha-vigas",
    "item_norma": "14.7.7",
-   "pagina_pdf": 117,
+   "pagina_pdf": 118,
    "titulo": "Cálculo da laje nervurada como grelha de vigas quando as hipóteses de laje maciça não se aplicam",
    "tipo": "procedimento",
    "status": "ausente",
@@ -4656,7 +4656,7 @@
    "trecho": "analise",
    "pacote": "P45",
    "fora_do_escopo_ate_18_09": "Modelar a laje nervurada como grelha é análise estrutural, feita no TQS. Os limites que tornam isso obrigatório estão no P10.",
-   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras)."
+   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras). Página corrigida de 117 para 118 na verificação de 19/09/2026."
   },
   {
    "id": "14.7.7-lajes-nervuradas-unidirecionais",
@@ -5878,7 +5878,7 @@
    "id": "17.2.4.3.2-armadura-tracao-estadio2",
    "item_norma": "17.2.4.3.2-c",
    "pagina_pdf": 144,
-   "titulo": "Armadura de tração no Estadio II para o ato da protensão",
+   "titulo": "Armadura de tração no Estádio II para o ato da protensão",
    "tipo": "verificacao",
    "status": "ausente",
    "prioridade": "media",

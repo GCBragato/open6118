@@ -19,9 +19,9 @@ ferramenta de cálculo e a quem ensina e quer mostrar cada passo.
 - **613 testes**, com os valores esperados tirados do texto da norma, e não de exemplos de apostila.
 - **Concreto de C20 a C90**, com o Grupo II (C55 a C90) calculado de verdade. Fora dessa faixa, a biblioteca
   levanta `FaixaNormativaError` em vez de extrapolar.
-- **Cobre 75 dos 505 itens computáveis da norma.** O restante está planejado em 43 pacotes, em
+- **Cobre 75 dos 519 itens computáveis da norma.** O restante está planejado em 48 pacotes, em
   [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.md), com a
-  [matriz item a item](PLANO_IMPLEMENTACAO_NBR6118_2026_MATRIZ.md).
+  [matriz item a item](PLANO_IMPLEMENTACAO_NBR6118_2026_MATRIZ.md). Só o vento fica fora, porque é de outra norma.
 
 ## O que ela calcula hoje
 
@@ -86,8 +86,9 @@ Python 3.13. O padrão é o kernel em Python, que dá o mesmo resultado; para re
 
 ## O que a biblioteca não faz
 
-1. **Não é programa de projeto.** Não monta modelo nem faz análise estrutural global; verifica seções e
-   elementos a partir de esforços dados.
+1. **Não é programa de projeto.** Hoje não monta modelo nem faz análise estrutural; verifica seções e
+   elementos a partir de esforços dados. O cálculo de estruturas de barras (pórtico, grelha e treliça), que a
+   norma prescreve, está no plano.
 2. **Não substitui o engenheiro responsável.** Todo resultado deve ser conferido à luz da NBR 6118:2026 e das
    demais normas aplicáveis.
 3. **Cobre só parte da norma.** O que não está implementado não é verificado; a

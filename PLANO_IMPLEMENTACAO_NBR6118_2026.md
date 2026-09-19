@@ -16,7 +16,7 @@
 3. **Uma preparação e quatro ondas.**
    - **Preparação, feita em 19/09/2026:** os módulos `*_bastos.py` foram renomeados para `*_nbr6118.py` (decisão 4).
    - **Onda 1, fundação (P1 a P9):** durabilidade, materiais, ações e combinações, fluência e retração, ELS base. Quase tudo o que vem depois consome isso.
-   - **Onda 2, uso corrente em edifícios (P10 a P26, P44 e P45):** limites geométricos, cortante e torção completos, lajes, **punção** (a maior lacuna: não existe punção de laje; só a de sapata rígida), detalhamento de vigas e pilares, 2ª ordem de pilares, estabilidade global e o **cálculo próprio de estruturas de barras** (pórtico, grelha e treliça), com as lajes nervuradas e lisas por grelha e por pórtico equivalente.
+   - **Onda 2, uso corrente em edifícios (P10 a P26, P44 e P45):** limites geométricos, cortante e torção completos, lajes, **punção** (a maior lacuna: não existe punção de laje; só a de sapata rígida), detalhamento de vigas e pilares, 2ª ordem de pilares, estabilidade global e o **cálculo próprio de estruturas de barras** (pórtico, grelha e treliça), com as lajes nervuradas e lisas calculadas por grelha e por pórtico equivalente.
    - **Onda 3, prioridade média (P27 a P37 e P46 a P48):** emendas, protensão completa, bielas e tirantes, consolos, fundações, regiões especiais, pilar-parede, o crescimento do kernel, a 2ª ordem global por análise não linear, os esforços hiperestáticos de protensão e os modelos de bielas e tirantes de viga-parede, sapata e bloco.
    - **Onda 4, prioridade baixa (P38 a P43):** fadiga, concreto simples, perfis abertos e o método geral de perdas.
 4. **Por que essa ordem.** Punção, flecha e detalhamento são o que o escritório mais usa, mas dependem de ações combinadas (P4), de fluência (P6), do estádio II (P9) e do wk,máx pela classe de agressividade (P1). Fazer a base primeiro evita que cada pacote de uso corrente reimplemente um pedaço dela, que foi exatamente o problema que a auditoria encontrou (11 cópias de fct,m). O cálculo de barras (P44) vem logo depois das combinações, porque é delas que saem os casos de carga.
@@ -1213,7 +1213,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 - **Onda 2**, prioridade alta. Módulo: dimensionamento/analise_lajes_nbr6118.py.
 - **Itens (5):**
   - `14.7.3.1-rigidez-estadio-I-placas` · 14.7.3.1 · p. 116
-  - `14.7.7-lajes-nervuradas-grelha-vigas` · 14.7.7 · p. 117
+  - `14.7.7-lajes-nervuradas-grelha-vigas` · 14.7.7 · p. 118
   - `14.7.7-lajes-nervuradas-unidirecionais` · 14.7.7 · p. 118
   - `14.7.8-analise-numerica-lajes-lisas` · 14.7.8 · p. 118
   - `14.7.8-portico-equivalente` · 14.7.8 · p. 118

@@ -297,14 +297,14 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.7.1-hipoteses-placas` | 14.7.1 | 115 | Hipóteses básicas de estruturas de placas (seção plana em faixas estreitas, plano médio) | não computável | baixa | P |  |
 | `14.7.2.2-vao-efetivo-laje` | 14.7.2.2 | 116 | Vão efetivo de lajes/placas (mesma fórmula lef = l0+a1+a2 de 14.6.2.4) | implementado | alta | P |  |
 | `14.7.3-poisson-placas` | 14.7.3 | 116 | Coeficiente de Poisson para análise elástica de placas (ν = 0,2) | ausente | baixa | P | P2 |
-| `14.7.3.1-rigidez-estadio-I-placas` | 14.7.3.1 | 116 | Rigidez do Estadio I para verificação de flecha em placas (momento fletor menor que o de fissuração) | ausente | alta | P | P45 |
+| `14.7.3.1-rigidez-estadio-I-placas` | 14.7.3.1 | 116 | Rigidez do Estádio I para verificação de flecha em placas (momento fletor menor que o de fissuração) | ausente | alta | P | P45 |
 | `14.7.3.2-redistribuicao-lajes` | 14.7.3.2 | 116 | Limites de x/d para redistribuição de momentos em placas (mesmas fórmulas de 14.6.4.3) | ausente | alta | P | P13 |
 | `14.7.4-xd-limite-plastico-laje` | 14.7.4 | 116 | Limite de x/d para dispensa de verificação de rotação na análise plástica de lajes (charneiras) | ausente | média | P | P13 |
 | `14.7.4-razao-momentos-borda-vao` | 14.7.4 | 116 | Razão mínima entre momentos de borda e de vão na análise plástica de lajes retangulares (1,5:1) | ausente | média | P | P13 |
 | `14.7.5-analise-nao-linear-placas` | 14.7.5 | 117 | Análise não linear de placas - aplicabilidade a ELU e ELS | não computável | baixa | P |  |
 | `14.7.6.1-reacoes-apoio-charneiras` | 14.7.6.1 | 117 | Reações de apoio de lajes maciças retangulares pelo método das charneiras plásticas (triângulos/trapézios) | parcial | alta | G | P17 |
 | `14.7.6.2-compatibilizacao-momentos` | 14.7.6.2 | 117 | Compatibilização de momentos negativos entre lajes vizinhas | parcial | alta | P | P17 |
-| `14.7.7-lajes-nervuradas-grelha-vigas` | 14.7.7 | 117 | Cálculo da laje nervurada como grelha de vigas quando as hipóteses de laje maciça não se aplicam | ausente | alta | G | P45 |
+| `14.7.7-lajes-nervuradas-grelha-vigas` | 14.7.7 | 118 | Cálculo da laje nervurada como grelha de vigas quando as hipóteses de laje maciça não se aplicam | ausente | alta | G | P45 |
 | `14.7.7-lajes-nervuradas-unidirecionais` | 14.7.7 | 118 | Lajes nervuradas unidirecionais: cálculo na direção das nervuras, com rigidez transversal e à torção desprezadas | ausente | alta | P | P45 |
 | `14.7.8-analise-numerica-lajes-lisas` | 14.7.8 | 118 | Exigência de procedimento numérico para análise de lajes lisas e lajes-cogumelo | ausente | alta | P | P45 |
 | `14.7.8-portico-equivalente` | 14.7.8 | 118 | Processo elástico aproximado (pórticos múltiplos com redistribuição) para lajes lisas/cogumelo com pilares em filas regulares | ausente | alta | G | P45 |
@@ -389,7 +389,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `17.2.4.3.1-coeficientes-ato-protensao` | 17.2.4.3.1-b | 143 | Coeficientes de ponderação para o ELU no ato da protensão | ausente | média | P | P32 |
 | `17.2.4.3.2-tensao-max-compressao` | 17.2.4.3.2-a | 144 | Tensão máxima de compressão no concreto no ato da protensão | ausente | média | P | P32 |
 | `17.2.4.3.2-tensao-max-tracao` | 17.2.4.3.2-b | 144 | Tensão máxima de tração no concreto no ato da protensão | ausente | média | P | P32 |
-| `17.2.4.3.2-armadura-tracao-estadio2` | 17.2.4.3.2-c | 144 | Armadura de tração no Estadio II para o ato da protensão | ausente | média | M | P32 |
+| `17.2.4.3.2-armadura-tracao-estadio2` | 17.2.4.3.2-c | 144 | Armadura de tração no Estádio II para o ato da protensão | ausente | média | M | P32 |
 | `17.2.4.4.1-limites-tensao-compressao-els` | 17.2.4.4.1 | 144 | Limites de tensão de compressão no concreto em serviço (protensão completa/limitada) | ausente | média | P | P32 |
 | `17.2.4.4.2-limite-tensao-tracao-els` | 17.2.4.4.2 | 144 | Limite de tensão de tração no concreto (ELS-F / ELS-D) | parcial | média | M | P32 |
 | `17.2.5-interacao-flexao-obliqua` | 17.2.5 | 145 | Processo aproximado de interação para flexão composta oblíqua | implementado | alta | P |  |
