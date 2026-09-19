@@ -1459,6 +1459,224 @@ def solver_els(
 
 
 # ---------------------------------------------------------------------------
+# === P9: tensoes em servico (estadios I e II) -- curvas lineares e Secao
+# poligonal, para dimensionamento/els_fissuracao_nbr6118.py ===
+# ---------------------------------------------------------------------------
+@dataclass
+class CurvaCLinearFissurada:
+    """Concreto no Estadio II (NBR 6118:2026 17.3.3.3, PDF p. 150, e 23.5.3,
+    PDF p. 218): "admite-se o modelo linear elastico" e "e desprezada a
+    resistencia a tracao do concreto" -- secao fissurada.
+
+    sigma_c = Ecs*eps para eps > 0 (compressao, convencao do modulo);
+    sigma_c = 0 para eps <= 0 (tracao -- fissurado, sem contribuicao).
+    Implementa o protocolo `CurvaC`, plugavel em `Concreto(curva=...)`, o
+    que permite reusar `_esforcos_internos_els`/`_esforcos_internos_els_pol`
+    e `solver_els` sem duplicar a integracao numerica (o unico "novo" e o
+    modelo constitutivo linear no lugar da parabola-retangulo do ELU).
+    """
+    Ecs_kncm2: float
+
+    def sigma(self, eps: np.ndarray) -> np.ndarray:
+        eps = np.asarray(eps, dtype=float)
+        return np.where(eps > 0.0, eps / 1000.0 * self.Ecs_kncm2, 0.0)
+
+
+@dataclass
+class CurvaCLinearNaoFissurada:
+    """Concreto no Estadio I (secao integra, sem fissuras): comportamento
+    linear elastico nos dois sentidos, com o mesmo Ecs na compressao e na
+    tracao. Usada para checar o momento/estado de descompressao ou de
+    inicio de fissuracao (17.3.4, referida por 19.3.2 para lajes) antes de
+    a secao passar ao Estadio II.
+    """
+    Ecs_kncm2: float
+
+    def sigma(self, eps: np.ndarray) -> np.ndarray:
+        eps = np.asarray(eps, dtype=float)
+        return eps / 1000.0 * self.Ecs_kncm2
+
+
+def _esforcos_internos_els_pol(
+    secao: "Secao",
+    aco: Aco,
+    eps_cg: float,
+    kx: float,
+    ky: float,
+) -> tuple[float, float, float]:
+    """Como `_esforcos_internos_els`, mas para `Secao` poligonal (secao T,
+    L, U, multi-parte com multi-fck etc.): soma a contribuicao de cada
+    `Parte` com a curva do seu proprio `Concreto` -- o mesmo padrao de
+    `_integrar_concreto_pol`, so que com o plano de deformacao linear da
+    ELS (eps = eps_cg + kx*y + ky*x) no lugar da distribuicao por dominios
+    do ELU (`_strain_zonas`).
+    """
+    _, y_min, _, y_max = _bbox_secao(secao)
+    h_total = y_max - y_min
+    Nc = Mxc = Myc = 0.0
+    for parte in secao.partes:
+        elementos = _discretiza_parte(parte, secao.n_dy, secao.n_dx, h_total)
+        if elementos.shape[0] == 0:
+            continue
+        X, Y, dA = elementos[:, 0], elementos[:, 1], elementos[:, 2]
+        eps = eps_cg + kx * Y + ky * X
+        sigma = parte.concreto._curva_efetiva.sigma(eps)
+        Nc += float((sigma * dA).sum())
+        Mxc += float((sigma * Y * dA).sum())
+        Myc += float((sigma * X * dA).sum())
+
+    if secao._barras_xyA.shape[0] > 0:
+        x_b = secao._barras_xyA[:, 0]
+        y_b = secao._barras_xyA[:, 1]
+        A_b = secao._barras_xyA[:, 2]
+        eps_b = eps_cg + kx * y_b + ky * x_b
+        sigma_s = _sigma_aco(eps_b, aco.fyd_kncm2, aco.Es_kncm2, aco.eps_yd_pmilh)
+        sigma_c_b = _sigma_c_nas_partes(secao, secao._barras_parte, eps_b)
+        delta = sigma_s - sigma_c_b
+        Ns = float((delta * A_b).sum())
+        Mxs = float((delta * A_b * y_b).sum())
+        Mys = float((delta * A_b * x_b).sum())
+    else:
+        Ns = Mxs = Mys = 0.0
+
+    return Nc + Ns, Mxc + Mxs, Myc + Mys
+
+
+def solver_els_generico(
+    secao,
+    aco: Aco,
+    Nsd_kn: float,
+    Mxd_kncm: float,
+    Myd_kncm: float,
+    concreto: Concreto | None = None,
+    n_grid: int = 60,
+    tol: float = 1e-3,
+    iter_max: int = 100,
+    x0: tuple[float, float, float] | None = None,
+) -> dict:
+    """Como `solver_els`, mas aceita tambem `Secao` poligonal (nao so
+    `SecaoRetangular`), usada por `els_fissuracao_nbr6118.tensoes_servico`.
+
+    Com `secao` retangular, `concreto` e obrigatorio e a integracao usa
+    `_esforcos_internos_els` (grade regular). Com `secao` poligonal (tem
+    `.partes`), `concreto` e ignorado -- cada `Parte` ja carrega o seu
+    (permite multi-fck) -- e a integracao usa `_esforcos_internos_els_pol`.
+
+    Flexao uniaxial (Mxd_kncm == 0 ou Myd_kncm == 0, o caso comum de viga
+    ou laje): resolve por bisseccao aninhada (o mesmo padrao de
+    `_estado_els_eixo`, so que generico em `secao`), muito mais robusta que
+    o Newton 3x3 do `solver_els` quando o concreto e uma curva puramente
+    linear (sem patamar plastico que amorteca o passo do Newton perto do
+    "kink" em eps=0 -- a curva-fonte de `solver_els` e a do ELU, com
+    patamar, por isso ele nao precisa disso). Flexao obliqua (os dois
+    momentos != 0 simultaneamente) cai no Newton 3x3 generico (`fsolve`),
+    como `solver_els`.
+
+    Retorna o mesmo dict de diagnostico de `solver_els`; os cantos para
+    eps_max/eps_min/sigma_c_max usam o retangulo envolvente da secao.
+    """
+    e_generica = hasattr(secao, "partes")
+    if e_generica:
+        def esforcos(eps_cg: float, kx: float, ky: float) -> tuple[float, float, float]:
+            return _esforcos_internos_els_pol(secao, aco, eps_cg, kx, ky)
+        x_min, y_min, x_max, y_max = _bbox_secao(secao)
+    else:
+        if concreto is None:
+            raise ValueError("Com SecaoRetangular, `concreto` e obrigatorio.")
+
+        def esforcos(eps_cg: float, kx: float, ky: float) -> tuple[float, float, float]:
+            return _esforcos_internos_els(secao, concreto, aco, eps_cg, kx, ky, n_grid)
+        b, h = secao.base_cm, secao.altura_cm
+        x_min, y_min, x_max, y_max = -b / 2.0, -h / 2.0, b / 2.0, h / 2.0
+    ext = max(x_max - x_min, y_max - y_min)
+
+    eixo = None
+    if Myd_kncm == 0.0 and Mxd_kncm != 0.0:
+        eixo, Md = "x", Mxd_kncm
+    elif Mxd_kncm == 0.0 and Myd_kncm != 0.0:
+        eixo, Md = "y", Myd_kncm
+    elif Mxd_kncm == 0.0 and Myd_kncm == 0.0:
+        eixo, Md = "x", 0.0   # compressao/tracao uniforme: k=0 resolve os dois eixos
+
+    if eixo is not None:
+        def forcas(e0: float, k: float) -> tuple[float, float, float]:
+            kx, ky = (k, 0.0) if eixo == "x" else (0.0, k)
+            Nr, Mxr, Myr = esforcos(e0, kx, ky)
+            return (Nr, Mxr, Myr) if eixo == "x" else (Nr, Myr, Mxr)
+
+        def e0_de_k(k: float) -> float:
+            # sem patamar plastico no concreto, a folga precisa ser maior
+            # que a do ELU (`_estado_els_eixo`) para nao cortar a raiz.
+            lim = 100.0 + abs(k) * ext
+            return brentq(lambda e0: forcas(e0, k)[0] - Nsd_kn, -lim, lim,
+                          xtol=1e-10, rtol=1e-12)
+
+        def resid(k: float) -> float:
+            return forcas(e0_de_k(k), k)[1] - Md
+
+        r0 = resid(0.0)
+        if r0 == 0.0:
+            k_sol = 0.0
+        else:
+            passo = 1e-4 if r0 < 0.0 else -1e-4
+            k_a, k_b = 0.0, passo
+            tentativas = 0
+            while resid(k_b) * r0 > 0.0:
+                k_a, k_b = k_b, 2.0 * k_b
+                tentativas += 1
+                if tentativas > 60:
+                    raise ValueError(
+                        f"Estado de deformação (ELS) não encontrado para N = {Nsd_kn:.1f} "
+                        f"kN e M = {Md:.1f} kN·cm (eixo {eixo}); acima da capacidade "
+                        "da secao ou N fora da faixa viavel."
+                    )
+            k_sol = brentq(resid, min(k_a, k_b), max(k_a, k_b), xtol=1e-12, rtol=1e-11)
+        eps_cg = e0_de_k(k_sol)
+        kx, ky = (k_sol, 0.0) if eixo == "x" else (0.0, k_sol)
+        convergiu, n_iter, residuo, msg = True, 0, 0.0, None
+    else:
+        from scipy.optimize import fsolve
+
+        def F(x: np.ndarray) -> list[float]:
+            eps_cg_, kx_, ky_ = x
+            Nr, Mxr, Myr = esforcos(float(eps_cg_), float(kx_), float(ky_))
+            return [Nr - Nsd_kn, Mxr - Mxd_kncm, Myr - Myd_kncm]
+
+        x0_arr = np.array([0.0, 1e-3, 1e-3] if x0 is None else list(x0), dtype=float)
+        sol, info, ier, msg = fsolve(
+            F, x0_arr, full_output=True, xtol=tol, maxfev=iter_max * 10
+        )
+        convergiu = ier == 1
+        eps_cg, kx, ky = float(sol[0]), float(sol[1]), float(sol[2])
+        n_iter = int(info["nfev"])
+        residuo = float(np.linalg.norm(F(sol)))
+
+    cantos = np.array([
+        [x_min, y_min], [x_max, y_min], [x_max, y_max], [x_min, y_max],
+    ])
+    eps_cantos = eps_cg + kx * cantos[:, 1] + ky * cantos[:, 0]
+    if e_generica:
+        sig_c_cantos = np.array([
+            parte.concreto._curva_efetiva.sigma(eps_cantos) for parte in secao.partes
+        ]).max(axis=0)
+    else:
+        sig_c_cantos = concreto._curva_efetiva.sigma(eps_cantos)
+
+    return {
+        "convergiu": bool(convergiu),
+        "eps_cg_pmilh": eps_cg,
+        "kx_pmilh_cm": kx,
+        "ky_pmilh_cm": ky,
+        "eps_max_compr_pmilh": float(eps_cantos.max()),
+        "eps_min_pmilh": float(eps_cantos.min()),
+        "sigma_c_max_kncm2": float(sig_c_cantos.max()),
+        "n_iter": n_iter,
+        "residuo": residuo,
+        "mensagem": msg if not convergiu else None,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Pre-flight: faixa viavel de Nd
 # ---------------------------------------------------------------------------
 def Nd_max_kn(secao: SecaoRetangular, concreto: Concreto, aco: Aco) -> float:

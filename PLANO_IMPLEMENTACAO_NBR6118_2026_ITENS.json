@@ -70,7 +70,8 @@
    "nome": "Tensões em serviço (estádio II) e fissuração",
    "onda": 1,
    "prioridade": "alta",
-   "modulo": "dimensionamento/els_fissuracao_nbr6118.py + rotinas/flexao_composta_obliqua.py"
+   "modulo": "dimensionamento/els_fissuracao_nbr6118.py + rotinas/flexao_composta_obliqua.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P10",
@@ -6940,7 +6941,7 @@
    "pagina_pdf": 149,
    "titulo": "Geometria da área de envolvimento Acri (Figura 17.4)",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P9",
@@ -6951,7 +6952,20 @@
    "depende_de": [
     "17.3.3.2-abertura-fissura-wk"
    ],
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P9",
+    "data": "19/09/2026",
+    "funcoes": [
+     "BarraFissuracao",
+     "area_envolvimento_acri"
+    ],
+    "testes": [
+     "test_acri_barra_isolada_sem_particao",
+     "test_acri_barras_alinhadas_particao_bissetriz"
+    ],
+    "observacao": "Não fez parte dos achados da verificação independente; sem alteração nesta rodada. Limitação já documentada no próprio docstring (partição só entre barras alinhadas em linha/coluna) permanece."
+   }
   },
   {
    "id": "17.3.3.3-tabela-17.2-controle-sem-wk",
@@ -6959,7 +6973,7 @@
    "pagina_pdf": 150,
    "titulo": "Tabela 17.2 -- controle da fissuração sem verificar wk",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P9",
@@ -6969,7 +6983,25 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "sigma_si=200 MPa, sem protensao: deve devolver phi_max=25 mm, s_max=25 cm.",
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P9",
+    "data": "19/09/2026",
+    "funcoes": [
+     "TABELA_17_2",
+     "ResultadoControleFissuracao",
+     "controle_fissuracao_sem_wk"
+    ],
+    "testes": [
+     "test_tabela_17_2_sem_armadura_ativa",
+     "test_tabela_17_2_com_armadura_ativa",
+     "test_tabela_17_2_degrau_conservador_entre_linhas",
+     "test_tabela_17_2_acima_do_maximo",
+     "test_tabela_17_2_sigma_nao_positiva",
+     "test_tabela_17_2_celula_vazia_mensagem_reflete_com_armadura_ativa_real"
+    ],
+    "observacao": "Corrigida a mensagem de erro da célula vazia (achado execucao). Achado diff sobre a assinatura/convenção ok:bool/governante:str foi rejeitado e documentado no docstring (ver respostas) em vez de mudar a assinatura; todas as 7 células da Tabela 17.2 continuam testadas e passando."
+   }
   },
   {
    "id": "17.3.4-descompressao-formacao-fissuras",
@@ -7027,7 +7059,7 @@
    "pagina_pdf": 152,
    "titulo": "Armadura mínima de tração sob deformações impostas (estanqueidade/estética)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "M",
    "pacote": "P9",
@@ -7036,7 +7068,31 @@
    "formula_ou_regra": "As = k*kc*fct,ef*Act/sigma_s. k: 0,8 (forma geral); 0,8 (h<=0,3m) a 0,5 (h>=0,8m) interpolado, para deformacoes intrinsecas; k=1,0 para extrinsecas. kc: 1,0 (tracao pura); 0,4 (flexao simples); 0,4 (nervuras de secoes vazadas protendidas/flexo-comprimidas); 0,8 (mesa tracionada de secoes vazadas protendidas/flexo-comprimidas); interpolado entre 0,4 e 0 conforme altura da zona tracionada (limite: menor entre h/2 e 0,5 m). fct,ef: resistencia media a tracao na idade da fissuracao (minimo recomendado 3 MPa se a idade nao puder ser definida).",
    "conferido_na_imagem": true,
    "depende_de": [],
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P9",
+    "data": "19/09/2026",
+    "funcoes": [
+     "k_deformacao_imposta",
+     "kc_deformacao_imposta",
+     "As_min_deformacao_imposta",
+     "FCTEF_MINIMO_RECOMENDADO_MPA"
+    ],
+    "testes": [
+     "test_k_deformacao_imposta_extrinseca",
+     "test_k_deformacao_imposta_intrinseca_bordas_e_interpolacao",
+     "test_k_deformacao_imposta_intrinseca_sem_h_levanta_erro",
+     "test_k_deformacao_imposta_caso_geral_forma_secao",
+     "test_k_deformacao_imposta_retangular_e_o_padrao",
+     "test_kc_deformacao_imposta_casos_tabelados",
+     "test_kc_deformacao_imposta_interpolado_bordas",
+     "test_kc_deformacao_imposta_interpolado_acima_do_limite",
+     "test_kc_deformacao_imposta_caso_desconhecido",
+     "test_as_min_deformacao_imposta",
+     "test_as_min_deformacao_imposta_sigma_s_invalida"
+    ],
+    "observacao": "Corrigido o achado de norma: k_deformacao_imposta agora cobre os dois ramos da página 152 (caso geral de forma de seção, k=0,8 fixo, via retangular=False; e o ramo retangular já existente, com interpolação). Antes só o ramo retangular era alcançável, subestimando As,min para seção não retangular alta -- agora integralmente implementado conforme os dois sub-itens (a) da norma."
+   }
   },
   {
    "id": "17.3.5.2.3-armadura-pele",
@@ -9029,7 +9085,18 @@
     "17.3.4-descompressao (fora)"
    ],
    "teste_sugerido": "Rodar abertura_fissura_wk com bw=100cm (faixa de laje).",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P9",
+    "data": "19/09/2026",
+    "funcoes": [
+     "wk_verificacao"
+    ],
+    "testes": [
+     "test_wk_verificacao_reproduz_abertura_fissura_wk"
+    ],
+    "observacao": "Status herdado do próprio JSON do plano (já 'parcial' antes desta rodada): wk_verificacao é fachada genérica sobre abertura_fissura_wk, válida para laje trocando bw pela largura de faixa; não há verificação de descompressão (17.3.4) para laje protendida. Não fez parte dos achados da verificação independente; sem alteração nesta rodada."
+   }
   },
   {
    "id": "19.3.3.1-principios-as-max-min",
@@ -11543,7 +11610,7 @@
    "pagina_pdf": 218,
    "titulo": "Relação entre módulos de deformação aço/concreto (αe) para cálculo elástico de tensões na fadiga",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P9",
@@ -11556,7 +11623,21 @@
     "nucleo.Ecs_ou_similar"
    ],
    "teste_sugerido": "alfa_e=Es/Ecs com Es=210000 MPa e Ecs de um C30 tipico -> comparar com valor adotado 10",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P9",
+    "data": "19/09/2026",
+    "funcoes": [
+     "alpha_e_fadiga",
+     "ALPHA_E_SIMPLIFICADO_FISSURACAO"
+    ],
+    "testes": [
+     "test_alpha_e_fadiga_simplificado_10",
+     "test_alpha_e_fadiga_exato_C30",
+     "test_alpha_e_simplificado_fissuracao_15"
+    ],
+    "observacao": "Não fez parte dos achados da verificação independente; sem alteração nesta rodada."
+   }
   },
   {
    "id": "23.5.3-eta-s-fator-aderencia",

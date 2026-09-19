@@ -398,12 +398,12 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `17.3.2.1.2-flecha-diferida-alphaf-xi` | 17.3.2.1.2 | 147 | Coeficiente de fluência para flecha diferida (αf e ξ(t)) | implementado | alta | P | P8 |
 | `17.3.2.1.3-flecha-armaduras-ativas` | 17.3.2.1.3 | 148 | Flecha em elementos com armaduras ativas | ausente | média | M | P32 |
 | `17.3.3.2-abertura-fissura-wk` | 17.3.3.2 | 149 | Abertura característica de fissuras wk (Eq. 86 / Eq. 87) | implementado | alta | P |  |
-| `17.3.3.2-area-envolvimento-acri` | 17.3.3.2 | 149 | Geometria da área de envolvimento Acri (Figura 17.4) | ausente | média | M | P9 |
-| `17.3.3.3-tabela-17.2-controle-sem-wk` | 17.3.3.3 | 150 | Tabela 17.2 -- controle da fissuração sem verificar wk | ausente | média | P | P9 |
+| `17.3.3.2-area-envolvimento-acri` | 17.3.3.2 | 149 | Geometria da área de envolvimento Acri (Figura 17.4) | implementado | média | M | P9 |
+| `17.3.3.3-tabela-17.2-controle-sem-wk` | 17.3.3.3 | 150 | Tabela 17.2 -- controle da fissuração sem verificar wk | implementado | média | P | P9 |
 | `17.3.4-descompressao-formacao-fissuras` | 17.3.4 | 150 | Estados-limites de descompressão e de formação de fissuras (verificação direta) | parcial | média | M | P32 |
 | `17.3.5.1-principios-basicos-as-min-max` | 17.3.5.1 | 151 | Princípios básicos das armaduras mínimas e máximas | não computável | alta | P |  |
 | `17.3.5.2.1-md-min-as-min-vigas` | 17.3.5.2.1 | 151 | Momento mínimo e armadura mínima de tração em vigas | implementado | alta | P |  |
-| `17.3.5.2.2-as-min-deformacao-imposta` | 17.3.5.2.2 | 152 | Armadura mínima de tração sob deformações impostas (estanqueidade/estética) | ausente | baixa | M | P9 |
+| `17.3.5.2.2-as-min-deformacao-imposta` | 17.3.5.2.2 | 152 | Armadura mínima de tração sob deformações impostas (estanqueidade/estética) | implementado | baixa | M | P9 |
 | `17.3.5.2.3-armadura-pele` | 17.3.5.2.3 | 153 | Armadura de pele em vigas | ausente | alta | P | P12 |
 | `17.3.5.2.4-as-max-tracao-compressao-vigas` | 17.3.5.2.4 | 153 | Soma máxima das armaduras de tração e compressão em vigas | ausente | alta | P | P12 |
 | `17.3.5.3.1-as-min-pilar` | 17.3.5.3.1 | 153 | Armadura longitudinal mínima de pilares | implementado | alta | P |  |
@@ -682,7 +682,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `23.5.5-fator-reducao-ciclos-menor` | 23.5.2 | 217 | Aumento da resistência à fadiga para pontes rolantes de operação pouco frequente (número de ciclos << 2e6) | ausente | baixa | M | P39 |
 | `23.5.3-modelo-I-vc-reduzido-fadiga` | 23.5.3 | 218 | Redução da contribuição do concreto Vc no Modelo de Cálculo I para verificação de fadiga por cortante | ausente | média | P | P39 |
 | `23.5.3-modelo-II-theta-corrigido-fadiga` | 23.5.3 | 218 | Correção do ângulo das bielas (θcor) no Modelo de Cálculo II para verificação de fadiga por cortante | ausente | média | P | P39 |
-| `23.5.3-alfa-e-relacao-modulos` | 23.5.3 | 218 | Relação entre módulos de deformação aço/concreto (αe) para cálculo elástico de tensões na fadiga | ausente | média | P | P9 |
+| `23.5.3-alfa-e-relacao-modulos` | 23.5.3 | 218 | Relação entre módulos de deformação aço/concreto (αe) para cálculo elástico de tensões na fadiga | implementado | média | P | P9 |
 | `23.5.3-eta-s-fator-aderencia` | 23.5.3 | 218 | Fator ηs de correção de tensão no aço por diferença de aderência entre armadura ativa e passiva | ausente | baixa | P | P39 |
 | `23.5.3-phi-eq-feixe` | 23.5.3 | 218 | Diâmetro equivalente de feixe de cordoalhas/fios de protensão (φeq) | ausente | baixa | P | P39 |
 | `23.5.3-xi-relacao-aderencia` | 23.5.3 | 219 | Valores de ξ (relação de aderência aço de protensão / aço passivo) por tipo de aço e processo de protensão | ausente | baixa | P | P39 |
