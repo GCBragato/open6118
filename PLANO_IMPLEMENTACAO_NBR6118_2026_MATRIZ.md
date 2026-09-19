@@ -79,24 +79,24 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `9.1-simbologia` | 9.1 | 51 | Simbologia da Seção 9 | não computável | baixa | P |  |
 | `9.2.1-disposicoes-gerais` | 9.2.1 | 53 | Disposições gerais de aderência, ancoragem e emendas | não computável | baixa | P |  |
 | `9.2.2-niveis-protensao` | 9.2.2 | 53 | Níveis de protensão | não computável | média | P |  |
-| `9.3.1-posicao-barra-classificacao` | 9.3.1 | 53 | Classificação boa/má situação de aderência pela posição da barra na concretagem | ausente | média | P | P21 |
+| `9.3.1-posicao-barra-classificacao` | 9.3.1 | 53 | Classificação boa/má situação de aderência pela posição da barra na concretagem | implementado | média | P | P21 |
 | `9.3.2.1-fbd` | 9.3.2.1 | 54 | Resistência de aderência de cálculo — armadura passiva (fbd) | implementado | alta | P |  |
 | `9.3.2.1-eta2` | 9.3.2.1 | 54 | Coeficiente η2 (situação de aderência) | implementado | alta | P |  |
 | `9.3.2.1-eta3` | 9.3.2.1 | 54 | Coeficiente η3 (diâmetro da barra) | implementado | alta | P |  |
 | `9.3.2.2-fbpd` | 9.3.2.2 | 54 | Resistência de aderência de cálculo — armadura ativa pré-tracionada (fbpd) | parcial | média | P | P31 |
 | `9.3.2.2-etap1` | 9.3.2.2 | 54 | Coeficiente ηp1 (tipo de fio/cordoalha) | implementado | média | P |  |
 | `9.3.2.2-etap2` | 9.3.2.2 | 54 | Coeficiente ηp2 (situação de aderência, armadura ativa) | parcial | baixa | P | P31 |
-| `9.3.2.3-fator-escorregamento` | 9.3.2.3 | 54 | Majoração de 1,75 na tensão de aderência para verificação de escorregamento em elementos fletidos | ausente | baixa | P | P21 |
-| `9.4.1.1-tipos-ancoragem-aderencia` | 9.4.1.1 | 55 | Tipos de ancoragem por aderência e confinamento | parcial | baixa | P | P21 |
-| `9.4.2.1-condicoes-ancoragem-reta` | 9.4.2.1 | 55 | Condições de ancoragem reta (com/sem gancho) por tipo de barra e solicitação | ausente | média | P | P21 |
-| `9.4.2.2-barras-transversais-soldadas-ancoragem` | 9.4.2.2 | 55 | Ancoragem por barras transversais soldadas (condições geométricas) | parcial | baixa | P | P21 |
+| `9.3.2.3-fator-escorregamento` | 9.3.2.3 | 54 | Majoração de 1,75 na tensão de aderência para verificação de escorregamento em elementos fletidos | implementado | baixa | P | P21 |
+| `9.4.1.1-tipos-ancoragem-aderencia` | 9.4.1.1 | 55 | Tipos de ancoragem por aderência e confinamento | implementado | baixa | P | P21 |
+| `9.4.2.1-condicoes-ancoragem-reta` | 9.4.2.1 | 55 | Condições de ancoragem reta (com/sem gancho) por tipo de barra e solicitação | implementado | média | P | P21 |
+| `9.4.2.2-barras-transversais-soldadas-ancoragem` | 9.4.2.2 | 55 | Ancoragem por barras transversais soldadas (condições geométricas) | implementado | baixa | P | P21 |
 | `9.4.2.3-tab9.1-pino-dobramento-gancho` | 9.4.2.3 (Tabela 9.1) | 56 | Tabela 9.1 — diâmetro do pino de dobramento dos ganchos (D) | implementado | alta | P |  |
-| `9.4.2.3-ganchos-comprimento-tipo` | 9.4.2.3 | 56 | Tipos de gancho e comprimento mínimo da ponta reta | ausente | média | P | P21 |
-| `9.4.2.3-gancho-solda-transversal` | 9.4.2.3 | 56 | Diâmetro do pino quando há barra soldada transversal ao gancho | ausente | baixa | P | P21 |
+| `9.4.2.3-ganchos-comprimento-tipo` | 9.4.2.3 | 56 | Tipos de gancho e comprimento mínimo da ponta reta | implementado | média | P | P21 |
+| `9.4.2.3-gancho-solda-transversal` | 9.4.2.3 | 56 | Diâmetro do pino quando há barra soldada transversal ao gancho | implementado | baixa | P | P21 |
 | `9.4.2.4-lb-basico` | 9.4.2.4 | 57 | Comprimento de ancoragem básico ℓb | implementado | alta | P |  |
 | `9.4.2.5-lb-necessario` | 9.4.2.5 | 57 | Comprimento de ancoragem necessário ℓb,nec | implementado | alta | P |  |
-| `9.4.2.6.1-armadura-transversal-ancoragem-phi-menor-32` | 9.4.2.6.1 | 57 | Armadura transversal na ancoragem — φ<32mm | ausente | média | P | P21 |
-| `9.4.2.6.2-armadura-transversal-ancoragem-phi-maior-igual-32` | 9.4.2.6.2 | 58 | Armadura transversal na ancoragem — φ≥32mm | ausente | baixa | P | P21 |
+| `9.4.2.6.1-armadura-transversal-ancoragem-phi-menor-32` | 9.4.2.6.1 | 57 | Armadura transversal na ancoragem — φ<32mm | implementado | média | P | P21 |
+| `9.4.2.6.2-armadura-transversal-ancoragem-phi-maior-igual-32` | 9.4.2.6.2 | 58 | Armadura transversal na ancoragem — φ≥32mm | implementado | baixa | P | P21 |
 | `9.4.3-feixe-diametro-equivalente` | 9.4.3 | 58 | Diâmetro equivalente de feixe de barras (φn) | ausente | média | P | P27 |
 | `9.4.3-feixe-regras-ancoragem` | 9.4.3 | 58 | Regras de ancoragem de feixes (φn≤25mm / >25mm / caso construtivo) | ausente | média | M | P27 |
 | `9.4.4-tela-soldada-ancoragem` | 9.4.4 | 58 | Ancoragem de telas soldadas por aderência (nº de fios transversais) | ausente | média | P | P27 |
@@ -105,9 +105,9 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `9.4.5.3-lbpd-necessario` | 9.4.5.3 | 59 | Comprimento de ancoragem necessário de armadura ativa (ℓbpd) | parcial | média | P | P31 |
 | `9.4.5.4-armadura-transversal-zona-ancoragem-ativa` | 9.4.5.4 | 60 | Armadura transversal na zona de ancoragem de armadura ativa | não computável | média | P |  |
 | `9.4.6-ancoragem-estribos-obrigatoriedade` | 9.4.6 | 60 | Ancoragem de estribos deve ser por gancho ou barra longitudinal soldada | não computável | alta | P |  |
-| `9.4.6.1-ganchos-estribos-tipos` | 9.4.6.1 | 60 | Tipos de gancho de estribo e comprimento mínimo da ponta reta | ausente | alta | P | P21 |
+| `9.4.6.1-ganchos-estribos-tipos` | 9.4.6.1 | 60 | Tipos de gancho de estribo e comprimento mínimo da ponta reta | implementado | alta | P | P21 |
 | `9.4.6.1-tab9.2-pino-dobramento-estribo` | 9.4.6.1 (Tabela 9.2) | 60 | Tabela 9.2 — diâmetro do pino de dobramento para estribos | implementado | alta | P |  |
-| `9.4.6.2-estribo-barra-transversal-soldada` | 9.4.6.2 | 60 | Ancoragem de estribo por barras transversais soldadas | ausente | baixa | P | P21 |
+| `9.4.6.2-estribo-barra-transversal-soldada` | 9.4.6.2 | 60 | Ancoragem de estribo por barras transversais soldadas | implementado | baixa | P | P21 |
 | `9.4.7-dispositivos-mecanicos-ancoragem` | 9.4.7 | 61 | Ancoragem por dispositivos mecânicos — limites de escorregamento e resistência de cálculo | ausente | baixa | P | P27 |
 | `9.4.7.1-barra-transversal-unica` | 9.4.7.1 | 61 | Barra transversal única como dispositivo de ancoragem integral | ausente | baixa | P | P27 |
 | `9.5.2-traspasse-limite-32mm-feixe-45mm` | 9.5.2 | 62 | Limite de bitola para emenda por traspasse (barra e feixe) | parcial | média | P | P27 |

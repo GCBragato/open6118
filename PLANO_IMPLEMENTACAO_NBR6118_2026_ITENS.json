@@ -159,7 +159,8 @@
    "nome": "Ancoragem passiva, ganchos e estribos",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/ancoragem_nbr6118.py (extensão)"
+   "modulo": "dimensionamento/ancoragem_nbr6118.py (extensão)",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P22",
@@ -1470,7 +1471,7 @@
    "pagina_pdf": 53,
    "titulo": "Classificação boa/má situação de aderência pela posição da barra na concretagem",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P21",
@@ -1480,7 +1481,22 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Barra a 45,1° -> boa; barra horizontal em viga h=40cm a 20cm da face inferior -> boa; mesma barra a 35cm da face inferior -> má; barra horizontal em pilar h=80cm a 25cm abaixo da face superior -> má (precisa ≥30cm).",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P21",
+    "data": "19/09/2026",
+    "funcoes": [
+     "situacao_aderencia"
+    ],
+    "testes": [
+     "test_931_inclinacao_maior_45_e_sempre_boa",
+     "test_931_h_menor_60_boa_ate_30cm_acima_da_face_inferior",
+     "test_931_inclinacao_45_exata_cai_no_caso_b",
+     "test_931_h_maior_igual_60_boa_a_partir_de_30cm_abaixo_da_face_superior",
+     "test_931_forma_deslizante_e_sempre_ma"
+    ],
+    "observacao": "Sem achados nesta verificação; nenhuma mudança nesta rodada."
+   }
   },
   {
    "id": "9.3.2.1-fbd",
@@ -1606,7 +1622,7 @@
    "pagina_pdf": 54,
    "titulo": "Majoração de 1,75 na tensão de aderência para verificação de escorregamento em elementos fletidos",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P21",
@@ -1619,7 +1635,21 @@
     "9.3.2.2-fbpd"
    ],
    "teste_sugerido": "fbd_escorregamento = 1,75 * fbd base — comparar com valor calculado à mão.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P21",
+    "data": "19/09/2026",
+    "funcoes": [
+     "FATOR_ESCORREGAMENTO",
+     "fbd_escorregamento"
+    ],
+    "testes": [
+     "test_9323_fator_escorregamento_e_1_75",
+     "test_9323_fbd_escorregamento_multiplica_fbd_por_1_75",
+     "test_9323_fbd_escorregamento_serve_tambem_para_fbpd"
+    ],
+    "observacao": "Sem achados nesta verificação; nenhuma mudança nesta rodada."
+   }
   },
   {
    "id": "9.4.1.1-tipos-ancoragem-aderencia",
@@ -1627,7 +1657,7 @@
    "pagina_pdf": 55,
    "titulo": "Tipos de ancoragem por aderência e confinamento",
    "tipo": "qualitativo",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P21",
@@ -1638,7 +1668,18 @@
    "depende_de": [
     "9.4.2.6-armadura-transversal-ancoragem"
    ],
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P21",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dispensa_confinamento"
+    ],
+    "testes": [
+     "test_9411_dispensa_confinamento_cobrimento_e_espacamento_maiores_3phi"
+    ],
+    "observacao": "Sem achados nesta verificação; nenhuma mudança nesta rodada."
+   }
   },
   {
    "id": "9.4.2.1-condicoes-ancoragem-reta",
@@ -1646,7 +1687,7 @@
    "pagina_pdf": 55,
    "titulo": "Condições de ancoragem reta (com/sem gancho) por tipo de barra e solicitação",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P21",
@@ -1656,7 +1697,26 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Barra lisa + com_gancho=False deve levantar erro/aviso; barra comprimida + com_gancho=True idem.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P21",
+    "data": "19/09/2026",
+    "funcoes": [
+     "validar_uso_gancho"
+    ],
+    "testes": [
+     "test_9421_barra_lisa_sem_gancho_levanta_erro",
+     "test_9421_barra_lisa_com_gancho_e_permitido",
+     "test_9421_solicitacao_alternada_com_gancho_levanta_erro",
+     "test_9421_solicitacao_alternada_sem_gancho_e_permitido",
+     "test_9421_barra_comprimida_com_gancho_levanta_erro",
+     "test_9421_barra_comprimida_sem_gancho_e_permitido",
+     "test_9421_gancho_com_phi_maior_32_emite_aviso_mas_nao_bloqueia",
+     "test_9421_gancho_em_feixe_emite_aviso_mas_nao_bloqueia",
+     "test_9421_demais_casos_com_ou_sem_gancho_nao_levanta_nada"
+    ],
+    "observacao": "Sem achados nesta verificação; nenhuma mudança nesta rodada."
+   }
   },
   {
    "id": "9.4.2.2-barras-transversais-soldadas-ancoragem",
@@ -1664,7 +1724,7 @@
    "pagina_pdf": 55,
    "titulo": "Ancoragem por barras transversais soldadas (condições geométricas)",
    "tipo": "verificacao",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P21",
@@ -1675,7 +1735,23 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "φt=0,5φ deve reprovar; φt=0,6φ deve passar.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P21",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_barra_transversal_soldada"
+    ],
+    "testes": [
+     "test_9422_phi_t_05_phi_reprova",
+     "test_9422_phi_t_06_phi_passa_no_diametro",
+     "test_9422_distancia_fronteira_5phi",
+     "test_9422_resistencia_solda_fronteira_03_As_fyd",
+     "test_9422_tudo_ok_resultado_final_ok",
+     "test_9422_memoria_e_governante_com_acentuacao_correta"
+    ],
+    "observacao": "Corrigida a acentuação da memória de cálculo e do campo governante (achados de execução e diff); função e cálculo em si já estavam corretos e não mudaram de valor."
+   }
   },
   {
    "id": "9.4.2.3-tab9.1-pino-dobramento-gancho",
@@ -1700,7 +1776,7 @@
    "pagina_pdf": 56,
    "titulo": "Tipos de gancho e comprimento mínimo da ponta reta",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P21",
@@ -1712,7 +1788,27 @@
     "9.4.2.3-tab9.1-pino-dobramento-gancho"
    ],
    "teste_sugerido": "φ=10mm, gancho 45°: ponta reta mínima = 40mm.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P21",
+    "data": "19/09/2026",
+    "funcoes": [
+     "diametro_pino_gancho",
+     "comprimento_gancho"
+    ],
+    "testes": [
+     "test_9423_tabela_9_1_completa",
+     "test_9423_tabela_9_1_ca60_phi_maior_igual_20_levanta_erro",
+     "test_9423_phi_20mm_e_a_fronteira_entre_faixas",
+     "test_9423_aco_invalido_levanta_valueerror",
+     "test_9423_comprimento_gancho_semicircular_2phi",
+     "test_9423_comprimento_gancho_45_graus_4phi",
+     "test_9423_comprimento_gancho_angulo_reto_8phi",
+     "test_9423_comprimento_gancho_tipo_invalido",
+     "test_9423_barra_lisa_so_pode_gancho_semicircular"
+    ],
+    "observacao": "Sem achados nesta verificação; nenhuma mudança nesta rodada."
+   }
   },
   {
    "id": "9.4.2.3-gancho-solda-transversal",
@@ -1720,7 +1816,7 @@
    "pagina_pdf": 56,
    "titulo": "Diâmetro do pino quando há barra soldada transversal ao gancho",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P21",
@@ -1731,7 +1827,23 @@
    "depende_de": [
     "9.4.2.3-tab9.1-pino-dobramento-gancho"
    ],
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P21",
+    "data": "19/09/2026",
+    "funcoes": [
+     "pino_com_solda_transversal"
+    ],
+    "testes": [
+     "test_9423_docstring_de_pino_com_solda_transversal_cita_p56_e_p57",
+     "test_9423_solda_depois_do_dobramento_mantem_tabela_9_1",
+     "test_9423_solda_antes_dobramento_distancia_maior_4phi_mantem_tabela",
+     "test_9423_solda_antes_dobramento_distancia_menor_4phi_pino_20phi",
+     "test_9423_solda_sobre_trecho_curvo_pino_20phi",
+     "test_9423_solda_antes_dobramento_sem_distancia_nem_curva_levanta_erro"
+    ],
+    "observacao": "Corrigida a citação de página na docstring, de 'PDF p. 56' para 'PDF p. 56-57' (achado de norma); o cálculo já estava correto contra as duas páginas."
+   }
   },
   {
    "id": "9.4.2.4-lb-basico",
@@ -1777,7 +1889,7 @@
    "pagina_pdf": 57,
    "titulo": "Armadura transversal na ancoragem — φ<32mm",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P21",
@@ -1789,7 +1901,21 @@
     "9.4.1.1-tipos-ancoragem-aderencia"
    ],
    "teste_sugerido": "As,transversal >= 0,25 * As,barra * fyd / fyd_transversal (equivalente em área, se mesmo aço: 0,25*As).",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P21",
+    "data": "19/09/2026",
+    "funcoes": [
+     "Ast_ancoragem"
+    ],
+    "testes": [
+     "test_94261_phi_menor_32_ast_min_25_pct_mesmo_aco",
+     "test_94261_phi_menor_32_ast_min_com_aco_transversal_diferente",
+     "test_94261_fronteira_phi_31_9_usa_25_pct",
+     "test_9426_ast_ancoragem_tem_governante_para_os_dois_ramos"
+    ],
+    "observacao": "Adicionado o campo governante e docstring da classe justificando a ausência de ok (achado de diff); os valores de Ast,min calculados não mudaram."
+   }
   },
   {
    "id": "9.4.2.6.2-armadura-transversal-ancoragem-phi-maior-igual-32",
@@ -1797,7 +1923,7 @@
    "pagina_pdf": 58,
    "titulo": "Armadura transversal na ancoragem — φ≥32mm",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P21",
@@ -1809,7 +1935,21 @@
     "9.4.2.6.1-armadura-transversal-ancoragem-phi-menor-32"
    ],
    "teste_sugerido": "φ=40mm -> espaçamento máximo = 200mm.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P21",
+    "data": "19/09/2026",
+    "funcoes": [
+     "Ast_ancoragem"
+    ],
+    "testes": [
+     "test_94262_phi_40mm_espacamento_maximo_200mm",
+     "test_94262_fronteira_phi_32_usa_regra_de_duas_direcoes",
+     "test_94262_barra_comprimida_posiciona_barra_a_4phi_da_extremidade",
+     "test_9426_ast_ancoragem_tem_governante_para_os_dois_ramos"
+    ],
+    "observacao": "Mesma correção do item 9.4.2.6.1 (mesma função, mesmo dataclass); espaçamento máximo e barra adicional calculados não mudaram."
+   }
   },
   {
    "id": "9.4.3-feixe-diametro-equivalente",
@@ -1967,7 +2107,7 @@
    "pagina_pdf": 60,
    "titulo": "Tipos de gancho de estribo e comprimento mínimo da ponta reta",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P21",
@@ -1977,7 +2117,27 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "φt=6,3mm, 135°: ponta reta=max(5*6,3mm;50mm)=50mm; φt=10mm ângulo reto: ponta reta=max(100mm;70mm)=100mm.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P21",
+    "data": "19/09/2026",
+    "funcoes": [
+     "diametro_pino_estribo",
+     "ponta_reta_estribo_cm"
+    ],
+    "testes": [
+     "test_9461_tabela_9_2_completa",
+     "test_9461_tabela_9_2_ca60_fora_de_ate_10mm_levanta_erro",
+     "test_9461_fronteiras_da_tabela_9_2",
+     "test_9461_ponta_reta_135_fronteira_5cm",
+     "test_9461_ponta_reta_135_domina_5phi_quando_maior_que_5cm",
+     "test_9461_ponta_reta_angulo_reto_10phi",
+     "test_9461_ponta_reta_angulo_reto_domina_piso_7cm",
+     "test_9461_angulo_reto_proibido_para_aco_liso",
+     "test_9461_tipo_gancho_estribo_invalido"
+    ],
+    "observacao": "Sem achados nesta verificação; nenhuma mudança nesta rodada."
+   }
   },
   {
    "id": "9.4.6.1-tab9.2-pino-dobramento-estribo",
@@ -2003,7 +2163,7 @@
    "pagina_pdf": 60,
    "titulo": "Ancoragem de estribo por barras transversais soldadas",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P21",
@@ -2013,7 +2173,21 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "φt=8mm, 2 barras: φt1_min=5,6mm; 1 barra: φt1_min=11,2mm.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P21",
+    "data": "19/09/2026",
+    "funcoes": [
+     "ancoragem_estribo_barra_soldada"
+    ],
+    "testes": [
+     "test_9462_duas_barras_phi_t_8mm",
+     "test_9462_uma_barra_phi_t_8mm",
+     "test_9462_num_barras_soldadas_invalido_levanta_erro",
+     "test_9462_memoria_com_acentuacao_correta_em_nao_ok"
+    ],
+    "observacao": "Corrigida a acentuação de 'nao ok' -> 'não ok' na memória de cálculo (achado de execução/diff); a condição geométrica verificada não mudou."
+   }
   },
   {
    "id": "9.4.7-dispositivos-mecanicos-ancoragem",

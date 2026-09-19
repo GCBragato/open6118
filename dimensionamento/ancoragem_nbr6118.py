@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import math
 import sys
+import warnings
 from dataclasses import dataclass
 
 try:  # executado como script, ou com dimensionamento/ no sys.path
@@ -420,3 +421,473 @@ if __name__ == "__main__":
     if "--test" in sys.argv:
         sys.exit(run_tests())
     _demo()
+
+
+# ---------------------------------------------------------------------------
+# === P21: Ancoragem passiva, ganchos e estribos ===
+#
+# Completa a ancoragem por aderência: classificação da situação de aderência
+# pela posição da barra (9.3.1), majoração para escorregamento (9.3.2.3),
+# dispensa de confinamento (9.4.1.1), validação do uso de gancho por tipo de
+# barra e solicitação (9.4.2.1), barra transversal soldada na ancoragem
+# (9.4.2.2), geometria dos ganchos e Tabela 9.1 (9.4.2.3), armadura
+# transversal na ancoragem (9.4.2.6) e ancoragem de estribos, Tabela 9.2
+# (9.4.6).
+# ---------------------------------------------------------------------------
+
+# --- 9.3.1 — Posição da barra durante a concretagem (PDF p. 53) ------------
+def situacao_aderencia(inclinacao_graus: float, h_cm: float, y_cm: float,
+                       forma_deslizante: bool = False) -> bool:
+    """Classifica a situação de aderência (True = boa) pela posição da barra
+    durante a concretagem (9.3.1, PDF p. 53).
+
+    - inclinação > 45 graus sobre a horizontal: sempre boa aderência;
+    - horizontal, ou inclinação <= 45 graus: depende de h_cm e y_cm:
+        - h_cm < 60: boa se a barra estiver no máximo 30 cm acima da face
+          inferior do elemento (ou da junta de concretagem mais próxima) —
+          y_cm é essa distância, e a condição é y_cm <= 30;
+        - h_cm >= 60: boa se a barra estiver no mínimo 30 cm abaixo da face
+          superior do elemento (ou da junta mais próxima) — y_cm é essa
+          distância, e a condição é y_cm >= 30;
+    - fôrma deslizante (forma_deslizante=True): sempre má aderência,
+      independentemente dos demais parâmetros.
+
+    Demais posições são má situação quanto à aderência (retorno False).
+    """
+    if forma_deslizante:
+        return False
+    if inclinacao_graus > 45.0:
+        return True
+    if h_cm < 60.0:
+        return y_cm <= 30.0
+    return y_cm >= 30.0
+
+
+# --- 9.3.2.3 — Majoração para verificação do escorregamento (PDF p. 54) ----
+FATOR_ESCORREGAMENTO = 1.75
+
+
+def fbd_escorregamento(fbd_ou_fbpd_mpa: float) -> float:
+    """Tensão de aderência majorada para a verificação do escorregamento da
+    armadura em elementos estruturais fletidos (9.3.2.3, PDF p. 54): os
+    valores de fbd (9.3.2.1) ou fbpd (9.3.2.2) são multiplicados por 1,75.
+    """
+    return FATOR_ESCORREGAMENTO * fbd_ou_fbpd_mpa
+
+
+# --- 9.4.1.1 — Ancoragem por aderência: dispensa de confinamento (p. 55) ---
+DISPOSITIVOS_COMBINAVEIS_ADERENCIA = ("gancho", "barra_transversal_soldada",
+                                      "chapa_soldada_na_ponta")
+
+
+def dispensa_confinamento(cobrimento_cm: float, espacamento_cm: float,
+                          phi_mm: float) -> bool:
+    """True quando o cobrimento e o espaçamento entre barras dispensam
+    armadura transversal de confinamento na ancoragem por aderência
+    (9.4.1.1, PDF p. 55): cobrimento da barra ancorada >= 3*phi e distância
+    entre barras ancoradas >= 3*phi (nesse caso o próprio concreto confina).
+    Caso contrário, a ancoragem deve ser confinada por armadura transversal
+    (ver Ast_ancoragem, 9.4.2.6).
+    """
+    limite_cm = 3.0 * phi_mm / 10.0
+    return cobrimento_cm >= limite_cm and espacamento_cm >= limite_cm
+
+
+# --- 9.4.2.1 — Condições de ancoragem reta, com ou sem gancho (p. 55) ------
+def validar_uso_gancho(tipo_barra: str, solicitacao: str, phi_mm: float,
+                       com_gancho: bool, em_feixe: bool = False) -> None:
+    """Valida se o uso (ou a ausência) de gancho é compatível com o tipo de
+    barra e a solicitação (9.4.2.1, PDF p. 55). Não devolve valor: levanta
+    ValueError quando a combinação é proibida pela norma.
+
+    tipo_barra: 'lisa', 'entalhada' ou 'nervurada'.
+    solicitacao: 'tracao', 'compressao' ou 'alternada' (alternância de
+    tração e compressão na mesma barra).
+
+    Proibições (levantam ValueError):
+      a) barra lisa sem gancho — gancho é obrigatório para barra lisa;
+      b) barra com solicitação alternada com gancho — deve ser sem gancho;
+      barra comprimida (solicitacao='compressao') com gancho — barras
+      comprimidas são sempre ancoradas sem gancho.
+
+    Não recomendado, mas não proibido (emite aviso ``nucleo_nbr6118.AvisoNBR6118``,
+    o cálculo prossegue): gancho com phi_mm > 32 mm, ou com feixe de barras
+    (em_feixe=True).
+    """
+    tb = str(tipo_barra).strip().lower()
+    sol = str(solicitacao).strip().lower()
+    if tb == "lisa" and not com_gancho:
+        raise ValueError(
+            "Barra lisa exige gancho na ancoragem reta (9.4.2.1 a)."
+        )
+    if sol == "alternada" and com_gancho:
+        raise ValueError(
+            "Barra com alternância de tração e compressão deve ser ancorada "
+            "sem gancho (9.4.2.1 b)."
+        )
+    if sol == "compressao" and com_gancho:
+        raise ValueError(
+            "Barra comprimida deve ser ancorada sem gancho (9.4.2.1)."
+        )
+    if com_gancho and (phi_mm > 32.0 or em_feixe):
+        motivo = "phi > 32 mm" if phi_mm > 32.0 else "feixe de barras"
+        warnings.warn(
+            f"Gancho não é recomendado para {motivo} (9.4.2.1 c).",
+            nbr.AvisoNBR6118,
+            stacklevel=2,
+        )
+
+
+# --- 9.4.2.2 — Barras transversais soldadas na ancoragem (PDF p. 55-56) ---
+@dataclass(frozen=True)
+class ResultadoBarraTransversalSoldada:
+    phi_mm: float
+    phi_t_mm: float
+    distancia_cm: float
+    As_cm2: float
+    fyd_mpa: float
+    phi_t_min_mm: float
+    distancia_min_cm: float
+    forca_resistente_min_kn: float
+    ok_diametro: bool
+    ok_distancia: bool
+    ok_solda: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_barra_transversal_soldada(
+    phi_mm: float,
+    phi_t_mm: float,
+    distancia_cm: float,
+    forca_solda_kn: float,
+    As_cm2: float,
+    fyd_mpa: float,
+) -> ResultadoBarraTransversalSoldada:
+    """Verifica as três condições geométricas e de resistência da barra
+    transversal soldada usada para ancoragem por aderência (9.4.2.2, PDF
+    p. 55-56; Figura 9.1):
+
+    a) phi_t >= 0,60 * phi;
+    b) distância da barra soldada ao ponto de início da ancoragem >= 5*phi;
+    c) resistência ao cisalhamento da solda >= 0,3 * As * fyd (30 % da
+       força resistida pela barra ancorada).
+    """
+    phi_t_min = 0.6 * phi_mm
+    distancia_min = 5.0 * phi_mm / 10.0
+    forca_min = 0.3 * As_cm2 * nbr.mpa_para_kncm2(fyd_mpa)
+    ok_diametro = phi_t_mm >= phi_t_min
+    ok_distancia = distancia_cm >= distancia_min
+    ok_solda = forca_solda_kn >= forca_min
+    ok = ok_diametro and ok_distancia and ok_solda
+    if not ok_diametro:
+        governante = "9.4.2.2 a) phi_t >= 0,60*phi"
+    elif not ok_distancia:
+        governante = "9.4.2.2 b) distância >= 5*phi"
+    elif not ok_solda:
+        governante = "9.4.2.2 c) resistência da solda >= 0,3*As*fyd"
+    else:
+        governante = "atende 9.4.2.2 a), b) e c)"
+    memoria = (
+        f"phi_t = {phi_t_mm:g} mm; mínimo 0,60*phi = 0,60*{phi_mm:g} = "
+        f"{phi_t_min:.2f} mm -> {'ok' if ok_diametro else 'não ok'}.",
+        f"distância ao início da ancoragem = {distancia_cm:g} cm; mínimo "
+        f"5*phi = 5*{phi_mm:g}mm/10 = {distancia_min:.2f} cm -> "
+        f"{'ok' if ok_distancia else 'não ok'}.",
+        f"força da solda = {forca_solda_kn:g} kN; mínimo 0,3*As*fyd = "
+        f"0,3*{As_cm2:g}cm2*{fyd_mpa:.2f}MPa = {forca_min:.2f} kN -> "
+        f"{'ok' if ok_solda else 'não ok'}.",
+    )
+    return ResultadoBarraTransversalSoldada(
+        phi_mm=phi_mm, phi_t_mm=phi_t_mm, distancia_cm=distancia_cm,
+        As_cm2=As_cm2, fyd_mpa=fyd_mpa, phi_t_min_mm=phi_t_min,
+        distancia_min_cm=distancia_min, forca_resistente_min_kn=forca_min,
+        ok_diametro=ok_diametro, ok_distancia=ok_distancia, ok_solda=ok_solda,
+        ok=ok, governante=governante, memoria=memoria,
+    )
+
+
+# --- 9.4.2.3 — Ganchos: Tabela 9.1, comprimento e solda transversal -------
+# (PDF p. 56)
+TABELA_9_1 = {
+    # (faixa_bitola, tipo_aco) -> D/phi (Tabela 9.1, PDF p. 56)
+    ("<20", "CA-25"): 4.0, ("<20", "CA-50"): 5.0, ("<20", "CA-60"): 6.0,
+    (">=20", "CA-25"): 5.0, (">=20", "CA-50"): 8.0,
+    # (">=20", "CA-60"): sem valor na tabela ("-")
+}
+
+_PONTA_RETA_GANCHO_MULT = {
+    "semicircular": 2.0,
+    "45": 4.0,
+    "reto": 8.0,
+}
+
+
+def diametro_pino_gancho(phi_mm: float, aco: str) -> float:
+    """Diâmetro do pino de dobramento (D), em múltiplos de phi, exigido
+    para os ganchos das armaduras longitudinais de tração (Tabela 9.1,
+    9.4.2.3, PDF p. 56). aco: 'CA-25', 'CA-50' ou 'CA-60'.
+    """
+    if aco not in ETA1_TIPO_ACO:
+        raise ValueError(f"aco deve ser CA-25, CA-50 ou CA-60: {aco!r}")
+    faixa = "<20" if phi_mm < 20.0 else ">=20"
+    D = TABELA_9_1.get((faixa, aco))
+    if D is None:
+        raise nbr.FaixaNormativaError(
+            f"Tabela 9.1 não define o pino de dobramento para {aco} com "
+            f"bitola {phi_mm:g} mm (faixa {faixa})."
+        )
+    return D
+
+
+def comprimento_gancho(phi_mm: float, tipo: str,
+                       tipo_barra: str | None = None) -> float:
+    """Comprimento mínimo da ponta reta do gancho de armadura longitudinal
+    de tração, em cm (9.4.2.3, PDF p. 56).
+
+    tipo: 'semicircular' (ponta reta >= 2*phi), '45' (ângulo de 45 graus,
+    ponta reta >= 4*phi) ou 'reto' (ângulo reto, ponta reta >= 8*phi).
+    tipo_barra: se 'lisa', só é permitido gancho semicircular (a norma
+    exige gancho semicircular para barra lisa); outro tipo levanta
+    ValueError.
+    """
+    chave = str(tipo).strip().lower()
+    mult = _PONTA_RETA_GANCHO_MULT.get(chave)
+    if mult is None:
+        raise ValueError(
+            f"tipo de gancho deve ser 'semicircular', '45' ou 'reto': {tipo!r}"
+        )
+    if (tipo_barra is not None
+            and str(tipo_barra).strip().lower() == "lisa"
+            and chave != "semicircular"):
+        raise ValueError("Barra lisa exige gancho semicircular (9.4.2.3).")
+    return mult * phi_mm / 10.0
+
+
+def pino_com_solda_transversal(
+    phi_mm: float,
+    aco: str,
+    solda_antes_dobramento: bool,
+    distancia_ao_inicio_curva_mm: float | None = None,
+    sobre_trecho_curvo: bool = False,
+) -> float:
+    """Diâmetro do pino de dobramento (D, em múltiplos de phi) quando há
+    barra soldada transversalmente ao gancho (9.4.2.3, PDF p. 56-57: a regra
+    de solda após o dobramento está no início da p. 57).
+
+    Se a solda ocorrer depois do dobramento (solda_antes_dobramento=False),
+    mantém-se sempre a Tabela 9.1. Se ocorrer antes do dobramento: mantém-se
+    a Tabela 9.1 quando o ponto de solda estiver na parte reta a uma
+    distância >= 4*phi do início da curva; caso contrário (distância menor,
+    ou solda sobre o trecho curvo), o pino mínimo passa a D = 20.
+    """
+    if not solda_antes_dobramento:
+        return diametro_pino_gancho(phi_mm, aco)
+    if sobre_trecho_curvo:
+        return 20.0
+    if distancia_ao_inicio_curva_mm is None:
+        raise ValueError(
+            "Informe distancia_ao_inicio_curva_mm quando a solda ocorre "
+            "antes do dobramento e fora do trecho curvo."
+        )
+    if distancia_ao_inicio_curva_mm < 4.0 * phi_mm:
+        return 20.0
+    return diametro_pino_gancho(phi_mm, aco)
+
+
+# --- 9.4.2.6 — Armadura transversal na ancoragem (PDF p. 57-58) -----------
+@dataclass(frozen=True)
+class ResultadoArmaduraTransversalAncoragem:
+    """Armadura transversal exigida ao longo do comprimento de ancoragem
+    (9.4.2.6.1/9.4.2.6.2). ``governante`` registra qual subitem da norma foi
+    aplicado (9.4.2.6.1, phi < 32 mm, ou 9.4.2.6.2, phi >= 32 mm).
+
+    Não há campo ``ok``: esta função dimensiona a armadura transversal
+    exigida (Ast,min ou o espaçamento máximo de 5*phi), não compara uma
+    armadura já definida com um limite — a verificação fica com quem usa
+    o resultado (mesmo motivo de ``ResultadoCombinacao``, em
+    acoes_nbr6118.py; convenção 3.3 do plano).
+    """
+
+    phi_mm: float
+    duas_direcoes: bool
+    As_barra_cm2: float | None
+    fyd_barra_mpa: float | None
+    fyd_transversal_mpa: float | None
+    Ast_min_cm2: float | None
+    espacamento_max_cm: float
+    barra_adicional_alem_extremidade_cm: float | None
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def Ast_ancoragem(
+    phi_mm: float,
+    As_barra_cm2: float,
+    fyd_barra_mpa: float,
+    fyd_transversal_mpa: float | None = None,
+    barra_comprimida: bool = False,
+) -> ResultadoArmaduraTransversalAncoragem:
+    """Armadura transversal ao longo do comprimento de ancoragem (9.4.2.6,
+    PDF p. 57-58).
+
+    phi_mm < 32 (9.4.2.6.1): a armadura transversal deve resistir a 25 % da
+    força longitudinal da barra ancorada (a de maior diâmetro, se a
+    ancoragem envolver barras diferentes):
+        Ast * fyd_transversal >= 0,25 * As_barra * fyd_barra
+    fyd_transversal_mpa, se omitido, usa o mesmo fyd_barra_mpa (mesmo aço).
+
+    phi_mm >= 32 (9.4.2.6.2): a norma não dá uma fórmula de área — exige
+    verificar a armadura em duas direções transversais ao conjunto de
+    barras ancoradas, capazes de resistir às tensões de fendilhamento,
+    respeitando o espaçamento máximo de 5*phi; Ast_min_cm2 sai None nesse
+    ramo. Se barra_comprimida=True, uma das barras da armadura transversal
+    deve ficar a 4*phi além da extremidade da barra ancorada.
+    """
+    espacamento_max_cm = 5.0 * phi_mm / 10.0
+    if phi_mm < 32.0:
+        governante = "9.4.2.6.1: phi < 32 mm"
+        fyd_transv = fyd_transversal_mpa if fyd_transversal_mpa is not None else fyd_barra_mpa
+        Ast_min = 0.25 * As_barra_cm2 * fyd_barra_mpa / fyd_transv
+        memoria = (
+            f"9.4.2.6.1: phi = {phi_mm:g} mm < 32 mm.",
+            f"Ast,min = 0,25 * As * fyd_barra/fyd_transversal = 0,25 * "
+            f"{As_barra_cm2:g} cm2 * {fyd_barra_mpa:.2f}/{fyd_transv:.2f} "
+            f"= {Ast_min:.3f} cm2.",
+        )
+        return ResultadoArmaduraTransversalAncoragem(
+            phi_mm=phi_mm, duas_direcoes=False,
+            As_barra_cm2=As_barra_cm2, fyd_barra_mpa=fyd_barra_mpa,
+            fyd_transversal_mpa=fyd_transv, Ast_min_cm2=Ast_min,
+            espacamento_max_cm=espacamento_max_cm,
+            barra_adicional_alem_extremidade_cm=None,
+            governante=governante, memoria=memoria,
+        )
+    governante = "9.4.2.6.2: phi >= 32 mm"
+    barra_adicional = 4.0 * phi_mm / 10.0 if barra_comprimida else None
+    memoria = (
+        f"9.4.2.6.2: phi = {phi_mm:g} mm >= 32 mm: verificar armadura em "
+        f"duas direções transversais ao conjunto de barras ancoradas "
+        f"(fendilhamento), espaçamento máximo 5*phi = "
+        f"{espacamento_max_cm:.2f} cm.",
+    )
+    if barra_comprimida:
+        memoria = memoria + (
+            f"Barra comprimida: uma barra da armadura transversal a "
+            f"4*phi = {barra_adicional:.2f} cm além da extremidade.",
+        )
+    return ResultadoArmaduraTransversalAncoragem(
+        phi_mm=phi_mm, duas_direcoes=True,
+        As_barra_cm2=None, fyd_barra_mpa=None, fyd_transversal_mpa=None,
+        Ast_min_cm2=None, espacamento_max_cm=espacamento_max_cm,
+        barra_adicional_alem_extremidade_cm=barra_adicional,
+        governante=governante, memoria=memoria,
+    )
+
+
+# --- 9.4.6 — Ancoragem de estribos: Tabela 9.2, ganchos e solda (p. 60) ---
+TABELA_9_2 = {
+    # (faixa_bitola, tipo_aco) -> D/phi_t (Tabela 9.2, PDF p. 60)
+    ("<=10", "CA-25"): 3.0, ("<=10", "CA-50"): 3.0, ("<=10", "CA-60"): 3.0,
+    ("10-20", "CA-25"): 4.0, ("10-20", "CA-50"): 5.0,
+    (">=20", "CA-25"): 5.0, (">=20", "CA-50"): 8.0,
+    # ("10-20", "CA-60") e (">=20", "CA-60"): sem valor na tabela ("-")
+}
+
+
+def diametro_pino_estribo(phi_t_mm: float, aco: str) -> float:
+    """Diâmetro do pino de dobramento (D), em múltiplos de phi_t, exigido
+    para os ganchos de estribos (Tabela 9.2, 9.4.6.1, PDF p. 60).
+    aco: 'CA-25', 'CA-50' ou 'CA-60'.
+    """
+    if aco not in ETA1_TIPO_ACO:
+        raise ValueError(f"aco deve ser CA-25, CA-50 ou CA-60: {aco!r}")
+    if phi_t_mm <= 10.0:
+        faixa = "<=10"
+    elif phi_t_mm < 20.0:
+        faixa = "10-20"
+    else:
+        faixa = ">=20"
+    D = TABELA_9_2.get((faixa, aco))
+    if D is None:
+        raise nbr.FaixaNormativaError(
+            f"Tabela 9.2 não define o pino de dobramento de estribos para "
+            f"{aco} com bitola {phi_t_mm:g} mm (faixa {faixa})."
+        )
+    return D
+
+
+def ponta_reta_estribo_cm(phi_t_mm: float, tipo: str,
+                          aco_liso: bool = False) -> float:
+    """Comprimento mínimo da ponta reta do gancho de estribo, em cm
+    (9.4.6.1, PDF p. 60).
+
+    tipo: 'semicircular' ou '135' (ângulo de 135 graus): ponta reta =
+    max(5*phi_t, 5 cm); 'reto' (ângulo reto): ponta reta =
+    max(10*phi_t, 7 cm), proibido para barra ou fio liso (aco_liso=True
+    levanta ValueError nesse caso).
+    """
+    chave = str(tipo).strip().lower()
+    if chave in ("semicircular", "135"):
+        return max(5.0 * phi_t_mm / 10.0, 5.0)
+    if chave == "reto":
+        if aco_liso:
+            raise ValueError(
+                "Gancho de estribo em ângulo reto não pode ser usado para "
+                "barra ou fio liso (9.4.6.1 b)."
+            )
+        return max(10.0 * phi_t_mm / 10.0, 7.0)
+    raise ValueError(
+        f"tipo de gancho de estribo deve ser 'semicircular', '135' ou "
+        f"'reto': {tipo!r}"
+    )
+
+
+@dataclass(frozen=True)
+class ResultadoAncoragemEstriboBarraSoldada:
+    phi_t_mm: float
+    num_barras_soldadas: int
+    phi_t1_mm: float
+    phi_t1_min_mm: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def ancoragem_estribo_barra_soldada(
+    phi_t_mm: float, phi_t1_mm: float, num_barras_soldadas: int,
+) -> ResultadoAncoragemEstriboBarraSoldada:
+    """Verifica a condição geométrica de diâmetro da ancoragem de estribo
+    por barra(s) transversal(is) soldada(s) (9.4.6.2, PDF p. 60-61; a
+    condição de resistência da solda, comprovada por ensaio para a força
+    As*fyd, fica fora do escopo numérico desta função).
+
+    num_barras_soldadas=2 (estribo de um ou dois ramos): phi_t1 > 0,7*phi_t
+    — a norma usa desigualdade estrita no texto (item a), embora a
+    Figura 9.3 mostre phi_t1 >= 0,7*phi_t; adota-se aqui o texto (mais
+    conservador — ver divergência registrada no retorno do pacote).
+    num_barras_soldadas=1 (estribo de dois ramos): phi_t1 >= 1,4*phi_t.
+    """
+    if num_barras_soldadas == 2:
+        phi_t1_min = 0.7 * phi_t_mm
+        ok = phi_t1_mm > phi_t1_min
+        governante = "9.4.6.2 a) duas barras soldadas: phi_t1 > 0,7*phi_t"
+    elif num_barras_soldadas == 1:
+        phi_t1_min = 1.4 * phi_t_mm
+        ok = phi_t1_mm >= phi_t1_min
+        governante = "9.4.6.2 b) uma barra soldada (estribo 2 ramos): phi_t1 >= 1,4*phi_t"
+    else:
+        raise ValueError("num_barras_soldadas deve ser 1 ou 2 (9.4.6.2).")
+    memoria = (
+        f"phi_t = {phi_t_mm:g} mm; phi_t1 adotado = {phi_t1_mm:g} mm; "
+        f"phi_t1_min = {phi_t1_min:g} mm ({governante}) -> "
+        f"{'ok' if ok else 'não ok'}.",
+    )
+    return ResultadoAncoragemEstriboBarraSoldada(
+        phi_t_mm=phi_t_mm, num_barras_soldadas=num_barras_soldadas,
+        phi_t1_mm=phi_t1_mm, phi_t1_min_mm=phi_t1_min, ok=ok,
+        governante=governante, memoria=memoria,
+    )
+
+
