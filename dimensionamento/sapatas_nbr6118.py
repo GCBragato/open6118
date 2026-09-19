@@ -728,6 +728,149 @@ def _demo() -> None:
           f"tau_Rd2={r.tau_Rd2_MPa:.2f} MPa ({r.ok_diagonal})")
 
 
+# === P20: punção de sapata flexível (22.6.2.3) ===
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import puncao_nbr6118 as _puncao
+    import seguranca_nbr6118 as _seg
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import puncao_nbr6118 as _puncao
+    from dimensionamento import seguranca_nbr6118 as _seg
+
+
+def _f20(x: float) -> str:
+    """Número para a memória de cálculo, com vírgula decimal."""
+    return f"{x:.6g}".replace(".", ",")
+
+
+@dataclass(frozen=True)
+class ResultadoPuncaoSapata:
+    """Punção de sapata flexível pelos contornos C e C′ de 19.5 (22.6.2.3)."""
+
+    rigida: bool | None
+    p_solo_kncm2: float
+    FSd_C_kn: float                   # FSd reduzida da reação do solo dentro de C
+    FSd_Cl_kn: float                  # FSd reduzida da reação do solo dentro de C′
+    u0_cm: float
+    u_cm: float
+    area_Cl_cm2: float
+    Cl_dentro_da_sapata: bool
+    tau_Sd_C_mpa: float
+    tau_Rd2_mpa: float
+    tau_Sd_Cl_mpa: float | None
+    tau_Rd1_mpa: float | None
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_puncao_sapata_flexivel(
+    FSd_kn: float, A_cm: float, B_cm: float, ap_cm: float, bp_cm: float,
+    d_cm: float, fck_mpa: float, rho_x: float = 0.0, rho_y: float = 0.0,
+    MSd_A_kncm: float = 0.0, MSd_B_kncm: float = 0.0,
+    p_solo_kncm2: float | None = None, d_Cl_cm: float | None = None,
+    h_cm: float | None = None, interpolar_K: bool = True,
+    gama_c: float = nbr.GAMA_C,
+) -> ResultadoPuncaoSapata:
+    """Punção de sapata flexível pelos contornos C e C′ de 19.5 (22.6.2.3, PDF p. 212).
+
+    22.6.2.3 b: o trabalho ao cisalhamento da sapata flexível "pode ser
+    descrito pelo fenômeno da punção (ver 19.5)" — ao contrário da sapata
+    rígida, que fica dentro do cone de punção e só tem a verificação da
+    compressão diagonal (22.6.2.2 b, 19.5.3.1). A verificação é a de laje
+    com pilar interno, com a redução de 19.5.2.1: "a força de punção FSd pode
+    ser reduzida da força distribuída aplicada na face oposta da laje, dentro
+    do contorno considerado na verificação, C ou C′" — aqui, a reação do solo:
+
+        FSd,C  = FSd − p·(ap·bp)
+        FSd,C′ = FSd − p·[ap·bp + 2·(2d)·(ap + bp) + π·(2d)²]
+        τSd    = FSd,red/(u·d) + K·MSd,A/(Wp,A·d) + K·MSd,B/(Wp,B·d)
+        C:  τSd (u0 = 2·(ap + bp)) <= τRd2 = 0,27·αv·fcd        (19.5.3.1)
+        C′: τSd (u = 2·(ap + bp) + 4·π·d) <= τRd1                (19.5.3.2)
+
+    p = reação do solo de cálculo, kN/cm² (padrão FSd/(A·B), distribuição
+    uniforme); ap e MSd,A na direção de A (C1 = ap para MSd,A), bp e MSd,B na
+    direção de B; comprimentos em cm, FSd em kN, momentos em kN·cm (não
+    reduzidos), tensões em MPa. ``d_Cl_cm`` é a altura útil no contorno C′
+    (sapata de altura variável; padrão d). Sapata sem armadura de punção.
+
+    Se C′ não cabe na sapata (ap + 4d > A ou bp + 4d > B), a sapata fica
+    dentro do cone de punção: vale só a verificação de C (22.6.2.2 b), e a
+    memória registra. Com ``h_cm`` a função informa a classificação de 22.6.1
+    (``eh_rigida_nbr``).
+    """
+    F = float(FSd_kn)
+    if F < 0.0:
+        raise nbr.FaixaNormativaError("FSd não pode ser negativa (22.6.2.3).")
+    for v, nome in ((A_cm, "A"), (B_cm, "B"), (ap_cm, "ap"), (bp_cm, "bp"), (d_cm, "d")):
+        if not float(v) > 0.0:
+            raise nbr.FaixaNormativaError(f"{nome} tem de ser positivo (22.6.2.3).")
+    A, B, ap, bp, d = map(float, (A_cm, B_cm, ap_cm, bp_cm, d_cm))
+    if ap > A or bp > B:
+        raise nbr.FaixaNormativaError("O pilar não cabe na sapata (ap > A ou bp > B).")
+    dl = d if d_Cl_cm is None else float(d_Cl_cm)
+    if not dl > 0.0:
+        raise nbr.FaixaNormativaError("d em C′ tem de ser positivo (22.6.2.3).")
+    p = F / (A * B) if p_solo_kncm2 is None else float(p_solo_kncm2)
+    if p < 0.0:
+        raise nbr.FaixaNormativaError("A reação do solo não pode ser negativa (22.6.2.3).")
+    M1, M2 = abs(float(MSd_A_kncm)), abs(float(MSd_B_kncm))
+    k1 = _puncao.K(ap / bp, interpolar_K) if M1 > 0.0 else None
+    k2 = _puncao.K(bp / ap, interpolar_K) if M2 > 0.0 else None
+    mem: list[str] = [f"22.6.2.3: sapata {_f20(A)} × {_f20(B)} cm, pilar {_f20(ap)} × {_f20(bp)} cm, "
+                      f"FSd = {_f20(F)} kN; punção pelos contornos de 19.5."]
+    rig = None
+    if h_cm is not None:
+        rig = eh_rigida_nbr(float(h_cm), A, ap, B, bp)
+        mem.append("22.6.1: sapata " + ("rígida — pela 22.6.2.2 b bastaria a verificação de C."
+                                         if rig else "flexível (h < (A − ap)/3 em alguma direção)."))
+    # --- contorno C ---
+    F_C = max(F - p * ap * bp, 0.0)
+    u0 = 2.0 * (ap + bp)
+    tau_C = _puncao.tau_Sd_mpa(F_C, u0, d, M1, k1, _puncao.Wp_retangular_cm2(ap, bp, d, "C"),
+                               M2, k2, _puncao.Wp_retangular_cm2(bp, ap, d, "C"))
+    rd2 = _puncao.tau_Rd2_mpa(fck_mpa, gama_c)
+    mem.append(f"19.5.3.1 (C): FSd,C = FSd − p·ap·bp = {_f20(F_C)} kN (p = {_f20(p)} kN/cm²); "
+               f"u0 = {_f20(u0)} cm; τSd = {_f20(tau_C)} MPa; τRd2 = {_f20(rd2)} MPa.")
+    sC = _seg.verificar_seguranca(rd2, tau_C, "τSd x τRd2 (C)", "19.5.3.1")
+    mem.extend(sC.memoria)
+    # --- contorno C′ ---
+    r = 2.0 * dl
+    area_Cl = ap * bp + 2.0 * r * (ap + bp) + math.pi * r * r
+    u = 2.0 * (ap + bp) + 2.0 * math.pi * r
+    dentro = (ap + 2.0 * r <= A * (1.0 + 1e-12)) and (bp + 2.0 * r <= B * (1.0 + 1e-12))
+    F_Cl = max(F - p * area_Cl, 0.0)
+    tau_Cl = rd1 = None
+    ok_Cl = True
+    if dentro:
+        tau_Cl = _puncao.tau_Sd_mpa(F_Cl, u, dl, M1, k1, _puncao.Wp_retangular_cm2(ap, bp, dl),
+                                    M2, k2, _puncao.Wp_retangular_cm2(bp, ap, dl))
+        rho = _puncao.rho_puncao(rho_x, rho_y)
+        rd1 = _puncao.tau_Rd1_mpa(fck_mpa, rho, dl)
+        mem.append(f"19.5.3.2 (C′): área dentro de C′ = {_f20(area_Cl)} cm²; FSd,C′ = {_f20(F_Cl)} kN; "
+                   f"u = {_f20(u)} cm; d = {_f20(dl)} cm; τSd = {_f20(tau_Cl)} MPa; "
+                   f"ρ = {_f20(rho)}; τRd1 = {_f20(rd1)} MPa.")
+        s1 = _seg.verificar_seguranca(rd1, tau_Cl, "τSd x τRd1 (C′)", "19.5.3.2")
+        mem.extend(s1.memoria)
+        ok_Cl = s1.ok
+    else:
+        mem.append("O contorno C′ (a 2d do pilar) sai da sapata: a sapata fica dentro do cone de "
+                   "punção e só a verificação de C se aplica (22.6.2.2 b).")
+    ok = sC.ok and ok_Cl
+    if not sC.ok:
+        gov = "Contorno C: τSd > τRd2 (19.5.3.1)"
+    elif not ok_Cl:
+        gov = "Contorno C′: τSd > τRd1 — aumentar a altura da sapata (19.5.3.2)"
+    elif tau_Cl is None:
+        gov = "Contorno C: τSd <= τRd2; C′ fora da sapata"
+    else:
+        razoes = {"C": tau_C / rd2, "C′": tau_Cl / rd1}
+        g = max(razoes, key=razoes.get)
+        gov = f"Contorno {g}: τSd/τRd = {_f20(razoes[g])}"
+    mem.append(f"Resultado: {'passa' if ok else 'não passa'} — {gov}.")
+    return ResultadoPuncaoSapata(rig, p, F_C, F_Cl, u0, u, area_Cl, dentro, tau_C, rd2,
+                                 tau_Cl, rd1, ok, gov, tuple(mem))
+
+
 if __name__ == "__main__":
     if "--test" in sys.argv:
         sys.exit(run_tests())

@@ -540,21 +540,21 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `19.5.2.2-tabela19.2-K` | 19.5.2.2 / Tabela 19.2 | 184 | Tabela 19.2 - coeficiente K | implementado | alta | P | P19 |
 | `19.5.2.2-wp-retangular` | 19.5.2.2 | 184 | Wp do perímetro crítico - pilar retangular | implementado | alta | P | P19 |
 | `19.5.2.2-wp-circular` | 19.5.2.2 | 184 | Wp do perímetro crítico - pilar circular | implementado | média | P | P19 |
-| `19.5.2.2-wp-integral-generico` | 19.5.2.2 | 184 | Wp por integração numérica do perímetro crítico (forma qualquer) | ausente | baixa | M | P20 |
+| `19.5.2.2-wp-integral-generico` | 19.5.2.2 | 184 | Wp por integração numérica do perímetro crítico (forma qualquer) | implementado | baixa | M | P20 |
 | `19.5.2.3-pilar-borda-sem-momento-paralelo` | 19.5.2.3 a) | 185 | tSd em pilar de borda sem momento paralelo à borda livre | implementado | alta | M | P19 |
 | `19.5.2.3-pilar-borda-com-momento-paralelo` | 19.5.2.3 b) | 185 | tSd em pilar de borda com momento paralelo à borda livre | implementado | alta | M | P19 |
 | `19.5.2.4-pilar-canto` | 19.5.2.4 | 186 | Verificação de punção em pilar de canto | implementado | alta | M | P19 |
-| `19.5.2.5-capitel` | 19.5.2.5 | 187 | Verificação de punção com capitel (contornos C1' e C2') | ausente | média | M | P20 |
-| `19.5.2.6-contorno-reentrancia` | 19.5.2.6 | 187 | Perímetro crítico em contorno C com reentrâncias | ausente | baixa | M | P20 |
-| `19.5.2.6-contorno-abertura` | 19.5.2.6 | 187 | Perímetro crítico junto a abertura na laje | ausente | alta | M | P20 |
+| `19.5.2.5-capitel` | 19.5.2.5 | 187 | Verificação de punção com capitel (contornos C1' e C2') | implementado | média | M | P20 |
+| `19.5.2.6-contorno-reentrancia` | 19.5.2.6 | 187 | Perímetro crítico em contorno C com reentrâncias | implementado | baixa | M | P20 |
+| `19.5.2.6-contorno-abertura` | 19.5.2.6 | 187 | Perímetro crítico junto a abertura na laje | implementado | alta | M | P20 |
 | `19.5.2.7-interacao-normal-tangencial` | 19.5.2.7 | 188 | Dispensa de verificação da interação entre flexão e punção | não computável | alta | P |  |
 | `19.5.3.1-trd2-compressao-diagonal` | 19.5.3.1 | 188 | Tensão resistente de compressão diagonal do concreto no contorno C (punção) | implementado | alta | P | P19 |
 | `19.5.3.2-trd1-sem-armadura` | 19.5.3.2 | 188 | Tensão resistente na superfície crítica C' sem armadura de punção | implementado | alta | M | P19 |
 | `19.5.3.3-trd3-com-armadura` | 19.5.3.3 | 189 | Tensão resistente na superfície crítica C' com armadura de punção | implementado | alta | M | P19 |
-| `19.5.3.4-superficie-c2linha` | 19.5.3.4 | 190 | Definição geométrica da superfície crítica C'' e disposição da armadura de punção | ausente | alta | M | P20 |
-| `19.5.3.5-armadura-puncao-obrigatoria` | 19.5.3.5 | 191 | Armadura de punção obrigatória por robustez (estabilidade global) | ausente | alta | P | P20 |
-| `19.5.4-colapso-progressivo` | 19.5.4 | 191 | Armadura de flexão inferior contra colapso progressivo na ligação laje-pilar | ausente | alta | P | P20 |
-| `19.5.5-puncao-protendido` | 19.5.5 | 191 | Tensão solicitante efetiva de punção em laje protendida (efeito favorável dos cabos inclinados) | ausente | média | M | P20 |
+| `19.5.3.4-superficie-c2linha` | 19.5.3.4 | 190 | Definição geométrica da superfície crítica C'' e disposição da armadura de punção | parcial | alta | M | P20 |
+| `19.5.3.5-armadura-puncao-obrigatoria` | 19.5.3.5 | 191 | Armadura de punção obrigatória por robustez (estabilidade global) | implementado | alta | P | P20 |
+| `19.5.4-colapso-progressivo` | 19.5.4 | 191 | Armadura de flexão inferior contra colapso progressivo na ligação laje-pilar | implementado | alta | P | P20 |
+| `19.5.5-puncao-protendido` | 19.5.5 | 191 | Tensão solicitante efetiva de punção em laje protendida (efeito favorável dos cabos inclinados) | implementado | média | M | P20 |
 
 ## Seção 20
 
@@ -579,8 +579,8 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `20.3.2.6-cabos-atravessando-pilar` | 20.3.2.6 | 196 | Número mínimo de cabos atravessando a armadura do pilar por direção | ausente | média | P | P33 |
 | `20.3.2.6-barras-apoio-laje-lisa-protendida` | 20.3.2.6 | 196 | Armadura passiva mínima sobre apoios de laje lisa/cogumelo protendida | ausente | média | M | P33 |
 | `20.3.2.6-max-cabos-feixe-monocordoalha` | 20.3.2.6 | 196 | Número máximo de monocordoalhas não aderentes em feixe | ausente | média | P | P33 |
-| `20.4-diametro-max-estribo-puncao` | 20.4 | 196 | Diâmetro máximo do estribo de armadura de punção | ausente | alta | P | P20 |
-| `20.4-contato-mecanico-canto-estribo` | 20.4 | 196 | Contato mecânico e diâmetro mínimo da barra longitudinal no canto do estribo de punção | ausente | média | P | P20 |
+| `20.4-diametro-max-estribo-puncao` | 20.4 | 196 | Diâmetro máximo do estribo de armadura de punção | implementado | alta | P | P20 |
+| `20.4-contato-mecanico-canto-estribo` | 20.4 | 196 | Contato mecânico e diâmetro mínimo da barra longitudinal no canto do estribo de punção | implementado | média | P | P20 |
 | `20.4-studs-desempenho-ensaio` | 20.4 | 196 | Preferência por studs e exigência de desempenho comprovado por ensaio | não computável | média | P |  |
 | `20.5.1-ancoragem-tela-soldada-apoio` | 20.5.1 | 196 | Comprimento de ancoragem de tela soldada nervurada no apoio sobre viga | implementado | média | P | P18 |
 | `20.5.2-emenda-tela-tabela-malhas-fios` | 20.5.2 | 196 | Emenda de armaduras em tela soldada nervurada por sobreposição de malhas/fios | implementado | baixa | P | P18 |
@@ -607,7 +607,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `21.3.3-torcao-ajuste-limites` | 21.3.3 | 201 | Ajuste dos limites de furo em vigas submetidas à torção | não computável | baixa | P |  |
 | `21.3.4a-secao-remanescente-abertura-laje` | 21.3.4 | 201 | Verificação da seção remanescente de laje com abertura no ELU | implementado | alta | M | P34 |
 | `21.3.4b-armadura-reforco-abertura-laje` | 21.3.4 | 201 | Armadura de reforço equivalente à armadura interrompida por abertura em laje | implementado | alta | P | P34 |
-| `21.3.4c-puncao-abertura-proxima-pilar` | 21.3.4 | 201 | Equilíbrio de forças cortantes em laje lisa/cogumelo com abertura próxima a pilar | ausente | alta | G | P20 |
+| `21.3.4c-puncao-abertura-proxima-pilar` | 21.3.4 | 201 | Equilíbrio de forças cortantes em laje lisa/cogumelo com abertura próxima a pilar | implementado | alta | G | P20 |
 | `21.4-nos-porticos-ligacoes-paredes` | 21.4 | 201 | Nós de pórticos e ligações entre paredes | não computável | média | P |  |
 | `21.5-ligacoes-pre-moldados` | 21.5 | 201 | Ligações de elementos estruturais pré-moldados | não computável | baixa | P |  |
 | `21.6-juntas-concretagem-armadura-costura` | 21.6 | 201 | Armadura de costura em juntas de concretagem sem aderência/rugosidade garantidas | não computável | média | P |  |
@@ -650,7 +650,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `22.6.1-sapata-rigida-flexivel` | 22.6.1 | 211 | Classificação de sapata rígida x flexível | implementado | alta | P |  |
 | `22.6.1-hipotese-distribuicao-plana` | 22.6.1 | 211 | Validade da hipótese de distribuição plana de tensões no contato sapata-solo | parcial | média | P | P37 |
 | `22.6.2.2-cisalhamento-compressao-diagonal-sapata-rigida` | 22.6.2.2 | 212 | Verificação ao cisalhamento de sapata rígida por compressão diagonal (superfície C) | implementado | alta | P |  |
-| `22.6.2.3-sapata-flexivel-puncao` | 22.6.2.3 | 212 | Sapata flexível: verificação ao cisalhamento por punção | ausente | alta | G | P20 |
+| `22.6.2.3-sapata-flexivel-puncao` | 22.6.2.3 | 212 | Sapata flexível: verificação ao cisalhamento por punção | implementado | alta | G | P20 |
 | `22.6.3-modelo-calculo-sapata` | 22.6.3 | 212 | Modelo de cálculo tridimensional (ou bielas-tirantes 3D) para sapatas | ausente | média | G | P48 |
 | `22.6.4.1.1-armadura-flexao-sapata-detalhamento` | 22.6.4.1.1 | 212 | Detalhamento da armadura de flexão de sapata rígida | ausente | alta | P | P37 |
 | `22.6.4.1.1-fendilhamento-barra-25mm` | 22.6.4.1.1 | 213 | Verificação de fendilhamento horizontal para barras de flexão com diâmetro ≥ 25 mm | ausente | média | M | P37 |

@@ -877,3 +877,994 @@ def verificar_puncao(fck_mpa: float, d_cm: float, FSd_kn: float, c1_cm: float,
     return ResultadoPuncao(t, d, u0, u, tau_C, rd2, tau_Cl, rd1, armadura_necessaria, rd3,
                            tau_C2, rd1_C2, status_C, status_Cl, status_C2, ok, governante,
                            tuple(mem))
+
+
+# === P20: punção — casos especiais, robustez e detalhamento ===
+# 19.5.2.2 (Wp genérico), 19.5.2.5 (capitel), 19.5.2.6 (reentrância e
+# abertura), 19.5.3.4 (disposição até C″), 19.5.3.5 (armadura obrigatória),
+# 19.5.4 (colapso progressivo), 19.5.5 (laje protendida), 20.4 (estribos de
+# punção) e 21.3.4 c (abertura próxima a pilar). PDF p. 184 a 201.
+#
+# Geometria em planta: polígonos como sequência de pontos (x, y) em cm, em
+# qualquer sentido. O contorno crítico é guardado como uma tupla de "trechos":
+#     ("reta", (x0, y0), (x1, y1))
+#     ("arco", (xc, yc), r, t0, t1)      ângulos em radianos, t1 > t0 (anti-horário)
+# e as integrais (comprimento, Wp) são feitas em forma fechada trecho a trecho.
+
+FATOR_DIST_ABERTURA_D = 8.0          # 19.5.2.6: abertura a menos de 8d do contorno C
+S0_MAX_FATOR_D = 0.50                # Figura 19.9: 1º contorno de armadura a <= 0,50d da face
+ESP_TANGENCIAL_MAX_FATOR_D = 2.0     # Figura 19.8: linhas radiais a menos de 2d entre si
+FRACAO_FSD_ARMADURA_OBRIGATORIA = 0.50   # 19.5.3.5
+COEF_COLAPSO_PROGRESSIVO = 1.5       # 19.5.4: fyd·As,ccp >= 1,5·FSd
+GAMA_F_COLAPSO_PROGRESSIVO = 1.2     # 19.5.4: FSd pode ser calculado com γf = 1,2
+DIVISOR_PHI_ESTRIBO_PUNCAO = 20.0    # 20.4: φ do estribo <= h/20
+_TOL_GEO = 1e-9
+
+
+def _poligono(pontos, nome: str = "polígono") -> tuple[tuple[float, float], ...]:
+    """Valida e devolve o polígono em sentido anti-horário, sem ponto repetido no fim."""
+    pts = [(float(p[0]), float(p[1])) for p in pontos]
+    if len(pts) >= 2 and math.hypot(pts[0][0] - pts[-1][0], pts[0][1] - pts[-1][1]) <= _TOL_GEO:
+        pts = pts[:-1]
+    if len(pts) < 3:
+        raise ValueError(f"O {nome} precisa de pelo menos 3 vértices.")
+    n = len(pts)
+    area2 = sum(pts[i][0] * pts[(i + 1) % n][1] - pts[(i + 1) % n][0] * pts[i][1] for i in range(n))
+    if abs(area2) <= _TOL_GEO:
+        raise ValueError(f"O {nome} tem área nula.")
+    if area2 < 0.0:
+        pts.reverse()
+    return tuple(pts)
+
+
+def _area_centroide(pol) -> tuple[float, tuple[float, float]]:
+    n = len(pol)
+    a2 = cx = cy = 0.0
+    for i in range(n):
+        x0, y0 = pol[i]
+        x1, y1 = pol[(i + 1) % n]
+        cr = x0 * y1 - x1 * y0
+        a2 += cr
+        cx += (x0 + x1) * cr
+        cy += (y0 + y1) * cr
+    return a2 / 2.0, (cx / (3.0 * a2), cy / (3.0 * a2))
+
+
+def centroide_cm(poligono) -> tuple[float, float]:
+    """Centro de gravidade da área do polígono (área carregada ou seção do pilar), cm."""
+    return _area_centroide(_poligono(poligono))[1]
+
+
+def poligono_convexo_circunscrito(poligono) -> tuple[tuple[float, float], ...]:
+    """Polígono convexo circunscrito ao contorno C (envoltória convexa), 19.5.2.6 (PDF p. 187).
+
+    "Se o contorno C apresentar reentrâncias, o contorno crítico C′ deve ser
+    paralelo ao polígono circunscrito ao contorno C (ver Figura 19.6)." Na
+    Figura 19.6 o polígono circunscrito ao pilar em L fecha a reentrância com
+    uma reta inclinada (a linha tracejada): é a envoltória convexa, e não o
+    retângulo envolvente. Devolve os vértices em sentido anti-horário, sem
+    vértices colineares.
+    """
+    pts = sorted(set(_poligono(poligono)))
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    inf: list = []
+    for p in pts:
+        while len(inf) >= 2 and cross(inf[-2], inf[-1], p) <= _TOL_GEO:
+            inf.pop()
+        inf.append(p)
+    sup: list = []
+    for p in reversed(pts):
+        while len(sup) >= 2 and cross(sup[-2], sup[-1], p) <= _TOL_GEO:
+            sup.pop()
+        sup.append(p)
+    return tuple(inf[:-1] + sup[:-1])
+
+
+def _trechos_poligono(pol) -> tuple:
+    n = len(pol)
+    return tuple(("reta", pol[i], pol[(i + 1) % n]) for i in range(n))
+
+
+def _trechos_paralelos(convexo, r: float, cantos: str = "arco") -> tuple:
+    """Contorno paralelo, afastado r, de um polígono convexo anti-horário.
+
+    ``cantos='arco'``: cantos em arco de raio r (o contorno C′ das Figuras
+    19.2 e 19.6). ``cantos='retos'``: cantos vivos, no encontro das retas
+    paralelas aos lados ("desprezando a curvatura dos cantos", 19.5.2.2).
+    """
+    if r <= 0.0:
+        return _trechos_poligono(convexo)
+    n = len(convexo)
+    normais = []
+    for i in range(n):
+        (x0, y0), (x1, y1) = convexo[i], convexo[(i + 1) % n]
+        L = math.hypot(x1 - x0, y1 - y0)
+        normais.append(((y1 - y0) / L, -(x1 - x0) / L))
+    trechos: list = []
+    for i in range(n):
+        v0, v1 = convexo[i], convexo[(i + 1) % n]
+        ni, nj = normais[i], normais[(i + 1) % n]
+        trechos.append(("reta", (v0[0] + r * ni[0], v0[1] + r * ni[1]),
+                        (v1[0] + r * ni[0], v1[1] + r * ni[1])))
+        t0 = math.atan2(ni[1], ni[0])
+        dt = (math.atan2(nj[1], nj[0]) - t0) % (2.0 * math.pi)
+        if dt <= _TOL_GEO:
+            continue
+        if cantos == "arco":
+            trechos.append(("arco", v1, r, t0, t0 + dt))
+        else:
+            f = r / (1.0 + ni[0] * nj[0] + ni[1] * nj[1])
+            canto = (v1[0] + f * (ni[0] + nj[0]), v1[1] + f * (ni[1] + nj[1]))
+            trechos.append(("reta", (v1[0] + r * ni[0], v1[1] + r * ni[1]), canto))
+            trechos.append(("reta", canto, (v1[0] + r * nj[0], v1[1] + r * nj[1])))
+    return tuple(trechos)
+
+
+def _comprimento(t) -> float:
+    if t[0] == "reta":
+        return math.hypot(t[2][0] - t[1][0], t[2][1] - t[1][1])
+    return t[2] * (t[4] - t[3])
+
+
+def _ponto(t, s: float) -> tuple[float, float]:
+    if t[0] == "reta":
+        return (t[1][0] + s * (t[2][0] - t[1][0]), t[1][1] + s * (t[2][1] - t[1][1]))
+    a = t[3] + s * (t[4] - t[3])
+    return (t[1][0] + t[2] * math.cos(a), t[1][1] + t[2] * math.sin(a))
+
+
+def _sub(t, s0: float, s1: float):
+    if t[0] == "reta":
+        return ("reta", _ponto(t, s0), _ponto(t, s1))
+    return ("arco", t[1], t[2], t[3] + s0 * (t[4] - t[3]), t[3] + s1 * (t[4] - t[3]))
+
+
+def _cortes_raio(t, c, ang: float) -> list[float]:
+    """Parâmetros s em (0, 1) onde o raio que parte de c com ângulo ang corta o trecho."""
+    w = (math.cos(ang), math.sin(ang))
+    out: list[float] = []
+    if t[0] == "reta":
+        p0, p1 = t[1], t[2]
+        den = w[0] * (p1[1] - p0[1]) - w[1] * (p1[0] - p0[0])
+        if abs(den) <= _TOL_GEO:
+            return out
+        num = w[0] * (p0[1] - c[1]) - w[1] * (p0[0] - c[0])
+        cand = [-num / den]
+    else:
+        cc, r, t0, t1 = t[1], t[2], t[3], t[4]
+        q = -(w[0] * (cc[1] - c[1]) - w[1] * (cc[0] - c[0])) / r
+        if abs(q) > 1.0:
+            return out
+        base = math.asin(max(-1.0, min(1.0, q)))
+        cand = []
+        for b in (base, math.pi - base):
+            a = ang + b
+            a += 2.0 * math.pi * math.ceil((t0 - a) / (2.0 * math.pi))
+            while a <= t1:
+                cand.append((a - t0) / (t1 - t0))
+                a += 2.0 * math.pi
+    for s in cand:
+        if _TOL_GEO < s < 1.0 - _TOL_GEO:
+            p = _ponto(t, s)
+            if w[0] * (p[0] - c[0]) + w[1] * (p[1] - c[1]) > 0.0:
+                out.append(s)
+    return out
+
+
+def _integral_abs_e(t, p0, nrm) -> float:
+    """∫|e|·dℓ sobre o trecho, com e = (p − p0)·nrm (distância ao eixo por p0 perpendicular a nrm)."""
+    if t[0] == "reta":
+        L = _comprimento(t)
+        e0 = (t[1][0] - p0[0]) * nrm[0] + (t[1][1] - p0[1]) * nrm[1]
+        e1 = (t[2][0] - p0[0]) * nrm[0] + (t[2][1] - p0[1]) * nrm[1]
+        if e0 * e1 >= 0.0:
+            return L * (abs(e0) + abs(e1)) / 2.0
+        return L * (e0 * e0 + e1 * e1) / (2.0 * (abs(e0) + abs(e1)))
+    cc, r, t0, t1 = t[1], t[2], t[3], t[4]
+    phi = math.atan2(nrm[1], nrm[0])
+    a = (cc[0] - p0[0]) * nrm[0] + (cc[1] - p0[1]) * nrm[1]
+
+    def F(x):  # primitiva de (a + r·cos(x − φ))·r
+        return r * (a * x + r * math.sin(x - phi))
+
+    pontos = [t0, t1]
+    if abs(a) < r:
+        base = math.acos(-a / r)
+        for b in (base, -base):
+            x = phi + b
+            x += 2.0 * math.pi * math.ceil((t0 - x) / (2.0 * math.pi))
+            while x < t1:
+                if x > t0:
+                    pontos.append(x)
+                x += 2.0 * math.pi
+    pontos.sort()
+    return sum(abs(F(b) - F(a_)) for a_, b in zip(pontos, pontos[1:]))
+
+
+def _intervalo_angular(abertura, c) -> tuple[float, float]:
+    """(ângulo inicial, abertura angular) das duas retas por c que tangenciam a abertura."""
+    angs = [math.atan2(p[1] - c[1], p[0] - c[0]) for p in abertura]
+    a0 = angs[0]
+    deltas = [((a - a0 + math.pi) % (2.0 * math.pi)) - math.pi for a in angs]
+    lo, hi = min(deltas), max(deltas)
+    if hi - lo >= math.pi - 1e-9:
+        raise ValueError("O centro de gravidade da área carregada fica dentro (ou no alinhamento) "
+                         "da abertura: as retas tangentes de 19.5.2.6 não ficam definidas.")
+    return a0 + lo, hi - lo
+
+
+def _no_intervalo(ang: float, intervalo) -> bool:
+    ini, amp = intervalo
+    return ((ang - ini) % (2.0 * math.pi)) <= amp + 1e-12
+
+
+def _dist_ponto_segmento(p, a, b) -> float:
+    ax, ay = b[0] - a[0], b[1] - a[1]
+    L2 = ax * ax + ay * ay
+    s = 0.0 if L2 == 0.0 else max(0.0, min(1.0, ((p[0] - a[0]) * ax + (p[1] - a[1]) * ay) / L2))
+    return math.hypot(p[0] - a[0] - s * ax, p[1] - a[1] - s * ay)
+
+
+def _segmentos_cruzam(a, b, c, d) -> bool:
+    def cr(o, p, q):
+        return (p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0])
+    d1, d2, d3, d4 = cr(c, d, a), cr(c, d, b), cr(a, b, c), cr(a, b, d)
+    return (d1 * d2 < 0.0) and (d3 * d4 < 0.0)
+
+
+def _dentro(p, pol) -> bool:
+    n = len(pol)
+    dentro = False
+    for i in range(n):
+        (x0, y0), (x1, y1) = pol[i], pol[(i + 1) % n]
+        if (y0 > p[1]) != (y1 > p[1]):
+            x = x0 + (p[1] - y0) * (x1 - x0) / (y1 - y0)
+            if x > p[0]:
+                dentro = not dentro
+    return dentro
+
+
+def distancia_poligonos_cm(pol_a, pol_b) -> float:
+    """Menor distância entre dois polígonos em planta, cm (0 se se tocam ou se sobrepõem)."""
+    a = _poligono(pol_a)
+    b = _poligono(pol_b)
+    if _dentro(a[0], b) or _dentro(b[0], a):
+        return 0.0
+    dmin = math.inf
+    for i in range(len(a)):
+        a0, a1 = a[i], a[(i + 1) % len(a)]
+        for j in range(len(b)):
+            b0, b1 = b[j], b[(j + 1) % len(b)]
+            if _segmentos_cruzam(a0, a1, b0, b1):
+                return 0.0
+            dmin = min(dmin, _dist_ponto_segmento(a0, b0, b1), _dist_ponto_segmento(a1, b0, b1),
+                       _dist_ponto_segmento(b0, a0, a1), _dist_ponto_segmento(b1, a0, a1))
+    return dmin
+
+
+def _excluir_setores(trechos, c, intervalos) -> tuple[tuple, float]:
+    """Tira dos trechos o que fica entre as retas tangentes (setores angulares vistos de c)."""
+    if not intervalos:
+        return tuple(trechos), 0.0
+    angs = []
+    for ini, amp in intervalos:
+        angs += [ini, ini + amp]
+    ficam: list = []
+    excluido = 0.0
+    for t in trechos:
+        ss = {0.0, 1.0}
+        for a in angs:
+            ss.update(_cortes_raio(t, c, a))
+        ss = sorted(ss)
+        for s0, s1 in zip(ss, ss[1:]):
+            if s1 - s0 <= 1e-14:
+                continue
+            pedaco = _sub(t, s0, s1)
+            pm = _ponto(t, (s0 + s1) / 2.0)
+            ang = math.atan2(pm[1] - c[1], pm[0] - c[0])
+            if any(_no_intervalo(ang, iv) for iv in intervalos):
+                excluido += _comprimento(pedaco)
+            else:
+                ficam.append(pedaco)
+    return tuple(ficam), excluido
+
+
+@dataclass(frozen=True)
+class ContornoCritico:
+    """Contorno crítico em planta (19.5.2.2 e 19.5.2.6): trechos, perímetro e aberturas descontadas."""
+
+    contorno: str                      # 'C', 'Cl' (C′) ou 'r' (afastamento qualquer)
+    afastamento_cm: float
+    u_total_cm: float                  # perímetro sem desconto de abertura
+    u_cm: float                        # perímetro efetivo (descontadas as aberturas)
+    u_excluido_cm: float
+    centro_cm: tuple[float, float]     # CG da área carregada
+    reentrancia: bool                  # C tinha reentrância (usou-se a envoltória convexa)
+    aberturas_consideradas: tuple[int, ...]   # índices das aberturas a menos de 8d de C
+    distancias_aberturas_cm: tuple[float, ...]
+    trechos: tuple
+    memoria: tuple[str, ...]
+
+
+def contorno_critico(poligono, d_cm: float, contorno: str = "Cl", aberturas=(),
+                     afastamento_cm: float | None = None, cantos: str = "arco",
+                     centro=None) -> ContornoCritico:
+    """Contorno crítico C ou C′ de área carregada de forma qualquer, com reentrância e aberturas (19.5.2.6, PDF p. 187-188).
+
+    - Contorno C: o próprio perímetro da área carregada (u0), mesmo com
+      reentrância.
+    - Contorno C′: paralelo, a 2d, ao polígono convexo circunscrito a C
+      (``poligono_convexo_circunscrito``), com cantos em arco de raio 2d
+      (Figuras 19.2 e 19.6). ``afastamento_cm`` troca 2d por outro afastamento
+      (C1′ de capitel, C″ depois da armadura).
+    - Aberturas: "se na laje existir abertura situada a menos de 8d do
+      contorno C, não pode ser considerado o trecho do contorno crítico C′
+      entre as duas retas que passam pelo centro de gravidade da área de
+      aplicação da força e que tangenciam o contorno da abertura"
+      (Figura 19.7). A distância é a menor distância entre o polígono da
+      abertura e o de C; a menos de 8d (desigualdade estrita) a abertura conta,
+      a 8d exatos não. O desconto é aplicado a C′ e aos contornos com
+      afastamento; o contorno C não é descontado (a norma só fala em C′).
+
+    Polígonos em cm, pontos (x, y), em qualquer sentido; ``aberturas`` é uma
+    sequência de polígonos. ``centro`` = CG da área carregada (padrão: o CG do
+    polígono). ``cantos='retos'`` despreza a curvatura dos cantos.
+    """
+    d = _positivo(d_cm, "d", "19.5.2")
+    pol = _poligono(poligono, "polígono da área carregada")
+    if cantos not in ("arco", "retos"):
+        raise ValueError("cantos deve ser 'arco' ou 'retos'.")
+    a_pol, c_pol = _area_centroide(pol)
+    c = (float(centro[0]), float(centro[1])) if centro is not None else c_pol
+    conv = poligono_convexo_circunscrito(pol)
+    reentr = abs(_area_centroide(conv)[0] - a_pol) > 1e-9 * abs(a_pol)
+    if afastamento_cm is not None:
+        r = _nao_negativo(afastamento_cm, "afastamento", "19.5.2")
+        nome = "r"
+    else:
+        nome = _contorno(contorno)
+        r = _afastamento_cm(d, nome)
+    mem: list[str] = []
+    if r == 0.0:
+        trechos = _trechos_poligono(pol)
+        mem.append("Contorno C: perímetro da área carregada (u0).")
+    else:
+        trechos = _trechos_paralelos(conv, r, cantos)
+        if reentr:
+            mem.append("19.5.2.6: o contorno C tem reentrância; o contorno crítico é paralelo ao "
+                       "polígono convexo circunscrito a C (Figura 19.6).")
+        mem.append(f"Contorno afastado {_fmt(r)} cm do polígono convexo circunscrito a C, cantos "
+                   + (f"em arco de raio {_fmt(r)} cm." if cantos == "arco" else "retos."))
+    u_tot = sum(_comprimento(t) for t in trechos)
+    consid: list[int] = []
+    dists: list[float] = []
+    intervalos = []
+    lim = FATOR_DIST_ABERTURA_D * d
+    for i, ab in enumerate(aberturas):
+        abp = _poligono(ab, f"polígono da abertura {i + 1}")
+        dist = distancia_poligonos_cm(pol, abp)
+        dists.append(dist)
+        if dist < lim * (1.0 - 1e-12):
+            consid.append(i)
+            intervalos.append(_intervalo_angular(poligono_convexo_circunscrito(abp), c))
+            mem.append(f"19.5.2.6: abertura {i + 1} a {_fmt(dist)} cm de C, menos que 8d = "
+                       f"{_fmt(lim)} cm; o trecho entre as retas tangentes pelo CG da área "
+                       f"carregada ({_fmt(c[0])}; {_fmt(c[1])}) não é considerado.")
+        else:
+            mem.append(f"19.5.2.6: abertura {i + 1} a {_fmt(dist)} cm de C, não menos que 8d = "
+                       f"{_fmt(lim)} cm; não reduz o contorno crítico.")
+    excl = 0.0
+    if intervalos:
+        if r > 0.0:
+            trechos, excl = _excluir_setores(trechos, c, intervalos)
+        else:
+            mem.append("Contorno C: a norma só manda descontar a abertura do contorno C′; "
+                       "u0 fica inteiro.")
+    u = u_tot - excl
+    mem.append(f"u = {_fmt(u_tot)} cm" + (f" − {_fmt(excl)} cm (aberturas) = {_fmt(u)} cm."
+                                         if excl > 0.0 else "."))
+    return ContornoCritico(nome, r, u_tot, u, excl, c, reentr, tuple(consid), tuple(dists),
+                           trechos, tuple(mem))
+
+
+def perimetro_com_reentrancia_cm(poligono, d_cm: float, contorno: str = "Cl") -> float:
+    """Perímetro u0 (C) ou u (C′) de área carregada com reentrâncias, cm (19.5.2.6, Figura 19.6, PDF p. 187).
+
+    C′ é paralelo, a 2d, ao polígono convexo circunscrito a C, com cantos em
+    arco: u = perímetro da envoltória convexa + 2·π·2d. Em C (u0) vale o
+    perímetro real do polígono. Sem reentrância, reproduz os perímetros de
+    ``perimetro_critico_cm``.
+    """
+    return contorno_critico(poligono, d_cm, contorno).u_cm
+
+
+def perimetro_com_abertura(poligono, d_cm: float, aberturas, contorno: str = "Cl",
+                           centro=None) -> ContornoCritico:
+    """Contorno C′ descontado das aberturas a menos de 8d de C (19.5.2.6, Figura 19.7, PDF p. 187-188).
+
+    Atalho de ``contorno_critico`` com as aberturas. O perímetro efetivo está
+    em ``.u_cm`` e o descontado em ``.u_excluido_cm``; abertura a 8d ou mais
+    do contorno C não desconta nada.
+    """
+    return contorno_critico(poligono, d_cm, contorno, aberturas=aberturas, centro=centro)
+
+
+def Wp_generico_cm2(poligono, d_cm: float, direcao_excentricidade_graus: float = 0.0,
+                    contorno: str = "Cl", aberturas=(), afastamento_cm: float | None = None,
+                    cantos: str = "arco", centro=None) -> float:
+    """Wp = ∫|e|·dℓ ao longo do perímetro crítico, para área carregada de forma qualquer, cm² (19.5.2.2, PDF p. 184).
+
+        Wp = ∫₀ᵘ |e| dℓ
+
+    dℓ é o comprimento infinitesimal no perímetro crítico u e e a distância de
+    dℓ ao eixo que passa pelo centro do pilar e sobre o qual atua o momento
+    MSd. ``direcao_excentricidade_graus`` é a direção da excentricidade da
+    força (a de C1 na Tabela 19.2), medida do eixo x; o eixo do momento é
+    perpendicular a ela e passa por ``centro`` (padrão: CG do polígono).
+
+    A integral é feita em forma fechada, trecho a trecho, sobre o contorno de
+    ``contorno_critico`` (C′ paralelo ao polígono convexo circunscrito, com
+    cantos em arco de raio 2d; C com o perímetro do polígono). Reproduz as
+    expressões fechadas de 19.5.2.2: Wp = C1²/2 + C1·C2 + 4·C2·d + 16·d² +
+    2·π·d·C1 no retângulo e (D + 4d)² no círculo (este como limite do
+    polígono regular inscrito). ``cantos='retos'`` faz o que a norma permite
+    ("desprezando a curvatura dos cantos do perímetro crítico").
+
+    Com ``aberturas``, a integral é feita só sobre o perímetro efetivo (sem os
+    trechos descontados por 19.5.2.6): a norma define Wp sobre o perímetro
+    crítico u, e u é o perímetro efetivo — leitura da biblioteca.
+    """
+    cont = contorno_critico(poligono, d_cm, contorno, aberturas, afastamento_cm, cantos, centro)
+    a = math.radians(float(direcao_excentricidade_graus))
+    nrm = (math.cos(a), math.sin(a))
+    return sum(_integral_abs_e(t, cont.centro_cm, nrm) for t in cont.trechos)
+
+
+def _retangulo(c1_cm: float, c2_cm: float) -> tuple[tuple[float, float], ...]:
+    """Retângulo C1 (em x) por C2 (em y), centrado na origem."""
+    a, b = float(c1_cm) / 2.0, float(c2_cm) / 2.0
+    return ((-a, -b), (a, -b), (a, b), (-a, b))
+
+
+# ---------------------------------------------------------------------------
+# 19.5.2.5 — Capitel (Figura 19.5, PDF p. 186-187)
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class ContornosCapitel:
+    """Contornos a verificar com capitel (19.5.2.5, Figura 19.5)."""
+
+    caso: str
+    verificar_C1l: bool
+    verificar_C2l: bool
+    afastamento_C1l_cm: float          # 2·dc, medido da face do pilar
+    afastamento_C2l_cm: float          # lc + 2d, medido da face do pilar
+    u_C1l_cm: float | None
+    u_C2l_cm: float | None
+    d_C1l_cm: float | None             # da
+    d_C2l_cm: float                    # d
+    memoria: tuple[str, ...]
+
+
+def contornos_capitel(lc_cm: float, d_cm: float, dc_cm: float, da_cm: float | None = None,
+                      c1_cm: float | None = None, c2_cm: float | None = None) -> ContornosCapitel:
+    """Quais contornos críticos verificar quando existe capitel, e onde ficam (19.5.2.5, Figura 19.5, PDF p. 186-187).
+
+        lc <= 2·(dc − d)          ⇒ basta verificar o contorno C2′;
+        2·(dc − d) < lc <= 2·dc   ⇒ basta verificar o contorno C1′;
+        lc > 2·dc                 ⇒ é necessário verificar C1′ e C2′.
+
+    d = altura útil da laje no contorno C2′; dc = altura útil da laje na face
+    do pilar; da = altura útil da laje no contorno C1′; lc = distância entre a
+    borda do capitel e a face do pilar (cm).
+
+    Posição dos contornos (Figura 19.5, retas 2:1): C1′ fica a 2·dc da face
+    do pilar (a reta 2:1 que parte do pé do pilar, na profundidade dc) e C2′
+    a 2d da borda do capitel, isto é, a lc + 2d da face do pilar. Com
+    ``c1_cm`` e ``c2_cm`` (pilar interno retangular, capitel com a mesma aba
+    lc nas quatro faces e borda retangular — leitura da biblioteca) a função
+    dá os perímetros, com cantos em arco:
+
+        u(C1′) = 2·(C1 + C2) + 2·π·(2·dc)
+        u(C2′) = 2·(C1 + C2 + 4·lc) + 2·π·(2d)
+
+    Em cada contorno, a verificação de 19.5.2 e 19.5.3.2 usa a altura útil
+    dele (da em C1′, d em C2′). ``da_cm`` é exigido quando C1′ precisa ser
+    verificado (depende da forma do capitel). Com lc = 0 o capitel some e o
+    resultado é o caso comum: só C2′, a 2d da face, com u de
+    ``perimetro_critico_cm``.
+    """
+    lc = _nao_negativo(lc_cm, "lc", "19.5.2.5")
+    d = _positivo(d_cm, "d", "19.5.2.5")
+    dc = _positivo(dc_cm, "dc", "19.5.2.5")
+    if dc < d:
+        raise FaixaNormativaError(f"dc = {dc:g} cm menor que d = {d:g} cm: com capitel a altura útil "
+                                  "na face do pilar não é menor que a da laje (19.5.2.5).")
+    lim1 = 2.0 * (dc - d)
+    lim2 = 2.0 * dc
+    tol = 1e-12 * max(1.0, lim2)
+    if lc <= lim1 + tol:
+        caso = f"lc = {_fmt(lc)} cm <= 2·(dc − d) = {_fmt(lim1)} cm: basta verificar C2′"
+        v1, v2 = False, True
+    elif lc <= lim2 + tol:
+        caso = (f"2·(dc − d) = {_fmt(lim1)} cm < lc = {_fmt(lc)} cm <= 2·dc = {_fmt(lim2)} cm: "
+                "basta verificar C1′")
+        v1, v2 = True, False
+    else:
+        caso = f"lc = {_fmt(lc)} cm > 2·dc = {_fmt(lim2)} cm: verificar C1′ e C2′"
+        v1, v2 = True, True
+    da = None
+    if v1 and da_cm is None:
+        raise ValueError("C1′ precisa ser verificado: informe da_cm, a altura útil no contorno C1′ "
+                         "(19.5.2.5, Figura 19.5).")
+    if da_cm is not None:
+        da = _positivo(da_cm, "da", "19.5.2.5")
+    r1, r2 = 2.0 * dc, lc + 2.0 * d
+    u1 = u2 = None
+    if c1_cm is not None and c2_cm is not None:
+        c1 = _positivo(c1_cm, "C1", "19.5.2.5")
+        c2 = _positivo(c2_cm, "C2", "19.5.2.5")
+        u1 = 2.0 * (c1 + c2) + 2.0 * math.pi * r1
+        u2 = 2.0 * (c1 + c2 + 4.0 * lc) + 2.0 * math.pi * 2.0 * d
+    mem = [f"19.5.2.5 (capitel): {caso}.",
+           f"C1′ a 2·dc = {_fmt(r1)} cm da face do pilar (altura útil da); "
+           f"C2′ a lc + 2d = {_fmt(r2)} cm da face do pilar (altura útil d = {_fmt(d)} cm)."]
+    if u1 is not None:
+        mem.append(f"u(C1′) = 2·(C1 + C2) + 2·π·2dc = {_fmt(u1)} cm; "
+                   f"u(C2′) = 2·(C1 + C2 + 4·lc) + 2·π·2d = {_fmt(u2)} cm.")
+    return ContornosCapitel(caso, v1, v2, r1, r2, u1 if v1 else None, u2 if v2 else None,
+                            da, d, tuple(mem))
+
+
+# ---------------------------------------------------------------------------
+# 19.5.3.4 — Disposição da armadura de punção e contorno C″ (Figuras 19.8 e 19.9, PDF p. 190)
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class DisposicaoArmaduraPuncao:
+    """Disposição radial da armadura de punção até o contorno C″ (19.5.3.4)."""
+
+    s0_cm: float
+    sr_cm: float
+    n_contornos: int
+    raios_contornos_cm: tuple[float, ...]      # distância de cada contorno de armadura à face
+    afastamento_C2l_cm: float                  # distância de C″ à face do pilar
+    u_C2l_cm: float
+    Wp_C2l_cm2: tuple[float, float]            # (plano 1, plano 2); 0 quando não há momento
+    tau_Sd_C2l_mpa: float
+    tau_Rd1_mpa: float
+    espacamento_tangencial_cm: float | None
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def disposicao_armadura_puncao(FSd_kn: float, c1_cm: float, c2_cm: float, d_cm: float,
+                               tau_Rd1_mpa: float, sr_cm: float, s0_cm: float | None = None,
+                               MSd1_kncm: float = 0.0, MSd2_kncm: float = 0.0,
+                               n_linhas_radiais: int | None = None, n_min_contornos: int = 1,
+                               interpolar_K: bool = True,
+                               n_max_contornos: int = 200) -> DisposicaoArmaduraPuncao:
+    """Número de contornos de armadura de punção até C″ satisfazer τSd <= τRd1 (19.5.3.4, Figuras 19.8 e 19.9, PDF p. 190-191).
+
+    "Quando for necessário utilizar armadura transversal, ela deve ser
+    estendida em contornos paralelos a C′ até que, em um contorno C″
+    afastado 2d do último contorno de armadura, não seja mais necessária
+    armadura, isto é, τSd <= τRd1."
+
+    Pilar interno retangular (C1 no plano de MSd1, C2 no plano de MSd2).
+    Figura 19.9 (corte): 1º contorno a s0 <= 0,50·d da face do pilar
+    (padrão s0 = 0,50·d); contornos seguintes a sr <= 0,75·d entre si. O
+    contorno de armadura n fica a rn = s0 + (n − 1)·sr da face, e C″ a
+    rn + 2d, com cantos em arco:
+
+        u″ = 2·(C1 + C2) + 2·π·(rn + 2d)
+        τSd″ = FSd/(u″·d) + K1·MSd1/(Wp1″·d) + K2·MSd2/(Wp2″·d)
+
+    Wp″ por ``Wp_generico_cm2`` (integral sobre u″) e K da Tabela 19.2 como
+    em C′. ``tau_Rd1_mpa`` é o τRd1 de 19.5.3.2 (``tau_Rd1_mpa``). A função
+    devolve o menor n (>= ``n_min_contornos``) que satisfaz C″.
+
+    Figura 19.8 (planta): o contorno C″ inteiro só vale com as linhas radiais
+    a menos de 2d entre si no último contorno de armadura. Com
+    ``n_linhas_radiais``, a função toma o espaçamento tangencial médio
+    u(rn)/n_linhas (linhas distribuídas por igual ao longo do contorno de
+    armadura) e, se não for menor que 2d, marca ``ok = False``: vale então o
+    perímetro reduzido da Figura 19.8 (direita), que a função não traça.
+    Pilar de borda e de canto: calcule u″ à parte e use
+    ``verificar_puncao(u_C2l_cm=...)``.
+    """
+    F = _nao_negativo(FSd_kn, "FSd", "19.5.3.4")
+    c1 = _positivo(c1_cm, "C1", "19.5.3.4")
+    c2 = _positivo(c2_cm, "C2", "19.5.3.4")
+    d = _positivo(d_cm, "d", "19.5.3.4")
+    rd1 = _positivo(tau_Rd1_mpa, "τRd1", "19.5.3.4")
+    sr = _positivo(sr_cm, "sr", "19.5.3.4")
+    s0 = S0_MAX_FATOR_D * d if s0_cm is None else _positivo(s0_cm, "s0", "19.5.3.4")
+    if s0 > S0_MAX_FATOR_D * d * (1.0 + 1e-12):
+        raise FaixaNormativaError(f"s0 = {s0:g} cm maior que 0,50·d = {S0_MAX_FATOR_D * d:g} cm "
+                                  "(Figura 19.9).")
+    if sr > SR_MAX_FATOR_D * d * (1.0 + 1e-12):
+        raise FaixaNormativaError(f"sr = {sr:g} cm maior que 0,75·d = {SR_MAX_FATOR_D * d:g} cm "
+                                  "(19.5.3.3 e Figura 19.9).")
+    M1, M2 = abs(float(MSd1_kncm)), abs(float(MSd2_kncm))
+    k1 = K(c1 / c2, interpolar_K) if M1 > 0.0 else None
+    k2 = K(c2 / c1, interpolar_K) if M2 > 0.0 else None
+    pol = _retangulo(c1, c2)
+    n = max(1, int(n_min_contornos))
+    while True:
+        rn = s0 + (n - 1) * sr
+        r2 = rn + 2.0 * d
+        u2 = 2.0 * (c1 + c2) + 2.0 * math.pi * r2
+        W1 = Wp_generico_cm2(pol, d, 0.0, afastamento_cm=r2) if M1 > 0.0 else 0.0
+        W2 = Wp_generico_cm2(pol, d, 90.0, afastamento_cm=r2) if M2 > 0.0 else 0.0
+        tau2 = tau_Sd_mpa(F, u2, d, M1, k1, W1 or None, M2, k2, W2 or None)
+        if seg.verificar_seguranca(rd1, tau2).ok or n >= n_max_contornos:
+            break
+        n += 1
+    s_final = seg.verificar_seguranca(rd1, tau2, "τSd x τRd1 (C″)", "19.5.3.4")
+    raios = tuple(s0 + i * sr for i in range(n))
+    mem = [f"19.5.3.4 (Figura 19.9): s0 = {_fmt(s0)} cm (<= 0,50d = {_fmt(0.5 * d)} cm), "
+           f"sr = {_fmt(sr)} cm (<= 0,75d = {_fmt(0.75 * d)} cm).",
+           f"{n} contorno(s) de armadura; o último a {_fmt(raios[-1])} cm da face; C″ a "
+           f"{_fmt(r2)} cm da face (2d além do último contorno).",
+           f"u″ = 2·(C1 + C2) + 2·π·{_fmt(r2)} = {_fmt(u2)} cm; τSd″ = {_fmt(tau2)} MPa; "
+           f"τRd1 = {_fmt(rd1)} MPa."]
+    mem.extend(s_final.memoria)
+    ok = s_final.ok
+    governante = ("C″: τSd <= τRd1" if ok else
+                  f"C″ não passa com {n_max_contornos} contornos (limite de busca)")
+    st = None
+    if n_linhas_radiais is not None:
+        nl = int(n_linhas_radiais)
+        if nl < 1:
+            raise ValueError("n_linhas_radiais tem de ser positivo.")
+        st = (2.0 * (c1 + c2) + 2.0 * math.pi * raios[-1]) / nl
+        lim = ESP_TANGENCIAL_MAX_FATOR_D * d
+        if st < lim:
+            mem.append(f"Figura 19.8: espaçamento entre linhas radiais no último contorno = "
+                       f"{_fmt(st)} cm < 2d = {_fmt(lim)} cm; C″ é o contorno inteiro.")
+        else:
+            ok = False
+            governante = (f"Figura 19.8: linhas radiais a {_fmt(st)} cm >= 2d = {_fmt(lim)} cm; "
+                          "o contorno C″ inteiro não vale (use o perímetro reduzido da Figura 19.8)")
+            mem.append(governante + ".")
+    mem.append(f"Resultado: {'passa' if ok else 'não passa'} — {governante}.")
+    return DisposicaoArmaduraPuncao(s0, sr, n, raios, r2, u2, (W1, W2), tau2, rd1, st, ok,
+                                    governante, tuple(mem))
+
+
+# ---------------------------------------------------------------------------
+# 19.5.3.5 — Armadura de punção obrigatória (PDF p. 191)
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class ResultadoArmaduraObrigatoria:
+    """Armadura de punção obrigatória quando a estabilidade global depende da laje (19.5.3.5)."""
+
+    exigida: bool
+    F_min_kn: float
+    fywd_mpa: float
+    Asw_min_cm2: float
+    Asw_cm2: float | None
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def armadura_puncao_obrigatoria(FSd_kn: float, fywd_mpa: float, estabilidade_depende: bool = True,
+                                alpha_graus: float = 90.0, tipo_armadura: str = "studs",
+                                h_cm: float | None = None,
+                                Asw_cm2: float | None = None) -> ResultadoArmaduraObrigatoria:
+    """Armadura de punção mínima por robustez: equilibrar 50 % de FSd (19.5.3.5, PDF p. 191).
+
+    "No caso de a estabilidade global da estrutura depender da resistência
+    da laje à punção, deve ser prevista armadura de punção, mesmo que τSd
+    seja menor que τRd1. Essa armadura deve equilibrar um mínimo de 50 % de
+    FSd."
+
+        Asw·fywd·sen α >= 0,50·FSd   ⇒   Asw,min = 0,50·FSd/(fywd·sen α)
+
+    Asw é a área total da armadura de punção que atravessa a superfície de
+    ruptura (leitura da biblioteca; a norma diz só "essa armadura"), cm²;
+    fywd em MPa, limitado como em 19.5.3.3 (``fywd_max_puncao_mpa``); a
+    conta converte fywd para kN/cm² (÷ 10). Com ``estabilidade_depende=False``
+    a exigência não se aplica (``exigida = False``, ``ok = True``).
+    """
+    F = _nao_negativo(FSd_kn, "FSd", "19.5.3.5")
+    a = float(alpha_graus)
+    if not (0.0 < a <= 90.0):
+        raise FaixaNormativaError(f"α = {a:g}° fora de (0°, 90°] (19.5.3.3).")
+    fy = min(_positivo(fywd_mpa, "fywd", "19.5.3.5"), fywd_max_puncao_mpa(tipo_armadura, h_cm))
+    Fmin = FRACAO_FSD_ARMADURA_OBRIGATORIA * F
+    Amin = Fmin / (nbr.mpa_para_kncm2(fy) * math.sin(math.radians(a)))
+    mem = [f"19.5.3.5: 0,50·FSd = {_fmt(Fmin)} kN; Asw,min = 0,50·FSd/(fywd·sen α) = "
+           f"{_fmt(Amin)} cm² (fywd = {_fmt(fy)} MPa, α = {_fmt(a)}°)."]
+    if not estabilidade_depende:
+        mem.append("A estabilidade global não depende da punção da laje: armadura obrigatória "
+                   "não exigida.")
+        return ResultadoArmaduraObrigatoria(False, Fmin, fy, Amin, Asw_cm2, True,
+                                            "19.5.3.5 não se aplica", tuple(mem))
+    if Asw_cm2 is None:
+        mem.append("Armadura adotada não informada.")
+        return ResultadoArmaduraObrigatoria(True, Fmin, fy, Amin, None, False,
+                                            f"19.5.3.5: prever Asw >= {_fmt(Amin)} cm²", tuple(mem))
+    Asw = _nao_negativo(Asw_cm2, "Asw", "19.5.3.5")
+    Rd = Asw * nbr.mpa_para_kncm2(fy) * math.sin(math.radians(a))
+    s = seg.verificar_seguranca(Rd, Fmin, "Asw·fywd·sen α x 0,50·FSd", "19.5.3.5")
+    mem.extend(s.memoria)
+    gov = (f"19.5.3.5: Asw = {_fmt(Asw)} cm² equilibra {_fmt(Rd)} kN >= 0,50·FSd" if s.ok else
+           f"19.5.3.5: Asw = {_fmt(Asw)} cm² < {_fmt(Amin)} cm² — não equilibra 50 % de FSd")
+    return ResultadoArmaduraObrigatoria(True, Fmin, fy, Amin, Asw, s.ok, gov, tuple(mem))
+
+
+# ---------------------------------------------------------------------------
+# 19.5.4 — Colapso progressivo (PDF p. 191)
+# ---------------------------------------------------------------------------
+def FSd_colapso_progressivo_kn(Fk_kn: float, gama_f: float = GAMA_F_COLAPSO_PROGRESSIVO) -> float:
+    """FSd para 19.5.4, que "pode ser calculado com γf igual a 1,2" (PDF p. 191): FSd = γf·Fk, kN."""
+    return _positivo(gama_f, "γf", "19.5.4") * _nao_negativo(Fk_kn, "Fk", "19.5.4")
+
+
+def As_colapso_progressivo_cm2(FSd_kn: float, fyk_mpa: float = 500.0,
+                               gama_s: float = nbr.GAMA_S) -> float:
+    """As,ccp mínima contra o colapso progressivo, cm² (19.5.4, Figura 19.10, PDF p. 191).
+
+        fyd·As,ccp >= 1,5·FSd   ⇒   As,ccp,min = 1,5·FSd/fyd
+
+    As,ccp é o somatório de todas as áreas das barras inferiores que cruzam
+    cada uma das faces do pilar (as quatro faces somadas), ancoradas além do
+    contorno C′ (ou C″, quando há armadura de punção). FSd em kN (pode ser
+    calculado com γf = 1,2: ``FSd_colapso_progressivo_kn``); fyd =
+    fyk/γs (``nucleo.fyd``) em MPa, convertido a kN/cm² (÷ 10).
+    """
+    F = _nao_negativo(FSd_kn, "FSd", "19.5.4")
+    return COEF_COLAPSO_PROGRESSIVO * F / nbr.mpa_para_kncm2(nbr.fyd(fyk_mpa, gama_s))
+
+
+@dataclass(frozen=True)
+class ResultadoColapsoProgressivo:
+    """Verificação da armadura contra colapso progressivo (19.5.4)."""
+
+    FSd_kn: float
+    fyd_mpa: float
+    As_ccp_cm2: float
+    As_ccp_min_cm2: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_colapso_progressivo(FSd_kn: float, As_ccp_cm2: float, fyk_mpa: float = 500.0,
+                                  gama_s: float = nbr.GAMA_S) -> ResultadoColapsoProgressivo:
+    """Verifica fyd·As,ccp >= 1,5·FSd (19.5.4, PDF p. 191). Unidades como em ``As_colapso_progressivo_cm2``."""
+    F = _nao_negativo(FSd_kn, "FSd", "19.5.4")
+    As = _nao_negativo(As_ccp_cm2, "As,ccp", "19.5.4")
+    fyd = nbr.fyd(fyk_mpa, gama_s)
+    Amin = As_colapso_progressivo_cm2(F, fyk_mpa, gama_s)
+    Rd = nbr.mpa_para_kncm2(fyd) * As
+    s = seg.verificar_seguranca(Rd, COEF_COLAPSO_PROGRESSIVO * F, "fyd·As,ccp x 1,5·FSd", "19.5.4")
+    mem = [f"19.5.4: fyd = {_fmt(fyd)} MPa; As,ccp = {_fmt(As)} cm² (barras inferiores que cruzam "
+           f"as faces do pilar); As,ccp,min = 1,5·FSd/fyd = {_fmt(Amin)} cm²."]
+    mem.extend(s.memoria)
+    gov = ("19.5.4: fyd·As,ccp >= 1,5·FSd" if s.ok else
+           f"19.5.4: As,ccp = {_fmt(As)} cm² < {_fmt(Amin)} cm²")
+    return ResultadoColapsoProgressivo(F, fyd, As, Amin, s.ok, gov, tuple(mem))
+
+
+# ---------------------------------------------------------------------------
+# 19.5.5 — Elementos protendidos (Figura 19.11, PDF p. 191-192)
+# ---------------------------------------------------------------------------
+def tau_Pd_mpa(cabos, u_cm: float, d_cm: float) -> float:
+    """Tensão devida aos cabos inclinados, τPd = Σ Pk,inf,i·sen αi/(u·d), MPa (19.5.5, PDF p. 191-192).
+
+    ``cabos``: sequência de (Pk,inf,i em kN, αi em graus) ou de
+    (Pk,inf,i, αi, distância do cabo à face do pilar em cm). Pk,inf,i é a
+    força de protensão no cabo i; αi a inclinação do cabo em relação ao plano
+    da laje no contorno considerado (0 <= α <= 90°); u o perímetro crítico do
+    contorno considerado, cm; d em cm. Só entram os cabos "que atravessam o
+    contorno considerado e que passam a menos de d/2 da face do pilar": com a
+    distância informada, cabo a d/2 ou mais é ignorado (desigualdade estrita);
+    sem ela, o cabo conta. A conta sai em kN/cm² e é multiplicada por 10.
+    """
+    u = _positivo(u_cm, "u", "19.5.5")
+    d = _positivo(d_cm, "d", "19.5.5")
+    soma = 0.0
+    for cabo in cabos:
+        P = _nao_negativo(cabo[0], "Pk,inf", "19.5.5")
+        a = float(cabo[1])
+        if not (0.0 <= a <= 90.0):
+            raise FaixaNormativaError(f"α = {a:g}° fora de [0°, 90°] (19.5.5).")
+        if len(cabo) > 2 and cabo[2] is not None:
+            dist = _nao_negativo(cabo[2], "distância do cabo à face do pilar", "19.5.5")
+            if dist >= d / 2.0:
+                continue
+        soma += P * math.sin(math.radians(a))
+    return soma / (u * d) * 10.0
+
+
+def tau_Sd_efetivo_protendido_mpa(tau_Sd_mpa_: float, cabos, u_cm: float, d_cm: float) -> float:
+    """τSd,ef = τSd − τPd, MPa (19.5.5, PDF p. 191).
+
+    τSd é a tensão solicitante de 19.5.2 no mesmo contorno (mesmo u) e τPd a
+    de ``tau_Pd_mpa``. A norma não limita o resultado; valor negativo quer dizer
+    que a componente vertical dos cabos supera a solicitação (a verificação
+    passa).
+    """
+    return float(tau_Sd_mpa_) - tau_Pd_mpa(cabos, u_cm, d_cm)
+
+
+# ---------------------------------------------------------------------------
+# 20.4 — Armaduras de punção: estribos (PDF p. 196)
+# ---------------------------------------------------------------------------
+def phi_max_estribo_puncao_mm(h_cm: float) -> float:
+    """Diâmetro máximo do estribo de punção, φ <= h/20, mm (20.4, PDF p. 196).
+
+    "O diâmetro da armadura de estribos não pode superar h/20 da laje." h em
+    cm; a conta h/20 sai em cm e é multiplicada por 10 para mm.
+    """
+    h = _positivo(h_cm, "h", "20.4")
+    return h / DIVISOR_PHI_ESTRIBO_PUNCAO * 10.0
+
+
+@dataclass(frozen=True)
+class ResultadoEstriboPuncao:
+    """Verificação construtiva dos estribos de punção (20.4)."""
+
+    phi_estribo_mm: float
+    phi_longitudinal_mm: float
+    phi_max_mm: float | None
+    ok_diametro: bool
+    ok_contato: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_contato_canto(phi_estribo_mm: float, phi_longitudinal_mm: float,
+                            contato_mecanico: bool = True,
+                            h_cm: float | None = None) -> ResultadoEstriboPuncao:
+    """Estribo de punção: contato com as barras longitudinais nos cantos e diâmetros (20.4, PDF p. 196).
+
+    "Deve haver contato mecânico das barras longitudinais com os cantos dos
+    estribos, e estas barras devem possuir pelo menos diâmetro igual ao
+    deles": φlongitudinal >= φestribo e ``contato_mecanico`` verdadeiro. Com
+    ``h_cm``, confere também φestribo <= h/20 (``phi_max_estribo_puncao_mm``).
+    Diâmetros em mm; igualdade passa nos dois limites.
+    """
+    pe = _positivo(phi_estribo_mm, "φ do estribo", "20.4")
+    pl = _positivo(phi_longitudinal_mm, "φ longitudinal", "20.4")
+    mem: list[str] = []
+    s_long = seg.verificar_seguranca(pl, pe, "φlongitudinal x φestribo", "20.4")
+    ok_contato = bool(contato_mecanico) and s_long.ok
+    mem.append(f"20.4: φlongitudinal = {_fmt(pl)} mm >= φestribo = {_fmt(pe)} mm -> "
+               f"{'ok' if s_long.ok else 'não ok'}; contato mecânico nos cantos: "
+               f"{'sim' if contato_mecanico else 'não'}.")
+    pmax = None
+    ok_d = True
+    if h_cm is not None:
+        pmax = phi_max_estribo_puncao_mm(h_cm)
+        s_d = seg.verificar_seguranca(pmax, pe, "h/20 x φestribo", "20.4")
+        ok_d = s_d.ok
+        mem.append(f"20.4: φestribo = {_fmt(pe)} mm <= h/20 = {_fmt(pmax)} mm -> "
+                   f"{'ok' if ok_d else 'não ok'}.")
+    ok = ok_d and ok_contato
+    if not ok_d:
+        gov = f"20.4: φestribo = {_fmt(pe)} mm > h/20 = {_fmt(pmax)} mm"
+    elif not contato_mecanico:
+        gov = "20.4: falta contato mecânico das barras longitudinais com os cantos dos estribos"
+    elif not s_long.ok:
+        gov = f"20.4: φlongitudinal = {_fmt(pl)} mm < φestribo = {_fmt(pe)} mm"
+    else:
+        gov = "20.4: estribo de punção atende"
+    return ResultadoEstriboPuncao(pe, pl, pmax, ok_d, ok_contato, ok, gov, tuple(mem))
+
+
+# ---------------------------------------------------------------------------
+# 21.3.4 c — Abertura próxima a pilar em laje lisa ou cogumelo (PDF p. 201)
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class ResultadoPuncaoAbertura:
+    """Punção de pilar interno com abertura próxima (21.3.4 c com 19.5.2.6)."""
+
+    u0_cm: float
+    u_total_cm: float
+    u_cm: float
+    u_excluido_cm: float
+    aberturas_consideradas: tuple[int, ...]
+    tau_Sd_C_mpa: float
+    tau_Rd2_mpa: float
+    tau_Sd_Cl_mpa: float
+    tau_Rd1_mpa: float
+    tau_Rd3_mpa: float | None
+    armadura_necessaria: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def puncao_abertura_proxima_pilar(fck_mpa: float, d_cm: float, FSd_kn: float, c1_cm: float,
+                                  c2_cm: float, aberturas, MSd1_kncm: float = 0.0,
+                                  MSd2_kncm: float = 0.0, rho_x: float = 0.0, rho_y: float = 0.0,
+                                  sigma_cp_x_mpa: float = 0.0, sigma_cp_y_mpa: float = 0.0,
+                                  Asw_cm2: float | None = None, sr_cm: float | None = None,
+                                  fywd_mpa: float | None = None, alpha_graus: float = 90.0,
+                                  tipo_armadura: str = "studs", h_cm: float | None = None,
+                                  interpolar_K: bool = True,
+                                  gama_c: float = nbr.GAMA_C) -> ResultadoPuncaoAbertura:
+    """Punção de pilar interno de laje lisa ou cogumelo com abertura próxima (21.3.4 c, PDF p. 201; 19.5.2.6, PDF p. 187-188).
+
+    21.3.4 c: "no caso de aberturas em regiões próximas a pilares, nas lajes
+    lisas ou cogumelo, o modelo de cálculo deve prever o equilíbrio das forças
+    cortantes atuantes nessas regiões". O modelo adotado é o de 19.5:
+
+    - C′ perde o trecho entre as retas tangentes à abertura que passam pelo
+      CG do pilar, para cada abertura a menos de 8d do contorno C
+      (``contorno_critico``); Wp1 e Wp2 integrados só sobre o perímetro
+      efetivo (``Wp_generico_cm2``);
+    - τSd = FSd/(u·d) + K1·MSd1/(Wp1·d) + K2·MSd2/(Wp2·d), K da Tabela 19.2;
+    - C: τSd com u0 (sem desconto) <= τRd2, sem a ampliação de 20 %, que a
+      norma só admite quando "não existem aberturas junto ao pilar" (19.5.3.1);
+    - C′: τSd <= τRd1 ou, com armadura, <= τRd3 com o u efetivo.
+
+    Pilar retangular C1 (x, plano de MSd1) × C2 (y, plano de MSd2), centrado
+    na origem; aberturas como polígonos em cm nesse sistema. Sem abertura a
+    menos de 8d, C′ fica como em ``verificar_puncao`` com pilar interno.
+    """
+    d = _positivo(d_cm, "d", "21.3.4")
+    F = _nao_negativo(FSd_kn, "FSd", "21.3.4")
+    c1 = _positivo(c1_cm, "C1", "21.3.4")
+    c2 = _positivo(c2_cm, "C2", "21.3.4")
+    M1, M2 = abs(float(MSd1_kncm)), abs(float(MSd2_kncm))
+    pol = _retangulo(c1, c2)
+    cont = contorno_critico(pol, d, "Cl", aberturas)
+    mem = [f"21.3.4 c: pilar interno {_fmt(c1)} × {_fmt(c2)} cm com aberturas próximas; "
+           f"d = {_fmt(d)} cm, FSd = {_fmt(F)} kN."]
+    mem.extend(cont.memoria)
+    k1 = K(c1 / c2, interpolar_K) if M1 > 0.0 else None
+    k2 = K(c2 / c1, interpolar_K) if M2 > 0.0 else None
+    u0 = perimetro_critico_cm(c1, c2, d, "interno", "C")
+    tau_C = tau_Sd_mpa(F, u0, d, M1, k1, Wp_retangular_cm2(c1, c2, d, "C"),
+                       M2, k2, Wp_retangular_cm2(c2, c1, d, "C"))
+    W1 = Wp_generico_cm2(pol, d, 0.0, "Cl", aberturas) if M1 > 0.0 else None
+    W2 = Wp_generico_cm2(pol, d, 90.0, "Cl", aberturas) if M2 > 0.0 else None
+    tau_Cl = tau_Sd_mpa(F, cont.u_cm, d, M1, k1, W1, M2, k2, W2)
+    rd2 = tau_Rd2_mpa(fck_mpa, gama_c, False)
+    mem.append(f"19.5.3.1 (C): u0 = {_fmt(u0)} cm; τSd = {_fmt(tau_C)} MPa; τRd2 = {_fmt(rd2)} MPa "
+               "(sem a ampliação de 20 %: há abertura junto ao pilar).")
+    sC = seg.verificar_seguranca(rd2, tau_C, "τSd x τRd2 (C)", "19.5.3.1")
+    mem.extend(sC.memoria)
+    rho = rho_puncao(rho_x, rho_y)
+    sc = sigma_cp_puncao_mpa(sigma_cp_x_mpa, sigma_cp_y_mpa)
+    rd1 = tau_Rd1_mpa(fck_mpa, rho, d, sc)
+    mem.append(f"19.5.3.2 (C′ efetivo): u = {_fmt(cont.u_cm)} cm"
+               + (f", Wp1 = {_fmt(W1)} cm²" if W1 else "") + (f", Wp2 = {_fmt(W2)} cm²" if W2 else "")
+               + f"; τSd = {_fmt(tau_Cl)} MPa; τRd1 = {_fmt(rd1)} MPa.")
+    s1 = seg.verificar_seguranca(rd1, tau_Cl, "τSd x τRd1 (C′)", "19.5.3.2")
+    mem.extend(s1.memoria)
+    arm = not s1.ok
+    rd3 = None
+    ok_Cl = s1.ok
+    if arm:
+        if Asw_cm2 is None or sr_cm is None or fywd_mpa is None:
+            mem.append("τSd > τRd1 em C′ e não foi informada armadura de punção (19.5.3.3).")
+        else:
+            rd3 = tau_Rd3_mpa(fck_mpa, rho, d, Asw_cm2, sr_cm, fywd_mpa, cont.u_cm, alpha_graus,
+                              sc, tipo_armadura, h_cm)
+            mem.append(f"19.5.3.3 (C′ efetivo com armadura): τRd3 = {_fmt(rd3)} MPa.")
+            s3 = seg.verificar_seguranca(rd3, tau_Cl, "τSd x τRd3 (C′)", "19.5.3.3")
+            mem.extend(s3.memoria)
+            ok_Cl = s3.ok
+    ok = sC.ok and ok_Cl
+    if not sC.ok:
+        gov = "Contorno C: τSd > τRd2 (19.5.3.1)"
+    elif not ok_Cl:
+        gov = ("Contorno C′ efetivo: é necessária armadura de punção" if rd3 is None else
+               "Contorno C′ efetivo: τSd > τRd3 com a armadura informada")
+    else:
+        gov = ("Contorno C′ efetivo: ok sem armadura de punção" if not arm else
+               "Contorno C′ efetivo: ok com armadura de punção (verifique C″, 19.5.3.4)")
+    mem.append(f"Resultado: {'passa' if ok else 'não passa'} — {gov}.")
+    return ResultadoPuncaoAbertura(u0, cont.u_total_cm, cont.u_cm, cont.u_excluido_cm,
+                                   cont.aberturas_consideradas, tau_C, rd2, tau_Cl, rd1, rd3, arm,
+                                   ok, gov, tuple(mem))

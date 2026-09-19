@@ -158,7 +158,8 @@
    "nome": "Punção: casos especiais, robustez e detalhamento",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/puncao_nbr6118.py"
+   "modulo": "dimensionamento/puncao_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P21",
@@ -12478,7 +12479,7 @@
    "pagina_pdf": 184,
    "titulo": "Wp por integração numérica do perímetro crítico (forma qualquer)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "M",
    "pacote": "P20",
@@ -12490,7 +12491,26 @@
     "19.5.2.2-wp-retangular"
    ],
    "teste_sugerido": "Discretizar contorno retangular e comparar com fórmula fechada.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P20",
+    "data": "19/09/2026",
+    "funcoes": [
+     "puncao_nbr6118.Wp_generico_cm2",
+     "puncao_nbr6118.contorno_critico",
+     "puncao_nbr6118.centroide_cm"
+    ],
+    "testes": [
+     "test_wp_generico_reproduz_retangular",
+     "test_wp_generico_contorno_C",
+     "test_wp_generico_retangulo_girado",
+     "test_wp_generico_reproduz_circular",
+     "test_wp_generico_cantos_retos",
+     "test_wp_generico_forma_qualquer_contra_amostragem",
+     "test_wp_generico_erros"
+    ],
+    "observacao": "A integral Wp = ∫|e|dℓ é resolvida em forma fechada, trecho a trecho (retas e arcos), e reproduz as fórmulas fechadas do P19 a 1e-12 no retângulo e a 1e-5 no círculo (polígono de 720 lados). Tem a opção cantos='retos', que é a simplificação permitida pela norma ('desprezando a curvatura dos cantos'). Com aberturas, Wp é integrado só sobre o perímetro efetivo (leitura da biblioteca)."
+   }
   },
   {
    "id": "19.5.2.3-pilar-borda-sem-momento-paralelo",
@@ -12613,7 +12633,7 @@
    "pagina_pdf": 187,
    "titulo": "Verificação de punção com capitel (contornos C1' e C2')",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P20",
@@ -12626,7 +12646,20 @@
     "19.5.3.2-trd1-sem-armadura"
    ],
    "teste_sugerido": "lc=0 deve recair no caso sem capitel (da=dc=d).",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P20",
+    "data": "19/09/2026",
+    "funcoes": [
+     "puncao_nbr6118.contornos_capitel"
+    ],
+    "testes": [
+     "test_capitel_lc_zero_recai_no_caso_sem_capitel",
+     "test_capitel_tres_faixas_e_fronteiras",
+     "test_capitel_erros"
+    ],
+    "observacao": "Classifica as três faixas de lc (as fronteiras 2(dc−d) e 2dc são inclusivas, como na figura). A posição dos contornos foi lida das retas 2:1 da Figura 19.5: C1′ a 2dc da face e C2′ a lc+2d. Os perímetros valem para pilar interno retangular com capitel de borda retangular (leitura da biblioteca). da é exigido quando C1′ entra na verificação. Com lc=0, o resultado recai no caso sem capitel."
+   }
   },
   {
    "id": "19.5.2.6-contorno-reentrancia",
@@ -12634,7 +12667,7 @@
    "pagina_pdf": 187,
    "titulo": "Perímetro crítico em contorno C com reentrâncias",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "M",
    "pacote": "P20",
@@ -12644,7 +12677,21 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Contorno em L: C' deve coincidir com o do retângulo envolvente (convex hull).",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P20",
+    "data": "19/09/2026",
+    "funcoes": [
+     "puncao_nbr6118.poligono_convexo_circunscrito",
+     "puncao_nbr6118.perimetro_com_reentrancia_cm",
+     "puncao_nbr6118.contorno_critico"
+    ],
+    "testes": [
+     "test_reentrancia_poligono_convexo_circunscrito",
+     "test_sem_reentrancia_reproduz_perimetro_p19"
+    ],
+    "observacao": "C′ fica paralelo à envoltória convexa, com cantos em arco. u0 (contorno C) usa o perímetro real do polígono."
+   }
   },
   {
    "id": "19.5.2.6-contorno-abertura",
@@ -12652,7 +12699,7 @@
    "pagina_pdf": 187,
    "titulo": "Perímetro crítico junto a abertura na laje",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P20",
@@ -12664,7 +12711,24 @@
     "19.5.2.1-tsd-pilar-interno-simetrico"
    ],
    "teste_sugerido": "Abertura a >=8d: u efetivo = caso sem abertura.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P20",
+    "data": "19/09/2026",
+    "funcoes": [
+     "puncao_nbr6118.perimetro_com_abertura",
+     "puncao_nbr6118.contorno_critico",
+     "puncao_nbr6118.distancia_poligonos_cm"
+    ],
+    "testes": [
+     "test_abertura_trecho_reto_mao",
+     "test_abertura_a_8d_exatos_nao_reduz",
+     "test_abertura_em_diagonal_contra_amostragem",
+     "test_duas_aberturas_sobrepostas_contam_uma_vez",
+     "test_distancia_poligonos"
+    ],
+    "observacao": "A distância usada é a menor distância entre o polígono da abertura e o polígono de C. A desigualdade é estrita: a 8d exatos a abertura não reduz o contorno. O setor entre as tangentes traçadas pelo CG é recortado de forma exata. O contorno C (u0) não recebe desconto, porque a norma só fala em C′."
+   }
   },
   {
    "id": "19.5.2.7-interacao-normal-tangencial",
@@ -12800,7 +12864,7 @@
    "pagina_pdf": 190,
    "titulo": "Definição geométrica da superfície crítica C'' e disposição da armadura de punção",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "parcial",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P20",
@@ -12813,7 +12877,21 @@
     "19.5.3.2-trd1-sem-armadura"
    ],
    "teste_sugerido": "Gerar contornos sucessivos e conferir que o último cai a 2d de onde tSd<=tRd1.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P20",
+    "data": "19/09/2026",
+    "funcoes": [
+     "puncao_nbr6118.disposicao_armadura_puncao"
+    ],
+    "testes": [
+     "test_disposicao_ultimo_contorno_a_2d_de_c2l",
+     "test_disposicao_limites_s0_sr",
+     "test_disposicao_com_momento_wp_de_c2l",
+     "test_disposicao_espacamento_tangencial"
+    ],
+    "observacao": "Para pilar interno retangular, com ou sem momento, a função acha o menor número de contornos de armadura que satisfaz τSd <= τRd1 em C″, situado 2d além do último contorno. Confere s0 <= 0,50d e sr <= 0,75d (Figura 19.9) e o espaçamento tangencial < 2d (Figura 19.8). Falta traçar o perímetro reduzido do arranjo em cruz (Figura 19.8, à direita): nesse caso a função só sinaliza ok=False. Borda e canto também ficam de fora: u″ é calculado à parte e passado a verificar_puncao(u_C2l_cm)."
+   }
   },
   {
    "id": "19.5.3.5-armadura-puncao-obrigatoria",
@@ -12821,7 +12899,7 @@
    "pagina_pdf": 191,
    "titulo": "Armadura de punção obrigatória por robustez (estabilidade global)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P20",
@@ -12833,7 +12911,19 @@
     "19.5.3.3-trd3-com-armadura"
    ],
    "teste_sugerido": "FSd=800kN -> armadura deve equilibrar >=400kN.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P20",
+    "data": "19/09/2026",
+    "funcoes": [
+     "puncao_nbr6118.armadura_puncao_obrigatoria"
+    ],
+    "testes": [
+     "test_armadura_obrigatoria_50pct",
+     "test_armadura_obrigatoria_nao_exigida_e_erros"
+    ],
+    "observacao": "A condição implementada é Asw·fywd·sen α >= 0,50·FSd, com fywd limitado como em 19.5.3.3. Asw é a armadura que atravessa a superfície de ruptura (leitura da biblioteca, porque a norma diz só 'essa armadura')."
+   }
   },
   {
    "id": "19.5.4-colapso-progressivo",
@@ -12841,7 +12931,7 @@
    "pagina_pdf": 191,
    "titulo": "Armadura de flexão inferior contra colapso progressivo na ligação laje-pilar",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P20",
@@ -12853,7 +12943,20 @@
     "nucleo.fyd"
    ],
    "teste_sugerido": "FSd=600kN, fyd=43,5kN/cm2: As,ccp_min=20,7cm2 (somatório nas 4 faces).",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P20",
+    "data": "19/09/2026",
+    "funcoes": [
+     "puncao_nbr6118.As_colapso_progressivo_cm2",
+     "puncao_nbr6118.verificar_colapso_progressivo",
+     "puncao_nbr6118.FSd_colapso_progressivo_kn"
+    ],
+    "testes": [
+     "test_colapso_progressivo"
+    ],
+    "observacao": "fyd vem do núcleo (nucleo.fyd). Caso de teste: FSd=600 kN dá As,ccp=20,70 cm². O helper FSd_colapso_progressivo_kn aplica γf=1,2."
+   }
   },
   {
    "id": "19.5.5-puncao-protendido",
@@ -12861,7 +12964,7 @@
    "pagina_pdf": 191,
    "titulo": "Tensão solicitante efetiva de punção em laje protendida (efeito favorável dos cabos inclinados)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P20",
@@ -12874,7 +12977,20 @@
     "19.5.2.1-tsd-pilar-interno-simetrico"
    ],
    "teste_sugerido": "Pk,inf=500kN, alpha=10°, u=300cm, d=20cm -> tPd=0,145MPa.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P20",
+    "data": "19/09/2026",
+    "funcoes": [
+     "puncao_nbr6118.tau_Pd_mpa",
+     "puncao_nbr6118.tau_Sd_efetivo_protendido_mpa"
+    ],
+    "testes": [
+     "test_tau_Pd_e_tau_Sd_efetivo",
+     "test_tau_Pd_cabo_a_menos_de_d_sobre_2"
+    ],
+    "observacao": "Caso de teste: τPd = 0,1447 MPa. Um cabo a d/2 ou mais da face (quando a distância é informada) é ignorado, por desigualdade estrita. O resultado não é limitado a zero, porque a norma não limita."
+   }
   },
   {
    "id": "20.1-diametro-max-barra",
@@ -13352,7 +13468,7 @@
    "pagina_pdf": 196,
    "titulo": "Diâmetro máximo do estribo de armadura de punção",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P20",
@@ -13365,7 +13481,18 @@
     "19.5.3.2-tensao-Cl"
    ],
    "teste_sugerido": "h=20cm -> phi_max=1cm (10mm).",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P20",
+    "data": "19/09/2026",
+    "funcoes": [
+     "puncao_nbr6118.phi_max_estribo_puncao_mm"
+    ],
+    "testes": [
+     "test_phi_max_estribo_puncao"
+    ],
+    "observacao": "φ <= h/20, com h em cm e o resultado em mm. Caso de teste: h=20 cm dá 10 mm."
+   }
   },
   {
    "id": "20.4-contato-mecanico-canto-estribo",
@@ -13373,7 +13500,7 @@
    "pagina_pdf": 196,
    "titulo": "Contato mecânico e diâmetro mínimo da barra longitudinal no canto do estribo de punção",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P20",
@@ -13384,7 +13511,18 @@
     "20.4-diametro-max-estribo-puncao"
    ],
    "teste_sugerido": "Caso trivial: comparar phi_longitudinal adotado com phi_estribo.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P20",
+    "data": "19/09/2026",
+    "funcoes": [
+     "puncao_nbr6118.verificar_contato_canto"
+    ],
+    "testes": [
+     "test_contato_canto_estribo"
+    ],
+    "observacao": "Verifica φlongitudinal >= φestribo e o contato mecânico. Quando h é informado, verifica também φestribo <= h/20. Nos dois limites, a igualdade passa."
+   }
   },
   {
    "id": "20.4-studs-desempenho-ensaio",
@@ -13944,7 +14082,7 @@
    "pagina_pdf": 201,
    "titulo": "Equilíbrio de forças cortantes em laje lisa/cogumelo com abertura próxima a pilar",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "G",
    "pacote": "P20",
@@ -13958,7 +14096,20 @@
     "20.4-diametro-max-estribo-puncao"
    ],
    "teste_sugerido": "Caso sem abertura deve reduzir ao calculo padrao de puncao; caso com abertura no lado do pilar, conferir queda proporcional do perimetro critico util.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P20",
+    "data": "19/09/2026",
+    "funcoes": [
+     "puncao_nbr6118.puncao_abertura_proxima_pilar"
+    ],
+    "testes": [
+     "test_abertura_proxima_sem_abertura_efetiva_reproduz_verificar_puncao",
+     "test_abertura_proxima_reduz_perimetro",
+     "test_abertura_proxima_com_armadura"
+    ],
+    "observacao": "O modelo de equilíbrio é o de 19.5 com o C′ efetivo (19.5.2.6), para pilar interno retangular. Wp1 e Wp2 são integrados sobre o perímetro efetivo, τRd2 não recebe a ampliação de 20 % e τRd3 usa o u efetivo. Sem abertura efetiva, o resultado é igual ao de verificar_puncao."
+   }
   },
   {
    "id": "21.4-nos-porticos-ligacoes-paredes",
@@ -14854,7 +15005,7 @@
    "pagina_pdf": 212,
    "titulo": "Sapata flexível: verificação ao cisalhamento por punção",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "G",
    "pacote": "P20",
@@ -14863,7 +15014,21 @@
    "depende_de": [
     "secao19-puncao (fora do trecho 22)"
    ],
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P20",
+    "data": "19/09/2026",
+    "funcoes": [
+     "sapatas_nbr6118.verificar_puncao_sapata_flexivel"
+    ],
+    "testes": [
+     "test_sapata_flexivel_caso_mao",
+     "test_sapata_flexivel_reacao_informada_e_momento",
+     "test_sapata_flexivel_Cl_fora_da_sapata",
+     "test_sapata_flexivel_erros"
+    ],
+    "observacao": "Verifica os contornos C e C′ chamando o puncao_nbr6118. FSd é reduzida pela reação do solo dentro de cada contorno (19.5.2.1), com p = FSd/(A·B) por padrão ou o valor informado. Aceita momentos nas duas direções e d variável em C′. Se C′ sai da sapata, só C é verificado (22.6.2.2 b). A classificação de 22.6.1 vai para a memória."
+   }
   },
   {
    "id": "22.6.3-modelo-calculo-sapata",
