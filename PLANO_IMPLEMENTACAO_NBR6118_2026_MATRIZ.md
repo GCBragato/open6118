@@ -428,27 +428,27 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `17.4.2.3-decalagem-modeloII` | 17.4.2.3 c) | 159 | Decalagem do diagrama de força no banzo tracionado - Modelo II | implementado | alta | M |  |
 | `17.5.1.1-modelo-trelica-espacial` | 17.5.1.1 | 159 | Modelo resistente de treliça espacial para torção uniforme | implementado | média | P |  |
 | `17.5.1.2-taxa-min-torcao` | 17.5.1.2 | 160 | Taxas geométricas mínimas de torção (longitudinal e transversal) | implementado | média | P |  |
-| `17.5.1.2-dispensa-torcao-compatibilidade` | 17.5.1.2 | 160 | Dispensa de armadura de torção de compatibilidade | ausente | média | P | P16 |
-| `17.5.1.2-limite-Vsd-adaptacao-plastica` | 17.5.1.2 | 160 | Limite de VSd para adaptação plástica em trecho curto de torção | ausente | baixa | P | P16 |
-| `17.5.1.3-condicao-tripla-torcao` | 17.5.1.3 | 160 | Condição tripla de resistência à torção pura | parcial | média | P | P16 |
+| `17.5.1.2-dispensa-torcao-compatibilidade` | 17.5.1.2 | 160 | Dispensa de armadura de torção de compatibilidade | implementado | média | P | P16 |
+| `17.5.1.2-limite-Vsd-adaptacao-plastica` | 17.5.1.2 | 160 | Limite de VSd para adaptação plástica em trecho curto de torção | implementado | baixa | P | P16 |
+| `17.5.1.3-condicao-tripla-torcao` | 17.5.1.3 | 160 | Condição tripla de resistência à torção pura | implementado | média | P | P16 |
 | `17.5.1.4.1-secao-vazada-equivalente` | 17.5.1.4.1 | 160 | Geometria da seção vazada equivalente (seção poligonal convexa cheia) | implementado | média | M |  |
-| `17.5.1.4.2-secao-composta-retangulos` | 17.5.1.4.2 | 161 | Distribuição do momento de torção entre retângulos de uma seção composta | ausente | média | M | P16 |
-| `17.5.1.4.3-secoes-vazadas-reais` | 17.5.1.4.3 | 161 | Espessura de parede em seções vazadas reais (caixão, celular) | ausente | baixa | P | P16 |
+| `17.5.1.4.2-secao-composta-retangulos` | 17.5.1.4.2 | 161 | Distribuição do momento de torção entre retângulos de uma seção composta | implementado | média | M | P16 |
+| `17.5.1.4.3-secoes-vazadas-reais` | 17.5.1.4.3 | 161 | Espessura de parede em seções vazadas reais (caixão, celular) | implementado | baixa | P | P16 |
 | `17.5.1.5-TRd2-torcao` | 17.5.1.5 | 161 | TRd2 - resistência das diagonais comprimidas de concreto à torção | implementado | média | P |  |
 | `17.5.1.6.a-TRd3-estribos` | 17.5.1.6 a) | 162 | TRd3 - resistência dos estribos de torção | implementado | média | P |  |
 | `17.5.1.6.b-TRd4-longitudinal` | 17.5.1.6 b) | 162 | TRd4 - resistência das barras longitudinais de torção | implementado | média | P |  |
-| `17.5.1.6-arranjo-armadura-torcao` | 17.5.1.6 | 162 | Regras de arranjo da armadura longitudinal de torção | ausente | baixa | P | P16 |
+| `17.5.1.6-arranjo-armadura-torcao` | 17.5.1.6 | 162 | Regras de arranjo da armadura longitudinal de torção | implementado | baixa | P | P16 |
 | `17.5.2.1-17.5.2.2-perfis-abertos-generalidades` | 17.5.2.1/17.5.2.2 | 162 | Torção em perfis abertos de parede fina - generalidades e rigidezes reduzidas | implementado | baixa | M | P42 |
 | `17.5.2.3-rigidez-flexo-torcao` | 17.5.2.3 | 163 | Coeficiente de mola (rigidez) à flexo-torção de perfil com paredes opostas | implementado | baixa | G | P42 |
 | `17.5.2.4-resistencia-flexo-torcao` | 17.5.2.4 | 163 | Resistência à flexo-torção a partir da resistência à flexão das paredes | implementado | baixa | M | P42 |
 | `17.6-fissuracao-inclinada-alma` | 17.6 | 164 | Limite de espaçamento da armadura transversal para fissuração inclinada da alma | implementado | baixa | P | P15 |
 | `17.7.1.1-flexao-torcao-generalidades` | 17.7.1.1 | 164 | Verificação separada de torção e flexão com complementos obrigatórios | não computável | média | P |  |
-| `17.7.1.2-soma-armadura-longitudinal` | 17.7.1.2 | 164 | Soma da armadura longitudinal de torção com a de flexão (zona tracionada) | ausente | alta | P | P16 |
+| `17.7.1.2-soma-armadura-longitudinal` | 17.7.1.2 | 164 | Soma da armadura longitudinal de torção com a de flexão (zona tracionada) | implementado | alta | P | P16 |
 | `17.7.1.3-reducao-torcao-banzo-comprimido` | 17.7.1.3 | 164 | Redução da armadura longitudinal de torção no banzo comprimido por flexão | não computável | baixa | P |  |
-| `17.7.1.4-tensao-principal-banzo-comprimido` | 17.7.1.4 | 164 | Tensão principal de compressão no banzo comprimido sob flexão+torção | ausente | baixa | M | P16 |
+| `17.7.1.4-tensao-principal-banzo-comprimido` | 17.7.1.4 | 164 | Tensão principal de compressão no banzo comprimido sob flexão+torção | implementado | baixa | M | P16 |
 | `17.7.2.1-theta-coincidente` | 17.7.2.1 | 165 | Ângulo θ coincidente para cortante e torção combinados | não computável | média | P |  |
 | `17.7.2.2-interacao-V-T-biela` | 17.7.2.2 | 165 | Interação VSd/VRd2 + TSd/TRd2 ≤ 1 (compressão diagonal combinada) | implementado | alta | P |  |
-| `17.7.2.3-soma-armaduras-transversais-VT` | 17.7.2.3 | 165 | Soma das armaduras transversais calculadas separadamente para V e T | ausente | média | P | P16 |
+| `17.7.2.3-soma-armaduras-transversais-VT` | 17.7.2.3 | 165 | Soma das armaduras transversais calculadas separadamente para V e T | implementado | média | P | P16 |
 
 ## Seção 18
 

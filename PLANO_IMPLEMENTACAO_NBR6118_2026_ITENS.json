@@ -126,7 +126,8 @@
    "nome": "Torção completa e combinação com flexão e cortante",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/torcao_nbr6118.py (extensão) + combinacao_esforcos_nbr6118.py"
+   "modulo": "dimensionamento/torcao_nbr6118.py (extensão) + combinacao_esforcos_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P17",
@@ -9731,13 +9732,27 @@
    "pagina_pdf": 160,
    "titulo": "Dispensa de armadura de torção de compatibilidade",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P16",
    "falta": "Nenhuma funcao/flag para marcar 'torcao de compatibilidade -> pode desprezar'; decisao de engenharia hoje fica fora do codigo",
    "o_que_calcula": "Decide se a torcao pode ser desprezada (torcao de compatibilidade, nao necessaria ao equilibrio) desde que o elemento tenha adaptacao plastica adequada e os demais esforcos sejam calculados sem considerar seus efeitos",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P16",
+    "data": "19/09/2026",
+    "funcoes": [
+     "torcao_compatibilidade_dispensavel",
+     "ResultadoDispensaTorcaoCompatibilidade"
+    ],
+    "testes": [
+     "test_dispensa_torcao_necessaria_ao_equilibrio_nunca_dispensa",
+     "test_dispensa_torcao_compatibilidade_sem_adaptacao_plastica",
+     "test_dispensa_torcao_compatibilidade_com_adaptacao_plastica"
+    ],
+    "observacao": "Corrigido nesta volta: acrescentado o campo 'ok' (= pode_desprezar) para uniformizar com as demais dataclasses Resultado* do pacote e do repositorio; docstrings e memoria reescritas com acentuacao."
+   }
   },
   {
    "id": "17.5.1.2-limite-Vsd-adaptacao-plastica",
@@ -9745,7 +9760,7 @@
    "pagina_pdf": 160,
    "titulo": "Limite de VSd para adaptação plástica em trecho curto de torção",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P16",
@@ -9756,7 +9771,22 @@
     "cortante_nbr6118.modelo_calculo_I"
    ],
    "teste_sugerido": "VSd=0,71*VRd2 com trecho=1,5h deve falhar; VSd=0,69*VRd2 deve passar",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P16",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_trecho_curto",
+     "ResultadoTrechoCurtoTorcao"
+    ],
+    "testes": [
+     "test_trecho_curto_VSd_acima_do_limite_falha",
+     "test_trecho_curto_VSd_abaixo_do_limite_passa",
+     "test_trecho_nao_curto_nao_limita_VSd",
+     "test_trecho_curto_degrau_exato_l_igual_2h"
+    ],
+    "observacao": "Corrigido nesta volta: comparacao VSd <= 0,7 VRd2 agora passa por seguranca_nbr6118.verificar_seguranca em vez de comparacao local; docstring e memoria reescritas com acentuacao."
+   }
   },
   {
    "id": "17.5.1.3-condicao-tripla-torcao",
@@ -9764,7 +9794,7 @@
    "pagina_pdf": 160,
    "titulo": "Condição tripla de resistência à torção pura",
    "tipo": "verificacao",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P16",
@@ -9773,7 +9803,22 @@
    "o_que_calcula": "A secao resiste a torcao pura quando TSd<=TRd2 (biela), TSd<=TRd3 (estribos) e TSd<=TRd4 (longitudinal) simultaneamente",
    "formula_ou_regra": "TSd <= TRd2  e  TSd <= TRd3  e  TSd <= TRd4",
    "teste_sugerido": "Dado Asw e As,long existentes, calcular TRd3 e TRd4 e comparar com TSd de um caso da apostila",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P16",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_torcao",
+     "ResultadoVerificacaoTorcao"
+    ],
+    "testes": [
+     "test_verificar_torcao_reproduz_TSd_por_construcao",
+     "test_verificar_torcao_falha_com_armadura_insuficiente",
+     "test_verificar_torcao_falha_bielas_TSd_maior_que_TRd2",
+     "test_verificar_torcao_theta_fora_da_faixa_levanta_FaixaNormativaError"
+    ],
+    "observacao": "Corrigido nesta volta: _validar_theta_torcao agora levanta FaixaNormativaError (nao ValueError generico) para theta fora de [30,45] graus, com teste novo cobrindo o caminho em verificar_torcao; docstring e memoria reescritas com acentuacao."
+   }
   },
   {
    "id": "17.5.1.4.1-secao-vazada-equivalente",
@@ -9797,7 +9842,7 @@
    "pagina_pdf": 161,
    "titulo": "Distribuição do momento de torção entre retângulos de uma seção composta",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P16",
@@ -9809,7 +9854,20 @@
     "17.5.1.4.1-secao-vazada-equivalente"
    ],
    "teste_sugerido": "Secao T decomposta em 2 retangulos iguais deve dar TSdi=TSd/2 para cada",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P16",
+    "data": "19/09/2026",
+    "funcoes": [
+     "repartir_torcao_secao_composta"
+    ],
+    "testes": [
+     "test_secao_T_dois_retangulos_iguais_reparte_meio_a_meio",
+     "test_secao_composta_proporcional_a_a3b",
+     "test_secao_composta_a_maior_que_b_e_erro"
+    ],
+    "observacao": "Nenhum achado sobre este item alem da acentuacao geral do bloco; docstring, mensagens de erro reescritas com acentuacao."
+   }
   },
   {
    "id": "17.5.1.4.3-secoes-vazadas-reais",
@@ -9817,7 +9875,7 @@
    "pagina_pdf": 161,
    "titulo": "Espessura de parede em seções vazadas reais (caixão, celular)",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P16",
@@ -9828,7 +9886,20 @@
    "depende_de": [
     "17.5.1.4.1-secao-vazada-equivalente"
    ],
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P16",
+    "data": "19/09/2026",
+    "funcoes": [
+     "espessura_parede_vazada_real"
+    ],
+    "testes": [
+     "test_secao_esbelta_A_sobre_u_menor_que_2c1",
+     "test_secao_vazada_real_espessura_governa_a_real",
+     "test_secao_vazada_real_equivalente_governa_quando_parede_e_grossa"
+    ],
+    "observacao": "Nenhum achado sobre este item alem da acentuacao geral do bloco; docstring e mensagem de erro reescritas com acentuacao."
+   }
   },
   {
    "id": "17.5.1.5-TRd2-torcao",
@@ -9884,14 +9955,29 @@
    "pagina_pdf": 162,
    "titulo": "Regras de arranjo da armadura longitudinal de torção",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P16",
    "falta": "dimensionar_torcao devolve As_long_total mas nao distribui nem valida por vertice/trecho de perimetro",
    "o_que_calcula": "Relacao delta_Asl/delta_u constante ao longo do perimetro, e obrigatoriedade de pelo menos uma barra longitudinal em cada vertice dos estribos poligonais de torcao",
    "formula_ou_regra": "delta_Asl/delta_u = constante; >=1 barra por vertice do estribo poligonal",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P16",
+    "data": "19/09/2026",
+    "funcoes": [
+     "distribuir_armadura_longitudinal_torcao",
+     "ResultadoDistribuicaoAslTorcao"
+    ],
+    "testes": [
+     "test_distribuicao_asl_proporcional_ao_trecho",
+     "test_distribuicao_asl_falha_sem_barra_em_um_vertice",
+     "test_distribuicao_asl_soma_trechos_diferente_de_ue_e_erro",
+     "test_distribuicao_asl_sem_vertices_pula_verificacao"
+    ],
+    "observacao": "Nenhum achado sobre este item alem da acentuacao geral do bloco; docstring, mensagem de erro e memoria reescritas com acentuacao."
+   }
   },
   {
    "id": "17.5.2.1-17.5.2.2-perfis-abertos-generalidades",
@@ -10039,7 +10125,7 @@
    "pagina_pdf": 164,
    "titulo": "Soma da armadura longitudinal de torção com a de flexão (zona tracionada)",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P16",
@@ -10051,7 +10137,19 @@
     "flexao_simples.py"
    ],
    "teste_sugerido": "Viga com M e T conhecidos: As total esperado = As(so M) + As,long,torcao/4 (1 face)",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P16",
+    "data": "19/09/2026",
+    "funcoes": [
+     "As_longitudinal_total"
+    ],
+    "testes": [
+     "test_As_longitudinal_total_soma_flexao_e_torcao",
+     "test_As_longitudinal_total_negativo_e_erro"
+    ],
+    "observacao": "Arquivo combinacao_esforcos_nbr6118.py inteiro reescrito com acentuacao (docstring, mensagem de erro); import sys nao usado removido do topo do arquivo."
+   }
   },
   {
    "id": "17.7.1.3-reducao-torcao-banzo-comprimido",
@@ -10072,7 +10170,7 @@
    "pagina_pdf": 164,
    "titulo": "Tensão principal de compressão no banzo comprimido sob flexão+torção",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "M",
    "pacote": "P16",
@@ -10084,7 +10182,24 @@
     "22-tensao-principal-limite"
    ],
    "teste_sugerido": "Caso sem torcao (Td=0): tau_Td=0 -> tensao principal = tensao normal media (verificacao recai na flexao pura)",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P16",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tau_Td_kncm2",
+     "tensao_principal_banzo_comprimido",
+     "ResultadoTensaoPrincipalBanzo"
+    ],
+    "testes": [
+     "test_tau_Td_formula",
+     "test_tensao_principal_sem_torcao_recai_na_flexao_pura",
+     "test_tensao_principal_com_torcao_supera_tensao_normal",
+     "test_tensao_principal_com_limite_informado",
+     "test_tau_Td_area_ou_espessura_nao_positiva_e_erro"
+    ],
+    "observacao": "Corrigido nesta volta: comparacao sigma_c,principal <= limite (Secao 22) agora passa por seguranca_nbr6118.verificar_seguranca em vez de comparacao local; docstring, mensagens e memoria reescritas com acentuacao; import sys nao usado removido do arquivo."
+   }
   },
   {
    "id": "17.7.2.1-theta-coincidente",
@@ -10125,7 +10240,7 @@
    "pagina_pdf": 165,
    "titulo": "Soma das armaduras transversais calculadas separadamente para V e T",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P16",
@@ -10137,7 +10252,19 @@
     "17.5.1.6.a-TRd3-estribos"
    ],
    "teste_sugerido": "Somar Asw dos dois testes de apostila existentes e conferir contra um caso combinado conhecido",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P16",
+    "data": "19/09/2026",
+    "funcoes": [
+     "Asw_total"
+    ],
+    "testes": [
+     "test_Asw_total_soma_os_dois_modulos_separados",
+     "test_Asw_total_negativo_e_erro"
+    ],
+    "observacao": "Nenhum achado sobre este item alem da acentuacao geral do arquivo; docstring e mensagem de erro reescritas com acentuacao."
+   }
   },
   {
    "id": "18.1-simbologia",

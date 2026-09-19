@@ -74,10 +74,17 @@ def alfa_v2(fck_mpa: float) -> float:
 
 def _validar_theta_torcao(theta_deg: float) -> None:
     """17.5.1.1: 30 deg <= theta <= 45 deg (CRT-07; mesma faixa/forma da
-    validacao ja existente em cortante_nbr6118.modelo_calculo_II)."""
+    validacao ja existente em cortante_nbr6118.modelo_calculo_II).
+
+    P16 (achado da verificacao independente, volta 1): o erro fora da faixa
+    normativa tem de ser ``nbr.FaixaNormativaError`` (subclasse de
+    ValueError), nao um ValueError generico -- convencao 3.3 item 3 do
+    plano. FaixaNormativaError e ValueError, entao quem hoje captura
+    ValueError continua funcionando sem mudanca.
+    """
     if not (THETA_MIN_DEG - 1e-6 <= theta_deg <= THETA_MAX_DEG + 1e-6):
-        raise ValueError(
-            f"theta deve estar entre 30 e 45 deg (recebido {theta_deg})."
+        raise nbr.FaixaNormativaError(
+            f"theta deve estar entre 30 e 45 graus (recebido {theta_deg})."
         )
 
 
@@ -383,6 +390,413 @@ def _demo() -> None:
     print(f"  Asw  = {r.Asw_m:.2f} cm2/m  (min={r.Asw_min_m:.2f})")
     print(f"  As,long,total = {r.As_long_total_cm2:.2f} cm2 "
           f"(distribuir nos 4 lados)")
+
+
+# === P16: Torcao completa e combinacao com flexao e cortante ===
+#
+# Completa a torção de 17.5: dispensa da torção de compatibilidade e limite
+# de VSd em trecho curto (17.5.1.2), condição tripla de resistência à
+# torção pura em modo verificação (17.5.1.3), seção composta de retângulos
+# (17.5.1.4.2), seções já vazadas reais (17.5.1.4.3) e arranjo da armadura
+# longitudinal nos vértices do estribo poligonal (17.5.1.6). A combinação
+# com flexão e cortante (17.7) fica em combinacao_esforcos_nbr6118.py.
+# As páginas citadas são as do PDF (impressa + 18).
+# ---------------------------------------------------------------------------
+try:
+    import seguranca_nbr6118 as _seg_p16
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import seguranca_nbr6118 as _seg_p16
+
+FaixaNormativaError = nbr.FaixaNormativaError
+
+
+def _fmt_p16(x: float) -> str:
+    """Número para a memória de cálculo, com vírgula decimal."""
+    return f"{x:.6g}".replace(".", ",")
+
+
+# ---------------------------------------------------------------------------
+# 17.5.1.2 -- dispensa da torção de compatibilidade (PDF p. 160)
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class ResultadoDispensaTorcaoCompatibilidade:
+    """17.5.1.2: pode-se desprezar a torção de compatibilidade?"""
+
+    necessaria_ao_equilibrio: bool
+    adaptacao_plastica_adequada: bool
+    pode_desprezar: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def torcao_compatibilidade_dispensavel(
+    necessaria_ao_equilibrio: bool,
+    adaptacao_plastica_adequada: bool,
+) -> ResultadoDispensaTorcaoCompatibilidade:
+    """Decide se a torção pode ser desprezada (17.5.1.2, PDF p. 160).
+
+    "Quando a torção não for necessária ao equilíbrio, caso da torção de
+    compatibilidade, é possível desprezá-la, desde que o elemento
+    estrutural tenha a capacidade adequada de adaptação plástica e que
+    todos os outros esforços sejam calculados sem considerar os efeitos por
+    ela provocados." Isto é, só se desconsidera a torção quando ela NÃO for
+    necessária ao equilíbrio (torção de compatibilidade) E o elemento tiver
+    adaptação plástica adequada; caso contrário, a torção tem de ser
+    considerada no dimensionamento. Quando dispensada, os demais esforços
+    (M, V) devem ser recalculados sem os efeitos da torção desprezada --
+    isso é responsabilidade do chamador, fora desta função.
+
+    ``ok`` é sinônimo de ``pode_desprezar`` (uniformiza a API com os demais
+    ``Resultado*`` do módulo, que sempre trazem ``ok`` ao lado do campo
+    específico da classificação).
+    """
+    pode_desprezar = (not necessaria_ao_equilibrio) and adaptacao_plastica_adequada
+    if necessaria_ao_equilibrio:
+        motivo = "torção necessária ao equilíbrio -> não pode ser desprezada"
+    elif not adaptacao_plastica_adequada:
+        motivo = ("torção de compatibilidade, mas sem adaptação plástica "
+                  "adequada -> não pode ser desprezada")
+    else:
+        motivo = ("torção de compatibilidade com adaptação plástica "
+                  "adequada -> pode ser desprezada")
+    memoria = (
+        f"17.5.1.2: necessária ao equilíbrio = {necessaria_ao_equilibrio}; "
+        f"adaptação plástica adequada = {adaptacao_plastica_adequada}.",
+        f"17.5.1.2: {motivo}.",
+    )
+    return ResultadoDispensaTorcaoCompatibilidade(
+        necessaria_ao_equilibrio=necessaria_ao_equilibrio,
+        adaptacao_plastica_adequada=adaptacao_plastica_adequada,
+        pode_desprezar=pode_desprezar,
+        ok=pode_desprezar,
+        governante=motivo,
+        memoria=memoria,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 17.5.1.2 -- limite de VSd em trecho curto de torção (PDF p. 160)
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class ResultadoTrechoCurtoTorcao:
+    """17.5.1.2: limite de VSd quando o trecho sob torção é curto (<= 2h)."""
+
+    l_cm: float
+    h_cm: float
+    VSd_kn: float
+    VRd2_kn: float
+    limite_VSd_kn: float
+    trecho_curto: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_trecho_curto(l_cm: float, h_cm: float, VSd_kn: float,
+                           VRd2_kn: float) -> ResultadoTrechoCurtoTorcao:
+    """Em região com comprimento sob torção <= 2h, limita VSd <= 0,7 VRd2
+    (17.5.1.2, PDF p. 160).
+
+    "Em regiões onde o comprimento do elemento sujeito à torção seja menor
+    ou igual a 2h, para garantir um nível razoável de capacidade de
+    adaptação plástica, deve-se respeitar a armadura mínima de torção e
+    limitar a força cortante, tal que: VSd <= 0,7 VRd2." Fora do trecho
+    curto (l > 2h) esta função não impõe limite algum -- só verifica; a
+    armadura mínima de torção (Asw,min, As,long,min) fica a cargo de
+    Asw_min_cm2_por_m / As_long_min_cm2_por_m, sempre exigível.
+
+    A comparação VSd <= 0,7 VRd2 (Rd >= Sd) passa por
+    seguranca_nbr6118.verificar_seguranca, fonte única de tolerância e
+    semântica dessa condição.
+
+    l_cm: comprimento do trecho do elemento sujeito à torção; h_cm: altura
+    da seção. VSd_kn, VRd2_kn: kN.
+    """
+    trecho_curto = l_cm <= 2.0 * h_cm + 1e-9
+    limite = 0.7 * VRd2_kn
+    if trecho_curto:
+        seg = _seg_p16.verificar_seguranca(limite, VSd_kn, "VSd x 0,7 VRd2",
+                                           "17.5.1.2")
+        ok = seg.ok
+        governante = (f"17.5.1.2: trecho curto (l={_fmt_p16(l_cm)} <= "
+                     f"2h={_fmt_p16(2.0 * h_cm)}), VSd <= 0,7 VRd2 -> "
+                     f"{'ok' if ok else 'não ok'}")
+        seg_memoria = seg.memoria
+    else:
+        ok = True
+        governante = (f"17.5.1.2: trecho não curto (l={_fmt_p16(l_cm)} > "
+                     f"2h={_fmt_p16(2.0 * h_cm)}) -> limite não se aplica")
+        seg_memoria = ()
+    memoria = (
+        f"17.5.1.2: l = {_fmt_p16(l_cm)} cm, h = {_fmt_p16(h_cm)} cm, "
+        f"2h = {_fmt_p16(2.0 * h_cm)} cm -> trecho "
+        f"{'curto' if trecho_curto else 'não curto'}.",
+        f"17.5.1.2: 0,7 VRd2 = 0,7 x {_fmt_p16(VRd2_kn)} = "
+        f"{_fmt_p16(limite)} kN; VSd = {_fmt_p16(VSd_kn)} kN -> "
+        f"{'ok' if ok else 'não ok'}.",
+        *seg_memoria,
+    )
+    return ResultadoTrechoCurtoTorcao(
+        l_cm=l_cm, h_cm=h_cm, VSd_kn=VSd_kn, VRd2_kn=VRd2_kn,
+        limite_VSd_kn=limite, trecho_curto=trecho_curto, ok=ok,
+        governante=governante, memoria=memoria,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 17.5.1.3 -- condição tripla de resistência à torção pura, modo verificação
+# (PDF p. 160, com TRd3/TRd4 de 17.5.1.6, PDF p. 162)
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class ResultadoVerificacaoTorcao:
+    """Verificação de seção com Asw e Asl existentes (17.5.1.3)."""
+
+    TSd_kncm: float
+    Asw_cm2_por_m: float
+    Asl_cm2: float
+    theta_deg: float
+    he_cm: float
+    Ae_cm2: float
+    ue_cm: float
+    TRd2_kncm: float
+    TRd3_kncm: float
+    TRd4_kncm: float
+    ok_TRd2: bool
+    ok_TRd3: bool
+    ok_TRd4: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_torcao(
+    TSd_kncm: float,
+    Asw_cm2_por_m: float,
+    Asl_cm2: float,
+    bw_cm: float,
+    h_cm: float,
+    c1_cm: float,
+    fck_mpa: float,
+    fywk_mpa: float = 500.0,
+    theta_deg: float = 45.0,
+    gama_c: float = GAMA_C,
+    gama_s: float = GAMA_S,
+    he_adotado_cm: float | None = None,
+) -> ResultadoVerificacaoTorcao:
+    """Verifica se a seção com Asw e Asl EXISTENTES resiste a TSd (17.5.1.3,
+    PDF p. 160): admite-se satisfeita a resistência quando, simultaneamente,
+    TSd <= TRd2, TSd <= TRd3 e TSd <= TRd4.
+
+        TRd2 (17.5.1.5, PDF p. 161) -- ver TRd2_kncm.
+        TRd3 = (Asw/s)*fywd*2*Ae*cotg(theta)  (17.5.1.6 a, PDF p. 162)
+        TRd4 = (Asl/ue)*2*Ae*fywd*tan(theta)  (17.5.1.6 b, PDF p. 162)
+
+    Ao contrário de ``dimensionar_torcao`` (que resolve Asw/Asl a partir de
+    TSd e portanto sempre "acerta" TRd3 = TRd4 = TSd por construção), aqui
+    Asw_cm2_por_m e Asl_cm2 são dados (armadura já lançada) e TRd3/TRd4 são
+    calculados e comparados com TSd.
+
+    Asw_cm2_por_m: armadura transversal de torção existente (cm2/m); Asl_cm2:
+    soma das áreas das barras longitudinais de torção existentes (cm2, já
+    distribuída no perímetro ue). As comparações Rd >= Sd passam por
+    seguranca_nbr6118.verificar_seguranca.
+    """
+    _validar_theta_torcao(theta_deg)
+    sec = secao_vazada_retangular(bw_cm, h_cm, c1_cm, he_adotado_cm)
+    Ae, he, ue = sec["Ae_cm2"], sec["he_cm"], sec["ue_cm"]
+    TRd2 = TRd2_kncm(fck_mpa, Ae, he, theta_deg, gama_c)
+    fywd = fywd_kncm2(fywk_mpa, gama_s)
+    theta_rad = math.radians(theta_deg)
+    asw_s = Asw_cm2_por_m / 100.0  # cm2/cm
+    TRd3 = asw_s * fywd * 2.0 * Ae / math.tan(theta_rad)
+    TRd4 = (Asl_cm2 / ue) * 2.0 * Ae * fywd * math.tan(theta_rad)
+
+    s2 = _seg_p16.verificar_seguranca(TRd2, TSd_kncm, "TSd x TRd2", "17.5.1.3")
+    s3 = _seg_p16.verificar_seguranca(TRd3, TSd_kncm, "TSd x TRd3", "17.5.1.3")
+    s4 = _seg_p16.verificar_seguranca(TRd4, TSd_kncm, "TSd x TRd4", "17.5.1.3")
+
+    falhas = []
+    if not s2.ok:
+        falhas.append("TSd > TRd2 (bielas comprimidas)")
+    if not s3.ok:
+        falhas.append("TSd > TRd3 (estribos)")
+    if not s4.ok:
+        falhas.append("TSd > TRd4 (armadura longitudinal)")
+    ok = not falhas
+    governante = ("17.5.1.3: ok (TSd <= TRd2, TRd3 e TRd4)" if ok
+                 else "; ".join(falhas))
+
+    memoria = (
+        f"17.5.1.3: TSd = {_fmt_p16(TSd_kncm)} kN.cm; "
+        f"theta = {_fmt_p16(theta_deg)} graus.",
+        f"17.5.1.5: TRd2 = {_fmt_p16(TRd2)} kN.cm.",
+        f"17.5.1.6 a): TRd3 = (Asw/s).fywd.2.Ae.cotg(theta) = "
+        f"{_fmt_p16(asw_s)} x {_fmt_p16(fywd)} x 2 x {_fmt_p16(Ae)} / "
+        f"tan({_fmt_p16(theta_deg)}) = {_fmt_p16(TRd3)} kN.cm.",
+        f"17.5.1.6 b): TRd4 = (Asl/ue).2.Ae.fywd.tan(theta) = "
+        f"({_fmt_p16(Asl_cm2)}/{_fmt_p16(ue)}) x 2 x {_fmt_p16(Ae)} x "
+        f"{_fmt_p16(fywd)} x tan({_fmt_p16(theta_deg)}) = "
+        f"{_fmt_p16(TRd4)} kN.cm.",
+        *s2.memoria, *s3.memoria, *s4.memoria,
+    )
+    return ResultadoVerificacaoTorcao(
+        TSd_kncm=TSd_kncm, Asw_cm2_por_m=Asw_cm2_por_m, Asl_cm2=Asl_cm2,
+        theta_deg=theta_deg, he_cm=he, Ae_cm2=Ae, ue_cm=ue,
+        TRd2_kncm=TRd2, TRd3_kncm=TRd3, TRd4_kncm=TRd4,
+        ok_TRd2=s2.ok, ok_TRd3=s3.ok, ok_TRd4=s4.ok, ok=ok,
+        governante=governante, memoria=memoria,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 17.5.1.4.2 -- seção composta de retângulos (PDF p. 161)
+# ---------------------------------------------------------------------------
+def repartir_torcao_secao_composta(
+    retangulos: "list[tuple[float, float]] | tuple[tuple[float, float], ...]",
+    TSd_kncm: float,
+) -> tuple[float, ...]:
+    """Reparte TSd entre os retângulos de uma seção composta -- T, L, I
+    maciço -- proporcionalmente à rigidez elástica linear de cada um
+    (17.5.1.4.2, PDF p. 161):
+
+        TSdi = TSd * (ai^3 * bi) / soma(ai^3 * bi)
+
+    onde ai é o lado menor e bi o lado maior de cada retângulo i. Cada
+    retângulo deve depois ser verificado isoladamente com a seção vazada
+    equivalente de 17.5.1.4.1 (``secao_vazada_retangular``/``TRd2_kncm``/
+    ``dimensionar_torcao``, com TSdi no lugar de TSd).
+
+    retangulos: sequência de pares (ai_cm, bi_cm), ai <= bi. Devolve a
+    tupla (TSd1, TSd2, ...) na mesma ordem, em kN.cm.
+    """
+    if not retangulos:
+        raise ValueError("informe ao menos um retângulo da seção composta.")
+    rigidezes = []
+    for i, (a, b) in enumerate(retangulos):
+        if a <= 0.0 or b <= 0.0:
+            raise FaixaNormativaError(
+                f"retângulo {i}: lados têm de ser positivos (a={a}, b={b})."
+            )
+        if a > b:
+            raise FaixaNormativaError(
+                f"retângulo {i}: a (lado menor) = {a} > b (lado maior) = "
+                f"{b}; troque a ordem (17.5.1.4.2)."
+            )
+        rigidezes.append(a ** 3 * b)
+    soma = sum(rigidezes)
+    return tuple(TSd_kncm * r / soma for r in rigidezes)
+
+
+# ---------------------------------------------------------------------------
+# 17.5.1.4.3 -- seções já vazadas reais (caixão, celular) (PDF p. 161)
+# ---------------------------------------------------------------------------
+def espessura_parede_vazada_real(he_real_cm: float, bw_cm: float,
+                                 h_cm: float) -> float:
+    """Espessura de parede a considerar em seção JÁ vazada -- viga caixão,
+    laje celular -- (17.5.1.4.3, PDF p. 161), diferente da seção vazada
+    EQUIVALENTE de uma seção cheia (17.5.1.4.1).
+
+    "Deve ser considerada a menor espessura de parede entre: a espessura
+    real da parede; a espessura equivalente calculada supondo a seção
+    cheia de mesmo contorno externo da seção vazada."
+
+        he = min(he_real, A/u)
+
+    onde A e u são a área e o perímetro da seção CHEIA de contorno externo
+    bw_cm x h_cm (mesmo contorno da seção vazada real). he_real_cm: espessura
+    real da parede, medida no ponto considerado.
+    """
+    if he_real_cm <= 0.0:
+        raise FaixaNormativaError("he_real tem de ser positiva (17.5.1.4.3).")
+    A = bw_cm * h_cm
+    u = 2.0 * (bw_cm + h_cm)
+    he_equivalente = A / u
+    return min(he_real_cm, he_equivalente)
+
+
+# ---------------------------------------------------------------------------
+# 17.5.1.6 -- arranjo da armadura longitudinal de torção (PDF p. 162)
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class ResultadoDistribuicaoAslTorcao:
+    """17.5.1.6: distribuição de As,l pelos trechos do perímetro ue."""
+
+    As_long_total_cm2: float
+    ue_cm: float
+    taxa_cm2_por_cm: float
+    trechos_cm: tuple[float, ...]
+    As_por_trecho_cm2: tuple[float, ...]
+    barras_por_vertice: "tuple[int, ...] | None"
+    ok_vertices: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def distribuir_armadura_longitudinal_torcao(
+    As_long_total_cm2: float,
+    ue_cm: float,
+    trechos_cm: "list[float] | tuple[float, ...]",
+    barras_por_vertice: "list[int] | tuple[int, ...] | None" = None,
+) -> ResultadoDistribuicaoAslTorcao:
+    """Distribui a armadura longitudinal total de torção pelos trechos do
+    perímetro do estribo poligonal, mantendo delta_As,l/delta_u constante
+    (17.5.1.6, PDF p. 162):
+
+        delta_As,l / delta_u = As,l,total / ue  (constante ao longo do
+        perímetro)
+
+    e confere a exigência de pelo menos uma barra longitudinal em cada
+    vértice do estribo poligonal ("Nas seções poligonais, em cada vértice
+    dos estribos de torção, deve ser colocada pelo menos uma barra
+    longitudinal.").
+
+    trechos_cm: comprimento de cada trecho do perímetro Ae (a soma tem de
+    ser igual a ue_cm, com tolerância relativa de 1e-6). barras_por_vertice:
+    número de barras longitudinais alocadas em cada vértice do estribo
+    poligonal (um valor por vértice); None pula essa verificação (só
+    calcula a distribuição proporcional).
+    """
+    soma = sum(trechos_cm)
+    tol = 1e-6 * max(ue_cm, 1.0)
+    if abs(soma - ue_cm) > tol:
+        raise FaixaNormativaError(
+            f"soma dos trechos ({_fmt_p16(soma)} cm) tem de ser igual a "
+            f"ue ({_fmt_p16(ue_cm)} cm) (17.5.1.6)."
+        )
+    taxa = As_long_total_cm2 / ue_cm
+    as_trechos = tuple(taxa * t for t in trechos_cm)
+
+    if barras_por_vertice is None:
+        ok_vertices = True
+        barras_tupla = None
+        vert_txt = "não informado (verificação pulada)"
+    else:
+        barras_tupla = tuple(barras_por_vertice)
+        ok_vertices = all(n >= 1 for n in barras_tupla)
+        vert_txt = str(barras_tupla)
+
+    ok = ok_vertices
+    governante = ("17.5.1.6: ok" if ok else
+                 "17.5.1.6: há vértice do estribo poligonal sem barra "
+                 "longitudinal")
+    memoria = (
+        f"17.5.1.6: delta_As,l/delta_u = As,l,total/ue = "
+        f"{_fmt_p16(As_long_total_cm2)} / {_fmt_p16(ue_cm)} = "
+        f"{_fmt_p16(taxa)} cm2/cm (constante ao longo do perímetro).",
+        f"17.5.1.6: trechos (cm) = {tuple(round(t, 4) for t in trechos_cm)}; "
+        f"As por trecho (cm2) = {tuple(round(a, 4) for a in as_trechos)}.",
+        f"17.5.1.6: barras por vértice = {vert_txt} -> "
+        f"{'ok' if ok_vertices else 'não ok'}.",
+    )
+    return ResultadoDistribuicaoAslTorcao(
+        As_long_total_cm2=As_long_total_cm2, ue_cm=ue_cm,
+        taxa_cm2_por_cm=taxa, trechos_cm=tuple(trechos_cm),
+        As_por_trecho_cm2=as_trechos, barras_por_vertice=barras_tupla,
+        ok_vertices=ok_vertices, ok=ok, governante=governante,
+        memoria=memoria,
+    )
 
 
 if __name__ == "__main__":
