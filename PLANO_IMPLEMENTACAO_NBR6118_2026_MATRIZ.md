@@ -723,24 +723,24 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `24.5.5.1-tau-wd-secao-retangular` | 24.5.5.1 | 227 | Tensão de cisalhamento atuante em seção retangular de concreto simples | implementado | média | P | P40 |
 | `24.5.5.2-3-secao-critica-lajes` | 24.5.5.2/24.5.5.3 | 227 | Seção crítica para cisalhamento e regra especial de lajes (sem redução no apoio) | implementado | baixa | P | P40 |
 | `24.5.6-torcao-cisalhamento-interacao` | 24.5.6 | 227 | Verificação de torção e interação torção-cortante em concreto simples | implementado | baixa | P | P40 |
-| `24.5.7.2-secao-comprimida-excentrica` | 24.5.7.2 | 228 | Cálculo simplificado de seção comprimida excêntrica de concreto simples (ponto virtual G1 e área eficaz triangular) | ausente | média | G | P41 |
-| `24.5.7.3-secao-comprimida-cortante` | 24.5.7.3 | 229 | Verificação combinada de seção a compressão inclinada (normal + cortante) em concreto simples | ausente | baixa | M | P41 |
+| `24.5.7.2-secao-comprimida-excentrica` | 24.5.7.2 | 228 | Cálculo simplificado de seção comprimida excêntrica de concreto simples (ponto virtual G1 e área eficaz triangular) | implementado | média | G | P41 |
+| `24.5.7.3-secao-comprimida-cortante` | 24.5.7.3 | 229 | Verificação combinada de seção a compressão inclinada (normal + cortante) em concreto simples | implementado | baixa | M | P41 |
 | `24.5.8-estabilidade-global` | 24.5.8 | 229 | Verificação de estabilidade global em estrutura de concreto simples | não computável | baixa | P |  |
-| `24.6.1-NRd-pilar-parede` | 24.6.1 | 229 | Força normal resistente de pilar-parede de concreto simples (fórmula de esbeltez) | ausente | média | P | P41 |
-| `24.6.1-comprimento-horizontal-carga` | 24.6.1 | 229 | Comprimento horizontal efetivo do pilar-parede por carga concentrada | ausente | baixa | P | P41 |
-| `24.6.1-espessura-minima` | 24.6.1 | 229 | Espessura mínima do pilar-parede de concreto simples | ausente | média | P | P41 |
-| `24.6.1-abertura-armadura-minima` | 24.6.1 | 230 | Armadura mínima ao redor de aberturas (portas/janelas) em pilar-parede de concreto simples | ausente | baixa | P | P41 |
+| `24.6.1-NRd-pilar-parede` | 24.6.1 | 229 | Força normal resistente de pilar-parede de concreto simples (fórmula de esbeltez) | implementado | média | P | P41 |
+| `24.6.1-comprimento-horizontal-carga` | 24.6.1 | 229 | Comprimento horizontal efetivo do pilar-parede por carga concentrada | implementado | baixa | P | P41 |
+| `24.6.1-espessura-minima` | 24.6.1 | 229 | Espessura mínima do pilar-parede de concreto simples | implementado | média | P | P41 |
+| `24.6.1-abertura-armadura-minima` | 24.6.1 | 230 | Armadura mínima ao redor de aberturas (portas/janelas) em pilar-parede de concreto simples | implementado | baixa | P | P41 |
 | `24.6.1-qualitativo` | 24.6.1 | 230 | Estabilidade global do conjunto e junção entre painéis de pilar-parede | não computável | baixa | P |  |
-| `24.6.2-proibicao-bloco-estaca` | 24.6.2 | 230 | Proibição de concreto simples em blocos sobre estacas | ausente | média | P | P41 |
-| `24.6.2-area-base-tensao-admissivel` | 24.6.2 | 230 | Área da base de bloco de fundação de concreto simples a partir da tensão admissível do solo | parcial | média | P | P41 |
-| `24.6.2-espessura-bloco` | 24.6.2 | 230 | Espessura mínima média de bloco de fundação de concreto simples | ausente | média | P | P41 |
-| `24.6.2-momento-secao-critica` | 24.6.2 | 230 | Momento fletor majorado na seção crítica de bloco de concreto simples | ausente | média | M | P41 |
-| `24.6.2-cortante-limite` | 24.6.2 | 230 | Força cortante majorada limite na seção crítica de bloco de concreto simples | ausente | média | P | P41 |
-| `24.6.3-remissao-pilar-parede` | 24.6.3 | 230 | Cálculo de pilares de concreto simples pelo mesmo método dos pilares-parede | ausente | média | P | P41 |
-| `24.6.3-nucleo-central-inercia` | 24.6.3 | 230 | Carga dentro do núcleo central de inércia (pilares sem ações laterais) e verificação com ações laterais (sem tração no concreto) | ausente | média | G | P41 |
-| `24.6.3-dimensao-minima` | 24.6.3 | 230 | Dimensão mínima de pilar de concreto simples | ausente | média | P | P41 |
-| `24.6.4-sem-tracao` | 24.6.4 | 230 | Ausência de tração em qualquer seção de arco de concreto simples no ELU | ausente | baixa | M | P41 |
-| `24.6.4-majoracao-2a-ordem` | 24.6.4 | 230 | Majoração máxima de momento fletor por efeitos de 2ª ordem em arcos de concreto simples | ausente | baixa | P | P41 |
+| `24.6.2-proibicao-bloco-estaca` | 24.6.2 | 230 | Proibição de concreto simples em blocos sobre estacas | implementado | média | P | P41 |
+| `24.6.2-area-base-tensao-admissivel` | 24.6.2 | 230 | Área da base de bloco de fundação de concreto simples a partir da tensão admissível do solo | implementado | média | P | P41 |
+| `24.6.2-espessura-bloco` | 24.6.2 | 230 | Espessura mínima média de bloco de fundação de concreto simples | implementado | média | P | P41 |
+| `24.6.2-momento-secao-critica` | 24.6.2 | 230 | Momento fletor majorado na seção crítica de bloco de concreto simples | implementado | média | M | P41 |
+| `24.6.2-cortante-limite` | 24.6.2 | 230 | Força cortante majorada limite na seção crítica de bloco de concreto simples | implementado | média | P | P41 |
+| `24.6.3-remissao-pilar-parede` | 24.6.3 | 230 | Cálculo de pilares de concreto simples pelo mesmo método dos pilares-parede | implementado | média | P | P41 |
+| `24.6.3-nucleo-central-inercia` | 24.6.3 | 230 | Carga dentro do núcleo central de inércia (pilares sem ações laterais) e verificação com ações laterais (sem tração no concreto) | parcial | média | G | P41 |
+| `24.6.3-dimensao-minima` | 24.6.3 | 230 | Dimensão mínima de pilar de concreto simples | implementado | média | P | P41 |
+| `24.6.4-sem-tracao` | 24.6.4 | 230 | Ausência de tração em qualquer seção de arco de concreto simples no ELU | implementado | baixa | M | P41 |
+| `24.6.4-majoracao-2a-ordem` | 24.6.4 | 230 | Majoração máxima de momento fletor por efeitos de 2ª ordem em arcos de concreto simples | implementado | baixa | P | P41 |
 
 ## Seção 25
 

@@ -312,7 +312,8 @@
    "nome": "Concreto simples: elementos",
    "onda": 4,
    "prioridade": "baixa",
-   "modulo": "dimensionamento/concreto_simples_nbr6118.py"
+   "modulo": "dimensionamento/concreto_simples_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P42",
@@ -15182,7 +15183,7 @@
    "pagina_pdf": 228,
    "titulo": "Cálculo simplificado de seção comprimida excêntrica de concreto simples (ponto virtual G1 e área eficaz triangular)",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "G",
    "pacote": "P41",
@@ -15194,7 +15195,29 @@
     "24.5.2.2-tensoes-resistentes-fibra-extrema"
    ],
    "teste_sugerido": "Caso ex=ey=0 (carga centrada) deve degenerar para área/tensão coerente com Nd/(hx*hy) dentro do limite do terço central; comparar Ae com a área do triângulo por geometria analítica simples (3ax*3ay/2).",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "excentricidade_adicional_cm",
+     "secao_comprimida_excentrica",
+     "_area_triangulo_eficaz_cm2",
+     "_ponto_virtual"
+    ],
+    "testes": [
+     "test_24_5_7_2_excentricidade_adicional",
+     "test_24_5_7_2_excentricidade_adicional_h_invalido",
+     "test_24_5_7_2_triangulo_dentro_da_secao",
+     "test_24_5_7_2_excentricidade_negativa_simetrica",
+     "test_24_5_7_2_triangulo_recortado",
+     "test_24_5_7_2_carga_centrada_nao_excede_secao",
+     "test_24_5_7_2_fronteira_sigma_igual_sigma_cRd",
+     "test_24_5_7_2_G1_fora_da_secao",
+     "test_24_5_7_2_fck_fora_da_faixa"
+    ],
+    "observacao": "Só seção retangular. Três decisões registradas na docstring, porque a norma não trata desses casos: (1) exa/eya somam no sentido da excentricidade; (2) o 'mais desfavorável' é o G1 de menor Ae; (3) com excentricidade pequena o triângulo 3ax×3ay sai da seção e a parte de fora é descontada de Ae. Sem esse recorte, uma carga centrada daria Ae maior que a própria seção (a favor da segurança). G1 fora da seção levanta FaixaNormativaError. Seções não retangulares, como o L da Figura 24.2, não foram implementadas."
+   }
   },
   {
    "id": "24.5.7.3-secao-comprimida-cortante",
@@ -15202,7 +15225,7 @@
    "pagina_pdf": 229,
    "titulo": "Verificação combinada de seção a compressão inclinada (normal + cortante) em concreto simples",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "M",
    "pacote": "P41",
@@ -15215,7 +15238,20 @@
     "24.5.2.3-tau-wRd-flexao"
    ],
    "teste_sugerido": "VSd=0 deve recair exatamente na verificação de 24.5.7.2.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "secao_comprimida_com_cortante"
+    ],
+    "testes": [
+     "test_24_5_7_3_V_nulo_recai_em_24_5_7_2",
+     "test_24_5_7_3_tau_wd_e_fronteira",
+     "test_24_5_7_3_sigma_cmd_majora_tau_wRd"
+    ],
+    "observacao": "τwd = VSd/Ae <= τwRd (tau_wRd do P40). O σcmd é parâmetro do usuário, com padrão 0 (a favor da segurança)."
+   }
   },
   {
    "id": "24.5.8-estabilidade-global",
@@ -15237,7 +15273,7 @@
    "pagina_pdf": 229,
    "titulo": "Força normal resistente de pilar-parede de concreto simples (fórmula de esbeltez)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P41",
@@ -15249,7 +15285,25 @@
     "nucleo.fcd"
    ],
    "teste_sugerido": "l/h=0 (pilar curto) -> NRd=0,63*fcd*Ac (sem redução); l=32h/alfa (esbeltez limite) -> NRd=0 (colapso teórico).",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "NRd_pilar_parede_kn",
+     "verificar_pilar_parede_simples"
+    ],
+    "testes": [
+     "test_24_6_1_NRd_sem_esbeltez",
+     "test_24_6_1_NRd_ponto_interior",
+     "test_24_6_1_NRd_esbeltez_de_fronteira",
+     "test_24_6_1_alfa_nao_definido",
+     "test_24_6_1_usa_gama_c_1_68",
+     "test_24_6_1_verificar_pilar_parede_terco_central",
+     "test_24_6_1_verificar_pilar_parede_limites"
+    ],
+    "observacao": "fcd com γc = 1,68. α só aceita 1,0 ou 0,8. Com α·ℓ/32h > 1 a função levanta erro; no limite, NRd = 0. Com resultante fora do terço central (|e| > h/6) a verificação levanta FaixaNormativaError."
+   }
   },
   {
    "id": "24.6.1-comprimento-horizontal-carga",
@@ -15257,7 +15311,7 @@
    "pagina_pdf": 229,
    "titulo": "Comprimento horizontal efetivo do pilar-parede por carga concentrada",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P41",
@@ -15267,7 +15321,18 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Caso com cargas muito espaçadas: comprimento limitado pelo segundo critério (apoios + 4e).",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "comprimento_horizontal_carga_cm"
+    ],
+    "testes": [
+     "test_24_6_1_comprimento_horizontal"
+    ],
+    "observacao": "min(distância centro a centro entre cargas; distância entre apoios + 4h), transcrito literalmente. A distância entre cargas é opcional (None quando só há uma carga)."
+   }
   },
   {
    "id": "24.6.1-espessura-minima",
@@ -15275,7 +15340,7 @@
    "pagina_pdf": 229,
    "titulo": "Espessura mínima do pilar-parede de concreto simples",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P41",
@@ -15285,7 +15350,18 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "l=240cm -> e_min=10cm (governa o absoluto); l=480cm -> e_min=20cm (governa 1/24); parede de fundação com l/24<15cm -> e_min=15cm.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "espessura_minima_pilar_parede_cm"
+    ],
+    "testes": [
+     "test_24_6_1_espessura_minima"
+    ],
+    "observacao": "max(ℓ/24; 10 cm; 15 cm se parede de fundação ou sapata corrida). Também entra em verificar_pilar_parede_simples."
+   }
   },
   {
    "id": "24.6.1-abertura-armadura-minima",
@@ -15293,7 +15369,7 @@
    "pagina_pdf": 230,
    "titulo": "Armadura mínima ao redor de aberturas (portas/janelas) em pilar-parede de concreto simples",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P41",
@@ -15303,7 +15379,18 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Checagem trivial de bitola e comprimento mínimos dados número de barras e diâmetro propostos.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_armadura_aberturas"
+    ],
+    "testes": [
+     "test_24_6_1_armadura_aberturas"
+    ],
+    "observacao": "Exige n >= 2, φ >= 10 mm e prolongamento >= 50 cm. A norma diz 'φ = 10 mm'; adotei que bitola maior também atende."
+   }
   },
   {
    "id": "24.6.1-qualitativo",
@@ -15325,7 +15412,7 @@
    "pagina_pdf": 230,
    "titulo": "Proibição de concreto simples em blocos sobre estacas",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P41",
@@ -15334,7 +15421,19 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "bloco_sobre_estaca=True -> reprovar uso de concreto simples.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "bloco_simples_permitido",
+     "verificar_bloco_fundacao_simples"
+    ],
+    "testes": [
+     "test_24_6_2_proibicao_sobre_estacas"
+    ],
+    "observacao": "bloco_simples_permitido devolve bool. A verificação levanta FaixaNormativaError para bloco sobre estacas."
+   }
   },
   {
    "id": "24.6.2-area-base-tensao-admissivel",
@@ -15342,7 +15441,7 @@
    "pagina_pdf": 230,
    "titulo": "Área da base de bloco de fundação de concreto simples a partir da tensão admissível do solo",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P41",
@@ -15355,7 +15454,18 @@
     "sapatas_nbr6118.area_base_cm2"
    ],
    "teste_sugerido": "Reusar os mesmos testes existentes de area_base_cm2, aplicados a um caso de bloco de concreto simples.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "area_base_bloco_simples_cm2"
+    ],
+    "testes": [
+     "test_24_6_2_area_base_reusa_sapatas"
+    ],
+    "observacao": "Reusa sapatas_nbr6118.area_base_cm2 com carga não majorada. O K_maj padrão é 1,1, como nas sapatas."
+   }
   },
   {
    "id": "24.6.2-espessura-bloco",
@@ -15363,7 +15473,7 @@
    "pagina_pdf": 230,
    "titulo": "Espessura mínima média de bloco de fundação de concreto simples",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P41",
@@ -15373,7 +15483,19 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "espessura=20cm -> ok; 19cm -> reprovado.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_espessura_bloco_simples"
+    ],
+    "testes": [
+     "test_24_6_2_espessura_media",
+     "test_24_6_2_verificar_bloco"
+    ],
+    "observacao": "Espessura média >= 20 cm."
+   }
   },
   {
    "id": "24.6.2-momento-secao-critica",
@@ -15381,7 +15503,7 @@
    "pagina_pdf": 230,
    "titulo": "Momento fletor majorado na seção crítica de bloco de concreto simples",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P41",
@@ -15393,7 +15515,20 @@
     "24.6.2-area-base-tensao-admissivel"
    ],
    "teste_sugerido": "Comparar contra o método CEB70 de sapatas rígidas para verificar coerência da posição da seção crítica (face da coluna).",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "momento_secao_critica_bloco_kncm",
+     "verificar_bloco_fundacao_simples"
+    ],
+    "testes": [
+     "test_24_6_2_momento_e_cortante_na_face",
+     "test_24_6_2_verificar_bloco"
+    ],
+    "observacao": "Momento na face da coluna: M = NSd·c²/(2L), com carga centrada e reação uniforme. A verificação usa tração elástica na fibra extrema, 6M/(b·h²) <= σctRd = 0,85·fctd (24.5.2.2), e h − 5 cm contra o solo (24.5.3). A norma só diz 'pelo método dos estados-limites'; o critério elástico é escolha deste módulo e está na docstring."
+   }
   },
   {
    "id": "24.6.2-cortante-limite",
@@ -15401,7 +15536,7 @@
    "pagina_pdf": 230,
    "titulo": "Força cortante majorada limite na seção crítica de bloco de concreto simples",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P41",
@@ -15413,7 +15548,20 @@
     "24.5.2.3-tau-wRd-flexao"
    ],
    "teste_sugerido": "VSd = Ac*tau_wRd exatamente no limite -> aprovado; qualquer excesso -> reprovado.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_secao_critica_bloco_kn",
+     "verificar_bloco_fundacao_simples"
+    ],
+    "testes": [
+     "test_24_6_2_momento_e_cortante_na_face",
+     "test_24_6_2_cortante_no_limite"
+    ],
+    "observacao": "VSd = NSd·c/L na face; VSd <= Ac·τwRd, com Ac = largura·h de cálculo e τwRd = 0,30·fctd (σcmd = 0)."
+   }
   },
   {
    "id": "24.6.3-remissao-pilar-parede",
@@ -15421,7 +15569,7 @@
    "pagina_pdf": 230,
    "titulo": "Cálculo de pilares de concreto simples pelo mesmo método dos pilares-parede",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P41",
@@ -15432,7 +15580,20 @@
     "24.6.1-NRd-pilar-parede"
    ],
    "teste_sugerido": "Aplicar a fórmula de NRd de pilar-parede a uma seção de pilar quadrado e conferir consistência dimensional.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "NRd_pilar_simples_kn",
+     "verificar_pilar_simples"
+    ],
+    "testes": [
+     "test_24_6_3_remissao_ao_pilar_parede",
+     "test_24_6_3_verificar_pilar"
+    ],
+    "observacao": "Delega a NRd_pilar_parede_kn com Ac = b·h e h = menor dimensão."
+   }
   },
   {
    "id": "24.6.3-nucleo-central-inercia",
@@ -15440,7 +15601,7 @@
    "pagina_pdf": 230,
    "titulo": "Carga dentro do núcleo central de inércia (pilares sem ações laterais) e verificação com ações laterais (sem tração no concreto)",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "parcial",
    "prioridade": "media",
    "complexidade": "G",
    "pacote": "P41",
@@ -15452,7 +15613,22 @@
     "24.5.2.2-tensoes-resistentes-fibra-extrema"
    ],
    "teste_sugerido": "Seção retangular b x h: núcleo central é |e|<=h/6 (e |e|<=b/6 na outra direção) -- conferir contra a fórmula clássica de resistência dos materiais.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dentro_nucleo_central",
+     "verificar_pilar_simples",
+     "verificar_pilar_simples_acao_lateral"
+    ],
+    "testes": [
+     "test_24_6_3_nucleo_central",
+     "test_24_6_3_acao_lateral",
+     "test_24_6_3_verificar_pilar"
+    ],
+    "observacao": "Sem ações laterais: núcleo central do retângulo, pela condição 6|ex|/hx + 6|ey|/hy <= 1 (losango). Com ações laterais: seção retangular em flexão reta, sem tração; a região comprimida tem de conter o centroide (e <= h/3) e σmax <= σcRd. Falta a flexão oblíqua com ação lateral e a seção não retangular."
+   }
   },
   {
    "id": "24.6.3-dimensao-minima",
@@ -15460,7 +15636,7 @@
    "pagina_pdf": 230,
    "titulo": "Dimensão mínima de pilar de concreto simples",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P41",
@@ -15470,7 +15646,19 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "altura=150cm -> min=20cm (governa o absoluto); altura=300cm -> min=30cm (governa 1/10).",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensao_minima_pilar_simples_cm"
+    ],
+    "testes": [
+     "test_24_6_3_dimensao_minima",
+     "test_24_6_3_verificar_pilar"
+    ],
+    "observacao": "Adotei max(20 cm; altura/10). A norma diz '20 cm ou 1/10 de sua altura' sem dizer qual prevalece, e fiquei com a leitura a favor da segurança (está na docstring)."
+   }
   },
   {
    "id": "24.6.4-sem-tracao",
@@ -15478,7 +15666,7 @@
    "pagina_pdf": 230,
    "titulo": "Ausência de tração em qualquer seção de arco de concreto simples no ELU",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "M",
    "pacote": "P41",
@@ -15489,7 +15677,20 @@
     "24.6.3-nucleo-central-inercia"
    ],
    "teste_sugerido": "Seção com resultante na borda do núcleo central -> tensão de borda oposta = 0 (limite exato).",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_sem_tracao",
+     "verificar_arco_sem_tracao"
+    ],
+    "testes": [
+     "test_24_6_4_sem_tracao_borda_do_nucleo",
+     "test_24_6_4_arco_varias_secoes"
+    ],
+    "observacao": "Seção retangular em regime linear: σmin >= 0, ou seja, e <= h/6. A versão para arco recebe uma lista de (N, M) e aponta a seção crítica."
+   }
   },
   {
    "id": "24.6.4-majoracao-2a-ordem",
@@ -15497,7 +15698,7 @@
    "pagina_pdf": 230,
    "titulo": "Majoração máxima de momento fletor por efeitos de 2ª ordem em arcos de concreto simples",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P41",
@@ -15507,7 +15708,19 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "M1=100 -> M2,max=110; qualquer majoração calculada acima de 10% deve ser truncada ou reprovada.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P41",
+    "data": "19/09/2026",
+    "funcoes": [
+     "momento_2a_ordem_max_arco_kncm",
+     "verificar_majoracao_2a_ordem_arco"
+    ],
+    "testes": [
+     "test_24_6_4_majoracao_2a_ordem"
+    ],
+    "observacao": "|M2d| <= 1,10·|M1d|. Acima disso reprova, sem truncar: a norma exige garantir a estabilidade e só admite considerar até 10 %."
+   }
   },
   {
    "id": "25.1-aceitacao-projeto",
