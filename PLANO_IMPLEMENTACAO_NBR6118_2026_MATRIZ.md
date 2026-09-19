@@ -456,21 +456,21 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 |---|---|---|---|---|---|---|---|
 | `18.1-simbologia` | 18.1 | 165 | Simbologia específica da Seção 18 | não computável | baixa | P |  |
 | `18.2.1-arranjo-armaduras` | 18.2.1 | 166 | Arranjo geral das armaduras (execução e adensamento) | não computável | baixa | P |  |
-| `18.2.2-diametro-curvatura-barra-longitudinal` | 18.2.2 | 166 | Diâmetro interno mínimo de curvatura de barra longitudinal dobrada (força cortante ou nó de pórtico) | ausente | média | P | P22 |
+| `18.2.2-diametro-curvatura-barra-longitudinal` | 18.2.2 | 166 | Diâmetro interno mínimo de curvatura de barra longitudinal dobrada (força cortante ou nó de pórtico) | implementado | média | P | P22 |
 | `18.2.2-fissuracao-plano-dobra` | 18.2.2 | 166 | Necessidade de armadura transversal ou diâmetro maior quando há risco de fissuração no plano da barra dobrada | não computável | baixa | P |  |
 | `18.2.3-mudanca-direcao-armaduras` | 18.2.3 | 166 | Mudança de direção de barras tracionadas (retificação, cobrimento insuficiente) | não computável | baixa | P |  |
 | `18.2.4-protecao-flambagem-barras` | 18.2.4 | 167 | Proteção contra flambagem das barras longitudinais junto à superfície (limite de 20·φt sem estribo suplementar) | ausente | média | M | P23 |
 | `18.3.1-generalidades-esbeltez-viga-x-viga-parede` | 18.3.1 | 167 | Classificação viga comum x viga-parede pela relação vão/altura (l/h) | implementado | média | P | P11 |
 | `18.3.2.1-as-min-flexao-viga-remissao` | 18.3.2.1 | 168 | Quantidade mínima de armadura longitudinal de flexão em vigas (remissão a 17.3.5) | implementado | alta | P |  |
-| `18.3.2.2-espacamento-longitudinal-vigas` | 18.3.2.2 | 168 | Espaçamento mínimo livre entre barras longitudinais de vigas (horizontal ah e vertical av) | ausente | alta | P | P22 |
-| `18.3.2.3.1-cobertura-diagrama-decalagem` | 18.3.2.3.1 | 168 | Cobertura do diagrama de força de tração solicitante pelo resistente (pontos A/B, decalagem al) - Figura 18.3 | parcial | alta | G | P22 |
-| `18.3.2.3.1-caso-ponto-A-na-face-apoio` | 18.3.2.3.1 | 169 | Caso especial: ponto A na face do apoio ou além dela, com Fsd decrescente em direção ao apoio | ausente | média | M | P22 |
-| `18.3.2.3.2-barras-nas-mesas` | 18.3.2.3.2 | 169 | Comprimento adicional para barras alojadas nas mesas/lajes que compõem a armadura da viga T | ausente | média | P | P22 |
+| `18.3.2.2-espacamento-longitudinal-vigas` | 18.3.2.2 | 168 | Espaçamento mínimo livre entre barras longitudinais de vigas (horizontal ah e vertical av) | implementado | alta | P | P22 |
+| `18.3.2.3.1-cobertura-diagrama-decalagem` | 18.3.2.3.1 | 168 | Cobertura do diagrama de força de tração solicitante pelo resistente (pontos A/B, decalagem al) - Figura 18.3 | implementado | alta | G | P22 |
+| `18.3.2.3.1-caso-ponto-A-na-face-apoio` | 18.3.2.3.1 | 169 | Caso especial: ponto A na face do apoio ou além dela, com Fsd decrescente em direção ao apoio | implementado | média | M | P22 |
+| `18.3.2.3.2-barras-nas-mesas` | 18.3.2.3.2 | 169 | Comprimento adicional para barras alojadas nas mesas/lajes que compõem a armadura da viga T | implementado | média | P | P22 |
 | `18.3.2.4-armadura-tracao-apoio-condicoes` | 18.3.2.4 | 169 | Envoltória de condições para armadura de tração junto aos apoios (a,b,c,d) | não computável | alta | P |  |
-| `18.3.2.4-b-forca-tracao-apoio-extremo` | 18.3.2.4-b | 169 | Força de tração de cálculo Fsd para ancorar a diagonal de compressão em apoio extremo | ausente | alta | P | P22 |
-| `18.3.2.4-c-fracao-as-vao` | 18.3.2.4-c | 170 | Armadura mínima de apoio por prolongamento de fração da armadura do vão | ausente | alta | P | P22 |
+| `18.3.2.4-b-forca-tracao-apoio-extremo` | 18.3.2.4-b | 169 | Força de tração de cálculo Fsd para ancorar a diagonal de compressão em apoio extremo | implementado | alta | P | P22 |
+| `18.3.2.4-c-fracao-as-vao` | 18.3.2.4-c | 170 | Armadura mínima de apoio por prolongamento de fração da armadura do vão | implementado | alta | P | P22 |
 | `18.3.2.4-d-apoio-extremo-momento-negativo` | 18.3.2.4-d | 170 | Apoio extremo com momento negativo: armadura pelo dimensionamento, ancorada conforme 18.3.2.4.1 | não computável | média | P |  |
-| `18.3.2.4.1-ancoragem-apoio` | 18.3.2.4.1 | 170 | Comprimento mínimo de ancoragem da armadura de tração a partir da face do apoio | parcial | alta | M | P22 |
+| `18.3.2.4.1-ancoragem-apoio` | 18.3.2.4.1 | 170 | Comprimento mínimo de ancoragem da armadura de tração a partir da face do apoio | implementado | alta | M | P22 |
 | `18.3.3.1-generalidades-armadura-transversal-cortante` | 18.3.3.1 | 170 | Tipos de armadura transversal para força cortante (estribos, barras dobradas, telas soldadas), remissão a 17.4 | não computável | alta | P |  |
 | `18.3.3.2-diametro-min-max-estribo` | 18.3.3.2 | 170 | Diâmetro mínimo e máximo da barra de estribo para força cortante | ausente | alta | P | P23 |
 | `18.3.3.2-barras-amarracao-canto-estribo` | 18.3.3.2 | 171 | Diâmetro mínimo de barra de amarração/canto quando não há barra longitudinal calculada no canto do estribo | ausente | média | P | P23 |
@@ -502,7 +502,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `18.5-pilar-parede-esforcos-transversais-remissao-secao15` | 18.5 | 174 | Pilar-parede: exigência adicional de considerar 1a e 2a ordem transversal (Seção 15), inclusive 2a ordem localizada | não computável | média | P |  |
 | `18.5-armadura-transversal-pilar-parede-25pct` | 18.5 | 174 | Armadura transversal mínima de pilar-parede (25% da longitudinal por metro de face, se flexão de placa não for calculada) | ausente | média | P | P29 |
 | `18.6.1.1-tracado-qualitativo` | 18.6.1.1 | 175 | Traçado admissível dos cabos de protensão | não computável | baixa | P |  |
-| `18.6.1.1-FSd-apoio-intermediario` | 18.6.1.1 | 175 | Força de tração da armadura em apoios intermediários | ausente | média | P | P22 |
+| `18.6.1.1-FSd-apoio-intermediario` | 18.6.1.1 | 175 | Força de tração da armadura em apoios intermediários | implementado | média | P | P22 |
 | `18.6.1.2-raio-minimo-curvatura` | 18.6.1.2 | 175 | Raio mínimo de curvatura dos cabos de protensão | ausente | média | P | P31 |
 | `18.6.1.3-curvatura-ancoragens-qualitativo` | 18.6.1.3 | 175 | Curvatura nas proximidades das ancoragens | não computável | baixa | P |  |
 | `18.6.1.4-fixacao-execucao-qualitativo` | 18.6.1.4 | 175 | Fixação da armadura de protensão durante a execução | não computável | baixa | P |  |

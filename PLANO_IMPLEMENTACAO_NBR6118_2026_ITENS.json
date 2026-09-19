@@ -171,7 +171,8 @@
    "nome": "Detalhamento de vigas: armadura longitudinal",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/detalhamento_vigas_nbr6118.py"
+   "modulo": "dimensionamento/detalhamento_vigas_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P23",
@@ -10171,7 +10172,7 @@
    "pagina_pdf": 166,
    "titulo": "Diâmetro interno mínimo de curvatura de barra longitudinal dobrada (força cortante ou nó de pórtico)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P22",
@@ -10185,7 +10186,23 @@
     "sec9.diam_pino_dobramento"
    ],
    "teste_sugerido": "CA-50, phi=20mm -> D_int_min = 300mm (15x20). Caso limite sigma_s=fyd nao reduz nada; sigma_s=0 reduziria ate o minimo do gancho da Tabela 9.1.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P22",
+    "data": "19/09/2026",
+    "funcoes": [
+     "diametro_curvatura_barra_dobrada_mm"
+    ],
+    "testes": [
+     "test_curvatura_por_categoria",
+     "test_curvatura_reducao_proporcional",
+     "test_curvatura_reducao_limitada_ao_gancho",
+     "test_curvatura_multiplica_pelo_numero_de_barras",
+     "test_curvatura_multiplicacao_dos_dois_lados_do_limite",
+     "test_curvatura_fora_da_faixa"
+    ],
+    "observacao": "Agora também valida os espaçamentos informados (livre >= 0, mínimo > 0)."
+   }
   },
   {
    "id": "18.2.2-fissuracao-plano-dobra",
@@ -10288,7 +10305,7 @@
    "pagina_pdf": 168,
    "titulo": "Espaçamento mínimo livre entre barras longitudinais de vigas (horizontal ah e vertical av)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P22",
@@ -10298,7 +10315,23 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "phi=20mm, dmax_agregado=19mm: ah_min=max(20,20,22.8)=22.8mm; av_min=max(20,20,9.5)=20mm. Feixe de 3 barras de 16mm: phi_n=16*sqrt(3)=27.7mm.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P22",
+    "data": "19/09/2026",
+    "funcoes": [
+     "ah_min_cm",
+     "av_min_cm"
+    ],
+    "testes": [
+     "test_ah_phi20_brita19_governa_agregado",
+     "test_av_phi20_brita19_governa_20mm_e_diametro",
+     "test_feixe_3_phi16_usa_phi_n",
+     "test_luva_entra_no_maximo",
+     "test_espacamento_fora_da_faixa"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "18.3.2.3.1-cobertura-diagrama-decalagem",
@@ -10306,7 +10339,7 @@
    "pagina_pdf": 168,
    "titulo": "Cobertura do diagrama de força de tração solicitante pelo resistente (pontos A/B, decalagem al) - Figura 18.3",
    "tipo": "procedimento",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "G",
    "pacote": "P22",
@@ -10321,7 +10354,23 @@
     "ancoragem_nbr6118.comprimento_ancoragem"
    ],
    "teste_sugerido": "Viga biapoiada com carga uniforme: verificar que o ponto de corte pelo diagrama decalado coincide com a envoltoria classica de apostila.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P22",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cobertura_diagrama",
+     "_corte_lado"
+    ],
+    "testes": [
+     "test_cobertura_decalagem_e_totais",
+     "test_cobertura_barra_1_a_mao",
+     "test_cobertura_barra_2_a_mao",
+     "test_cobertura_diagrama_linearizado_governa",
+     "test_cobertura_armadura_insuficiente"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "18.3.2.3.1-caso-ponto-A-na-face-apoio",
@@ -10329,7 +10378,7 @@
    "pagina_pdf": 169,
    "titulo": "Caso especial: ponto A na face do apoio ou além dela, com Fsd decrescente em direção ao apoio",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P22",
@@ -10342,7 +10391,21 @@
     "18.3.2.4-b-forca-tracao-apoio-extremo"
    ],
    "teste_sugerido": "Viga em balanco curto com M maximo no apoio: checar ancoragem medida a partir da face do apoio.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P22",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cobertura_diagrama",
+     "_corte_lado"
+    ],
+    "testes": [
+     "test_cobertura_ponto_A_na_face_do_apoio",
+     "test_cobertura_ponto_A_dentro_do_vao_nao_marca_face",
+     "test_cobertura_ponto_A_alem_da_face_com_forca_crescendo_para_o_apoio"
+    ],
+    "observacao": "Agora exige também que Fsd,cor diminua em direção ao centro do apoio. Se o diagrama termina na face, a condição é tomada como satisfeita, e a docstring registra isso."
+   }
   },
   {
    "id": "18.3.2.3.2-barras-nas-mesas",
@@ -10350,7 +10413,7 @@
    "pagina_pdf": 169,
    "titulo": "Comprimento adicional para barras alojadas nas mesas/lajes que compõem a armadura da viga T",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P22",
@@ -10362,7 +10425,20 @@
     "18.3.2.3.1-cobertura-diagrama-decalagem"
    ],
    "teste_sugerido": "Barra a 15cm da alma em viga T: ponto de corte = ponto de 18.3.2.3.1 + 15cm.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P22",
+    "data": "19/09/2026",
+    "funcoes": [
+     "comprimento_adicional_mesa_cm",
+     "cobertura_diagrama"
+    ],
+    "testes": [
+     "test_comprimento_adicional_mesa",
+     "test_cobertura_barra_na_mesa_soma_distancia_a_alma"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "18.3.2.4-armadura-tracao-apoio-condicoes",
@@ -10388,7 +10464,7 @@
    "pagina_pdf": 169,
    "titulo": "Força de tração de cálculo Fsd para ancorar a diagonal de compressão em apoio extremo",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P22",
@@ -10401,7 +10477,22 @@
     "viga_servico.decalagem_modelo_II"
    ],
    "teste_sugerido": "NSd=0: Fsd=MSd/z+(al/d)*VSd. MSd=0 (apoio simples sem momento): Fsd=(al/d)*VSd, comparar com envoltoria minima de exemplos de apostila.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P22",
+    "data": "19/09/2026",
+    "funcoes": [
+     "FSd_apoio_extremo_kn"
+    ],
+    "testes": [
+     "test_FSd_extremo_sem_momento",
+     "test_FSd_extremo_com_tracao_normal",
+     "test_FSd_extremo_com_momento_positivo",
+     "test_FSd_extremo_momento_negativo_fica_no_piso",
+     "test_FSd_extremo_fora_da_faixa"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "18.3.2.4-c-fracao-as-vao",
@@ -10409,7 +10500,7 @@
    "pagina_pdf": 170,
    "titulo": "Armadura mínima de apoio por prolongamento de fração da armadura do vão",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P22",
@@ -10419,7 +10510,22 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Mapoio=0, As_vao=6cm2 -> As_apoio_min=2cm2. No limite |Mapoio|=0,5*Mvao cai no ramo de 1/3 (mais exigente), nao no de 1/4 - conferir que a implementacao usa <= no primeiro ramo.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P22",
+    "data": "19/09/2026",
+    "funcoes": [
+     "fracao_As_vao_no_apoio",
+     "armadura_tracao_apoio"
+    ],
+    "testes": [
+     "test_fracao_limite_exato_meio_mvao_da_um_terco",
+     "test_fracao_logo_acima_do_limite_da_um_quarto",
+     "test_armadura_apoio_governa_fracao",
+     "test_armadura_apoio_um_quarto"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "18.3.2.4-d-apoio-extremo-momento-negativo",
@@ -10444,7 +10550,7 @@
    "pagina_pdf": 170,
    "titulo": "Comprimento mínimo de ancoragem da armadura de tração a partir da face do apoio",
    "tipo": "limite",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P22",
@@ -10458,7 +10564,22 @@
     "sec9.diam_pino_dobramento"
    ],
    "teste_sugerido": "CA-50, phi=16mm, C25, boa aderencia: comparar lb_nec com r+5,5*16 e 60mm, tomar o maior. Verificar queda para 10*phi no caso apoio intermediario sem risco de momento positivo.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P22",
+    "data": "19/09/2026",
+    "funcoes": [
+     "ancoragem_no_apoio_cm"
+    ],
+    "testes": [
+     "test_ancoragem_apoio_governa_lb_nec_C25_phi16",
+     "test_ancoragem_apoio_governa_r_mais_5_5phi",
+     "test_ancoragem_apoio_governa_60mm",
+     "test_ancoragem_apoio_intermediario_caso_c_10phi",
+     "test_ancoragem_apoio_ca60_phi20_tabela_9_1_nao_define"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "18.3.3.1-generalidades-armadura-transversal-cortante",
@@ -11193,7 +11314,7 @@
    "pagina_pdf": 175,
    "titulo": "Força de tração da armadura em apoios intermediários",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P22",
@@ -11204,7 +11325,22 @@
    "depende_de": [
     "18.3.2.4-armadura-apoio"
    ],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P22",
+    "data": "19/09/2026",
+    "funcoes": [
+     "FSd_apoio_intermediario_kn",
+     "FSd_apoio_intermediario_max_kn"
+    ],
+    "testes": [
+     "test_FSd_intermediario_formula",
+     "test_FSd_intermediario_minimo_dos_dois_lados",
+     "test_FSd_intermediario_maior_dos_lados",
+     "test_FSd_intermediario_fora_da_faixa"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "18.6.1.2-raio-minimo-curvatura",
