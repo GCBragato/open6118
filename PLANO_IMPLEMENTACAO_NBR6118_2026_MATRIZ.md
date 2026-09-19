@@ -396,7 +396,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `17.3.1-momento-fissuracao` | 17.3.1 | 145 | Momento de fissuração Mr | implementado | alta | M | P8 |
 | `17.3.2.1.1-flecha-imediata-rigidez-equivalente` | 17.3.2.1.1 | 146 | Rigidez equivalente (EI)eq para flecha imediata (Branson) | implementado | alta | M | P8 |
 | `17.3.2.1.2-flecha-diferida-alphaf-xi` | 17.3.2.1.2 | 147 | Coeficiente de fluência para flecha diferida (αf e ξ(t)) | implementado | alta | P | P8 |
-| `17.3.2.1.3-flecha-armaduras-ativas` | 17.3.2.1.3 | 148 | Flecha em elementos com armaduras ativas | parcial | média | M | P32 |
+| `17.3.2.1.3-flecha-armaduras-ativas` | 17.3.2.1.3 | 148 | Flecha em elementos com armaduras ativas | implementado | média | M | P32 |
 | `17.3.3.2-abertura-fissura-wk` | 17.3.3.2 | 149 | Abertura característica de fissuras wk (Eq. 86 / Eq. 87) | implementado | alta | P |  |
 | `17.3.3.2-area-envolvimento-acri` | 17.3.3.2 | 149 | Geometria da área de envolvimento Acri (Figura 17.4) | implementado | média | M | P9 |
 | `17.3.3.3-tabela-17.2-controle-sem-wk` | 17.3.3.3 | 150 | Tabela 17.2 -- controle da fissuração sem verificar wk | implementado | média | P | P9 |
@@ -524,7 +524,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `19.1-simbologia` | 19.1 | 178 | Simbologia específica da seção 19 (lajes) | não computável | baixa | P |  |
 | `19.2-principios-elu` | 19.2 | 179 | Princípios do ELU de lajes (flexão e forças normais) | implementado | alta | P | P17 |
 | `19.3.1-els-deformacao` | 19.3.1 | 179 | ELS de deformação de lajes remete a 17.3.2 | implementado | alta | M | P8 |
-| `19.3.2-els-fissuracao` | 19.3.2 | 179 | ELS de fissuração/descompressão em lajes remete a 17.3.3 e 17.3.4 | parcial | alta | M | P9 |
+| `19.3.2-els-fissuracao` | 19.3.2 | 179 | ELS de fissuração/descompressão em lajes remete a 17.3.3 e 17.3.4 | implementado | alta | M | P9 |
 | `19.3.3.1-principios-as-max-min` | 19.3.3.1 | 179 | Princípios básicos de armaduras máximas e mínimas de laje | implementado | alta | P |  |
 | `19.3.3.2-extensao-armadura-negativa-borda` | 19.3.3.2 | 179 | Extensão mínima da armadura negativa de borda sem continuidade | implementado | alta | P | P17 |
 | `19.3.3.2-tab19.1-as-min` | 19.3.3.2 / Tabela 19.1 | 180 | Tabela 19.1 - valores mínimos para armaduras passivas aderentes de laje | implementado | alta | M | P17 |

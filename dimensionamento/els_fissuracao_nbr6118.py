@@ -660,3 +660,189 @@ def As_min_deformacao_imposta(
 FCTEF_MINIMO_RECOMENDADO_MPA = 3.0
 """Valor mínimo de fct,ef recomendado pela norma (17.3.5.2.2, PDF p. 152)
 quando a idade de fissuração não puder ser definida com valor confiável."""
+
+
+# === F2: 19.3.2 -- descompressão e formação de fissuras em laje protendida
+# (17.3.4, PDF p. 150-151) e ponto de entrada único do ELS de fissuração de
+# laje (PDF p. 179) ===
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import protendido_nbr6118 as _pt_f2
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import protendido_nbr6118 as _pt_f2
+
+
+def verificar_descompressao_laje(
+    P_kn: float, ep_cm: float, M_kncm: float,
+    b_cm: float, h_cm: float,
+    estado: str = "ELS-D", fck_mpa: float | None = None,
+    sinal_P: int = -1,
+) -> "_pt_f2.ResultadoDescompressaoFissuracao":
+    """Estado-limite de descompressão (ELS-D) ou de formação de fissuras
+    (ELS-F) de uma faixa de laje protendida, NBR 6118:2026 19.3.2 (PDF
+    p. 179), que remete aos "critérios dados em 17.3.3 e 17.3.4", e 17.3.4
+    (PDF p. 150-151): "nos elementos estruturais onde se utilizam armaduras
+    de protensão, pode ser necessária a verificação da segurança em relação
+    aos estados-limites de descompressão e de formação de fissuras. Essa
+    verificação pode ser feita calculando-se a máxima tensão de tração do
+    concreto no estádio I (concreto não fissurado e comportamento elástico
+    linear dos materiais)".
+
+    A laje entra como uma faixa retangular de largura b_cm (a largura da
+    faixa considerada, tipicamente 100 cm) e altura h_cm, com
+
+        Ac = b·h    e    Wb = Wt = b·h²/6
+
+    (``protendido_nbr6118.Ac_retangular`` e ``W_retangular``), e a
+    verificação em si é a de viga, ``protendido_nbr6118.
+    verificar_descompressao_fissuracao`` — a norma não dá fórmula própria
+    para laje, e é exatamente isso que 19.3.2 quer dizer.
+
+    P_kn: força de protensão na faixa, depois das perdas consideradas na
+    combinação (kN). ep_cm: excentricidade do cabo em relação ao centroide
+    da faixa (cm). M_kncm: momento fletor na faixa para a combinação de
+    ações do estado-limite verificado (kN.cm; qual combinação vai com cada
+    estado-limite está na Tabela 13.4 — ``nucleo_nbr6118.wk_max_mm``, e
+    ``verificar_els_laje_protendida`` já faz essa escolha).
+    estado: 'ELS-D' (tensão-limite de tração nula) ou 'ELS-F' (tensão-limite
+    de 17.2.4.4.2, que exige fck_mpa). sinal_P: convenção de
+    ``protendido_nbr6118.sigma_base_topo`` (-1, o padrão, com P entrando em
+    módulo e comprimindo a seção).
+    """
+    if b_cm <= 0.0 or h_cm <= 0.0:
+        raise ValueError("b_cm e h_cm devem ser positivos.")
+    Ac = _pt_f2.Ac_retangular(b_cm, h_cm)
+    W = _pt_f2.W_retangular(b_cm, h_cm)
+    return _pt_f2.verificar_descompressao_fissuracao(
+        P_kn=P_kn, ep_cm=ep_cm, M_kncm=M_kncm,
+        Ac_cm2=Ac, Wb_cm3=W, Wt_cm3=W,
+        estado=estado, fck_mpa=fck_mpa, secao="retangular", sinal_P=sinal_P,
+    )
+
+
+@dataclass(frozen=True)
+class ResultadoELSLajeProtendida:
+    """ELS de fissuração/descompressão de uma faixa de laje, NBR 6118:2026
+    19.3.2 (PDF p. 179), com o critério escolhido pela Tabela 13.4."""
+    criterio: str
+    exigencia_tabela_13_4: str
+    wk_max_mm: float | None
+    fissuracao: "vserv.ResultadoFissuracao | None"
+    els_f: "_pt_f2.ResultadoDescompressaoFissuracao | None"
+    els_d: "_pt_f2.ResultadoDescompressaoFissuracao | None"
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_els_laje_protendida(
+    caa: str, b_cm: float, h_cm: float, fck_mpa: float,
+    tipo_concreto: str = "protendido",
+    nivel_protensao: int | None = None,
+    tipo_protensao: str | None = None,
+    P_kn: float | None = None, ep_cm: float = 0.0,
+    M_els_f_kncm: float | None = None, M_els_d_kncm: float | None = None,
+    phi_mm: float | None = None, sigma_si_kncm2: float | None = None,
+    Acr_cm2: float | None = None, As_cm2: float | None = None,
+    eta1_val: float = 2.25, sinal_P: int = -1,
+) -> ResultadoELSLajeProtendida:
+    """Ponto de entrada único do estado-limite de fissuração de uma faixa de
+    laje, NBR 6118:2026 19.3.2 (PDF p. 179): "devem ser usados os critérios
+    dados em 17.3.3 e 17.3.4".
+
+    Qual dos dois critérios se aplica não está em 19.3.2, e sim na Tabela
+    13.4 (13.4.2, PDF p. 100-101), consultada aqui por
+    ``nucleo_nbr6118.wk_max_mm``:
+
+    - quando a Tabela 13.4 dá um wk,máx (concreto armado, e protendido de
+      nível 1 — protensão parcial), o critério é o de 17.3.3, abertura de
+      fissura, e a função chama ``wk_verificacao`` (que é a mesma
+      ``viga_servico_nbr6118.abertura_fissura_wk``, com a largura da faixa
+      de laje no lugar de bw): exige phi_mm, sigma_si_kncm2, Acr_cm2 e
+      As_cm2;
+    - quando a Tabela 13.4 não dá wk,máx (protendido de níveis 2 e 3), a
+      exigência são duas verificações de tensão de 17.3.4, ELS-F e ELS-D,
+      cada uma com a sua combinação de ações, e a função chama
+      ``verificar_descompressao_laje`` duas vezes: exige P_kn,
+      M_els_f_kncm e M_els_d_kncm (os momentos da faixa em cada uma das
+      duas combinações, calculados por quem chama — ``acoes_nbr6118``, P4).
+
+    O texto da exigência da Tabela 13.4 (com o nome da combinação de cada
+    verificação) vai em ``exigencia_tabela_13_4`` e na memória de cálculo.
+    Par CAA/nível fora da Tabela 13.4 levanta ``FaixaNormativaError`` (vem
+    do núcleo). b_cm é a largura da faixa de laje considerada (tipicamente
+    100 cm) e h_cm a espessura.
+    """
+    limite_wk, exigencia = nbr.wk_max_mm(
+        tipo_concreto, caa, nivel_protensao, tipo_protensao)
+    memoria = [
+        f"19.3.2 (p. 179): os critérios do ELS de fissuração de laje são os "
+        f"de 17.3.3 e 17.3.4, aplicados à faixa de b = {b_cm:g} cm e "
+        f"h = {h_cm:g} cm.",
+        f"Tabela 13.4 (13.4.2, p. 100-101), {tipo_concreto}, CAA "
+        f"{nbr.normalizar_caa(caa)}: exigência = {exigencia}.",
+    ]
+
+    if limite_wk is not None:
+        faltando = [nome for nome, valor in (
+            ("phi_mm", phi_mm), ("sigma_si_kncm2", sigma_si_kncm2),
+            ("Acr_cm2", Acr_cm2), ("As_cm2", As_cm2)) if valor is None]
+        if faltando:
+            raise ValueError(
+                "A Tabela 13.4 exige a verificação da abertura de fissura "
+                f"(17.3.3, wk,máx = {limite_wk:g} mm) neste caso: informe "
+                + ", ".join(faltando) + "."
+            )
+        r_wk = wk_verificacao(
+            phi_mm=phi_mm, sigma_si_kncm2=sigma_si_kncm2, Acr_cm2=Acr_cm2,
+            As_cm2=As_cm2, fck_mpa=fck_mpa, eta1_val=eta1_val,
+            caa=caa, tipo_concreto=tipo_concreto,
+            nivel_protensao=nivel_protensao, tipo_protensao=tipo_protensao,
+        )
+        memoria.append(
+            f"17.3.3 (p. 149-150): wk = {r_wk.wk_mm:.4f} mm "
+            f"{'<=' if r_wk.ok else '>'} wk,máx = {r_wk.wk_max_mm:g} mm -> "
+            f"{'ok' if r_wk.ok else 'não ok'}."
+        )
+        return ResultadoELSLajeProtendida(
+            criterio="17.3.3 (abertura de fissura)",
+            exigencia_tabela_13_4=exigencia,
+            wk_max_mm=limite_wk,
+            fissuracao=r_wk, els_f=None, els_d=None,
+            ok=bool(r_wk.ok),
+            governante=("abertura de fissura dentro do limite" if r_wk.ok
+                        else "abertura de fissura acima do limite"),
+            memoria=tuple(memoria),
+        )
+
+    faltando = [nome for nome, valor in (
+        ("P_kn", P_kn), ("M_els_f_kncm", M_els_f_kncm),
+        ("M_els_d_kncm", M_els_d_kncm)) if valor is None]
+    if faltando:
+        raise ValueError(
+            "A Tabela 13.4 exige as verificações de tensão de 17.3.4 neste "
+            f"caso ({exigencia}): informe " + ", ".join(faltando) + "."
+        )
+    r_f = verificar_descompressao_laje(
+        P_kn=P_kn, ep_cm=ep_cm, M_kncm=M_els_f_kncm, b_cm=b_cm, h_cm=h_cm,
+        estado="ELS-F", fck_mpa=fck_mpa, sinal_P=sinal_P)
+    r_d = verificar_descompressao_laje(
+        P_kn=P_kn, ep_cm=ep_cm, M_kncm=M_els_d_kncm, b_cm=b_cm, h_cm=h_cm,
+        estado="ELS-D", fck_mpa=fck_mpa, sinal_P=sinal_P)
+    memoria.extend(r_f.memoria)
+    memoria.extend(r_d.memoria)
+    ok = bool(r_f.ok and r_d.ok)
+    if ok:
+        governante = "ELS-F e ELS-D atendidos"
+    elif not r_f.ok and not r_d.ok:
+        governante = "ELS-F e ELS-D não atendidos"
+    elif not r_f.ok:
+        governante = "ELS-F não atendido"
+    else:
+        governante = "ELS-D não atendido"
+    return ResultadoELSLajeProtendida(
+        criterio="17.3.4 (descompressão e formação de fissuras)",
+        exigencia_tabela_13_4=exigencia,
+        wk_max_mm=None,
+        fissuracao=None, els_f=r_f, els_d=r_d,
+        ok=ok, governante=governante, memoria=tuple(memoria),
+    )

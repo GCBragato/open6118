@@ -3496,6 +3496,205 @@ def flecha_total_protendido(
     return fv + fp * (1.0 + abs(float(phi)))
 
 
+# === F2: 17.3.2.1.3 — fluxo completo da flecha de elemento protendido
+# (rigidez -> flecha imediata -> flecha total -> limite da Tabela 13.3;
+# PDF p. 148 e 97-99) ===
+import warnings as _warnings_f2  # noqa: E402
+
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import els_deformacao_nbr6118 as _els_f2
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import els_deformacao_nbr6118 as _els_f2
+
+
+@dataclass(frozen=True)
+class ResultadoFlechaTotalProtendido:
+    """Verificação da flecha de um elemento com armaduras ativas, NBR
+    6118:2026 17.3.2.1.3 (PDF p. 148) contra a Tabela 13.3 (PDF p. 97-99)."""
+    EI_eq_kncm2: float
+    fissurado: bool
+    Mr_protendido_kncm: float
+    Ma_kncm: float
+    f_imediata_permanente_cm: float
+    f_imediata_variavel_cm: float
+    f_imediata_cm: float
+    phi: float
+    f_diferida_cm: float
+    f_total_cm: float
+    categoria: str
+    vao_limite_cm: float
+    limite_cm: float | None
+    descricao_limite: str
+    ok: bool | None
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_flecha_protendido(
+    x_cm, M_permanente_kncm, M_variavel_kncm,
+    Ecs_kncm2: float, Ic_cm4: float, III_cm4: float,
+    Mr_sem_protensao_kncm: float,
+    P_kn: float, ep_cm: float, Ac_cm2: float, W_cm3: float,
+    phi: float, categoria: str,
+    esquema: str = "biapoiada", x_flecha_cm: float | None = None,
+    vao_limite_cm: float | None = None,
+    barras_lisas: bool = False, contraflecha_cm: float = 0.0,
+) -> ResultadoFlechaTotalProtendido:
+    """Monta o fluxo inteiro da flecha de um elemento com armaduras ativas,
+    NBR 6118:2026 17.3.2.1.3 (PDF p. 148), e o compara com o
+    deslocamento-limite da Tabela 13.3 (13.3, PDF p. 97-99):
+
+    1) (EI)eq de 17.3.2.1.3 (``flecha_protendido``): Ecs·Ic enquanto não se
+       ultrapassa o estado-limite de formação de fissuras (|Ma| <= Mr,p) e,
+       caso contrário, a expressão completa de 17.3.2.1.1
+       (``els_deformacao_nbr6118.rigidez_equivalente_kncm2``), com Mr
+       calculado com a protensão como ação externa equivalente
+       (``momento_fissuracao_protendido_kncm``);
+    2) flecha imediata de cada parcela, por integração da curvatura ao longo
+       do vão com essa rigidez
+       (``els_deformacao_nbr6118.flecha_imediata_curvatura_cm``);
+    3) flecha total pela regra de 17.3.2.1.3 — "basta multiplicar a parcela
+       permanente da flecha imediata acima referida por (1 + φ), onde φ é o
+       coeficiente de fluência" (``flecha_total_protendido``):
+
+           f_total = f_imediata,variável + f_imediata,permanente·(1 + φ)
+
+       Repare que é (1 + φ), com o φ de 8.2.11/Anexo A (P6/P7, informado por
+       quem chama), e não o (1 + alfa_f) de 17.3.2.1.2, que vale para
+       elementos com armadura passiva — por isso esta função não reusa
+       ``els_deformacao_nbr6118.verificar_flecha``, que aplica alfa_f;
+    4) deslocamento-limite da Tabela 13.3
+       (``els_deformacao_nbr6118.deslocamento_limite``), com
+       ``AvisoNBR6118`` quando a flecha total passa do limite.
+
+    x_cm: estações ao longo do vão, em cm. M_permanente_kncm e
+    M_variavel_kncm: o momento fletor de cada parcela em cada estação, em
+    kN.cm, na combinação de ações escolhida para esta avaliação
+    (M_variavel_kncm aceita None, quando só há parcela permanente).
+
+    Convenção da protensão (importante para não contar duas vezes): aqui a
+    protensão entra pelo momento de fissuração, isto é, Mr,p =
+    Mr_sem_protensao + |P|·(ep + W/Ac), e os diagramas de momento são os das
+    ações externas da combinação. Se preferir representar a protensão como
+    ação externa equivalente dentro dos próprios diagramas de momento (o
+    outro caminho que 17.3.2.1.3 autoriza, "acrescida da protensão
+    representada como ação externa equivalente"), chame com P_kn = 0 para
+    que o efeito não seja somado de novo em Mr.
+
+    Ma segue 17.3.2.1.1 ("o momento máximo no vão para vigas biapoiadas ou
+    contínuas e momento no apoio para balanços"): com esquema='biapoiada' é
+    o máximo de |M_permanente + M_variavel| entre as estações; com
+    esquema='balanco' é o valor no engaste, x_cm[0].
+
+    vao_limite_cm: o vão l da Tabela 13.3. O padrão é o comprimento
+    x_cm[-1] − x_cm[0] na viga biapoiada e o dobro dele no balanço
+    (13.3, NOTA 1 — ``els_deformacao_nbr6118.vao_equivalente``).
+    categoria, contraflecha_cm: ver ``deslocamento_limite``; categoria sem
+    limite numérico ('equipamento_sensivel') devolve ok = None.
+    Demais parâmetros: ver ``flecha_protendido`` e
+    ``flecha_imediata_curvatura_cm``.
+    """
+    xs = [float(v) for v in x_cm]
+    mp = [float(v) for v in M_permanente_kncm]
+    mv = ([0.0] * len(xs) if M_variavel_kncm is None
+          else [float(v) for v in M_variavel_kncm])
+    if len(mp) != len(xs) or len(mv) != len(xs):
+        raise ValueError(
+            "M_permanente_kncm e M_variavel_kncm precisam ter um valor por "
+            "estação de x_cm."
+        )
+    chave_esq = _chave_p30(esquema).replace("_", "")
+    if chave_esq in ("biapoiada", "biapoiado"):
+        chave_esq = "biapoiada"
+    elif chave_esq in ("balanco", "embalanco"):
+        chave_esq = "balanco"
+    else:
+        raise ValueError(
+            f"esquema deve ser 'biapoiada' ou 'balanco'; recebido {esquema!r}."
+        )
+
+    total = [mp[i] + mv[i] for i in range(len(xs))]
+    Ma = abs(total[0]) if chave_esq == "balanco" else max(abs(m) for m in total)
+
+    r_ei = flecha_protendido(
+        Ecs_kncm2, Ic_cm4, III_cm4, Mr_sem_protensao_kncm, Ma,
+        P_kn, ep_cm, Ac_cm2, W_cm3, barras_lisas)
+
+    f_perm = _els_f2.flecha_imediata_curvatura_cm(
+        xs, mp, r_ei.EI_eq_kncm2, chave_esq, x_flecha_cm)
+    f_var = _els_f2.flecha_imediata_curvatura_cm(
+        xs, mv, r_ei.EI_eq_kncm2, chave_esq, x_flecha_cm)
+    f_imediata = f_perm + f_var
+    f_total = flecha_total_protendido(f_perm, phi, f_var)
+
+    comprimento = xs[-1] - xs[0]
+    if vao_limite_cm is None:
+        l_lim = (_els_f2.vao_equivalente("balanco", comprimento)
+                 if chave_esq == "balanco" else comprimento)
+    else:
+        l_lim = float(vao_limite_cm)
+
+    limite, descricao = _els_f2.deslocamento_limite(
+        categoria, vao_cm=l_lim, contraflecha_cm=contraflecha_cm)
+
+    memoria = [
+        *r_ei.memoria,
+        f"17.3.2.1.1 (p. 146): Ma = {_fmt_p30(Ma)} kN.cm "
+        + ("(momento no apoio, balanço)." if chave_esq == "balanco"
+           else "(momento máximo no vão)."),
+        f"Flecha imediata por integração da curvatura com (EI)eq = "
+        f"{_fmt_p30(r_ei.EI_eq_kncm2)} kN.cm2: permanente = "
+        f"{_fmt_p30(f_perm)} cm, variável = {_fmt_p30(f_var)} cm.",
+        f"17.3.2.1.3 (p. 148): f_total = f_variável + f_permanente·(1 + φ) = "
+        f"{_fmt_p30(f_var)} + {_fmt_p30(f_perm)}·(1 + {_fmt_p30(abs(float(phi)))}) "
+        f"= {_fmt_p30(f_total)} cm.",
+        descricao,
+    ]
+
+    if limite is None:
+        ok = None
+        governante = "sem limite numérico (recomendação do fabricante)"
+        memoria.append(
+            "A Tabela 13.3 não dá limite numérico para esta categoria; "
+            "conferir a recomendação do fabricante do equipamento."
+        )
+    else:
+        ok = f_total <= limite + 1e-9
+        governante = (f"{categoria}: flecha total dentro do limite" if ok
+                      else f"{categoria}: flecha total acima do limite")
+        memoria.append(
+            f"f_total = {_fmt_p30(f_total)} cm {'<=' if ok else '>'} limite = "
+            f"{_fmt_p30(limite)} cm -> {'ok' if ok else 'não ok'}."
+        )
+        if not ok:
+            _warnings_f2.warn(
+                f"Flecha total {f_total:.3f} cm excede o limite de "
+                f"{limite:.3f} cm da Tabela 13.3 ({categoria}).",
+                nbr.AvisoNBR6118,
+                stacklevel=2,
+            )
+
+    return ResultadoFlechaTotalProtendido(
+        EI_eq_kncm2=r_ei.EI_eq_kncm2,
+        fissurado=r_ei.fissurado,
+        Mr_protendido_kncm=r_ei.Mr_protendido_kncm,
+        Ma_kncm=Ma,
+        f_imediata_permanente_cm=f_perm,
+        f_imediata_variavel_cm=f_var,
+        f_imediata_cm=f_imediata,
+        phi=abs(float(phi)),
+        f_diferida_cm=f_total - f_imediata,
+        f_total_cm=f_total,
+        categoria=str(categoria),
+        vao_limite_cm=l_lim,
+        limite_cm=limite,
+        descricao_limite=descricao,
+        ok=ok,
+        governante=governante,
+        memoria=tuple(memoria),
+    )
+
+
 if __name__ == "__main__":
     if "--test" in sys.argv:
         sys.exit(run_tests())

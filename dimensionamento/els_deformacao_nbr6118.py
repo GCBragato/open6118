@@ -596,3 +596,173 @@ def verificar_flecha(
         governante=governante,
         memoria=tuple(memoria),
     )
+
+
+# === F2: 17.3.2.1.1 completo — rigidez equivalente ponderada (Figura 17.3) e
+# flecha imediata por integração da curvatura (PDF p. 146-147) ===
+from typing import Sequence as _Seq_f2  # noqa: E402
+
+
+def rigidez_equivalente_ponderada_kncm2(
+    EI_eq1_kncm2: float, EI_eqv_kncm2: float, EI_eq2_kncm2: float,
+    vao_cm: float, a1_cm: float | None = None, a2_cm: float | None = None,
+) -> float:
+    """Rigidez equivalente ponderada de um vão de viga contínua, NBR
+    6118:2026 17.3.2.1.1, Figura 17.3 (PDF p. 147) — "para vãos de vigas,
+    quando for necessária maior precisão, pode-se adotar, para a rigidez
+    equivalente, o valor ponderado com o critério estabelecido na Figura
+    17.3":
+
+        (EI)eq = [ (EI)eq,1·a1 + (EI)eq,v·av + (EI)eq,2·a2 ] / l
+
+    onde a1 e a2 são os comprimentos dos trechos de momento negativo junto
+    aos apoios 1 e 2, av = l − a1 − a2 é o trecho de momento positivo, e
+    (EI)eq,1, (EI)eq,v e (EI)eq,2 são as rigidezes equivalentes de cada
+    trecho ("em cada trecho, a rigidez equivalente deve ser calculada com
+    EI,II considerando as armaduras existentes no trecho e com Ma igual a
+    M1, Mv e M2, respectivamente" — cada uma vem de
+    ``rigidez_equivalente_kncm2``).
+
+    a1_cm e a2_cm em cm; quando omitidos (None, o padrão), a função usa a
+    aproximação que a própria norma oferece na mesma página: "pode-se
+    adotar a1/l e a2/l aproximadamente iguais a 0,15", ou seja,
+    a1 = a2 = 0,15·l. Para um vão sem trecho de momento negativo
+    (biapoiado), informe a1_cm = a2_cm = 0, e o resultado é (EI)eq,v.
+
+    Retorna (EI)eq em kN.cm². Levanta ``ValueError`` se as rigidezes ou o
+    vão não forem positivos, se a1 ou a2 for negativo, ou se a1 + a2 passar
+    do vão (não sobra trecho de momento positivo).
+    """
+    l_cm = float(vao_cm)
+    if l_cm <= 0.0:
+        raise ValueError("vao_cm deve ser positivo.")
+    for nome, valor in (("EI_eq1_kncm2", EI_eq1_kncm2),
+                        ("EI_eqv_kncm2", EI_eqv_kncm2),
+                        ("EI_eq2_kncm2", EI_eq2_kncm2)):
+        if float(valor) <= 0.0:
+            raise ValueError(f"{nome} deve ser positivo.")
+    a1 = 0.15 * l_cm if a1_cm is None else float(a1_cm)
+    a2 = 0.15 * l_cm if a2_cm is None else float(a2_cm)
+    if a1 < 0.0 or a2 < 0.0:
+        raise ValueError("a1_cm e a2_cm não podem ser negativos.")
+    av = l_cm - a1 - a2
+    if av < -1e-9 * l_cm:
+        raise ValueError(
+            f"a1_cm + a2_cm = {a1 + a2:g} cm passa do vão ({l_cm:g} cm): não "
+            "sobra trecho de momento positivo (Figura 17.3, PDF p. 147)."
+        )
+    av = max(av, 0.0)
+    return (float(EI_eq1_kncm2) * a1 + float(EI_eqv_kncm2) * av
+            + float(EI_eq2_kncm2) * a2) / l_cm
+
+
+def _m_virtual_f2(xs: list[float], x_flecha_cm: float, esquema: str) -> list[float]:
+    """Momento fletor m(x) do carregamento virtual unitário aplicado em
+    x_flecha_cm, na mesma convenção de sinal de M(x) (momento positivo
+    tracionando a fibra inferior). Uso interno de
+    ``flecha_imediata_curvatura_cm``.
+
+    esquema='biapoiada': apoios simples em xs[0] e xs[-1];
+    esquema='balanco': engaste em xs[0] e extremidade livre em xs[-1].
+    """
+    x0, xn = xs[0], xs[-1]
+    l_cm = xn - x0
+    a = x_flecha_cm - x0
+    if esquema == "biapoiada":
+        return [((l_cm - a) * (x - x0) / l_cm) if (x - x0) <= a
+                else (a * (xn - x) / l_cm) for x in xs]
+    return [-(a - (x - x0)) if (x - x0) <= a else 0.0 for x in xs]
+
+
+def flecha_imediata_curvatura_cm(
+    x_cm: _Seq_f2[float], M_kncm: _Seq_f2[float],
+    EI_kncm2: float | _Seq_f2[float],
+    esquema: str = "biapoiada", x_flecha_cm: float | None = None,
+) -> float:
+    """Flecha imediata de um vão por integração da curvatura, NBR 6118:2026
+    17.3.2.1 (PDF p. 146).
+
+    A norma não dá a fórmula da flecha: ela prescreve o modelo ("o modelo de
+    comportamento da estrutura pode admitir o concreto e o aço como
+    materiais de comportamento elástico e linear, de modo que as seções ao
+    longo do elemento estrutural possam ter as deformações específicas
+    determinadas no estádio I, desde que os esforços não superem aqueles que
+    dão início à fissuração, e no estádio II, em caso contrário") e a
+    rigidez a usar ((EI)eq de 17.3.2.1.1). Esta função fecha o passo que
+    falta entre a rigidez e o deslocamento: integra a curvatura
+    1/r = M(x)/(EI)(x) ao longo do vão pelo princípio dos trabalhos
+    virtuais,
+
+        f = ∫ M(x)·m(x) / EI(x) dx   (regra do trapézio nas estações dadas)
+
+    onde m(x) é o momento fletor de uma carga virtual unitária aplicada no
+    ponto em que se quer a flecha. É mecânica das estruturas, não uma
+    expressão normativa — está aqui para que o fluxo de 17.3.2 (rigidez ->
+    flecha imediata -> flecha total -> limite da Tabela 13.3) feche dentro
+    da biblioteca.
+
+    x_cm: estações ao longo do vão, em cm, estritamente crescentes (pelo
+    menos três; quanto mais estações, menor o erro da regra do trapézio).
+    M_kncm: momento fletor em cada estação, em kN.cm, para a combinação de
+    ações avaliada, com momento positivo tracionando a fibra inferior.
+    EI_kncm2: rigidez em kN.cm², um único valor (rigidez constante ao longo
+    do vão, o usual com o (EI)eq de 17.3.2.1.1) ou um valor por estação
+    (rigidez variável, por exemplo Estádio I em parte do vão e Estádio II no
+    resto).
+    esquema: 'biapoiada' (apoios simples nas duas pontas) ou 'balanco'
+    (engaste em x_cm[0], extremidade livre em x_cm[-1]).
+    x_flecha_cm: ponto onde se quer a flecha; o padrão é o meio do vão na
+    biapoiada e a extremidade livre no balanço.
+
+    Retorna a flecha em cm, positiva no sentido da carga que produz M > 0
+    (para baixo, no caso usual de carga de gravidade).
+    """
+    xs = [float(v) for v in x_cm]
+    ms = [float(v) for v in M_kncm]
+    n = len(xs)
+    if n < 3:
+        raise ValueError(
+            "x_cm precisa de pelo menos três estações para a integração da "
+            "curvatura."
+        )
+    if len(ms) != n:
+        raise ValueError("M_kncm precisa ter um valor por estação de x_cm.")
+    for i in range(1, n):
+        if xs[i] <= xs[i - 1]:
+            raise ValueError("x_cm deve ser estritamente crescente.")
+    if isinstance(EI_kncm2, (int, float)):
+        eis = [float(EI_kncm2)] * n
+    else:
+        eis = [float(v) for v in EI_kncm2]
+        if len(eis) != n:
+            raise ValueError(
+                "EI_kncm2 deve ser um único valor ou um valor por estação de "
+                "x_cm."
+            )
+    if any(e <= 0.0 for e in eis):
+        raise ValueError("EI_kncm2 deve ser positivo em todas as estações.")
+
+    chave = _chave_categoria(esquema)
+    if chave in ("biapoiada", "biapoiado", "bi_apoiada"):
+        chave = "biapoiada"
+    elif chave in ("balanco", "em_balanco"):
+        chave = "balanco"
+    else:
+        raise ValueError(
+            f"esquema deve ser 'biapoiada' ou 'balanco'; recebido {esquema!r}."
+        )
+
+    x0, xn = xs[0], xs[-1]
+    if x_flecha_cm is None:
+        xf = (x0 + xn) / 2.0 if chave == "biapoiada" else xn
+    else:
+        xf = float(x_flecha_cm)
+        if xf < x0 - 1e-9 or xf > xn + 1e-9:
+            raise ValueError(
+                f"x_flecha_cm = {xf:g} cm fora do vão ({x0:g} a {xn:g} cm)."
+            )
+        xf = min(max(xf, x0), xn)
+
+    mv = _m_virtual_f2(xs, xf, chave)
+    g = [ms[i] * mv[i] / eis[i] for i in range(n)]
+    return sum((g[i] + g[i - 1]) * (xs[i] - xs[i - 1]) / 2.0 for i in range(1, n))

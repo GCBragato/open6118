@@ -9082,7 +9082,7 @@
    "pagina_pdf": 148,
    "titulo": "Flecha em elementos com armaduras ativas",
    "tipo": "procedimento",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P32",
@@ -9095,25 +9095,38 @@
    ],
    "trecho": "flexao",
    "implementacao": {
-    "pacote": "P32",
+    "pacote": "P32 + F2",
     "data": "19/09/2026",
     "funcoes": [
-     "momento_fissuracao_protendido_kncm",
-     "flecha_protendido",
-     "flecha_total_protendido"
+     "els_deformacao_nbr6118.rigidez_equivalente_ponderada_kncm2",
+     "els_deformacao_nbr6118.flecha_imediata_curvatura_cm",
+     "els_deformacao_nbr6118._m_virtual_f2",
+     "protendido_nbr6118.ResultadoFlechaTotalProtendido",
+     "protendido_nbr6118.verificar_flecha_protendido"
     ],
     "testes": [
-     "test_momento_fissuracao_protendido",
-     "test_momento_fissuracao_protendido_geometria_invalida",
-     "test_flecha_protendido_nao_fissurado",
-     "test_flecha_protendido_fissurado_delega_p8",
-     "test_flecha_protendido_docstring_nao_cita_alfa_f_para_flecha_diferida",
-     "test_flecha_total_protendido_so_parcela_permanente",
-     "test_flecha_total_protendido_com_parcela_variavel",
-     "test_flecha_total_protendido_phi_zero_nao_altera_flecha_imediata",
-     "test_flecha_total_protendido_phi_negativo_levanta_erro"
+     "test_rigidez_ponderada_a1_a2_padrao_0_15",
+     "test_rigidez_ponderada_a1_a2_explicitos",
+     "test_rigidez_ponderada_tres_trechos_iguais",
+     "test_rigidez_ponderada_borda_sem_trecho_negativo",
+     "test_rigidez_ponderada_borda_sem_trecho_positivo",
+     "test_rigidez_ponderada_fora_da_faixa",
+     "test_flecha_curvatura_biapoiada_carga_uniforme",
+     "test_flecha_curvatura_biapoiada_carga_concentrada_meio_do_vao",
+     "test_flecha_curvatura_biapoiada_ponto_diferente_do_meio",
+     "test_flecha_curvatura_balanco_carga_na_ponta",
+     "test_flecha_curvatura_ei_por_estacao_igual_ao_escalar",
+     "test_flecha_curvatura_ei_variavel_confere_com_trapezio_a_mao",
+     "test_flecha_curvatura_erros_de_entrada",
+     "test_flecha_protendido_fluxo_nao_fissurado",
+     "test_flecha_protendido_fluxo_fissurado_usa_branson",
+     "test_flecha_protendido_fluxo_phi_zero",
+     "test_flecha_protendido_fluxo_acima_do_limite_avisa",
+     "test_flecha_protendido_fluxo_categoria_sem_limite_numerico",
+     "test_flecha_protendido_fluxo_balanco_vao_equivalente_e_ma_no_apoio",
+     "test_flecha_protendido_fluxo_erros_de_entrada"
     ],
-    "observacao": "Continua parcial por desenho: a integração da curvatura para obter a flecha imediata em si e a aplicação do limite (verificar_flecha) ficam fora do escopo deste pacote, como já registrado na primeira entrega. Corrigido nesta volta o que a verificação achou: a docstring de flecha_protendido citava a fórmula errada ((1+alfa_f) em vez de (1+phi)) para a flecha diferida de elementos protendidos, e agora existe flecha_total_protendido implementando f_total = f_variável + f_permanente*(1+phi) (phi vindo de fora, do P6/P7, sem reimplementar fluência)."
+    "observacao": "O que faltava, segundo a própria observação do P32, eram dois passos: a integração da curvatura para obter a flecha imediata e a aplicação do limite. Os dois entraram. `flecha_imediata_curvatura_cm` integra 1/r = M(x)/(EI)(x) pelo princípio dos trabalhos virtuais (regra do trapézio), com (EI) escalar ou por estação, para viga biapoiada e para balanço, e a docstring diz que isso é mecânica das estruturas, não expressão normativa — a norma só prescreve o modelo (17.3.2.1) e a rigidez (17.3.2.1.1). `verificar_flecha_protendido` monta o fluxo inteiro: (EI)eq de 17.3.2.1.3 (reusando `flecha_protendido`, que já delega a Branson ao P8), Ma pela regra de 17.3.2.1.1 (máximo no vão em viga biapoiada/contínua, momento no apoio em balanço), flecha imediata de cada parcela, f_total = f_variável + f_permanente·(1+φ) por `flecha_total_protendido`, e o limite da Tabela 13.3 por `deslocamento_limite`, com `AvisoNBR6118` quando passa. Não reusa `els_deformacao_nbr6118.verificar_flecha` de propósito: aquela aplica (1+alfa_f) de 17.3.2.1.2, que é de armadura passiva. Entrou junto a rigidez ponderada da Figura 17.3 (p. 147), que faltava para a expressão completa de 17.3.2.1.1 em vão de viga contínua. A docstring da função nova declara a convenção que evita contagem dupla da protensão (ela entra por Mr,p; quem preferir pôr a protensão como ação externa equivalente nos diagramas chama com P_kn = 0)."
    }
   },
   {
@@ -12223,7 +12236,7 @@
    "pagina_pdf": 179,
    "titulo": "ELS de fissuração/descompressão em lajes remete a 17.3.3 e 17.3.4",
    "tipo": "qualitativo",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P9",
@@ -12238,15 +12251,27 @@
    "teste_sugerido": "Rodar abertura_fissura_wk com bw=100cm (faixa de laje).",
    "trecho": "lajes",
    "implementacao": {
-    "pacote": "P9",
+    "pacote": "P9 + F2",
     "data": "19/09/2026",
     "funcoes": [
-     "wk_verificacao"
+     "els_fissuracao_nbr6118.verificar_descompressao_laje",
+     "els_fissuracao_nbr6118.ResultadoELSLajeProtendida",
+     "els_fissuracao_nbr6118.verificar_els_laje_protendida"
     ],
     "testes": [
-     "test_wk_verificacao_reproduz_abertura_fissura_wk"
+     "test_descompressao_laje_els_d_no_degrau",
+     "test_descompressao_laje_els_d_dos_dois_lados_do_degrau",
+     "test_descompressao_laje_els_f_limite_de_17_2_4_4_2",
+     "test_descompressao_laje_erros_de_entrada",
+     "test_descompressao_laje_equivale_a_verificacao_de_viga",
+     "test_els_laje_nivel_1_usa_abertura_de_fissura",
+     "test_els_laje_concreto_armado_usa_wk_da_tabela_13_4",
+     "test_els_laje_nivel_2_usa_els_f_e_els_d",
+     "test_els_laje_nivel_3_combinacoes_rara_e_frequente",
+     "test_els_laje_caa_fora_da_tabela_13_4",
+     "test_els_laje_faltando_dados_de_cada_criterio"
     ],
-    "observacao": "Status herdado do próprio JSON do plano (já 'parcial' antes desta rodada): wk_verificacao é fachada genérica sobre abertura_fissura_wk, válida para laje trocando bw pela largura de faixa; não há verificação de descompressão (17.3.4) para laje protendida. Não fez parte dos achados da verificação independente; sem alteração nesta rodada."
+    "observacao": "O que faltava era a verificação de descompressão (17.3.4) para laje protendida — a de abertura de fissura (17.3.3) já existia por `wk_verificacao`. `verificar_descompressao_laje` monta a faixa de laje como seção retangular b×h (Ac = b·h, Wb = Wt = b·h²/6, via `Ac_retangular`/`W_retangular`) e delega a `protendido_nbr6118.verificar_descompressao_fissuracao`, que já implementa o texto de 17.3.4 (máxima tensão de tração no Estádio I; limite nulo no ELS-D e o de 17.2.4.4.2 no ELS-F) — a norma não dá fórmula própria para laje, e é exatamente o que 19.3.2 diz. `verificar_els_laje_protendida` é o ponto de entrada de 19.3.2: consulta a Tabela 13.4 pelo núcleo (`nucleo_nbr6118.wk_max_mm`) e, conforme o par CAA/nível/tipo de protensão, roda o critério de 17.3.3 (quando há wk,máx: armado e protendido nível 1) ou as duas verificações de 17.3.4 (níveis 2 e 3, ELS-F e ELS-D, cada uma com a sua combinação), devolvendo ok, governante e memória. Par fora da Tabela 13.4 levanta FaixaNormativaError vindo do núcleo."
    }
   },
   {
