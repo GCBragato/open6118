@@ -239,13 +239,13 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `13.2.5.1-furo-viga-largura-dispensa` | 13.2.5.1 | 95 | Condições para dispensa de verificação de furo transversal em viga (direção da largura) | ausente | média | M | P10 |
 | `13.2.5.2-abertura-laje-dispensa` | 13.2.5.2, Figura 13.1 | 96 | Dimensões-limites para aberturas em lajes com dispensa de verificação | ausente | média | M | P10 |
 | `13.2.6-canalizacoes-embutidas-proibicoes` | 13.2.6 | 96 | Casos proibidos de canalização embutida | ausente | baixa | P | P10 |
-| `13.3-tab13.3-aceitabilidade-sensorial` | 13.3, Tabela 13.3 | 97 | Deslocamento-limite por aceitabilidade sensorial (visual e vibração) | ausente | alta | P | P8 |
-| `13.3-tab13.3-efeitos-estruturais-servico` | 13.3, Tabela 13.3 | 98 | Deslocamento-limite por efeitos estruturais em serviço (drenagem, planicidade, equipamentos sensíveis) | ausente | alta | P | P8 |
-| `13.3-tab13.3-elementos-nao-estruturais-paredes` | 13.3, Tabela 13.3, notas c-e | 98 | Deslocamento-limite para paredes, divisórias e movimento lateral do edifício | ausente | alta | P | P8 |
-| `13.3-tab13.3-forros-pontes-rolantes` | 13.3, Tabela 13.3 | 98 | Deslocamento-limite para forros e pontes rolantes | ausente | baixa | P | P8 |
+| `13.3-tab13.3-aceitabilidade-sensorial` | 13.3, Tabela 13.3 | 97 | Deslocamento-limite por aceitabilidade sensorial (visual e vibração) | implementado | alta | P | P8 |
+| `13.3-tab13.3-efeitos-estruturais-servico` | 13.3, Tabela 13.3 | 98 | Deslocamento-limite por efeitos estruturais em serviço (drenagem, planicidade, equipamentos sensíveis) | implementado | alta | P | P8 |
+| `13.3-tab13.3-elementos-nao-estruturais-paredes` | 13.3, Tabela 13.3, notas c-e | 98 | Deslocamento-limite para paredes, divisórias e movimento lateral do edifício | implementado | alta | P | P8 |
+| `13.3-tab13.3-forros-pontes-rolantes` | 13.3, Tabela 13.3 | 98 | Deslocamento-limite para forros e pontes rolantes | implementado | baixa | P | P8 |
 | `13.3-tab13.3-efeitos-elementos-estruturais` | 13.3, Tabela 13.3 | 99 | Efeitos em elementos estruturais - deslocamentos incorporados ao modelo | não computável | média | P |  |
-| `13.3-notas-vao-equivalente-balanco` | 13.3, NOTA 1 e NOTA 2 | 99 | Regra do vão equivalente para deslocamento-limite em balanços e placas | ausente | média | P | P8 |
-| `13.3-nota3-combinacao-deslocamento` | 13.3, NOTA 3, NOTA 5, NOTA 6 | 99 | Combinação de ações para deslocamento total e flecha diferida | parcial | alta | M | P8 |
+| `13.3-notas-vao-equivalente-balanco` | 13.3, NOTA 1 e NOTA 2 | 99 | Regra do vão equivalente para deslocamento-limite em balanços e placas | implementado | média | P | P8 |
+| `13.3-nota3-combinacao-deslocamento` | 13.3, NOTA 3, NOTA 5, NOTA 6 | 99 | Combinação de ações para deslocamento total e flecha diferida | implementado | alta | M | P8 |
 | `13.4.1-fissuracao-intro` | 13.4.1 | 99 | Princípio geral do controle de fissuração | não computável | média | P |  |
 | `13.4.2-outras-causas-fissuracao` | 13.4.2 (paragrafo introdutorio) | 100 | Outras causas de fissuração (retração plástica, térmica, reações químicas internas) | não computável | baixa | P |  |
 | `13.4.2-tab13.4-wk-max-caa` | 13.4.2, Tabela 13.4 | 100 | Abertura máxima wk pela classe de agressividade e tipo de concreto/protensão (Tabela 13.4) | implementado | alta | M | P1 |
@@ -393,9 +393,9 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `17.2.4.4.1-limites-tensao-compressao-els` | 17.2.4.4.1 | 144 | Limites de tensão de compressão no concreto em serviço (protensão completa/limitada) | ausente | média | P | P32 |
 | `17.2.4.4.2-limite-tensao-tracao-els` | 17.2.4.4.2 | 144 | Limite de tensão de tração no concreto (ELS-F / ELS-D) | parcial | média | M | P32 |
 | `17.2.5-interacao-flexao-obliqua` | 17.2.5 | 145 | Processo aproximado de interação para flexão composta oblíqua | implementado | alta | P |  |
-| `17.3.1-momento-fissuracao` | 17.3.1 | 145 | Momento de fissuração Mr | parcial | alta | M | P8 |
-| `17.3.2.1.1-flecha-imediata-rigidez-equivalente` | 17.3.2.1.1 | 146 | Rigidez equivalente (EI)eq para flecha imediata (Branson) | ausente | alta | M | P8 |
-| `17.3.2.1.2-flecha-diferida-alphaf-xi` | 17.3.2.1.2 | 147 | Coeficiente de fluência para flecha diferida (αf e ξ(t)) | parcial | alta | P | P8 |
+| `17.3.1-momento-fissuracao` | 17.3.1 | 145 | Momento de fissuração Mr | implementado | alta | M | P8 |
+| `17.3.2.1.1-flecha-imediata-rigidez-equivalente` | 17.3.2.1.1 | 146 | Rigidez equivalente (EI)eq para flecha imediata (Branson) | implementado | alta | M | P8 |
+| `17.3.2.1.2-flecha-diferida-alphaf-xi` | 17.3.2.1.2 | 147 | Coeficiente de fluência para flecha diferida (αf e ξ(t)) | implementado | alta | P | P8 |
 | `17.3.2.1.3-flecha-armaduras-ativas` | 17.3.2.1.3 | 148 | Flecha em elementos com armaduras ativas | ausente | média | M | P32 |
 | `17.3.3.2-abertura-fissura-wk` | 17.3.3.2 | 149 | Abertura característica de fissuras wk (Eq. 86 / Eq. 87) | implementado | alta | P |  |
 | `17.3.3.2-area-envolvimento-acri` | 17.3.3.2 | 149 | Geometria da área de envolvimento Acri (Figura 17.4) | ausente | média | M | P9 |
@@ -523,7 +523,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 |---|---|---|---|---|---|---|---|
 | `19.1-simbologia` | 19.1 | 178 | Simbologia específica da seção 19 (lajes) | não computável | baixa | P |  |
 | `19.2-principios-elu` | 19.2 | 179 | Princípios do ELU de lajes (flexão e forças normais) | parcial | alta | P | P17 |
-| `19.3.1-els-deformacao` | 19.3.1 | 179 | ELS de deformação de lajes remete a 17.3.2 | parcial | alta | M | P8 |
+| `19.3.1-els-deformacao` | 19.3.1 | 179 | ELS de deformação de lajes remete a 17.3.2 | implementado | alta | M | P8 |
 | `19.3.2-els-fissuracao` | 19.3.2 | 179 | ELS de fissuração/descompressão em lajes remete a 17.3.3 e 17.3.4 | parcial | alta | M | P9 |
 | `19.3.3.1-principios-as-max-min` | 19.3.3.1 | 179 | Princípios básicos de armaduras máximas e mínimas de laje | implementado | alta | P |  |
 | `19.3.3.2-extensao-armadura-negativa-borda` | 19.3.3.2 | 179 | Extensão mínima da armadura negativa de borda sem continuidade | ausente | alta | P | P17 |

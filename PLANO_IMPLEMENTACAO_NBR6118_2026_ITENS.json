@@ -62,7 +62,8 @@
    "nome": "ELS de deformação: rigidez equivalente, flecha e limites",
    "onda": 1,
    "prioridade": "alta",
-   "modulo": "dimensionamento/els_deformacao_nbr6118.py"
+   "modulo": "dimensionamento/els_deformacao_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P9",
@@ -4357,7 +4358,7 @@
    "pagina_pdf": 97,
    "titulo": "Deslocamento-limite por aceitabilidade sensorial (visual e vibração)",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P8",
@@ -4367,7 +4368,20 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "l=600, visual -> 2.4cm; l=600, vibracao -> 1.714cm.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P8",
+    "data": "19/09/2026",
+    "funcoes": [
+     "deslocamento_limite",
+     "TABELA_13_3"
+    ],
+    "testes": [
+     "test_aceitabilidade_visual_l250",
+     "test_aceitabilidade_vibracao_l350"
+    ],
+    "observacao": "Sem alteração nesta rodada; verificação não achou defeito neste item."
+   }
   },
   {
    "id": "13.3-tab13.3-efeitos-estruturais-servico",
@@ -4375,7 +4389,7 @@
    "pagina_pdf": 98,
    "titulo": "Deslocamento-limite por efeitos estruturais em serviço (drenagem, planicidade, equipamentos sensíveis)",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P8",
@@ -4385,7 +4399,23 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "l=500 drenagem -> 2.0cm; l=500 planicidade total -> 1.43cm; l=500 apos piso -> 0.833cm.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P8",
+    "data": "19/09/2026",
+    "funcoes": [
+     "deslocamento_limite",
+     "TABELA_13_3"
+    ],
+    "testes": [
+     "test_drenagem_l250",
+     "test_planicidade_total_l350_mais_contraflecha",
+     "test_planicidade_total_contraflecha_maior_que_l350_levanta_erro",
+     "test_planicidade_apos_piso_l600",
+     "test_equipamento_sensivel_sem_numero"
+    ],
+    "observacao": "Corrigido nesta rodada: deslocamento_limite agora valida a NOTA b (contraflecha_cm <= vao_cm/350) para 'planicidade_total', levantando FaixaNormativaError quando violada; antes aceitava qualquer valor em silêncio. Teste novo cobre a violação e a fronteira exata."
+   }
   },
   {
    "id": "13.3-tab13.3-elementos-nao-estruturais-paredes",
@@ -4393,7 +4423,7 @@
    "pagina_pdf": 98,
    "titulo": "Deslocamento-limite para paredes, divisórias e movimento lateral do edifício",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P8",
@@ -4403,7 +4433,23 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "l=400 parede -> min(0.8,1.0)=0.8cm; l=100 -> 0.2cm; H=3000 -> 1.76cm; Hi=300 -> 0.353cm.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P8",
+    "data": "19/09/2026",
+    "funcoes": [
+     "deslocamento_limite",
+     "TABELA_13_3"
+    ],
+    "testes": [
+     "test_alvenaria_min_l500_10mm",
+     "test_divisoria_leve_min_l250_25mm",
+     "test_movimento_lateral_vento_H_e_Hi_separados",
+     "test_movimento_lateral_vento_exige_exatamente_um",
+     "test_movimento_termico_vertical_min_l400_15mm"
+    ],
+    "observacao": "Achado sobre a nota 'e' na célula de alvenaria revisado e rejeitado (ver 'respostas'): o campo 'regra' ('min(l/500, 10 mm) (nota c)') foi mantido sem alteração."
+   }
   },
   {
    "id": "13.3-tab13.3-forros-pontes-rolantes",
@@ -4411,7 +4457,7 @@
    "pagina_pdf": 98,
    "titulo": "Deslocamento-limite para forros e pontes rolantes",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P8",
@@ -4421,7 +4467,22 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Hi=300 -> 0.6cm; l=500 colado -> 1.43cm; l=500 pendurado -> 2.86cm; H=2000 ponte rolante -> 5cm.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P8",
+    "data": "19/09/2026",
+    "funcoes": [
+     "deslocamento_limite",
+     "TABELA_13_3"
+    ],
+    "testes": [
+     "test_forro_termico_horizontal_Hi500",
+     "test_forro_revestimento_colado_l350",
+     "test_forro_revestimento_pendurado_l175",
+     "test_ponte_rolante_H400"
+    ],
+    "observacao": "Sem alteração nesta rodada; verificação não achou defeito neste item."
+   }
   },
   {
    "id": "13.3-tab13.3-efeitos-elementos-estruturais",
@@ -4442,7 +4503,7 @@
    "pagina_pdf": 99,
    "titulo": "Regra do vão equivalente para deslocamento-limite em balanços e placas",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P8",
@@ -4455,7 +4516,22 @@
     "13.3-tab13.3-elementos-nao-estruturais-paredes"
    ],
    "teste_sugerido": "balanco=150 -> l_eq=300; laje lx=400,ly=700,parede na direcao ly -> l=min(700,800)=700.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P8",
+    "data": "19/09/2026",
+    "funcoes": [
+     "vao_equivalente"
+    ],
+    "testes": [
+     "test_vao_equivalente_balanco",
+     "test_vao_equivalente_laje_passa_o_menor_vao",
+     "test_vao_equivalente_parede_sobre_laje",
+     "test_vao_equivalente_parede_exige_vao_menor",
+     "test_vao_equivalente_elemento_desconhecido"
+    ],
+    "observacao": "Sem alteração nesta rodada; verificação não achou defeito neste item."
+   }
   },
   {
    "id": "13.3-nota3-combinacao-deslocamento",
@@ -4463,7 +4539,7 @@
    "pagina_pdf": 99,
    "titulo": "Combinação de ações para deslocamento total e flecha diferida",
    "tipo": "detalhamento",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P8",
@@ -4476,7 +4552,20 @@
     "nucleo.combinacoes_secao_11"
    ],
    "teste_sugerido": "calcular flecha_imediata_duas_direcoes(p_qp) e multiplicar por (1+alpha_f); comparar com teste_flecha_L2 ja existente no modulo.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P8",
+    "data": "19/09/2026",
+    "funcoes": [
+     "flecha_total"
+    ],
+    "testes": [
+     "test_flecha_total_caso_usual_multiplica_por_1_mais_alpha_f",
+     "test_flecha_total_com_combinacao_adotada_diferente_da_qp",
+     "test_flecha_total_cross_check_apostila_L2"
+    ],
+    "observacao": "Sem alteração nesta rodada; verificação não achou defeito neste item."
+   }
   },
   {
    "id": "13.4.1-fissuracao-intro",
@@ -6698,7 +6787,7 @@
    "pagina_pdf": 145,
    "titulo": "Momento de fissuração Mr",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P8",
@@ -6712,7 +6801,23 @@
     "nucleo.fct_m"
    ],
    "teste_sugerido": "Comparar com viga_servico_nbr6118: test_x_II_secao_T_apostila (viga T do exemplo 17.1) ja tem um Mr esperado na apostila; reproduzir com alfa=1,2 (T) e conferir.",
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P8",
+    "data": "19/09/2026",
+    "funcoes": [
+     "momento_fissuracao_kncm"
+    ],
+    "testes": [
+     "test_momento_fissuracao_retangular_bate_com_lajes_nbr6118",
+     "test_momento_fissuracao_alfa_por_forma",
+     "test_momento_fissuracao_fctk_inf_e_070_de_fctm",
+     "test_momento_fissuracao_forma_invalida",
+     "test_momento_fissuracao_resistencia_invalida",
+     "test_momento_fissuracao_geometria_invalida"
+    ],
+    "observacao": "Sem alteração nesta rodada; verificação não achou defeito neste item."
+   }
   },
   {
    "id": "17.3.2.1.1-flecha-imediata-rigidez-equivalente",
@@ -6720,7 +6825,7 @@
    "pagina_pdf": 146,
    "titulo": "Rigidez equivalente (EI)eq para flecha imediata (Branson)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P8",
@@ -6733,7 +6838,25 @@
     "nucleo.Ecs"
    ],
    "teste_sugerido": "Ma<=Mr deve dar (EI)eq=Ecs*Ic (secao nao fissurada); Ma>>Mr deve tender a Ecs*III; conferir com o exemplo de viga_servico_nbr6118 que ja tem Ic/III calculados.",
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P8",
+    "data": "19/09/2026",
+    "funcoes": [
+     "rigidez_equivalente_kncm2"
+    ],
+    "testes": [
+     "test_rigidez_equivalente_Ma_igual_Mr_da_Ecs_Ic",
+     "test_rigidez_equivalente_Ma_menor_que_Mr_da_Ecs_Ic",
+     "test_rigidez_equivalente_Ma_muito_maior_que_Mr_tende_a_Ecs_III",
+     "test_rigidez_equivalente_ponto_interior",
+     "test_rigidez_equivalente_Ma_zero_da_Ecs_Ic",
+     "test_rigidez_equivalente_barras_lisas_reduz_Mr_a_metade",
+     "test_rigidez_equivalente_entradas_invalidas",
+     "test_rigidez_equivalente_III_negativo"
+    ],
+    "observacao": "Sem alteração nesta rodada; verificação não achou defeito neste item."
+   }
   },
   {
    "id": "17.3.2.1.2-flecha-diferida-alphaf-xi",
@@ -6741,7 +6864,7 @@
    "pagina_pdf": 147,
    "titulo": "Coeficiente de fluência para flecha diferida (αf e ξ(t))",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P8",
@@ -6752,7 +6875,28 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Conferir xi(10)=1,36 e xi(20)=1,64 direto da Tabela 17.1 (ja lida na imagem).",
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P8",
+    "data": "19/09/2026",
+    "funcoes": [
+     "xi_fluencia",
+     "t0_ponderado",
+     "alpha_f"
+    ],
+    "testes": [
+     "test_xi_fluencia_tabela_17_1_celulas",
+     "test_xi_fluencia_patamar_maior_igual_70",
+     "test_xi_fluencia_negativo_leva_a_erro",
+     "test_t0_ponderado_duas_parcelas",
+     "test_t0_ponderado_vazio_leva_a_erro",
+     "test_t0_ponderado_soma_zero_leva_a_erro",
+     "test_alpha_f_bate_com_lajes_nbr6118_t0_unico",
+     "test_alpha_f_com_t0_ponderado_por_varias_cargas",
+     "test_alpha_f_rho_linha_negativo_leva_a_erro"
+    ],
+    "observacao": "Sem alteração nesta rodada; verificação não achou defeito neste item."
+   }
   },
   {
    "id": "17.3.2.1.3-flecha-armaduras-ativas",
@@ -8836,7 +8980,7 @@
    "pagina_pdf": 179,
    "titulo": "ELS de deformação de lajes remete a 17.3.2",
    "tipo": "qualitativo",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P8",
@@ -8848,7 +8992,23 @@
     "17.3.2-flecha-estadio-ii (fora do trecho)"
    ],
    "teste_sugerido": "Comparar flecha Estádio I x II no mesmo caso.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P8",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_flecha",
+     "ResultadoFlecha",
+     "rigidez_equivalente_kncm2"
+    ],
+    "testes": [
+     "test_verificar_flecha_ok_dentro_do_limite",
+     "test_verificar_flecha_excede_limite_emite_aviso",
+     "test_verificar_flecha_sem_limite_numerico",
+     "test_verificar_flecha_usada_para_laje_19_3_1"
+    ],
+    "observacao": "Corrigido nesta rodada: test_verificar_flecha_usada_para_laje_19_3_1 foi reescrito para de fato calcular a rigidez fissurada de uma laje via rigidez_equivalente_kncm2 (antes usava Ecs*Ic, Estádio I, e a alegação de Estádio II não tinha cobertura real). Não houve mudança na função de produção, só no teste."
+   }
   },
   {
    "id": "19.3.2-els-fissuracao",
