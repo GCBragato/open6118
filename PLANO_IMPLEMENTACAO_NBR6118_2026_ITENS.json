@@ -41,7 +41,8 @@
    "nome": "Fluência e retração: motor do Anexo A",
    "onda": 1,
    "prioridade": "alta",
-   "modulo": "dimensionamento/tempo_concreto_nbr6118.py"
+   "modulo": "dimensionamento/tempo_concreto_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P7",
@@ -11716,7 +11717,7 @@
    "pagina_pdf": 234,
    "titulo": "Coeficiente de deformação rápida φa",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P6",
@@ -11728,7 +11729,21 @@
     "nucleo.fckj"
    ],
    "teste_sugerido": "caso limite t0 = t_inf (fc(t0)/fc(t_inf)=1) deve dar phi_a=0; comparar fc(t0)/fc(t_inf) com nucleo.fckj(fck,t0)/fck.",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.phi_a",
+     "tempo_concreto_nbr6118.fc_t0_sobre_fc_tinf"
+    ],
+    "testes": [
+     "test_phi_a",
+     "test_phi_a_fora_da_faixa",
+     "test_razao_fc_usa_o_crescimento_de_12_3"
+    ],
+    "observacao": "fc(t0)/fc(t∞) = β1(t0)/exp(s) = exp(−s·√(28/t0)), reusando nucleo.beta1 e nucleo.s_cimento. O argumento razao_fc permite informar a razão diretamente. fck entre 45 e 50 MPa segue o bloco C50–C90, como na Tabela 8.1."
+   }
   },
   {
    "id": "A.2.2.3-phi-t-t0",
@@ -11736,7 +11751,7 @@
    "pagina_pdf": 234,
    "titulo": "Coeficiente de fluência φ(t,t0) - procedimento completo",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "G",
    "pacote": "P6",
@@ -11751,7 +11766,24 @@
     "A.2.4.1-idade-ficticia"
    ],
    "teste_sugerido": "para t=t0 deve reduzir a phi(t0,t0)=phi_a+phi_d_infinito*beta_d(t0) (o termo phi_f some); comparar a ordem de grandeza de phi(10000,t0) com o phi(t_inf,t0) da Tabela 8.1 para a mesma combinacao de umidade/h_fic/t0 (nao devem bater exato, pois a Tabela 8.1 e uma simplificacao, mas devem ficar proximos).",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.coeficiente_fluencia",
+     "tempo_concreto_nbr6118.phi",
+     "tempo_concreto_nbr6118.ResultadoFluencia"
+    ],
+    "testes": [
+     "test_phi_em_t_igual_t0",
+     "test_phi_caso_a_mao",
+     "test_phi_resultado_e_memoria",
+     "test_phi_entradas_invalidas",
+     "test_phi_inf_contra_tabela_8_1"
+    ],
+    "observacao": "Aceita U_pct (notas a, c e d) ou ambiente (linha da Tabela A.1), além de h_fic_cm sem ponderação. Devolve dataclass congelada com as parcelas e a memória de cálculo. Contra as 24 células da Tabela 8.1, com t0 fictício igual ao t0 da tabela: C50–C90 fica a menos de 0,1 e C20–C45 a menos de 0,25."
+   }
   },
   {
    "id": "A.2.2.3-eps-cc",
@@ -11779,7 +11811,7 @@
    "pagina_pdf": 235,
    "titulo": "Coeficiente φ2c (função da espessura fictícia)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P6",
@@ -11791,7 +11823,19 @@
     "tabelaA.1-gamma"
    ],
    "teste_sugerido": "h->infinito da phi_2c->1; h=20 cm da phi_2c=62/40=1,55.",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.phi2c"
+    ],
+    "testes": [
+     "test_phi2c",
+     "test_cruzado_h_em_cm_contra_h_em_m"
+    ],
+    "observacao": "h = γ·hfic em cm."
+   }
   },
   {
    "id": "A.2.2.3-phi-f-inf",
@@ -11799,7 +11843,7 @@
    "pagina_pdf": 235,
    "titulo": "Valor final do coeficiente de deformação lenta irreversível φf∞",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P6",
@@ -11811,7 +11855,18 @@
     "tabelaA.1-phi1c-continuo",
     "A.2.2.3-phi2c"
    ],
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.phi_f_inf"
+    ],
+    "testes": [
+     "test_phi_f_inf"
+    ],
+    "observacao": "Recebe φ1c e φ2c. Aplica o fator 0,45 de C50 a C90."
+   }
   },
   {
    "id": "A.2.2.3-beta-d",
@@ -11819,7 +11874,7 @@
    "pagina_pdf": 235,
    "titulo": "Coeficiente βd(t) - evolução da deformação lenta reversível",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P6",
@@ -11828,7 +11883,20 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "t=t0 da beta_d=20/70=0,2857; t->infinito da beta_d->1.",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.beta_d",
+     "tempo_concreto_nbr6118.PHI_D_INF"
+    ],
+    "testes": [
+     "test_beta_d",
+     "test_phi_em_t_igual_t0"
+    ],
+    "observacao": "t = math.inf devolve 1. t < t0 levanta FaixaNormativaError."
+   }
   },
   {
    "id": "A.2.2.3-beta-f",
@@ -11836,7 +11904,7 @@
    "pagina_pdf": 235,
    "titulo": "Coeficiente βf(t) - evolução da deformação lenta irreversível (curva racional em t)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P6",
@@ -11849,7 +11917,23 @@
     "A.2.4.1-idade-ficticia"
    ],
    "teste_sugerido": "reproduzir por leitura grafica alguns pontos da Figura A.2 para h=0,2 m e h=0,8 m em t=10, 100 e 1000 dias (tolerancia larga, leitura de grafico); checar que o clamp em h=0,05 m e h=1,6 m nao produz descontinuidade no valor (so trava o argumento).",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.beta_f"
+    ],
+    "testes": [
+     "test_beta_f_calculo_a_mao_h_20cm",
+     "test_cruzado_h_em_cm_contra_h_em_m",
+     "test_beta_f_beta_s_trava_h_nos_extremos",
+     "test_beta_f_beta_s_faixa_de_t",
+     "test_figura_A2_todas_as_curvas_partem_de_0_13",
+     "test_figura_A2_leitura_grafica"
+    ],
+    "observacao": "Recebe h_pond_cm e divide por 100 dentro da função. h fica travado em [0,05; 1,6] m. Exige t ≥ 3 dias e aceita t = math.inf (devolve 1)."
+   }
   },
   {
    "id": "A.2.3.1-hipoteses",
@@ -11870,7 +11954,7 @@
    "pagina_pdf": 236,
    "titulo": "Valor final da retração εcs∞",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P6",
@@ -11882,7 +11966,19 @@
     "tabelaA.1-eps1s-continuo",
     "A.2.3.2-eps2s"
    ],
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.eps_cs_inf_pmil"
+    ],
+    "testes": [
+     "test_eps_cs_inf",
+     "test_retracao_caso_a_mao"
+    ],
+    "observacao": "Em ‰."
+   }
   },
   {
    "id": "A.2.3.2-eps-cs-t-t0",
@@ -11890,7 +11986,7 @@
    "pagina_pdf": 236,
    "titulo": "Retração entre os instantes t0 e t",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P6",
@@ -11903,7 +11999,24 @@
     "A.2.4.1-idade-ficticia"
    ],
    "teste_sugerido": "t=t0 deve dar eps_cs=0.",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.retracao",
+     "tempo_concreto_nbr6118.eps_cs_pmil",
+     "tempo_concreto_nbr6118.ResultadoRetracao"
+    ],
+    "testes": [
+     "test_retracao_t_igual_t0_e_nula",
+     "test_retracao_caso_a_mao",
+     "test_retracao_na_agua_e_inchamento",
+     "test_eps_cs_inf_contra_tabela_8_1",
+     "test_retracao_entradas_invalidas"
+    ],
+    "observacao": "Reproduz as 24 células de εcs da Tabela 8.1 a menos de 0,025 ‰."
+   }
   },
   {
    "id": "A.2.3.2-eps2s",
@@ -11911,7 +12024,7 @@
    "pagina_pdf": 237,
    "titulo": "Coeficiente ε2s (função da espessura fictícia) da retração",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P6",
@@ -11923,7 +12036,19 @@
     "tabelaA.1-gamma"
    ],
    "teste_sugerido": "h->infinito da eps_2s->2/3=0,667; h=20 cm da eps_2s=73/80,8=0,9035.",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.eps2s"
+    ],
+    "testes": [
+     "test_eps2s",
+     "test_cruzado_h_em_cm_contra_h_em_m"
+    ],
+    "observacao": "h em cm."
+   }
   },
   {
    "id": "tabelaA.1-principal",
@@ -11931,7 +12056,7 @@
    "pagina_pdf": 237,
    "titulo": "Tabela A.1 - φ1c, 10⁴·ε1s e γ por ambiente/umidade/abatimento",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P6",
@@ -11940,7 +12065,25 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "conferir contra as formulas continuas das notas a/b/d da propria tabela (para U entre 40% e 90%, abatimento 5-9 cm) - devem reproduzir os valores das linhas U=90,70,40 exatamente.",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.TABELA_A_1",
+     "tempo_concreto_nbr6118.phi1c_tabela",
+     "tempo_concreto_nbr6118.eps1s_tabela_pmil",
+     "tempo_concreto_nbr6118.gama_tabela"
+    ],
+    "testes": [
+     "test_tabela_A1_celulas_phi1c_eps1s",
+     "test_tabela_A1_celulas_gama",
+     "test_tabela_A1_rotulos_de_ambiente",
+     "test_tabela_A1_faixas_de_abatimento",
+     "test_tabela_A1_abatimento_fora_da_tabela_levanta"
+    ],
+    "observacao": "Todas as 28 células estão testadas. Abatimento entre 4 e 5 cm ou entre 9 e 10 cm vai para a faixa de baixo; a escolha está declarada na docstring. Abatimento acima de 15 cm ou negativo levanta erro."
+   }
   },
   {
    "id": "tabelaA.1-phi1c-continuo",
@@ -11948,7 +12091,7 @@
    "pagina_pdf": 237,
    "titulo": "φ1c contínuo em função da umidade U (nota a da Tabela A.1)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P6",
@@ -11957,7 +12100,21 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "U=90% deve dar phi_1c=1,30, batendo exatamente com a linha 'muito umido', abatimento 5-9 cm da Tabela A.1 (1,3).",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.phi1c"
+    ],
+    "testes": [
+     "test_nota_a_valores_exatos",
+     "test_nota_a_continuidade_com_a_tabela",
+     "test_nota_a_fora_da_faixa",
+     "test_nota_a_bordas_da_faixa"
+    ],
+    "observacao": "Faixa 0 % ≤ U ≤ 90 %: a nota só fixa o teto."
+   }
   },
   {
    "id": "tabelaA.1-eps1s-continuo",
@@ -11965,7 +12122,7 @@
    "pagina_pdf": 237,
    "titulo": "10⁴·ε1s contínuo em função da umidade U (nota b da Tabela A.1)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P6",
@@ -11974,7 +12131,21 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "U=40% deve aproximar -6,3 (linha 'seco', abatimento 5-9); U=90% deve aproximar -2,5 (linha 'muito umido', abatimento 5-9).",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.eps1s_1e4",
+     "tempo_concreto_nbr6118.eps1s_pmil"
+    ],
+    "testes": [
+     "test_nota_b_valores_calculados",
+     "test_nota_b_continuidade_com_a_tabela",
+     "test_nota_b_fora_da_faixa"
+    ],
+    "observacao": "Faixa 40 % ≤ U ≤ 90 %. Coincide com a tabela a menos de 0,05 na coluna de 5 cm a 9 cm."
+   }
   },
   {
    "id": "tabelaA.1-ajuste-abatimento",
@@ -11982,7 +12153,7 @@
    "pagina_pdf": 237,
    "titulo": "Ajuste de ±25 % de φ1c e ε1s por faixa de abatimento (nota c da Tabela A.1)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P6",
@@ -11994,7 +12165,22 @@
     "tabelaA.1-eps1s-continuo"
    ],
    "teste_sugerido": "aplicar aos valores continuos de phi_1c/eps_1s (itens acima) e comparar com as colunas 0-4 e 10-15 da Tabela A.1 para U=40,70,90.",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.FATOR_ABATIMENTO_NOTA_C",
+     "tempo_concreto_nbr6118._faixa_abatimento"
+    ],
+    "testes": [
+     "test_tabela_A1_nota_c_reproduz_as_colunas",
+     "test_tabela_A1_nota_c_nao_vale_na_agua",
+     "test_nota_a_valores_exatos",
+     "test_nota_b_continuidade_com_a_tabela"
+    ],
+    "observacao": "Aplicada em phi1c e eps1s_1e4 (U ≤ 90 %). A linha da água não segue a nota c na retração, e o teste confirma."
+   }
   },
   {
    "id": "tabelaA.1-gamma",
@@ -12002,7 +12188,7 @@
    "pagina_pdf": 237,
    "titulo": "γ contínuo em função da umidade U (nota d da Tabela A.1)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P6",
@@ -12011,7 +12197,21 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "U=40% da gama=1+exp(-3,8)=1,022 (tabela categoriza 1,0 - proximo mas nao identico); U=90% da gama=1+exp(1,2)=4,32 (tabela categoriza 5,0 para 'muito umido' - mesma ordem de grandeza, nao identico porque a tabela usa 4 ambientes-padrao discretos e a formula e continua em U).",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.gama_umidade",
+     "tempo_concreto_nbr6118.espessura_ficticia_ponderada_cm"
+    ],
+    "testes": [
+     "test_nota_d_valores",
+     "test_nota_d_fora_da_faixa",
+     "test_espessura_ficticia"
+    ],
+    "observacao": "Em U = 90 % dá 4,32, contra 5,0 da tabela; a docstring manda usar gama_tabela quando se quer o valor da linha."
+   }
   },
   {
    "id": "A.2.3.2-beta-s",
@@ -12019,7 +12219,7 @@
    "pagina_pdf": 238,
    "titulo": "Coeficiente βs(t) - evolução da retração no tempo (curva racional em t/100)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P6",
@@ -12032,7 +12232,22 @@
     "A.2.4.1-idade-ficticia"
    ],
    "teste_sugerido": "checar beta_s(3) proximo de 0 e beta_s(t) -> 1 quando t cresce muito (10000 dias), para varios h; comparar com pontos lidos na Figura A.3 para h=0,1 m e h=0,8 m (tolerancia larga).",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.beta_s"
+    ],
+    "testes": [
+     "test_beta_s_calculo_a_mao_h_20cm",
+     "test_cruzado_h_em_cm_contra_h_em_m",
+     "test_beta_f_beta_s_trava_h_nos_extremos",
+     "test_beta_f_beta_s_faixa_de_t",
+     "test_figura_A3_leitura_grafica"
+    ],
+    "observacao": "h em m convertido dentro da função, travado em [0,05; 1,6] m. Exige t ≥ 3 dias."
+   }
   },
   {
    "id": "tabelaA.2-alpha-idade",
@@ -12040,7 +12255,7 @@
    "pagina_pdf": 239,
    "titulo": "Tabela A.2 - α por tipo de cimento (para a idade fictícia)",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P6",
@@ -12048,7 +12263,21 @@
    "formula_ou_regra": "alpha_fluencia: lento=1, normal=2, rapido=3; alpha_retracao=1 (todos os tipos de cimento)",
    "conferido_na_imagem": true,
    "depende_de": [],
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.TABELA_A_2_ALFA",
+     "tempo_concreto_nbr6118.alfa_cimento",
+     "tempo_concreto_nbr6118.velocidade_cimento"
+    ],
+    "testes": [
+     "test_tabela_A2_todas_as_celulas",
+     "test_tabela_A2_entradas_invalidas"
+    ],
+    "observacao": "Aceita os tipos da legenda (CP I-S, CP II-E/F/Z) e o sufixo RS."
+   }
   },
   {
    "id": "A.2.4.1-idade-ficticia",
@@ -12056,7 +12285,7 @@
    "pagina_pdf": 239,
    "titulo": "Idade fictícia do concreto t",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P6",
@@ -12067,7 +12296,23 @@
     "tabelaA.2-alpha-idade"
    ],
    "teste_sugerido": "com Ti=20 graus C constante e alpha=2 (cimento normal): t = 2*soma[(30/30)*delta_tef] = 2*(dias corridos); conferir a consistencia dimensional.",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P6",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.idade_ficticia_dias",
+     "tempo_concreto_nbr6118.espessura_ficticia_cm"
+    ],
+    "testes": [
+     "test_idade_ficticia_20C_constante",
+     "test_idade_ficticia_historico_variavel",
+     "test_idade_ficticia_limites",
+     "test_espessura_ficticia",
+     "test_h_ficticia_do_protendido_delega"
+    ],
+    "observacao": "historico=[(T_C, dias)] e fenomeno 'fluencia' ou 'retracao'. T ≤ −10 °C levanta erro. A espessura fictícia de A.2.4.2 vem junto: protendido_nbr6118.h_ficticia_cm delega a ela."
+   }
   },
   {
    "id": "A.2.4.2-hfic",

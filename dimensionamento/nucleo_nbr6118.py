@@ -610,3 +610,102 @@ def tau_Rd(fck_mpa: float, gama_c: float = GAMA_C) -> float:
     """τRd = 0,25·fctd, MPa, com fck limitado a 60 MPa (19.4.1)."""
     fck = validar_fck(fck_mpa)
     return 0.25 * fctd(min(fck, FCK_TETO_TAU_RD), gama_c)
+
+
+# === P6: fluência e retração (Tabela 8.1, promovida de protendido_nbr6118) ===
+# ---------------------------------------------------------------------------
+# Tabela 8.1 — valores característicos superiores de εcs(t∞,t0) e φ(t∞,t0)
+# (8.2.11, PDF p. 47). O procedimento completo do Anexo A mora em
+# tempo_concreto_nbr6118.py.
+# ---------------------------------------------------------------------------
+# φ(t∞,t0) depende da classe do concreto (bloco "C20-C45" × "C50-C90");
+# εcs(t∞,t0), em ‰, é comum às duas classes. Cada par de valores é
+# (2Ac/u = 20 cm, 2Ac/u = 60 cm). Eixos: t0 em dias (5, 30, 60) e umidade
+# média ambiente em % (40, 55, 75, 90).
+TABELA_8_1_PHI = {
+    "C20-C45": {
+        5.0:  {40.0: (4.6, 3.8), 55.0: (3.9, 3.3), 75.0: (2.8, 2.4), 90.0: (2.0, 1.9)},
+        30.0: {40.0: (3.4, 3.0), 55.0: (2.9, 2.6), 75.0: (2.2, 2.0), 90.0: (1.6, 1.5)},
+        60.0: {40.0: (2.9, 2.7), 55.0: (2.5, 2.3), 75.0: (1.9, 1.8), 90.0: (1.4, 1.4)},
+    },
+    "C50-C90": {
+        5.0:  {40.0: (2.7, 2.4), 55.0: (2.4, 2.1), 75.0: (1.9, 1.8), 90.0: (1.6, 1.5)},
+        30.0: {40.0: (2.0, 1.8), 55.0: (1.7, 1.6), 75.0: (1.4, 1.3), 90.0: (1.1, 1.1)},
+        60.0: {40.0: (1.7, 1.6), 55.0: (1.5, 1.4), 75.0: (1.2, 1.2), 90.0: (1.0, 1.0)},
+    },
+}
+TABELA_8_1_EPS_CS = {
+    5.0:  {40.0: (-0.53, -0.47), 55.0: (-0.48, -0.43), 75.0: (-0.36, -0.32), 90.0: (-0.18, -0.15)},
+    30.0: {40.0: (-0.44, -0.45), 55.0: (-0.41, -0.41), 75.0: (-0.33, -0.31), 90.0: (-0.17, -0.15)},
+    60.0: {40.0: (-0.39, -0.43), 55.0: (-0.36, -0.40), 75.0: (-0.30, -0.31), 90.0: (-0.17, -0.15)},
+}
+_T0_TAB_8_1 = (5.0, 30.0, 60.0)
+_UMIDADE_TAB_8_1 = (40.0, 55.0, 75.0, 90.0)
+_HFIC_TAB_8_1 = (20.0, 60.0)
+
+
+def _bloco_classe_tabela_8_1(fck_mpa: float) -> str:
+    """Bloco de classe da Tabela 8.1 e do Anexo A: 'C20-C45' ou 'C50-C90'.
+
+    A norma não tem classe padrão entre C45 e C50; fck nesse vão (46 a
+    49 MPa) é tratado como 'C50-C90' (bloco mais próximo por cima).
+    """
+    return "C20-C45" if float(fck_mpa) <= 45.0 else "C50-C90"
+
+
+def _interp_1d_tabela_8_1(x: float, pontos: tuple, valores: dict) -> float:
+    """Interpolação linear de uma variável entre pontos consecutivos da
+    Tabela 8.1; x fora de [pontos[0], pontos[-1]] levanta FaixaNormativaError."""
+    if x < pontos[0] or x > pontos[-1]:
+        raise FaixaNormativaError(
+            f"Valor {x:g} fora da faixa da Tabela 8.1 "
+            f"({pontos[0]:g} a {pontos[-1]:g})."
+        )
+    for p0, p1 in zip(pontos, pontos[1:]):
+        if p0 <= x <= p1:
+            v0, v1 = valores[p0], valores[p1]
+            return v0 + (v1 - v0) * (x - p0) / (p1 - p0)
+    raise AssertionError("Faixa inalcançável.")  # pragma: no cover
+
+
+def _interp_tabela_8_1(tabela: dict, umidade_pct: float, h_fic_cm: float,
+                       to_dias: float) -> float:
+    """Interpolação linear em t0, umidade e espessura fictícia (8.2.11:
+    “podem ser obtidos, por interpolação linear, a partir da Tabela 8.1”)."""
+    if to_dias < _T0_TAB_8_1[0] or to_dias > _T0_TAB_8_1[-1]:
+        raise FaixaNormativaError(
+            f"t0 = {to_dias:g} dias fora da faixa da Tabela 8.1 "
+            f"({_T0_TAB_8_1[0]:g} a {_T0_TAB_8_1[-1]:g} dias)."
+        )
+
+    def valor_no_t0(t0: float) -> float:
+        por_umidade = {
+            u: _interp_1d_tabela_8_1(h_fic_cm, _HFIC_TAB_8_1,
+                                     {20.0: par[0], 60.0: par[1]})
+            for u, par in tabela[t0].items()
+        }
+        return _interp_1d_tabela_8_1(umidade_pct, _UMIDADE_TAB_8_1, por_umidade)
+
+    valores_por_t0 = {t0: valor_no_t0(t0) for t0 in _T0_TAB_8_1}
+    return _interp_1d_tabela_8_1(to_dias, _T0_TAB_8_1, valores_por_t0)
+
+
+def phi_eps_cs_NBR(umidade_pct: float, h_fic_cm: float,
+                   to_dias: float = 30.0, fck_mpa: float = 30.0) -> tuple[float, float]:
+    """φ(t∞,t0) e εcs(t∞,t0) pela Tabela 8.1 (8.2.11, PDF p. 47).
+
+    Interpolação linear em t0, na umidade e na espessura fictícia
+    h_fic = 2·Ac/u (sem a ponderação γ do Anexo A), como o 8.2.11 permite.
+    t0 é a idade **real** do concreto no carregamento (não a idade fictícia
+    do Anexo A). φ depende da classe do concreto (bloco escolhido por
+    fck_mpa: C20-C45 ou C50-C90); εcs é comum às duas classes.
+
+    Faixa: t0 de 5 a 60 dias, umidade de 40 % a 90 %, h_fic de 20 cm a
+    60 cm; fora dela levanta FaixaNormativaError (subclasse de ValueError).
+
+    Retorna (φ(t∞,t0), εcs(t∞,t0) em ‰).
+    """
+    bloco = _bloco_classe_tabela_8_1(fck_mpa)
+    phi = _interp_tabela_8_1(TABELA_8_1_PHI[bloco], umidade_pct, h_fic_cm, to_dias)
+    eps = _interp_tabela_8_1(TABELA_8_1_EPS_CS, umidade_pct, h_fic_cm, to_dias)
+    return phi, eps

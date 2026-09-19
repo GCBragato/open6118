@@ -34,8 +34,10 @@ from dataclasses import dataclass
 
 try:  # executado como script, ou com dimensionamento/ no sys.path
     import nucleo_nbr6118 as nbr
+    import tempo_concreto_nbr6118 as tc
 except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
     from dimensionamento import nucleo_nbr6118 as nbr
+    from dimensionamento import tempo_concreto_nbr6118 as tc
 
 
 GAMA_C = 1.4
@@ -659,101 +661,27 @@ def perda_escorregamento_kncm2(delta_anc_m: float, X_m: float,
 # ---------------------------------------------------------------------------
 # NBR 6118 8.2.11 - Retracao e fluencia (Tabela 8.1, versao simplificada)
 # ---------------------------------------------------------------------------
-# Tabela 8.1 (NBR 6118:2026 8.2.11, PDF p. 47), transcrita por completo.
-# phi(t_inf,t0) depende da classe do concreto (bloco "C20-C45" x "C50-C90");
-# eps_cs(t_inf,t0) e comum as duas classes. Cada par de valores e
-# (h_fic=20 cm, h_fic=60 cm). Eixos: t0 em dias (5, 30, 60) e umidade media
-# ambiente em % (40, 55, 75, 90). Corrige PRO-02 (versao antiga: 8 pares
-# fixos, sem eixo de t0 nem separacao por classe de concreto).
-TABELA_8_1_PHI = {
-    "C20-C45": {
-        5.0:  {40.0: (4.6, 3.8), 55.0: (3.9, 3.3), 75.0: (2.8, 2.4), 90.0: (2.0, 1.9)},
-        30.0: {40.0: (3.4, 3.0), 55.0: (2.9, 2.6), 75.0: (2.2, 2.0), 90.0: (1.6, 1.5)},
-        60.0: {40.0: (2.9, 2.7), 55.0: (2.5, 2.3), 75.0: (1.9, 1.8), 90.0: (1.4, 1.4)},
-    },
-    "C50-C90": {
-        5.0:  {40.0: (2.7, 2.4), 55.0: (2.4, 2.1), 75.0: (1.9, 1.8), 90.0: (1.6, 1.5)},
-        30.0: {40.0: (2.0, 1.8), 55.0: (1.7, 1.6), 75.0: (1.4, 1.3), 90.0: (1.1, 1.1)},
-        60.0: {40.0: (1.7, 1.6), 55.0: (1.5, 1.4), 75.0: (1.2, 1.2), 90.0: (1.0, 1.0)},
-    },
-}
-TABELA_8_1_EPS_CS = {
-    5.0:  {40.0: (-0.53, -0.47), 55.0: (-0.48, -0.43), 75.0: (-0.36, -0.32), 90.0: (-0.18, -0.15)},
-    30.0: {40.0: (-0.44, -0.45), 55.0: (-0.41, -0.41), 75.0: (-0.33, -0.31), 90.0: (-0.17, -0.15)},
-    60.0: {40.0: (-0.39, -0.43), 55.0: (-0.36, -0.40), 75.0: (-0.30, -0.31), 90.0: (-0.17, -0.15)},
-}
-_T0_TAB_8_1 = (5.0, 30.0, 60.0)
-_UMIDADE_TAB_8_1 = (40.0, 55.0, 75.0, 90.0)
-_HFIC_TAB_8_1 = (20.0, 60.0)
-
-
-def _bloco_classe_tabela_8_1(fck_mpa: float) -> str:
-    """Bloco de classe da Tabela 8.1: 'C20-C45' ou 'C50-C90'. A tabela não
-    tem classe padrão entre C45 e C50; fck nesse vão (46 a 49 MPa) é tratado
-    como 'C50-C90' (bloco mais próximo por cima)."""
-    return "C20-C45" if fck_mpa <= 45.0 else "C50-C90"
-
-
-def _interp_1d(x: float, pontos: tuple, valores: dict) -> float:
-    """Interpolacao linear de 1 variavel entre pontos tabelados consecutivos.
-    x fora de [pontos[0], pontos[-1]] levanta ValueError."""
-    if x < pontos[0] or x > pontos[-1]:
-        raise ValueError(
-            f"Valor {x:g} fora da faixa da Tabela 8.1 "
-            f"({pontos[0]:g} a {pontos[-1]:g})."
-        )
-    for p0, p1 in zip(pontos, pontos[1:]):
-        if p0 <= x <= p1:
-            v0, v1 = valores[p0], valores[p1]
-            return v0 + (v1 - v0) * (x - p0) / (p1 - p0)
-    raise AssertionError("Faixa inalcançável.")  # pragma: no cover
-
-
-def _interp_tabela_8_1(tabela: dict, umidade_pct: float, h_fic_cm: float,
-                       to_dias: float) -> float:
-    """Interpolacao linear em t0, umidade e espessura ficticia (8.2.11:
-    'podem ser obtidos, por interpolacao linear, a partir da Tabela 8.1')."""
-    if to_dias < _T0_TAB_8_1[0] or to_dias > _T0_TAB_8_1[-1]:
-        raise ValueError(
-            f"t0 = {to_dias:g} dias fora da faixa da Tabela 8.1 "
-            f"({_T0_TAB_8_1[0]:g} a {_T0_TAB_8_1[-1]:g} dias)."
-        )
-
-    def valor_no_t0(t0: float) -> float:
-        linha = tabela[t0]
-        por_umidade = {
-            u: _interp_1d(h_fic_cm, _HFIC_TAB_8_1, {20.0: par[0], 60.0: par[1]})
-            for u, par in linha.items()
-        }
-        return _interp_1d(umidade_pct, _UMIDADE_TAB_8_1, por_umidade)
-
-    valores_por_t0 = {t0: valor_no_t0(t0) for t0 in _T0_TAB_8_1}
-    return _interp_1d(to_dias, _T0_TAB_8_1, valores_por_t0)
-
-
-def phi_eps_cs_NBR(umidade_pct: float, h_fic_cm: float,
-                   to_dias: float = 30.0, fck_mpa: float = 30.0) -> tuple[float, float]:
-    """phi_inf e eps_cs_inf pela Tabela 8.1 da NBR 6118 (8.2.11, PDF p. 47),
-    por interpolacao linear em t0, umidade e espessura ficticia
-    h_fic = 2*Ac/u_ar. Corrige PRO-02: a versao antiga ignorava to_dias e a
-    classe do concreto (8 pares fixos).
-
-    phi(t_inf,t0) depende da classe do concreto (bloco escolhido por
-    fck_mpa: C20-C45 ou C50-C90); eps_cs(t_inf,t0) e comum as duas classes.
-    to_dias, umidade_pct ou h_fic_cm fora da faixa tabelada (t0: 5 a 60
-    dias; umidade: 40 a 90 %; h_fic: 20 a 60 cm) levantam ValueError.
-
-    Retorna (phi_inf, eps_cs_inf_permil)."""
-    bloco = _bloco_classe_tabela_8_1(fck_mpa)
-    phi = _interp_tabela_8_1(TABELA_8_1_PHI[bloco], umidade_pct, h_fic_cm, to_dias)
-    eps = _interp_tabela_8_1(TABELA_8_1_EPS_CS, umidade_pct, h_fic_cm, to_dias)
-    return phi, eps
+# A Tabela 8.1 (NBR 6118:2026 8.2.11, PDF p. 47) e phi_eps_cs_NBR foram
+# promovidas ao nucleo no pacote P6 (19/09/2026); os nomes abaixo sao
+# reexportacoes, para nao quebrar quem importa daqui. O procedimento completo
+# do Anexo A (fluencia e retracao com precisao) esta em tempo_concreto_nbr6118.
+TABELA_8_1_PHI = nbr.TABELA_8_1_PHI
+TABELA_8_1_EPS_CS = nbr.TABELA_8_1_EPS_CS
+_T0_TAB_8_1 = nbr._T0_TAB_8_1
+_UMIDADE_TAB_8_1 = nbr._UMIDADE_TAB_8_1
+_HFIC_TAB_8_1 = nbr._HFIC_TAB_8_1
+_bloco_classe_tabela_8_1 = nbr._bloco_classe_tabela_8_1
+_interp_1d = nbr._interp_1d_tabela_8_1
+_interp_tabela_8_1 = nbr._interp_tabela_8_1
+phi_eps_cs_NBR = nbr.phi_eps_cs_NBR
 
 
 def h_ficticia_cm(Ac_cm2: float, u_ar_cm: float, gama_humid: float = 1.0) -> float:
-    """h_fic = gamma * 2*Ac / u_ar  (NBR 6118 Anexo A).
-    u_ar = perimetro em contato com o ar."""
-    return gama_humid * 2.0 * Ac_cm2 / u_ar_cm
+    """h_fic = gamma * 2*Ac / u_ar  (NBR 6118 A.2.4.2 e Tabela A.1).
+    u_ar = perimetro em contato com o ar. Delega a
+    tempo_concreto_nbr6118.espessura_ficticia_cm (P6); gama_humid=1,0
+    (padrao) devolve a espessura ficticia sem ponderacao."""
+    return gama_humid * tc.espessura_ficticia_cm(Ac_cm2, u_ar_cm)
 
 
 # ---------------------------------------------------------------------------

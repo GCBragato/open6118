@@ -756,25 +756,25 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 |---|---|---|---|---|---|---|---|
 | `A.2.1-eps-imediata` | A.2.1 | 232 | Deformação imediata do concreto por ocasião do carregamento | ausente | média | P | P7 |
 | `A.2.2.2-hipoteses` | A.2.2.2 | 233 | Hipóteses de cálculo da fluência (a a f) | não computável | baixa | P |  |
-| `A.2.2.3-phi-a` | A.2.2.3 | 234 | Coeficiente de deformação rápida φa | ausente | alta | P | P6 |
-| `A.2.2.3-phi-t-t0` | A.2.2.3 | 234 | Coeficiente de fluência φ(t,t0) - procedimento completo | ausente | alta | G | P6 |
+| `A.2.2.3-phi-a` | A.2.2.3 | 234 | Coeficiente de deformação rápida φa | implementado | alta | P | P6 |
+| `A.2.2.3-phi-t-t0` | A.2.2.3 | 234 | Coeficiente de fluência φ(t,t0) - procedimento completo | implementado | alta | G | P6 |
 | `A.2.2.3-eps-cc` | A.2.2.3 | 234 | Deformação por fluência εcc(t,t0) | ausente | alta | P | P7 |
-| `A.2.2.3-phi2c` | A.2.2.3 (A.2.4) | 235 | Coeficiente φ2c (função da espessura fictícia) | ausente | alta | P | P6 |
-| `A.2.2.3-phi-f-inf` | A.2.2.3 | 235 | Valor final do coeficiente de deformação lenta irreversível φf∞ | ausente | alta | P | P6 |
-| `A.2.2.3-beta-d` | A.2.2.3 | 235 | Coeficiente βd(t) - evolução da deformação lenta reversível | ausente | alta | P | P6 |
-| `A.2.2.3-beta-f` | A.2.2.3 | 235 | Coeficiente βf(t) - evolução da deformação lenta irreversível (curva racional em t) | ausente | alta | M | P6 |
+| `A.2.2.3-phi2c` | A.2.2.3 (A.2.4) | 235 | Coeficiente φ2c (função da espessura fictícia) | implementado | alta | P | P6 |
+| `A.2.2.3-phi-f-inf` | A.2.2.3 | 235 | Valor final do coeficiente de deformação lenta irreversível φf∞ | implementado | alta | P | P6 |
+| `A.2.2.3-beta-d` | A.2.2.3 | 235 | Coeficiente βd(t) - evolução da deformação lenta reversível | implementado | alta | P | P6 |
+| `A.2.2.3-beta-f` | A.2.2.3 | 235 | Coeficiente βf(t) - evolução da deformação lenta irreversível (curva racional em t) | implementado | alta | M | P6 |
 | `A.2.3.1-hipoteses` | A.2.3.1 | 236 | Hipóteses básicas da retração (a a c) | não computável | baixa | P |  |
-| `A.2.3.2-eps-cs-inf` | A.2.3.2 | 236 | Valor final da retração εcs∞ | ausente | alta | P | P6 |
-| `A.2.3.2-eps-cs-t-t0` | A.2.3.2 | 236 | Retração entre os instantes t0 e t | ausente | alta | P | P6 |
-| `A.2.3.2-eps2s` | A.2.3.2 | 237 | Coeficiente ε2s (função da espessura fictícia) da retração | ausente | alta | P | P6 |
-| `tabelaA.1-principal` | A.2.3.2 (Tabela A.1) | 237 | Tabela A.1 - φ1c, 10⁴·ε1s e γ por ambiente/umidade/abatimento | ausente | alta | P | P6 |
-| `tabelaA.1-phi1c-continuo` | A.2.3.2 (Tabela A.1, nota a) | 237 | φ1c contínuo em função da umidade U (nota a da Tabela A.1) | ausente | alta | P | P6 |
-| `tabelaA.1-eps1s-continuo` | A.2.3.2 (Tabela A.1, nota b) | 237 | 10⁴·ε1s contínuo em função da umidade U (nota b da Tabela A.1) | ausente | alta | P | P6 |
-| `tabelaA.1-ajuste-abatimento` | A.2.3.2 (Tabela A.1, nota c) | 237 | Ajuste de ±25 % de φ1c e ε1s por faixa de abatimento (nota c da Tabela A.1) | ausente | alta | P | P6 |
-| `tabelaA.1-gamma` | A.2.3.2 (Tabela A.1, nota d) | 237 | γ contínuo em função da umidade U (nota d da Tabela A.1) | ausente | alta | P | P6 |
-| `A.2.3.2-beta-s` | A.2.3.2 | 238 | Coeficiente βs(t) - evolução da retração no tempo (curva racional em t/100) | ausente | alta | M | P6 |
-| `tabelaA.2-alpha-idade` | A.2.4.1 (Tabela A.2) | 239 | Tabela A.2 - α por tipo de cimento (para a idade fictícia) | ausente | alta | P | P6 |
-| `A.2.4.1-idade-ficticia` | A.2.4.1 | 239 | Idade fictícia do concreto t | ausente | alta | M | P6 |
+| `A.2.3.2-eps-cs-inf` | A.2.3.2 | 236 | Valor final da retração εcs∞ | implementado | alta | P | P6 |
+| `A.2.3.2-eps-cs-t-t0` | A.2.3.2 | 236 | Retração entre os instantes t0 e t | implementado | alta | P | P6 |
+| `A.2.3.2-eps2s` | A.2.3.2 | 237 | Coeficiente ε2s (função da espessura fictícia) da retração | implementado | alta | P | P6 |
+| `tabelaA.1-principal` | A.2.3.2 (Tabela A.1) | 237 | Tabela A.1 - φ1c, 10⁴·ε1s e γ por ambiente/umidade/abatimento | implementado | alta | P | P6 |
+| `tabelaA.1-phi1c-continuo` | A.2.3.2 (Tabela A.1, nota a) | 237 | φ1c contínuo em função da umidade U (nota a da Tabela A.1) | implementado | alta | P | P6 |
+| `tabelaA.1-eps1s-continuo` | A.2.3.2 (Tabela A.1, nota b) | 237 | 10⁴·ε1s contínuo em função da umidade U (nota b da Tabela A.1) | implementado | alta | P | P6 |
+| `tabelaA.1-ajuste-abatimento` | A.2.3.2 (Tabela A.1, nota c) | 237 | Ajuste de ±25 % de φ1c e ε1s por faixa de abatimento (nota c da Tabela A.1) | implementado | alta | P | P6 |
+| `tabelaA.1-gamma` | A.2.3.2 (Tabela A.1, nota d) | 237 | γ contínuo em função da umidade U (nota d da Tabela A.1) | implementado | alta | P | P6 |
+| `A.2.3.2-beta-s` | A.2.3.2 | 238 | Coeficiente βs(t) - evolução da retração no tempo (curva racional em t/100) | implementado | alta | M | P6 |
+| `tabelaA.2-alpha-idade` | A.2.4.1 (Tabela A.2) | 239 | Tabela A.2 - α por tipo de cimento (para a idade fictícia) | implementado | alta | P | P6 |
+| `A.2.4.1-idade-ficticia` | A.2.4.1 | 239 | Idade fictícia do concreto t | implementado | alta | M | P6 |
 | `A.2.4.2-hfic` | A.2.4.2 | 240 | Espessura fictícia da peça hfic | implementado | alta | P |  |
 | `A.2.5-formula-integral` | A.2.5 | 240 | Deformação total do concreto - forma integral (caso geral, tensão variável) | ausente | baixa | G | P43 |
 | `A.2.5-formula-simplificada` | A.2.5 | 240 | Deformação total do concreto - forma prática simplificada (φ como função única) | ausente | média | M | P7 |
