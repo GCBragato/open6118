@@ -275,7 +275,8 @@
    "nome": "Consolos e dentes Gerber",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/consolos_nbr6118.py"
+   "modulo": "dimensionamento/consolos_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P37",
@@ -13301,7 +13302,7 @@
    "pagina_pdf": 206,
    "titulo": "Classificação de consolo (curto / muito curto / viga em balanço)",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P36",
@@ -13310,7 +13311,22 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "a=0,5d (limite muito curto/curto); a=d (limite curto/viga); a=1,01d (deve cair em viga em balanco).",
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P36",
+    "data": "19/09/2026",
+    "funcoes": [
+     "consolos_nbr6118.classificar_consolo"
+    ],
+    "testes": [
+     "test_classificar_consolo_limite_muito_curto_curto_a_igual_0_5d",
+     "test_classificar_consolo_abaixo_do_limite_e_muito_curto",
+     "test_classificar_consolo_limite_curto_viga_a_igual_d",
+     "test_classificar_consolo_acima_de_d_e_viga_em_balanco",
+     "test_classificar_consolo_a_ou_d_nao_positivos_levantam_erro"
+    ],
+    "observacao": "Conferido na imagem (p. 206). curto e a/d<=1 inclusive (a=d ainda e consolo curto); a>d classifica como 'viga_em_balanco' (ok=False) em vez de lancar erro, para o chamador poder decidir o que fazer -- dimensionar_consolo lanca FaixaNormativaError se receber esse caso."
+   }
   },
   {
    "id": "22.5.1.2-limite-inclinacao-biela-consolo",
@@ -13318,7 +13334,7 @@
    "pagina_pdf": 207,
    "titulo": "Inclinação máxima da abertura de carga na biela do consolo",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P36",
@@ -13326,7 +13342,21 @@
    "formula_ou_regra": "inclinacao maxima 1:2 (horizontal:vertical) a partir das bordas da placa de apoio",
    "conferido_na_imagem": true,
    "depende_de": [],
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P36",
+    "data": "19/09/2026",
+    "funcoes": [
+     "consolos_nbr6118.verificar_abertura_carga"
+    ],
+    "testes": [
+     "test_verificar_abertura_carga_largura_maxima",
+     "test_verificar_abertura_carga_profundidade_zero_nao_altera_largura",
+     "test_verificar_abertura_carga_dentro_do_limite",
+     "test_verificar_abertura_carga_acima_do_limite_reprovado"
+    ],
+    "observacao": "22.5.1.2 c) (p. 207): abertura de carga sob a placa de apoio limitada a inclinacao 1:2 (horizontal:vertical) a partir das bordas da area de apoio -> largura_max = a0 + profundidade."
+   }
   },
   {
    "id": "22.5.1.2-limite-taxa-tirante-ductil",
@@ -13348,7 +13378,7 @@
    "pagina_pdf": 208,
    "titulo": "Modelo de cálculo do consolo (biela-tirante ou atrito-cisalhamento)",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "parcial",
    "prioridade": "alta",
    "complexidade": "G",
    "pacote": "P36",
@@ -13360,7 +13390,29 @@
     "22.3.2-fcd3",
     "22.3.3-as-tirante"
    ],
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P36",
+    "data": "19/09/2026",
+    "funcoes": [
+     "consolos_nbr6118.braco_alavanca_consolo_cm",
+     "consolos_nbr6118.Rsd_tirante_consolo_kn",
+     "consolos_nbr6118.dimensionar_consolo"
+    ],
+    "testes": [
+     "test_braco_alavanca_consolo",
+     "test_rsd_tirante_consolo_sem_forca_horizontal",
+     "test_rsd_tirante_consolo_com_forca_horizontal_soma_direto",
+     "test_dimensionar_consolo_exemplo_a_mao_modelo_biela_tirante",
+     "test_dimensionar_consolo_as_min_governa_quando_tirante_e_pequeno",
+     "test_dimensionar_consolo_gama_n_explicito_sobrescreve_padrao",
+     "test_dimensionar_consolo_expoe_fcd1_fcd3_como_referencia",
+     "test_dimensionar_consolo_a_maior_que_d_levanta_erro_nao_e_consolo",
+     "test_dimensionar_consolo_modelo_atrito_nao_implementado",
+     "test_dimensionar_consolo_modelo_desconhecido_levanta_value_error"
+    ],
+    "observacao": "22.5.1.3 e descritivo na norma (exige so equilibrio geral e apoio experimental; sem formula fechada -- por isso 'conferido_na_imagem: false' no mapa). Implementado: modelo classico de biela-tirante (z=0,85d adotado e documentado, Rsd=Fd*a/z+Hd) com As do tirante, exposto com o exemplo a mao do aceite. fcd1/fcd3 (22.3.2) sao expostos no resultado so como referencia. Falta (por isso 'parcial'): verificacao automatica da tensao de compressao na biela contra fcd1/fcd3, porque isso exige a largura efetiva do no, que depende da geometria do apoio (placa a0) e nao tem formula fechada no texto normativo -- quem tiver essa geometria chama bielas_tirantes_nbr6118.verificar_no com o sigma calculado a parte. modelo='atrito' (atrito-cisalhamento) nao implementado: 22.5.1.3 cita o metodo so descritivamente, sem coeficientes de atrito -- levanta NotImplementedError em vez de inventar constante sem fonte normativa."
+   }
   },
   {
    "id": "22.5.1.4.1-as-min-tirante-consolo",
@@ -13368,7 +13420,7 @@
    "pagina_pdf": 208,
    "titulo": "Armadura mínima do tirante do consolo",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P36",
@@ -13379,7 +13431,19 @@
    "depende_de": [
     "nucleo.As_min_flexao_retangular"
    ],
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P36",
+    "data": "19/09/2026",
+    "funcoes": [
+     "consolos_nbr6118.dimensionar_consolo (via nucleo_nbr6118.As_min_flexao_retangular)"
+    ],
+    "testes": [
+     "test_dimensionar_consolo_exemplo_a_mao_modelo_biela_tirante",
+     "test_dimensionar_consolo_as_min_governa_quando_tirante_e_pequeno"
+    ],
+    "observacao": "As,min do tirante = As,min de flexao (17.3.5.2) para viga ficticia b x h iguais as do consolo, reusando a funcao ja existente do nucleo; As final = max(As,tirante, As,min)."
+   }
   },
   {
    "id": "22.5.1.4.1-restricao-gancho-vertical-consolo",
@@ -13387,7 +13451,7 @@
    "pagina_pdf": 208,
    "titulo": "Restrição ao uso de gancho vertical na extremidade do tirante do consolo",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P36",
@@ -13395,7 +13459,23 @@
    "formula_ou_regra": "Gancho vertical só é aceito em consolo contínuo, com b > 4·(a + a0) e na presença de pequenas cargas horizontais e verticais",
    "conferido_na_imagem": true,
    "depende_de": [],
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P36",
+    "data": "19/09/2026",
+    "funcoes": [
+     "consolos_nbr6118.verificar_gancho_vertical_consolo"
+    ],
+    "testes": [
+     "test_gancho_vertical_permitido_consolo_continuo_largo_com_cargas_pequenas",
+     "test_gancho_vertical_proibido_se_b_nao_supera_4_vezes_a_mais_a0",
+     "test_gancho_vertical_proibido_se_nao_continuo_mesmo_com_b_grande",
+     "test_gancho_vertical_proibido_se_cargas_nao_forem_pequenas",
+     "test_gancho_vertical_limite_exato_b_igual_4_a_mais_a0_e_reprovado",
+     "test_dimensionar_consolo_com_a0_avalia_gancho_vertical"
+    ],
+    "observacao": "permitido <=> consolo continuo E b>4*(a+a0) E cargas pequenas. A norma nao quantifica 'pequenas cargas horizontais e verticais' -- fica como parametro booleano explicito de quem chama (cargas_horizontais_verticais_pequenas), documentado na docstring."
+   }
   },
   {
    "id": "22.5.1.4.3-armadura-costura-consolo",
@@ -13403,7 +13483,7 @@
    "pagina_pdf": 209,
    "titulo": "Armadura de costura mínima do consolo",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P36",
@@ -13414,7 +13494,20 @@
     "22.5.1.4.1-as-min-tirante-consolo"
    ],
    "teste_sugerido": "As,tirante=6 cm2 -> As,costura,min=2,4 cm2 distribuidos em 2/3*d de altura.",
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P36",
+    "data": "19/09/2026",
+    "funcoes": [
+     "consolos_nbr6118.As_costura_min_cm2"
+    ],
+    "testes": [
+     "test_as_costura_minima_40_por_cento_exato",
+     "test_as_costura_minima_zero_para_tirante_zero",
+     "test_as_costura_minima_negativa_levanta_erro"
+    ],
+    "observacao": "As,costura,min = 0,40*As,tirante, exato (teste sugerido do plano: 6 cm2 -> 2,4 cm2). Altura de distribuicao (2/3)*d calculada dentro de dimensionar_consolo."
+   }
   },
   {
    "id": "22.5.1.4.4-armadura-suspensao-consolo",
@@ -13422,7 +13515,7 @@
    "pagina_pdf": 209,
    "titulo": "Armadura de suspensão do consolo para carga indireta",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P36",
@@ -13432,7 +13525,21 @@
    "depende_de": [
     "22.3.3-as-tirante"
    ],
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P36",
+    "data": "19/09/2026",
+    "funcoes": [
+     "consolos_nbr6118.As_suspensao_consolo_cm2"
+    ],
+    "testes": [
+     "test_as_suspensao_consolo_formula",
+     "test_as_suspensao_consolo_sem_carga_indireta_e_zero",
+     "test_dimensionar_consolo_com_carga_indireta_dimensiona_suspensao",
+     "test_dimensionar_consolo_sem_carga_indireta_suspensao_e_zero"
+    ],
+    "observacao": "As,susp = Fd,indireta/fyd; com Fd,indireta=0 (padrao) nao exige suspensao."
+   }
   },
   {
    "id": "22.5.2.1-classificacao-dente-gerber",
@@ -13470,7 +13577,7 @@
    "pagina_pdf": 210,
    "titulo": "Modelo de cálculo do dente Gerber",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "parcial",
    "prioridade": "media",
    "complexidade": "G",
    "pacote": "P36",
@@ -13479,7 +13586,19 @@
    "depende_de": [
     "22.5.1.3-modelo-calculo-consolo"
    ],
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P36",
+    "data": "19/09/2026",
+    "funcoes": [
+     "consolos_nbr6118.dimensionar_dente_gerber"
+    ],
+    "testes": [
+     "test_dimensionar_dente_gerber_reaproveita_consolo_e_soma_suspensao",
+     "test_dimensionar_dente_gerber_a_maior_que_d_levanta_erro"
+    ],
+    "observacao": "22.5.2.3 tambem e descritivo ('mesmos principios do consolo, com as correcoes de 22.5.2.2'). Reaproveita dimensionar_consolo (mesma aproximacao z=0,85d) e desliga a suspensao de 22.5.1.4.4 (Fd_indireta_kn=0), somando a suspensao propria do dente Gerber. Falta, pela mesma razao do item 22.5.1.3: nao modela a biela mais inclinada do dente Gerber (22.5.2.2 a) como uma geometria separada -- usa a mesma aproximacao de braco de alavanca do consolo, por nao haver formula fechada na norma para a inclinacao especifica do dente."
+   }
   },
   {
    "id": "22.5.2.4.2-as-suspensao-dente-gerber",
@@ -13487,7 +13606,7 @@
    "pagina_pdf": 211,
    "titulo": "Armadura de suspensão do dente Gerber",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P36",
@@ -13497,7 +13616,19 @@
    "depende_de": [
     "22.3.3-as-tirante"
    ],
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P36",
+    "data": "19/09/2026",
+    "funcoes": [
+     "consolos_nbr6118.As_suspensao_dente_cm2"
+    ],
+    "testes": [
+     "test_as_suspensao_dente_gerber_formula",
+     "test_dimensionar_dente_gerber_reaproveita_consolo_e_soma_suspensao"
+    ],
+    "observacao": "As,susp = Fd/fyd, sempre exigida no dente Gerber (independente de carga indireta, ao contrario do consolo -- 22.5.2.4.1)."
+   }
   },
   {
    "id": "22.5.2.4.3-ancoragem-armadura-principal-gerber",

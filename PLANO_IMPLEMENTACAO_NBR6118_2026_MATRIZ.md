@@ -632,18 +632,18 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `22.4.4.2-ancoragem-flexao-positiva-viga-parede` | 22.4.4.2 | 205 | Ancoragem da armadura de flexão positiva nos apoios de viga-parede | não computável | média | P |  |
 | `22.4.4.3-armadura-vertical-minima-viga-parede` | 22.4.4.3 | 206 | Armadura vertical mínima de viga-parede | implementado | média | P | P35 |
 | `22.4.4.3-verificacao-suspensao-carga-inferior` | 22.4.4.3 | 206 | Armadura vertical de suspensão em viga-parede com carregamento inferior | implementado | média | P | P35 |
-| `22.5.1.1-classificacao-consolo` | 22.5.1.1 | 206 | Classificação de consolo (curto / muito curto / viga em balanço) | ausente | alta | P | P36 |
-| `22.5.1.2-limite-inclinacao-biela-consolo` | 22.5.1.2 | 207 | Inclinação máxima da abertura de carga na biela do consolo | ausente | alta | P | P36 |
+| `22.5.1.1-classificacao-consolo` | 22.5.1.1 | 206 | Classificação de consolo (curto / muito curto / viga em balanço) | implementado | alta | P | P36 |
+| `22.5.1.2-limite-inclinacao-biela-consolo` | 22.5.1.2 | 207 | Inclinação máxima da abertura de carga na biela do consolo | implementado | alta | P | P36 |
 | `22.5.1.2-limite-taxa-tirante-ductil` | 22.5.1.2 | 207 | Limitação superior da taxa de armadura do tirante do consolo | não computável | média | P |  |
-| `22.5.1.3-modelo-calculo-consolo` | 22.5.1.3 | 208 | Modelo de cálculo do consolo (biela-tirante ou atrito-cisalhamento) | ausente | alta | G | P36 |
-| `22.5.1.4.1-as-min-tirante-consolo` | 22.5.1.4.1 | 208 | Armadura mínima do tirante do consolo | ausente | alta | P | P36 |
-| `22.5.1.4.1-restricao-gancho-vertical-consolo` | 22.5.1.4.1 | 208 | Restrição ao uso de gancho vertical na extremidade do tirante do consolo | ausente | média | P | P36 |
-| `22.5.1.4.3-armadura-costura-consolo` | 22.5.1.4.3 | 209 | Armadura de costura mínima do consolo | ausente | alta | P | P36 |
-| `22.5.1.4.4-armadura-suspensao-consolo` | 22.5.1.4.4 | 209 | Armadura de suspensão do consolo para carga indireta | ausente | média | P | P36 |
+| `22.5.1.3-modelo-calculo-consolo` | 22.5.1.3 | 208 | Modelo de cálculo do consolo (biela-tirante ou atrito-cisalhamento) | parcial | alta | G | P36 |
+| `22.5.1.4.1-as-min-tirante-consolo` | 22.5.1.4.1 | 208 | Armadura mínima do tirante do consolo | implementado | alta | P | P36 |
+| `22.5.1.4.1-restricao-gancho-vertical-consolo` | 22.5.1.4.1 | 208 | Restrição ao uso de gancho vertical na extremidade do tirante do consolo | implementado | média | P | P36 |
+| `22.5.1.4.3-armadura-costura-consolo` | 22.5.1.4.3 | 209 | Armadura de costura mínima do consolo | implementado | alta | P | P36 |
+| `22.5.1.4.4-armadura-suspensao-consolo` | 22.5.1.4.4 | 209 | Armadura de suspensão do consolo para carga indireta | implementado | média | P | P36 |
 | `22.5.2.1-classificacao-dente-gerber` | 22.5.2.1 | 210 | Conceituação do dente Gerber | não computável | média | P |  |
 | `22.5.2.2-comportamento-dente-gerber` | 22.5.2.2 | 210 | Comportamento estrutural do dente Gerber frente ao consolo | não computável | média | P |  |
-| `22.5.2.3-modelo-calculo-dente-gerber` | 22.5.2.3 | 210 | Modelo de cálculo do dente Gerber | ausente | média | G | P36 |
-| `22.5.2.4.2-as-suspensao-dente-gerber` | 22.5.2.4.2 | 211 | Armadura de suspensão do dente Gerber | ausente | média | P | P36 |
+| `22.5.2.3-modelo-calculo-dente-gerber` | 22.5.2.3 | 210 | Modelo de cálculo do dente Gerber | parcial | média | G | P36 |
+| `22.5.2.4.2-as-suspensao-dente-gerber` | 22.5.2.4.2 | 211 | Armadura de suspensão do dente Gerber | implementado | média | P | P36 |
 | `22.5.2.4.3-ancoragem-armadura-principal-gerber` | 22.5.2.4.3 | 211 | Ancoragem da armadura principal (tirante) do dente Gerber | não computável | baixa | P |  |
 | `22.5.2.4.4-ancoragem-inferior-viga-gerber` | 22.5.2.4.4 | 211 | Ancoragem da armadura inferior da viga no trecho de suspensão do dente Gerber | não computável | baixa | P |  |
 | `22.5.2.4.5-casos-especiais-gerber` | 22.5.2.4.5 | 211 | Casos especiais de suspensão no dente Gerber (barras dobradas, protensão) | não computável | baixa | P |  |
