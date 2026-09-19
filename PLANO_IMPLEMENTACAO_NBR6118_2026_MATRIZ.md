@@ -260,7 +260,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.2.3-14.2.4-aplicacao-resultados` | 14.2.3/14.2.4 | 103 | Aplicação dos resultados de modelos lineares e não lineares (regra geral de dimensionamento) | não computável | baixa | P |  |
 | `14.3.1-ordem-equilibrio` | 14.3.1 | 103 | Escolha entre teoria de 1a e 2a ordem para as equações de equilíbrio | não computável | média | P |  |
 | `14.3.2-compatibilidade` | 14.3.2 | 104 | Condições de compatibilidade e dutilidade quando não verificadas | não computável | baixa | P |  |
-| `14.3.3-tensao-max-ciclica` | 14.3.3 | 104 | Limite de tensão de compressão em serviço para admitir carregamento monotônico | ausente | baixa | P | P14 |
+| `14.3.3-tensao-max-ciclica` | 14.3.3 | 104 | Limite de tensão de compressão em serviço para admitir carregamento monotônico | implementado | baixa | P | P14 |
 | `14.4.1-classif-elemento-linear` | 14.4.1 | 104 | Critério de classificação de elemento linear (barra) por proporção geométrica | implementado | baixa | P | P11 |
 | `14.4.1.1-14.4.1.4-classif-funcional` | 14.4.1.1 a 14.4.1.4 | 104 | Classificação funcional dos elementos lineares (viga, pilar, tirante, arco) | não computável | baixa | P |  |
 | `14.4.2.1-placa-espessa` | 14.4.2.1 | 104 | Critério de placa espessa (espessura maior que 1/3 do vão) | implementado | média | P | P11 |
@@ -274,13 +274,13 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.5.5-analise-nao-linear-geral` | 14.5.5 | 106 | Análise não linear - condições gerais (geometria e armaduras completas, equilíbrio/compatibilidade/dutilidade) | não computável | baixa | P |  |
 | `14.5.6-modelos-fisicos` | 14.5.6 | 106 | Análise por modelos físicos (ensaios) - condições e margens de segurança | não computável | baixa | P |  |
 | `14.6.1-hipoteses-elementos-lineares` | 14.6.1 | 107 | Hipóteses básicas para estruturas de elementos lineares (seção plana, eixo, comprimento entre apoios) | não computável | baixa | P |  |
-| `14.6.2.1-trecho-rigido` | 14.6.2.1 | 108 | Extensão do trecho rígido no cruzamento de elementos lineares (Figura 14.1) | ausente | alta | P | P14 |
+| `14.6.2.1-trecho-rigido` | 14.6.2.1 | 108 | Extensão do trecho rígido no cruzamento de elementos lineares (Figura 14.1) | implementado | alta | P | P14 |
 | `14.6.2.2-vao-a-mesa` | 14.6.2.2 | 108 | Distância a entre pontos de momento fletor nulo (para largura colaborante) | implementado | alta | P |  |
-| `14.6.2.2-largura-colaborante` | 14.6.2.2 | 109 | Largura colaborante bf de viga T/L (limites b1, b3 conforme Figura 14.2) | parcial | alta | M | P14 |
-| `14.6.2.2-largura-efetiva-abertura` | 14.6.2.2 | 109 | Largura efetiva bef da mesa colaborante na presença de abertura na laje (Figura 14.3) | ausente | média | M | P14 |
-| `14.6.2.3-misulas-secao-efetiva` | 14.6.2.3 | 109 | Seção efetiva em mísulas e variações bruscas de seção (Figura 14.4) | ausente | alta | M | P14 |
+| `14.6.2.2-largura-colaborante` | 14.6.2.2 | 109 | Largura colaborante bf de viga T/L (limites b1, b3 conforme Figura 14.2) | implementado | alta | M | P14 |
+| `14.6.2.2-largura-efetiva-abertura` | 14.6.2.2 | 109 | Largura efetiva bef da mesa colaborante na presença de abertura na laje (Figura 14.3) | parcial | média | M | P14 |
+| `14.6.2.3-misulas-secao-efetiva` | 14.6.2.3 | 109 | Seção efetiva em mísulas e variações bruscas de seção (Figura 14.4) | parcial | alta | M | P14 |
 | `14.6.2.4-vao-efetivo-viga` | 14.6.2.4 | 110 | Vão efetivo de vigas (lef = l0 + a1 + a2) | implementado | alta | P |  |
-| `14.6.3-arredondamento-momentos` | 14.6.3 | 111 | Arredondamento do diagrama de momentos fletores sobre apoios/cargas concentradas (Figura 14.6) | ausente | alta | P | P14 |
+| `14.6.3-arredondamento-momentos` | 14.6.3 | 111 | Arredondamento do diagrama de momentos fletores sobre apoios/cargas concentradas (Figura 14.6) | implementado | alta | P | P14 |
 | `14.6.4.1-rigidez-vigas-pilares` | 14.6.4.1 | 111 | Valores de rigidez para análise linear (Ecs, momento de inércia bruto; flechas com fissuração/fluência) | ausente | alta | P | P44 |
 | `14.6.4.2-restricoes-redistribuicao` | 14.6.4.2 | 111 | Restrições à redistribuição em pilares, elementos comprimidos e consolos | ausente | média | P | P46 |
 | `14.6.4.3-xd-dutilidade` | 14.6.4.3 | 112 | Limite de x/d para dutilidade sem redistribuição (0,45 / 0,35) | implementado | alta | P |  |
@@ -289,11 +289,11 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.6.4.4-rotacao-plastica` | 14.6.4.4 | 112 | Capacidade de rotação plástica admissível (Figura 14.7) e fator de correção a/d | implementado | média | G | P13 |
 | `14.6.4.4-dispensa-verificacao-rotacao` | 14.6.4.4 | 113 | Dispensa da verificação explícita de rotação plástica (x/d ≤ 0,25 / 0,15) | implementado | média | P | P13 |
 | `14.6.5-analise-nao-linear-elementos-lineares` | 14.6.5 | 113 | Análise não linear de elementos lineares - aplicabilidade a ELU e ELS | não computável | baixa | P |  |
-| `14.6.6.1-vigas-continuas-momento-minimo` | 14.6.6.1 | 113 | Correções de momento mínimo no modelo de viga contínua simplesmente apoiada nos pilares | ausente | alta | M | P14 |
-| `14.6.6.1-coeficientes-engastamento-apoio-extremo` | 14.6.6.1 | 114 | Coeficientes de momento de engastamento perfeito nos apoios extremos (rigidez de pilares/viga, Figura 14.8) | ausente | alta | M | P14 |
-| `14.6.6.2-reducao-rigidez-torcao-grelha` | 14.6.6.2 | 115 | Redução da rigidez à torção das vigas em modelos de grelha/pórtico espacial (15% da rigidez elástica) | ausente | alta | P | P14 |
-| `14.6.6.3-dispensa-alternancia-cargas` | 14.6.6.3 | 115 | Dispensa de alternância de cargas variáveis em edifícios (q ≤ 5 kN/m² e ≤ 50% da carga total) | ausente | alta | P | P14 |
-| `14.6.6.4-diafragma-rigido` | 14.6.6.4 | 115 | Critério para considerar a laje como diafragma rígido em seu plano | ausente | alta | P | P14 |
+| `14.6.6.1-vigas-continuas-momento-minimo` | 14.6.6.1 | 113 | Correções de momento mínimo no modelo de viga contínua simplesmente apoiada nos pilares | implementado | alta | M | P14 |
+| `14.6.6.1-coeficientes-engastamento-apoio-extremo` | 14.6.6.1 | 114 | Coeficientes de momento de engastamento perfeito nos apoios extremos (rigidez de pilares/viga, Figura 14.8) | implementado | alta | M | P14 |
+| `14.6.6.2-reducao-rigidez-torcao-grelha` | 14.6.6.2 | 115 | Redução da rigidez à torção das vigas em modelos de grelha/pórtico espacial (15% da rigidez elástica) | implementado | alta | P | P14 |
+| `14.6.6.3-dispensa-alternancia-cargas` | 14.6.6.3 | 115 | Dispensa de alternância de cargas variáveis em edifícios (q ≤ 5 kN/m² e ≤ 50% da carga total) | implementado | alta | P | P14 |
+| `14.6.6.4-diafragma-rigido` | 14.6.6.4 | 115 | Critério para considerar a laje como diafragma rígido em seu plano | implementado | alta | P | P14 |
 | `14.7.1-hipoteses-placas` | 14.7.1 | 115 | Hipóteses básicas de estruturas de placas (seção plana em faixas estreitas, plano médio) | não computável | baixa | P |  |
 | `14.7.2.2-vao-efetivo-laje` | 14.7.2.2 | 116 | Vão efetivo de lajes/placas (mesma fórmula lef = l0+a1+a2 de 14.6.2.4) | implementado | alta | P |  |
 | `14.7.3-poisson-placas` | 14.7.3 | 116 | Coeficiente de Poisson para análise elástica de placas (ν = 0,2) | implementado | baixa | P | P2 |

@@ -54,6 +54,11 @@ try:  # executado como script, ou com dimensionamento/ no sys.path
 except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
     from dimensionamento import limites_geometricos_nbr6118 as _limites
 
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import analise_linear_nbr6118 as _analise_linear
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import analise_linear_nbr6118 as _analise_linear
+
 
 # ---------------------------------------------------------------------------
 # Constantes
@@ -132,11 +137,10 @@ def classificar(lx_cm: float, ly_cm: float) -> tuple[float, str]:
     return lam, "duas_direcoes" if lam <= 2.0 else "uma_direcao"
 
 
-def vao_efetivo(l0_cm: float, t1_cm: float, t2_cm: float, h_cm: float) -> float:
-    """Vao efetivo (NBR 6118 14.6.2.4)."""
-    a1 = min(t1_cm / 2.0, 0.3 * h_cm)
-    a2 = min(t2_cm / 2.0, 0.3 * h_cm)
-    return l0_cm + a1 + a2
+# Promovida para analise_linear_nbr6118.py no P14 (19/09/2026); fachada de
+# uma linha mantida aqui para nao quebrar quem ja importava vao_efetivo
+# deste modulo - mesma assinatura e mesmo resultado de antes.
+vao_efetivo = _analise_linear.vao_efetivo
 
 
 def predim_altura(

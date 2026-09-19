@@ -33,6 +33,11 @@ try:  # executado como script, ou com dimensionamento/ no sys.path
 except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
     from dimensionamento import nucleo_nbr6118 as nbr
 
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import analise_linear_nbr6118 as _analise_linear
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import analise_linear_nbr6118 as _analise_linear
+
 
 GAMA_C = 1.4
 GAMA_S = 1.15
@@ -242,57 +247,13 @@ def fctm_kncm2(fck_mpa: float) -> float:
 # ---------------------------------------------------------------------------
 # Largura efetiva de mesa colaborante (NBR 6118 14.6.2.2)
 # ---------------------------------------------------------------------------
-def vao_a_para_mesa(L_cm: float, tipo: str = "biapoiada") -> float:
-    """Distancia 'a' entre pontos de momento nulo (NBR 14.6.2.2).
-
-    tipo:
-      'biapoiada'   -> a = L
-      'continua'    -> a = 0.75 * L (vao extremo) ou 0.6*L (intermediario)
-      'continua-extrema' -> a = 0.75 * L
-      'continua-intermediaria' -> a = 0.6 * L
-      'balanco'     -> a = 2 * L
-    """
-    t = tipo.lower()
-    if t == "biapoiada":
-        return L_cm
-    if t in ("continua-extrema", "continua"):
-        return 0.75 * L_cm
-    if t == "continua-intermediaria":
-        return 0.6 * L_cm
-    if t == "balanco":
-        return 2.0 * L_cm
-    raise ValueError(f"tipo desconhecido: {tipo}")
-
-
-def largura_efetiva_mesa(
-    bw_cm: float, b2_l_esq_cm: float, b2_l_dir_cm: float,
-    L_cm: float, tipo_vao: str = "biapoiada",
-    tipo_secao: str = "T",
-) -> dict:
-    """Largura colaborante b_f para secao T ou L (NBR 14.6.2.2).
-
-    bw       : largura da nervura
-    b2_l_*   : distancia livre entre face do pilar e face da viga vizinha
-               (uma para cada lado; para secao L, passar 0 do lado livre)
-    L        : vao da viga
-    tipo_vao : ver vao_a_para_mesa()
-    tipo_secao : 'T' (dois lados) ou 'L' (um lado)
-
-    Limites NBR:
-      b1, b3 <= 0.5 * b2_l (cada lado)
-      b1, b3 <= 0.10 * a   (a = distancia entre pontos de momento nulo)
-
-    Retorna dict com b1, b3, bf, a.
-    """
-    a = vao_a_para_mesa(L_cm, tipo_vao)
-    b1 = min(0.5 * b2_l_esq_cm, 0.10 * a)
-    b3 = min(0.5 * b2_l_dir_cm, 0.10 * a) if tipo_secao.upper() == "T" else 0.0
-    return {
-        "a_cm": a,
-        "b1_cm": b1,
-        "b3_cm": b3,
-        "bf_cm": b1 + bw_cm + b3,
-    }
+# Promovidas para analise_linear_nbr6118.py no P14 (19/09/2026): a formula
+# (com o caso de borda/b4 da Figura 14.2 que faltava aqui) agora mora la.
+# Mantidas aqui como fachada de uma linha para nao quebrar quem ja importava
+# vao_a_para_mesa/largura_efetiva_mesa deste modulo - mesma assinatura e
+# mesmo resultado de antes.
+vao_a_para_mesa = _analise_linear.vao_a_para_mesa
+largura_efetiva_mesa = _analise_linear.largura_efetiva_mesa
 
 
 def sigma_si_aproximada(Md_ser_kncm: float, d_cm: float,

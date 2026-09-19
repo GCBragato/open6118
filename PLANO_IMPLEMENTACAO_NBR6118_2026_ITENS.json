@@ -109,7 +109,8 @@
    "nome": "Pré e pós-processamento da análise linear",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/analise_linear_nbr6118.py"
+   "modulo": "dimensionamento/analise_linear_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P15",
@@ -4910,7 +4911,7 @@
    "pagina_pdf": 104,
    "titulo": "Limite de tensão de compressão em serviço para admitir carregamento monotônico",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P14",
@@ -4922,7 +4923,19 @@
     "nucleo_nbr6118.validar_fck"
    ],
    "teste_sugerido": "Caso limite: sigma_c,serv = 0,5*fck deve passar; 0,501*fck deve reprovar.",
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P14",
+    "data": "19/09/2026",
+    "funcoes": [
+     "admite_carregamento_monotonico"
+    ],
+    "testes": [
+     "test_admite_carregamento_monotonico_limite_inclusivo",
+     "test_admite_carregamento_monotonico_fck_invalido"
+    ],
+    "observacao": "Sem mudanca nesta correcao alem da reacentuacao de docstring/mensagens."
+   }
   },
   {
    "id": "14.4.1-classif-elemento-linear",
@@ -5206,7 +5219,7 @@
    "pagina_pdf": 108,
    "titulo": "Extensão do trecho rígido no cruzamento de elementos lineares (Figura 14.1)",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P14",
@@ -5215,7 +5228,20 @@
    "formula_ou_regra": "extensao_trecho_rigido = 0,3 * h (h = altura, na direcao considerada, do elemento que cruza o no), aplicado a cada lado do cruzamento dos eixos",
    "conferido_na_imagem": true,
    "teste_sugerido": "h=60 cm -> trecho rigido de 18 cm para cada lado do encontro dos eixos.",
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P14",
+    "data": "19/09/2026",
+    "funcoes": [
+     "trecho_rigido_cm"
+    ],
+    "testes": [
+     "test_trecho_rigido_h60",
+     "test_trecho_rigido_invalido",
+     "test_trecho_rigido_mensagem_de_erro_tem_acentuacao"
+    ],
+    "observacao": "Adicionado teste novo checando o texto exato (acentuado) da mensagem de FaixaNormativaError."
+   }
   },
   {
    "id": "14.6.2.2-vao-a-mesa",
@@ -5239,7 +5265,7 @@
    "pagina_pdf": 109,
    "titulo": "Largura colaborante bf de viga T/L (limites b1, b3 conforme Figura 14.2)",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P14",
@@ -5249,7 +5275,30 @@
    "formula_ou_regra": "bf = bw + b1 + b3; b1 <= 0,5*b2 e b1 <= 0,1*a; b3 <= b4 e b3 <= 0,1*a (b4 = limite do lado com condicao de borda/misula, ver metade inferior da Figura 14.2)",
    "conferido_na_imagem": true,
    "teste_sugerido": "Reproduzir os tres casos da Figura 14.2 (T interno, T de borda com b4, secao L) e comparar bf.",
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P14",
+    "data": "19/09/2026",
+    "funcoes": [
+     "largura_colaborante_cm",
+     "largura_efetiva_mesa",
+     "vao_a_para_mesa"
+    ],
+    "testes": [
+     "test_largura_colaborante_governado_por_meio_b2",
+     "test_largura_colaborante_governado_por_01a",
+     "test_largura_colaborante_no_limite_b1_igual_b2_metade",
+     "test_largura_colaborante_caso_de_borda_com_b4",
+     "test_largura_colaborante_borda_governado_por_01a",
+     "test_largura_colaborante_borda_sem_b4_levanta_erro",
+     "test_largura_colaborante_entradas_invalidas",
+     "test_largura_colaborante_mensagens_de_erro_tem_acentuacao",
+     "test_largura_efetiva_mesa_T_biapoiada_reproduz_comportamento_anterior",
+     "test_largura_efetiva_mesa_L_continua_reproduz_comportamento_anterior",
+     "test_largura_efetiva_mesa_facade_em_viga_servico"
+    ],
+    "observacao": "Cobre o caso de borda (b4) que faltava antes do P14. Teste de fachada reforcado com assert de identidade do objeto de funcao; novo teste de mensagem de erro acentuada."
+   }
   },
   {
    "id": "14.6.2.2-largura-efetiva-abertura",
@@ -5257,7 +5306,7 @@
    "pagina_pdf": 109,
    "titulo": "Largura efetiva bef da mesa colaborante na presença de abertura na laje (Figura 14.3)",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "parcial",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P14",
@@ -5265,7 +5314,19 @@
    "o_que_calcula": "Reduz a largura colaborante bf para bef quando ha abertura ou interrupcao na regiao da mesa, respeitando o bf maximo e as limitacoes impostas pela geometria da abertura (linhas 1 e 2 na Figura 14.3).",
    "formula_ou_regra": "bef <= bf, com bef limitado pela projecao dos angulos 1 e 2 tracados a partir dos vertices da abertura ate a viga (regra grafica da Figura 14.3, sem equacao explicita no texto)",
    "conferido_na_imagem": true,
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P14",
+    "data": "19/09/2026",
+    "funcoes": [
+     "largura_efetiva_com_abertura"
+    ],
+    "testes": [
+     "test_largura_efetiva_com_abertura",
+     "test_largura_efetiva_com_abertura_invalida"
+    ],
+    "observacao": "A norma so da uma regra grafica (retas 1 e 2 tracadas a partir dos vertices da abertura ate a viga, sem angulo nem formula definidos); a funcao recebe o bef ja obtido graficamente pelo desenho do caso concreto e so aplica o limite normativo bef<=bf. Nao reconstroi a geometria da abertura. Sem mudanca nesta correcao alem da reacentuacao."
+   }
   },
   {
    "id": "14.6.2.3-misulas-secao-efetiva",
@@ -5273,7 +5334,7 @@
    "pagina_pdf": 109,
    "titulo": "Seção efetiva em mísulas e variações bruscas de seção (Figura 14.4)",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "parcial",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P14",
@@ -5281,7 +5342,19 @@
    "o_que_calcula": "Define a altura/largura efetiva (hef ou bef) a considerar em elementos lineares ou de placa com misula ou variacao brusca de secao transversal, tomando apenas a parte da secao indicada como efetiva na Figura 14.4.",
    "formula_ou_regra": "hef (ou bef) = extensao definida graficamente na Figura 14.4 a partir do trecho de secao constante mais proximo, sem equacao explicita no texto",
    "conferido_na_imagem": true,
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P14",
+    "data": "19/09/2026",
+    "funcoes": [
+     "secao_efetiva_misula"
+    ],
+    "testes": [
+     "test_secao_efetiva_misula_usa_o_menor",
+     "test_secao_efetiva_misula_invalida"
+    ],
+    "observacao": "Formula mantida (hef = MENOR dos dois trechos constantes) apos reler a Figura 14.4 em zoom alto: o segmento hef/bef desenhado liga o nivel do trecho maior ao do trecho menor, confirmando a leitura adotada. Docstring ampliada com essa evidencia (ver resposta ao achado 14.6.2.3-misulas-secao-efetiva). Continua 'parcial' porque a norma e so uma regra grafica, sem equacao fechada nem tratamento do valor dentro da propria cunha de transicao."
+   }
   },
   {
    "id": "14.6.2.4-vao-efetivo-viga",
@@ -5305,7 +5378,7 @@
    "pagina_pdf": 111,
    "titulo": "Arredondamento do diagrama de momentos fletores sobre apoios/cargas concentradas (Figura 14.6)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P14",
@@ -5314,7 +5387,21 @@
    "formula_ou_regra": "Caso reacoes distintas R1,R2: DeltaM = (R2-R1)/4 * t; DeltaM1 = R1*t/4; DeltaM2 = R2*t/4. Caso apoio simetrico com reacao R: DeltaM' = R*t/8 (t = largura do apoio na direcao do vao).",
    "conferido_na_imagem": true,
    "teste_sugerido": "Caso simetrico R1=R2=R deve reduzir a DeltaM1=DeltaM2=R*t/4 e DeltaM=0, coerente com o caso degenerado DeltaM'=R*t/8 no topo do apoio.",
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P14",
+    "data": "19/09/2026",
+    "funcoes": [
+     "arredondar_momento_apoio"
+    ],
+    "testes": [
+     "test_arredondamento_caso_geral_reacoes_distintas",
+     "test_arredondamento_caso_simetrico_R1_igual_R2",
+     "test_arredondamento_preserva_sinal_negativo",
+     "test_arredondamento_entradas_invalidas"
+    ],
+    "observacao": "Sem mudanca nesta correcao alem da reacentuacao de docstring/memoria."
+   }
   },
   {
    "id": "14.6.4.1-rigidez-vigas-pilares",
@@ -5524,7 +5611,7 @@
    "pagina_pdf": 113,
    "titulo": "Correções de momento mínimo no modelo de viga contínua simplesmente apoiada nos pilares",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P14",
@@ -5533,7 +5620,22 @@
    "formula_ou_regra": "M_positivo_adotado >= M_positivo_engastamento_perfeito; se largura_apoio_no_eixo_viga > 0,25*altura_pilar entao |M_negativo_adotado| >= |M_negativo_engastamento_perfeito|",
    "conferido_na_imagem": false,
    "teste_sugerido": "Viga biengastada de referencia (M_eng = p*l^2/12 no vao e no apoio) comparada ao resultado obtido tratando a viga como isolada apoiada.",
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P14",
+    "data": "19/09/2026",
+    "funcoes": [
+     "momentos_minimos_viga_continua"
+    ],
+    "testes": [
+     "test_momento_minimo_positivo_engastamento_perfeito",
+     "test_momento_minimo_positivo_e_elevado_quando_menor_que_engastamento",
+     "test_momento_minimo_negativo_aplica_quando_apoio_largo",
+     "test_momento_minimo_negativo_nao_aplica_quando_apoio_estreito",
+     "test_momento_minimo_negativo_no_limite_exato_nao_aplica"
+    ],
+    "observacao": "Docstring da dataclass ResultadoMomentosMinimos agora explica por que ok e sempre True (funcao corrige, nunca rejeita); ver resposta ao achado correspondente. Sem mudanca de comportamento numerico."
+   }
   },
   {
    "id": "14.6.6.1-coeficientes-engastamento-apoio-extremo",
@@ -5541,7 +5643,7 @@
    "pagina_pdf": 114,
    "titulo": "Coeficientes de momento de engastamento perfeito nos apoios extremos (rigidez de pilares/viga, Figura 14.8)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P14",
@@ -5553,7 +5655,21 @@
     "14.6.6.1-vigas-continuas-momento-minimo"
    ],
    "teste_sugerido": "Pilares muito mais rigidos que a viga (r_inf,r_sup >> r_vig) devem levar o coeficiente da viga para perto de 1,0 e os dos pilares para perto de 0 (tendencia ao engastamento perfeito).",
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P14",
+    "data": "19/09/2026",
+    "funcoes": [
+     "coeficientes_engastamento_extremo"
+    ],
+    "testes": [
+     "test_coeficientes_engastamento_soma_viga_igual_soma_pilares",
+     "test_coeficientes_engastamento_pilares_muito_mais_rigidos_tende_a_engastamento_perfeito",
+     "test_coeficientes_engastamento_viga_muito_mais_rigida_tende_a_zero",
+     "test_coeficientes_engastamento_invalidos"
+    ],
+    "observacao": "Sem mudanca nesta correcao alem da reacentuacao de docstring/memoria."
+   }
   },
   {
    "id": "14.6.6.2-reducao-rigidez-torcao-grelha",
@@ -5561,7 +5677,7 @@
    "pagina_pdf": 115,
    "titulo": "Redução da rigidez à torção das vigas em modelos de grelha/pórtico espacial (15% da rigidez elástica)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P14",
@@ -5569,7 +5685,24 @@
    "o_que_calcula": "Fator de reducao aplicado a rigidez a torcao elastica das vigas em modelos de grelha/portico espacial, simulando a fissuracao por torcao, exceto para elementos com protensao limitada ou completa (classes 2 ou 3).",
    "formula_ou_regra": "GJ_reduzido = 0,15 * GJ_elastico (vigas de concreto armado, sem protensao limitada/completa); alternativa para verificacao de ELU: GJ=0 (torcao de compatibilidade desprezada)",
    "conferido_na_imagem": false,
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P14",
+    "data": "19/09/2026",
+    "funcoes": [
+     "FATOR_RIGIDEZ_TORCAO_GRELHA",
+     "rigidez_torcao_reduzida"
+    ],
+    "testes": [
+     "test_fator_rigidez_torcao_grelha_e_015",
+     "test_rigidez_torcao_reduzida_concreto_armado",
+     "test_rigidez_torcao_reduzida_nao_se_aplica_a_protensao_limitada_completa",
+     "test_rigidez_torcao_reduzida_classe_1_reduz_normalmente",
+     "test_rigidez_torcao_elu_desprezada",
+     "test_rigidez_torcao_reduzida_negativa_invalida"
+    ],
+    "observacao": "Sem mudanca nesta correcao alem da reacentuacao de docstring/comentario."
+   }
   },
   {
    "id": "14.6.6.3-dispensa-alternancia-cargas",
@@ -5577,7 +5710,7 @@
    "pagina_pdf": 115,
    "titulo": "Dispensa de alternância de cargas variáveis em edifícios (q ≤ 5 kN/m² e ≤ 50% da carga total)",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P14",
@@ -5586,7 +5719,21 @@
    "formula_ou_regra": "se carga_variavel <= 5 kN/m2 E carga_variavel <= 0,5 * carga_total: dispensa-se a alternancia de cargas (vale tambem para lajes, 14.7.1)",
    "conferido_na_imagem": false,
    "teste_sugerido": "q=5 kN/m2 exatos e q=50% exatos devem passar (limites inclusivos); q=5,01 kN/m2 ou 50,1% devem reprovar.",
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P14",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dispensa_alternancia_cargas"
+    ],
+    "testes": [
+     "test_dispensa_alternancia_limite_5_kn_m2_inclusivo",
+     "test_dispensa_alternancia_limite_50_por_cento_inclusivo",
+     "test_dispensa_alternancia_reprova_por_qualquer_um_dos_dois_criterios",
+     "test_dispensa_alternancia_entradas_invalidas"
+    ],
+    "observacao": "Sem mudanca nesta correcao alem da reacentuacao de docstring/comentario."
+   }
   },
   {
    "id": "14.6.6.4-diafragma-rigido",
@@ -5594,7 +5741,7 @@
    "pagina_pdf": 115,
    "titulo": "Critério para considerar a laje como diafragma rígido em seu plano",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P14",
@@ -5605,7 +5752,20 @@
    "depende_de": [
     "15-estabilidade-global"
    ],
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P14",
+    "data": "19/09/2026",
+    "funcoes": [
+     "laje_diafragma_rigido"
+    ],
+    "testes": [
+     "test_diafragma_rigido_no_limite_3_inclusivo",
+     "test_diafragma_rigido_com_abertura_grande_sempre_falso",
+     "test_diafragma_rigido_entradas_invalidas"
+    ],
+    "observacao": "Sem mudanca nesta correcao alem da reacentuacao de docstring."
+   }
   },
   {
    "id": "14.7.1-hipoteses-placas",
