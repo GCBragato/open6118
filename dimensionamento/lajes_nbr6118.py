@@ -695,20 +695,28 @@ def dimensionar_flexao(
 def cortante_resistente_laje(
     bw_cm: float, d_cm: float, As_long_cm2: float, fck_mpa: float,
     metade_armadura_chega_apoio: bool = True, gama_c: float = GAMA_C,
+    sigma_cp_mpa: float = 0.0,
 ) -> float:
-    """V_Rd1 = [tau_Rd k (1.2 + 40 rho_1)] bw d   (kN, sem armadura transversal).
+    """VRd1 = [τRd·k·(1,2 + 40·ρ1) + 0,15·σcp]·bw·d, kN (19.4.1, PDF p. 181).
 
     Eq. 56-62 da apostila. Se a forca cortante solicitante VSd <= V_Rd1,
     nao eh necessaria armadura transversal. tau_Rd = 0.25 fctd, com fck
     limitado a 60 MPa (NBR 6118 19.4.1 - LAJ-05), via nucleo normativo.
+
+    P15 (decisão 6 do plano): delega a cortante_nbr6118.laje_sem_armadura,
+    que tem a fórmula completa. σcp = NSd/Ac em MPa, compressão positiva
+    (sigma_cp_mpa, padrão 0 = comportamento anterior); com tração, VRd1
+    diminui.
     """
-    tau_rd = nbr.mpa_para_kncm2(nbr.tau_Rd(fck_mpa, gama_c))   # kN/cm2
-    rho_1 = min(As_long_cm2 / (bw_cm * d_cm), 0.02)
-    if metade_armadura_chega_apoio:
-        k = max(1.6 - d_cm / 100.0, 1.0)
-    else:
-        k = 1.0
-    return tau_rd * k * (1.2 + 40.0 * rho_1) * bw_cm * d_cm
+    try:  # P15: import local, para não acrescentar import no topo
+        import cortante_nbr6118 as _crt
+    except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+        from dimensionamento import cortante_nbr6118 as _crt
+    rho_1 = As_long_cm2 / (bw_cm * d_cm)
+    return _crt.laje_sem_armadura(
+        0.0, bw_cm, d_cm, fck_mpa, rho_l=rho_1, sigma_cp_mpa=sigma_cp_mpa,
+        k_imp=metade_armadura_chega_apoio, gama_c=gama_c,
+    )["VRd1_kN"]
 
 
 # ---------------------------------------------------------------------------

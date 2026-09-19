@@ -118,7 +118,8 @@
    "nome": "Força cortante completa (vigas e lajes)",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/cortante_nbr6118.py (extensão)"
+   "modulo": "dimensionamento/cortante_nbr6118.py (extensão)",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P16",
@@ -8520,7 +8521,7 @@
    "pagina_pdf": 154,
    "titulo": "Exceções à armadura transversal mínima",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P15",
@@ -8531,7 +8532,21 @@
     "cortante_nbr6118.modelo_calculo_I"
    ],
    "teste_sugerido": "bw=5.1d -> deve sinalizar tratar como laje; pilar com sigma<fctk e VSd<Vc -> dispensa",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P15",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_nbr6118.regime_asw_minima",
+     "cortante_nbr6118.ResultadoRegimeAswMin"
+    ],
+    "testes": [
+     "test_regime_asw_min_bw_5d",
+     "test_regime_asw_min_nervura",
+     "test_regime_asw_min_pilar_comprimido"
+    ],
+    "observacao": "Os três casos: a) bw > 5d (estrito) vira laje; b) nervura dispensa quando VSd <= VRd1; c) pilar ou fundação comprimido com σt,máx <= fctk (tomado como fctk,inf, a favor da segurança) e VSd <= Vc leva à Asw,min da Seção 18."
+   }
   },
   {
    "id": "17.4.1.1.3-limite-barras-dobradas",
@@ -8539,7 +8554,7 @@
    "pagina_pdf": 155,
    "titulo": "Limite de 60% para barras dobradas na Asw",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P15",
@@ -8550,7 +8565,19 @@
     "cortante_nbr6118.modelo_calculo_I"
    ],
    "teste_sugerido": "Caso limite: barras dobradas = 60% de Vsw deve passar; 61% deve falhar",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P15",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_nbr6118.verificar_limite_barras_dobradas",
+     "cortante_nbr6118.LIMITE_BARRAS_DOBRADAS"
+    ],
+    "testes": [
+     "test_barras_dobradas_60_por_cento"
+    ],
+    "observacao": "60 % passa, 61 % falha; dobradas > total levanta FaixaNormativaError."
+   }
   },
   {
    "id": "17.4.1.1.4-barras-soldadas",
@@ -8599,7 +8626,7 @@
    "pagina_pdf": 155,
    "titulo": "Redução de VSd para cargas próximas ao apoio",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P15",
@@ -8611,7 +8638,22 @@
     "cortante_nbr6118.modelo_calculo_II"
    ],
    "teste_sugerido": "Viga biapoiada com carga concentrada a d do apoio: fator de reducao = d/(2d)=0,5",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P15",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_nbr6118.VSd_reduzido_apoio",
+     "cortante_nbr6118.fator_reducao_carga_concentrada",
+     "cortante_nbr6118.ResultadoReducaoApoio"
+    ],
+    "testes": [
+     "test_fator_carga_concentrada",
+     "test_VSd_reduzido_carga_distribuida",
+     "test_VSd_reduzido_concentrada_cabos_e_apoio_indireto"
+    ],
+    "observacao": "Carga distribuída constante até d/2 da face; carga concentrada com a <= 2d multiplicada por a/(2d); cabos inclinados sem redução; apoio indireto sem redução. O resultado traz também o VSd sem redução, que é o valor para VRd2. O chamador informa a parcela de V de cada carga concentrada."
+   }
   },
   {
    "id": "17.4.1.2.2-protensao-tangencial",
@@ -8619,7 +8661,7 @@
    "pagina_pdf": 155,
    "titulo": "Efeito tangencial da protensão em VSd e condição de armadura longitudinal",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P15",
@@ -8630,7 +8672,18 @@
     "protendido_nbr6118.py"
    ],
    "teste_sugerido": "Caso limite Ap*fpyd+As*fyd = VSd deve passar; um a menos deve falhar",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P15",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_nbr6118.verificar_protensao_tangencial"
+    ],
+    "testes": [
+     "test_protensao_tangencial_limite"
+    ],
+    "observacao": "Ap·fpyd + As·fyd >= VSd, com fpyd = fpyk/γs, só quando o efeito é favorável. O cálculo da projeção da protensão dentro de VSd fica com o chamador (P30/P47)."
+   }
   },
   {
    "id": "17.4.1.2.3-altura-variavel",
@@ -8638,7 +8691,7 @@
    "pagina_pdf": 155,
    "titulo": "Força cortante resistida pela alma em elementos de altura variável",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P15",
@@ -8647,7 +8700,20 @@
    "formula_ou_regra": "|VSd| - |VSd,red| = [|MSd/z| - |VSd,red|*(cotg(theta))/2]*tg(beta_c) + [|MSd/z| + |VSd,red|*(cotg(theta))/2]*tg(beta_t)",
    "conferido_na_imagem": true,
    "teste_sugerido": "Caso beta_c=beta_t=0 (banzos paralelos) deve reduzir a VSd,red=VSd (identidade)",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P15",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_nbr6118.VSd_red_altura_variavel"
+    ],
+    "testes": [
+     "test_altura_variavel_banzos_paralelos",
+     "test_altura_variavel_banzo_comprimido_inclinado",
+     "test_altura_variavel_fora_da_faixa"
+    ],
+    "observacao": "A equação é linear em |VSd,red| e foi resolvida de forma fechada: (|VSd| − |M/z|(tg βc + tg βt))/(1 + cotg θ/2·(tg βt − tg βc)). O teste confere o resultado substituindo-o na equação original. Os sinais de β ficam com o chamador."
+   }
   },
   {
    "id": "17.4.2.1-condicao-dupla",
@@ -8655,7 +8721,7 @@
    "pagina_pdf": 156,
    "titulo": "Condição dupla de resistência (VRd2 e VRd3)",
    "tipo": "verificacao",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P15",
@@ -8665,7 +8731,23 @@
    "formula_ou_regra": "VSd <= VRd2  e  VSd <= VRd3 = Vc + Vsw",
    "conferido_na_imagem": true,
    "teste_sugerido": "Dado Asw existente, calcular VRd3=Vc+Vsw(Asw) e comparar com VSd de um caso da apostila",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P15",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_nbr6118.verificar_cortante",
+     "cortante_nbr6118.ResultadoVerificacaoCortante"
+    ],
+    "testes": [
+     "test_verificar_cortante_limite_VRd3",
+     "test_verificar_cortante_bate_com_dimensionamento",
+     "test_verificar_cortante_biela",
+     "test_verificar_cortante_asw_min",
+     "test_verificar_cortante_modelo_I_so_theta_45"
+    ],
+    "observacao": "Modo verificação com Asw existente, modelos I e II, e Rd >= Sd via seguranca_nbr6118.verificar_seguranca. Verifica também Asw >= Asw,min (desligável), fywd de laje e, opcionalmente, s <= 15 cm (17.6). Devolve um dataclass frozen novo (ResultadoVerificacaoCortante), não o ResultadoCortante mutável legado."
+   }
   },
   {
    "id": "17.4.2.2-VRd2-modeloI",
@@ -8689,7 +8771,7 @@
    "pagina_pdf": 157,
    "titulo": "Vc e Vsw - Modelo de cálculo I (todos os casos de Vc)",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P15",
@@ -8703,7 +8785,25 @@
     "17.4-M0"
    ],
    "teste_sugerido": "Fixar MSd,max e variar Nd de tracao pura ate compressao forte; conferir Vc=0, Vc=Vc0 e Vc=2Vc0 nos tres regimes",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P15",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_nbr6118.modelo_calculo_I",
+     "cortante_nbr6118.vc_por_regime"
+    ],
+    "testes": [
+     "test_modelo_I_padrao_inalterado_flexao_simples",
+     "test_modelo_I_tracao_ln_fora_vc_zero",
+     "test_modelo_I_flexo_tracao_ln_cortando_vc0",
+     "test_modelo_I_flexo_compressao",
+     "test_modelo_I_varredura_de_tracao_a_compressao",
+     "test_compressao_sem_M0_avisa_e_usa_vc0",
+     "test_vc_regime_entradas_incoerentes"
+    ],
+    "observacao": "Parâmetros novos no fim da assinatura: Nsd_kn (compressão positiva), M0_kncm, MSd_max_kncm, linha_neutra_fora e h_laje_cm. Ramos: Vc = 0 na tração com LN fora; Vc0 na flexão simples e na flexo-tração; Vc0·(1 + M0/MSd,máx) <= 2Vc0 quando M0 é informado. Com compressão e sem M0, usa Vc0 (a favor da segurança) e emite AvisoNBR6118. Novo campo regime_vc em ResultadoCortante."
+   }
   },
   {
    "id": "17.4-M0-momento-descompressao",
@@ -8711,7 +8811,7 @@
    "pagina_pdf": 157,
    "titulo": "M0 - momento que anula a tensão de compressão na borda tracionada",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P15",
@@ -8724,7 +8824,22 @@
     "17.4.2.3-Vc-Vsw-modeloII"
    ],
    "teste_sugerido": "Secao sem protensao e Nsd=0 -> M0=0 -> Vc=Vc0 (recai no caso de flexao simples)",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P15",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_nbr6118.M0_kncm",
+     "cortante_nbr6118.GAMA_P_M0",
+     "cortante_nbr6118.GAMA_F_M0"
+    ],
+    "testes": [
+     "test_M0_formula_com_gamas_locais",
+     "test_M0_nulo_recai_em_flexao_simples",
+     "test_M0_entradas_invalidas"
+    ],
+    "observacao": "M0 = Pd(W1/Ac + ep) + NSd·W1/Ac, com γp = 0,9 e γf = 1,0 aplicados dentro da função. Ela recebe P_kn e N_kn sem ponderação, e não Pd_kn e Nsd_kn como sugeria o plano, para não aplicar γ duas vezes."
+   }
   },
   {
    "id": "17.4.2.2-decalagem-forca",
@@ -8751,7 +8866,7 @@
    "pagina_pdf": 158,
    "titulo": "Força de tração decalada por fórmula direta (alternativa a aℓ)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P15",
@@ -8762,7 +8877,19 @@
     "17.4.2.2-decalagem-forca"
    ],
    "teste_sugerido": "Comparar FSd,cor calculado diretamente com M(x+a_l)/z para a mesma secao - devem coincidir",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P15",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_nbr6118.FSd_cor_kn"
+    ],
+    "testes": [
+     "test_FSd_cor",
+     "test_FSd_cor_igual_a_decalar_M_quando_z_igual_d"
+    ],
+    "observacao": "FSd,cor = MSd/z + |VSd|·aℓ/d <= MSd,máx/z_máx. A equivalência com M(x + aℓ)/z só é exata com z = d, porque a norma usa aℓ/d; o teste usa esse caso."
+   }
   },
   {
    "id": "17.4.2.3-VRd2-modeloII",
@@ -8786,7 +8913,7 @@
    "pagina_pdf": 159,
    "titulo": "Vc1 e Vsw - Modelo de cálculo II (todos os casos)",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P15",
@@ -8799,7 +8926,23 @@
     "17.4-M0"
    ],
    "teste_sugerido": "Mesmo teste sugerido do item 17.4.2.2-Vc-Vsw-modeloI, agora no Modelo II",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P15",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_nbr6118.modelo_calculo_II",
+     "cortante_nbr6118.vc_por_regime"
+    ],
+    "testes": [
+     "test_modelo_II_padrao_inalterado",
+     "test_modelo_II_tracao_ln_fora",
+     "test_modelo_II_flexo_tracao",
+     "test_modelo_II_flexo_compressao",
+     "test_modelo_II_vc1_nas_bordas_da_interpolacao"
+    ],
+    "observacao": "Mesmos ramos, aplicados sobre Vc1 (interpolado). O teto 2·Vc1 é aplicado como min(), igual ao modelo I."
+   }
   },
   {
    "id": "17.4.2.3-decalagem-modeloII",
@@ -9128,7 +9271,7 @@
    "pagina_pdf": 164,
    "titulo": "Limite de espaçamento da armadura transversal para fissuração inclinada da alma",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P15",
@@ -9137,7 +9280,20 @@
    "formula_ou_regra": "s <= 15 cm (casos especiais de controle de fissuracao inclinada da alma)",
    "conferido_na_imagem": true,
    "teste_sugerido": "s=15 cm passa; s=15,1 cm falha, quando a flag 'caso especial' estiver ativa",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P15",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_nbr6118.S_MAX_FISSURACAO_ALMA_CM",
+     "cortante_nbr6118.verificar_espacamento_fissuracao_alma",
+     "cortante_nbr6118.verificar_cortante"
+    ],
+    "testes": [
+     "test_espacamento_fissuracao_alma"
+    ],
+    "observacao": "s = 15 passa e s = 15,1 falha no caso especial; fora do caso especial não há exigência. Também entra em verificar_cortante com controle_fissuracao_alma=True."
+   }
   },
   {
    "id": "17.7.1.1-flexao-torcao-generalidades",
@@ -10741,7 +10897,7 @@
    "pagina_pdf": 181,
    "titulo": "Força cortante resistente de laje sem armadura transversal (VRd1)",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P15",
@@ -10755,7 +10911,22 @@
     "nucleo.fctd"
    ],
    "teste_sugerido": "Comparar as duas funções com sigma_cp!=0 para expor a lacuna.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P15",
+    "data": "19/09/2026",
+    "funcoes": [
+     "lajes_nbr6118.cortante_resistente_laje",
+     "cortante_nbr6118.laje_sem_armadura",
+     "cortante_nbr6118.sigma_cp_mpa"
+    ],
+    "testes": [
+     "test_cortante_resistente_laje_delegada_sem_normal_igual_antes",
+     "test_cortante_resistente_laje_com_sigma_cp",
+     "test_sigma_cp"
+    ],
+    "observacao": "Decisão 6: cortante_resistente_laje agora delega a laje_sem_armadura, com o parâmetro novo sigma_cp_mpa=0,0 no fim. Sem força normal, o resultado é idêntico ao anterior; com σcp de tração, VRd1 diminui 0,15·σcp·bw·d."
+   }
   },
   {
    "id": "19.4.1-decalagem-al-15d",
@@ -10763,7 +10934,7 @@
    "pagina_pdf": 182,
    "titulo": "Deslocamento da lei de decalagem em lajes (al=1,5d)",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P15",
@@ -10776,7 +10947,19 @@
     "19.4.1-vrd1"
    ],
    "teste_sugerido": "d=15cm -> al=22,5cm.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P15",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_nbr6118.a_l_laje_cm",
+     "cortante_nbr6118.AL_LAJE_FATOR_D"
+    ],
+    "testes": [
+     "test_a_l_laje"
+    ],
+    "observacao": "aℓ = 1,5·d (d = 15 dá 22,5 cm). O plano citava uma constante AL_LAJE = 1,5·d, que não pode depender de d; por isso ficaram um fator constante e uma função."
+   }
   },
   {
    "id": "19.4.2-modelo-cortante-laje",
@@ -10802,7 +10985,7 @@
    "pagina_pdf": 182,
    "titulo": "Limite de tensão no estribo de laje por espessura (fywd reduzido)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P15",
@@ -10813,7 +10996,23 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "h=15->250MPa; h=35->435MPa; h=25->342,5MPa.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P15",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_nbr6118.fywd_max_laje_mpa",
+     "cortante_nbr6118.fywd_laje_kncm2",
+     "cortante_nbr6118.modelo_calculo_I",
+     "cortante_nbr6118.modelo_calculo_II",
+     "cortante_nbr6118.verificar_cortante"
+    ],
+    "testes": [
+     "test_fywd_max_laje",
+     "test_fywd_laje_kncm2_e_modelos"
+    ],
+    "observacao": "250 MPa até 15 cm, 435 MPa acima de 35 cm e interpolação linear entre os dois, sempre limitado por fywd (fyd ou 0,7·fyd). Os modelos I e II e a verificação aceitam h_laje_cm."
+   }
   },
   {
    "id": "19.5.1-modelo-calculo-puncao",

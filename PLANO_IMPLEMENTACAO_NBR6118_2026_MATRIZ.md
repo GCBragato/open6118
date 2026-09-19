@@ -409,22 +409,22 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `17.3.5.3.1-as-min-pilar` | 17.3.5.3.1 | 153 | Armadura longitudinal mínima de pilares | implementado | alta | P |  |
 | `17.3.5.3.2-as-max-pilar` | 17.3.5.3.2 | 153 | Armadura longitudinal máxima de pilares | implementado | alta | P |  |
 | `17.4.1.1.1-asw-min` | 17.4.1.1.1 | 154 | Armadura transversal mínima (taxa geométrica) | implementado | alta | P |  |
-| `17.4.1.1.2-excecoes-asw-min` | 17.4.1.1.2 | 154 | Exceções à armadura transversal mínima | ausente | média | P | P15 |
-| `17.4.1.1.3-limite-barras-dobradas` | 17.4.1.1.3 | 155 | Limite de 60% para barras dobradas na Asw | ausente | baixa | P | P15 |
+| `17.4.1.1.2-excecoes-asw-min` | 17.4.1.1.2 | 154 | Exceções à armadura transversal mínima | implementado | média | P | P15 |
+| `17.4.1.1.3-limite-barras-dobradas` | 17.4.1.1.3 | 155 | Limite de 60% para barras dobradas na Asw | implementado | baixa | P | P15 |
 | `17.4.1.1.4-barras-soldadas` | 17.4.1.1.4 | 155 | Barras verticais soldadas combinadas com estribos | não computável | baixa | P |  |
 | `17.4.1.1.5-alfa-estribo` | 17.4.1.1.5 | 155 | Faixa de inclinação da armadura transversal | implementado | alta | P |  |
 | `17.4.1.1.6-espacamento-dependencia` | 17.4.1.1.6 | 155 | Espaçamentos máximos/mínimos da armadura transversal (remete a Seção 18) | não computável | alta | P |  |
-| `17.4.1.2.1-reducao-vsd-apoio` | 17.4.1.2.1 | 155 | Redução de VSd para cargas próximas ao apoio | ausente | alta | M | P15 |
-| `17.4.1.2.2-protensao-tangencial` | 17.4.1.2.2 | 155 | Efeito tangencial da protensão em VSd e condição de armadura longitudinal | ausente | média | P | P15 |
-| `17.4.1.2.3-altura-variavel` | 17.4.1.2.3 | 155 | Força cortante resistida pela alma em elementos de altura variável | ausente | média | M | P15 |
-| `17.4.2.1-condicao-dupla` | 17.4.2.1 | 156 | Condição dupla de resistência (VRd2 e VRd3) | parcial | alta | P | P15 |
+| `17.4.1.2.1-reducao-vsd-apoio` | 17.4.1.2.1 | 155 | Redução de VSd para cargas próximas ao apoio | implementado | alta | M | P15 |
+| `17.4.1.2.2-protensao-tangencial` | 17.4.1.2.2 | 155 | Efeito tangencial da protensão em VSd e condição de armadura longitudinal | implementado | média | P | P15 |
+| `17.4.1.2.3-altura-variavel` | 17.4.1.2.3 | 155 | Força cortante resistida pela alma em elementos de altura variável | implementado | média | M | P15 |
+| `17.4.2.1-condicao-dupla` | 17.4.2.1 | 156 | Condição dupla de resistência (VRd2 e VRd3) | implementado | alta | P | P15 |
 | `17.4.2.2-VRd2-modeloI` | 17.4.2.2 a) | 156 | VRd2 - Modelo de cálculo I (θ = 45°) | implementado | alta | P |  |
-| `17.4.2.2-Vc-Vsw-modeloI` | 17.4.2.2 b) | 157 | Vc e Vsw - Modelo de cálculo I (todos os casos de Vc) | parcial | alta | M | P15 |
-| `17.4-M0-momento-descompressao` | 17.4.2.2 b) [M0] | 157 | M0 - momento que anula a tensão de compressão na borda tracionada | ausente | média | M | P15 |
+| `17.4.2.2-Vc-Vsw-modeloI` | 17.4.2.2 b) | 157 | Vc e Vsw - Modelo de cálculo I (todos os casos de Vc) | implementado | alta | M | P15 |
+| `17.4-M0-momento-descompressao` | 17.4.2.2 b) [M0] | 157 | M0 - momento que anula a tensão de compressão na borda tracionada | implementado | média | M | P15 |
 | `17.4.2.2-decalagem-forca` | 17.4.2.2 c) | 158 | Decalagem do diagrama de força no banzo tracionado - Modelo I | implementado | alta | M |  |
-| `17.4.2.2-Fsd-cor-alternativa` | 17.4.2.2 c) [alternativa] | 158 | Força de tração decalada por fórmula direta (alternativa a aℓ) | ausente | baixa | P | P15 |
+| `17.4.2.2-Fsd-cor-alternativa` | 17.4.2.2 c) [alternativa] | 158 | Força de tração decalada por fórmula direta (alternativa a aℓ) | implementado | baixa | P | P15 |
 | `17.4.2.3-VRd2-modeloII` | 17.4.2.3 a) | 158 | VRd2 - Modelo de cálculo II (θ variável de 30° a 45°) | implementado | alta | P |  |
-| `17.4.2.3-Vc-Vsw-modeloII` | 17.4.2.3 b) | 159 | Vc1 e Vsw - Modelo de cálculo II (todos os casos) | parcial | alta | M | P15 |
+| `17.4.2.3-Vc-Vsw-modeloII` | 17.4.2.3 b) | 159 | Vc1 e Vsw - Modelo de cálculo II (todos os casos) | implementado | alta | M | P15 |
 | `17.4.2.3-decalagem-modeloII` | 17.4.2.3 c) | 159 | Decalagem do diagrama de força no banzo tracionado - Modelo II | implementado | alta | M |  |
 | `17.5.1.1-modelo-trelica-espacial` | 17.5.1.1 | 159 | Modelo resistente de treliça espacial para torção uniforme | implementado | média | P |  |
 | `17.5.1.2-taxa-min-torcao` | 17.5.1.2 | 160 | Taxas geométricas mínimas de torção (longitudinal e transversal) | implementado | média | P |  |
@@ -441,7 +441,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `17.5.2.1-17.5.2.2-perfis-abertos-generalidades` | 17.5.2.1/17.5.2.2 | 162 | Torção em perfis abertos de parede fina - generalidades e rigidezes reduzidas | implementado | baixa | M | P42 |
 | `17.5.2.3-rigidez-flexo-torcao` | 17.5.2.3 | 163 | Coeficiente de mola (rigidez) à flexo-torção de perfil com paredes opostas | implementado | baixa | G | P42 |
 | `17.5.2.4-resistencia-flexo-torcao` | 17.5.2.4 | 163 | Resistência à flexo-torção a partir da resistência à flexão das paredes | implementado | baixa | M | P42 |
-| `17.6-fissuracao-inclinada-alma` | 17.6 | 164 | Limite de espaçamento da armadura transversal para fissuração inclinada da alma | ausente | baixa | P | P15 |
+| `17.6-fissuracao-inclinada-alma` | 17.6 | 164 | Limite de espaçamento da armadura transversal para fissuração inclinada da alma | implementado | baixa | P | P15 |
 | `17.7.1.1-flexao-torcao-generalidades` | 17.7.1.1 | 164 | Verificação separada de torção e flexão com complementos obrigatórios | não computável | média | P |  |
 | `17.7.1.2-soma-armadura-longitudinal` | 17.7.1.2 | 164 | Soma da armadura longitudinal de torção com a de flexão (zona tracionada) | ausente | alta | P | P16 |
 | `17.7.1.3-reducao-torcao-banzo-comprimido` | 17.7.1.3 | 164 | Redução da armadura longitudinal de torção no banzo comprimido por flexão | não computável | baixa | P |  |
@@ -530,10 +530,10 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `19.3.3.2-tab19.1-as-min` | 19.3.3.2 / Tabela 19.1 | 180 | Tabela 19.1 - valores mínimos para armaduras passivas aderentes de laje | parcial | alta | M | P17 |
 | `19.3.3.2-as-min-laje-lisa-nao-aderente` | 19.3.3.2 | 180 | Armadura negativa mínima em laje lisa/cogumelo com armadura ativa não aderente | ausente | média | P | P17 |
 | `19.3.3.3-as-max` | 19.3.3.3 | 181 | Armadura máxima de flexão de laje remete a 17.3.5.2 | implementado | alta | P | P12 |
-| `19.4.1-vrd1` | 19.4.1 | 181 | Força cortante resistente de laje sem armadura transversal (VRd1) | parcial | alta | M | P15 |
-| `19.4.1-decalagem-al-15d` | 19.4.1 | 182 | Deslocamento da lei de decalagem em lajes (al=1,5d) | ausente | média | P | P15 |
+| `19.4.1-vrd1` | 19.4.1 | 181 | Força cortante resistente de laje sem armadura transversal (VRd1) | implementado | alta | M | P15 |
+| `19.4.1-decalagem-al-15d` | 19.4.1 | 182 | Deslocamento da lei de decalagem em lajes (al=1,5d) | implementado | média | P | P15 |
 | `19.4.2-modelo-cortante-laje` | 19.4.2 | 182 | Lajes com armadura para força cortante aplicam os critérios de 17.4.2 | implementado | alta | P |  |
-| `19.4.2-fywd-max-laje` | 19.4.2 | 182 | Limite de tensão no estribo de laje por espessura (fywd reduzido) | ausente | alta | P | P15 |
+| `19.4.2-fywd-max-laje` | 19.4.2 | 182 | Limite de tensão no estribo de laje por espessura (fywd reduzido) | implementado | alta | P | P15 |
 | `19.5.1-modelo-calculo-puncao` | 19.5.1 | 182 | Modelo de cálculo de punção: superfícies críticas C, C' e C'' | ausente | alta | M | P19 |
 | `19.5.2.1-tsd-pilar-interno-simetrico` | 19.5.2.1 | 183 | Tensão solicitante de punção em pilar interno com carregamento simétrico | ausente | alta | P | P19 |
 | `19.5.2.2-tsd-pilar-interno-momento` | 19.5.2.2 | 184 | Tensão solicitante de punção em pilar interno com efeito de momento | ausente | alta | M | P19 |
