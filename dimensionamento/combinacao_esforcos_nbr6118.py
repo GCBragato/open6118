@@ -225,7 +225,7 @@ def _demo() -> None:
     print("=== Asw total (17.7.2.3) ===")
     print(f"  Asw,V=4,5 + Asw,T=6,12 -> "
           f"{Asw_total(4.5, 6.12):.2f} cm2/m")
-    print("=== Tensao principal do banzo (17.7.1.4) ===")
+    print("=== Tensão principal do banzo (17.7.1.4) ===")
     r = tensao_principal_banzo_comprimido(10.0, 6808.0, 1000.0, 10.0)
     print(f"  tau_Td = {r.tau_Td_mpa:.3f} MPa; "
           f"sigma_c,principal = {r.sigma_c_principal_mpa:.3f} MPa")

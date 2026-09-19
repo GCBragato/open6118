@@ -1,23 +1,23 @@
-"""Sapatas de Fundacao (NBR 6118:2023 + CEB-70).
+"""Sapatas de Fundação (NBR 6118:2023 + CEB-70).
 
-Nome ate 19/09/2026: sapatas_bastos.py. O credito as apostilas esta abaixo.
+Nome até 19/09/2026: sapatas_bastos.py. O crédito às apostilas está abaixo.
 
 Implementa o dimensionamento de sapatas isoladas seguindo a apostila
-"SAPATAS DE FUNDACAO", Prof. Paulo Sergio Bastos, UNESP/Bauru.
+"SAPATAS DE FUNDAÇÃO", Prof. Paulo Sérgio Bastos, UNESP/Bauru.
 
 Casos cobertos:
-    - Classificacao rigida x flexivel (NBR 6118 e CEB-70)        (Eq. 1.1/1.2)
-    - Estimativa da area da base                                  (Eq. 1.6)
-    - Dimensionamento com balancos iguais                         (Eq. 1.9)
-    - Metodo do CEB-70 (momentos nas secoes S1A/S1B)              (Eq. 1.27)
-    - Armadura de flexao                                          (Eq. 1.28)
-    - Verificacao da diagonal comprimida (puncao - superf. C)     (Eq. 1.17/1.18)
-    - Metodo das Bielas (sapata rigida)                           (Eq. 1.31-1.36)
+    - Classificação rígida x flexível (NBR 6118 e CEB-70)        (Eq. 1.1/1.2)
+    - Estimativa da área da base                                  (Eq. 1.6)
+    - Dimensionamento com balanços iguais                         (Eq. 1.9)
+    - Método do CEB-70 (momentos nas seções S1A/S1B)              (Eq. 1.27)
+    - Armadura de flexão                                          (Eq. 1.28)
+    - Verificação da diagonal comprimida (punção - superf. C)     (Eq. 1.17/1.18)
+    - Método das Bielas (sapata rígida)                           (Eq. 1.31-1.36)
 
-Convencoes:
+Convenções:
     - fck em MPa.
-    - Geometria em cm. Pressao em kN/cm2 (= 10 MPa).
-    - Forcas em kN, momentos em kN.cm.
+    - Geometria em cm. Pressão em kN/cm2 (= 10 MPa).
+    - Forças em kN, momentos em kN.cm.
 """
 
 from __future__ import annotations
@@ -38,25 +38,25 @@ GAMA_F = nbr.GAMA_F  # Tabela 11.1 — lido do núcleo (P4)
 
 
 def fcd_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
-    """fcd em kN/cm2 (delegado ao nucleo normativo: nbr.fcd, 12.3.3)."""
+    """fcd em kN/cm2 (delegado ao núcleo normativo: nbr.fcd, 12.3.3)."""
     return nbr.mpa_para_kncm2(nbr.fcd(fck_mpa, gama_c))
 
 
 def fyd_kncm2(fyk_mpa: float = 500.0,
               gama_s: float = GAMA_S) -> float:
-    """fyd em kN/cm2 (delegado ao nucleo normativo: nbr.fyd)."""
+    """fyd em kN/cm2 (delegado ao núcleo normativo: nbr.fyd)."""
     return nbr.mpa_para_kncm2(nbr.fyd(fyk_mpa, gama_s))
 
 
 # ---------------------------------------------------------------------------
-# Classificacao
+# Classificação
 # ---------------------------------------------------------------------------
 def eh_rigida_nbr(h_cm: float, A_cm: float, ap_cm: float,
                   B_cm: float | None = None,
                   bp_cm: float | None = None) -> bool:
-    """NBR 6118 22.6.1 (Eq. 1.1): rigida se h >= (A - ap)/3 nas duas direcoes.
+    """NBR 6118 22.6.1 (Eq. 1.1): rígida se h >= (A - ap)/3 nas duas direções.
 
-    Se B/bp nao forem fornecidos, verifica apenas a direcao A.
+    Se B/bp não forem fornecidos, verifica apenas a direção A.
     """
     cond_A = h_cm >= (A_cm - ap_cm) / 3.0
     if B_cm is None or bp_cm is None:
@@ -69,7 +69,7 @@ def classificacao_ceb70(h_cm: float, cA_cm: float) -> str:
     """CEB-70 (Eq. 1.2): tg(beta) = h/cA.
     - tg < 0.5  -> flexivel
     - 0.5 <= tg <= 1.5  -> rigida
-    - tg > 1.5  -> bloco (dispensa armadura de flexao)
+    - tg > 1.5  -> bloco (dispensa armadura de flexão)
     """
     tg = h_cm / cA_cm
     if tg < 0.5:
@@ -80,18 +80,18 @@ def classificacao_ceb70(h_cm: float, cA_cm: float) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Estimativa de dimensoes
+# Estimativa de dimensões
 # ---------------------------------------------------------------------------
 def area_base_cm2(Nk_kn: float, Padm_kncm2: float,
                   K_maj: float = 1.1) -> float:
     """Ssap = K_maj * Nk / Padm (Eq. 1.6).
-    K_maj ~ 1.1 para considerar peso proprio da sapata e do solo."""
+    K_maj ~ 1.1 para considerar peso próprio da sapata e do solo."""
     return K_maj * Nk_kn / Padm_kncm2
 
 
 def dimensao_B_balancos_iguais(ap_cm: float, bp_cm: float,
                                Ssap_cm2: float) -> float:
-    """B com balancos iguais (cA = cB): A - B = ap - bp (Eq. 1.9).
+    """B com balanços iguais (cA = cB): A - B = ap - bp (Eq. 1.9).
 
     Resolve B a partir de A = B + (ap - bp), Ssap = A*B:
        B^2 + (ap-bp)*B - Ssap = 0
@@ -102,11 +102,11 @@ def dimensao_B_balancos_iguais(ap_cm: float, bp_cm: float,
 
 
 # ---------------------------------------------------------------------------
-# CEB-70 - Momentos nas secoes S1
+# CEB-70 - Momentos nas seções S1
 # ---------------------------------------------------------------------------
 def momento_CEB70(p_kncm2: float, c_aba_cm: float, dim_pilar_cm: float,
                   largura_perp_cm: float) -> float:
-    """Momento na secao S1 (Eq. 1.27) afastada 0.15*ap da face do pilar:
+    """Momento na seção S1 (Eq. 1.27) afastada 0.15*ap da face do pilar:
        M1d = pd * x^2 / 2 * largura_perp
     com x = c_aba + 0.15 * dim_pilar.
     """
@@ -123,30 +123,30 @@ def As_flexao_sapata(M_kncm: float, d_cm: float,
 
 
 # ---------------------------------------------------------------------------
-# Armadura minima de flexao (FUN-02)
+# Armadura mínima de flexão (FUN-02)
 # ---------------------------------------------------------------------------
 def as_min_flexao_sapata(largura_perp_cm: float, h_cm: float, fck_mpa: float,
                          criterio_as_min: str = "laje") -> float:
-    """As,minimo de flexao para sapata, em cm2 (decisao 2 do plano de
-    correcao contra a NBR 6118:2026 / achado FUN-02).
+    """As,mínimo de flexão para sapata, em cm2 (decisão 2 do plano de
+    correção contra a NBR 6118:2026 / achado FUN-02).
 
-    A NBR 22.6 nao fixa uma taxa minima propria para sapatas: 22.6.4.1.3
-    (sapata flexivel) remete aos requisitos de lajes e puncao (Secoes 19
-    e 20); a sapata rigida tambem trabalha a flexao nas duas direcoes,
-    com a tracao considerada uniforme na largura (22.6.2.2 a)). Por isso
-    o minimo de lajes armadas nas duas direcoes (Tabela 19.1) e adotado
-    como padrao.
+    A NBR 22.6 não fixa uma taxa mínima própria para sapatas: 22.6.4.1.3
+    (sapata flexível) remete aos requisitos de lajes e punção (Seções 19
+    e 20); a sapata rígida também trabalha à flexão nas duas direções,
+    com a tração considerada uniforme na largura (22.6.2.2 a)). Por isso
+    o mínimo de lajes armadas nas duas direções (Tabela 19.1) é adotado
+    como padrão.
 
-    largura_perp_cm : largura perpendicular as barras dessa direcao (a
-        OUTRA dimensao em planta da sapata -- para As_B use A_cm, para
-        As_A use B_cm), combinada com h_cm na secao de referencia bw*h.
+    largura_perp_cm : largura perpendicular às barras dessa direção (a
+        OUTRA dimensão em planta da sapata -- para As_B use A_cm, para
+        As_A use B_cm), combinada com h_cm na seção de referência bw*h.
     criterio_as_min:
-        "laje"    (padrao) rho_s >= 0,67*rho_min -- Tabela 19.1, linha
-                  "Armaduras positivas de lajes armadas nas duas direcoes";
+        "laje"    (padrão) rho_s >= 0,67*rho_min -- Tabela 19.1, linha
+                  "Armaduras positivas de lajes armadas nas duas direções";
         "rho_min" rho_s >= rho_min cheio -- Tabela 17.3 (elemento linear);
-        "nenhum"  nao aplica minimo algum (uso apenas comparativo).
-    rho_min vem de nbr.rho_min_flexao(fck) (Tabela 17.3, nucleo normativo;
-    cobre C20 a C90, decisao 1).
+        "nenhum"  não aplica mínimo algum (uso apenas comparativo).
+    rho_min vem de nbr.rho_min_flexao(fck) (Tabela 17.3, núcleo normativo;
+    cobre C20 a C90, decisão 1).
     """
     if criterio_as_min == "nenhum":
         return 0.0
@@ -163,11 +163,11 @@ def as_min_flexao_sapata(largura_perp_cm: float, h_cm: float, fck_mpa: float,
 
 
 # ---------------------------------------------------------------------------
-# Verificacao da diagonal comprimida (puncao na superficie C)
+# Verificação da diagonal comprimida (punção na superfície C)
 # ---------------------------------------------------------------------------
 def tau_Sd_kncm2(FSd_kn: float, u0_cm: float, d_cm: float) -> float:
     """tau_Sd = FSd / (u0 * d)  (Eq. 1.18).
-    u0 = perimetro do pilar."""
+    u0 = perímetro do pilar."""
     return FSd_kn / (u0_cm * d_cm)
 
 
@@ -191,10 +191,10 @@ def verifica_diagonal(FSd_kn: float, u0_cm: float, d_cm: float,
 
 
 # ---------------------------------------------------------------------------
-# Metodo das Bielas (Lebelle)
+# Método das Bielas (Lebelle)
 # ---------------------------------------------------------------------------
 def d_min_bielas(A_cm: float, ap_cm: float) -> float:
-    """d minimo pelo metodo das bielas (Eq. 1.31): d >= (A - ap)/4."""
+    """d mínimo pelo método das bielas (Eq. 1.31): d >= (A - ap)/4."""
     return (A_cm - ap_cm) / 4.0
 
 
@@ -207,25 +207,25 @@ def tracao_base_bielas(P_kn: float, dim_lado_cm: float,
 def As_bielas(T_kn: float, fyk_mpa: float = 500.0,
               gama_s: float = GAMA_S, gama_f: float = GAMA_F) -> float:
     """As = (gama_f * T) / fyd  (Eq. 1.35/1.36).
-    T eh forca caracteristica; aplicar gama_f."""
+    T é força característica; aplicar gama_f."""
     fyd = fyd_kncm2(fyk_mpa, gama_s) * 10.0  # MPa
     # Mas a apostila usa fyd diretamente em MPa = 50/1.15:
     return gama_f * T_kn / (fyk_mpa / gama_s) * 10.0  # cm2
 
 
 # ---------------------------------------------------------------------------
-# Sapata excentrica (1 direcao) - Eq. 1.39, 1.40, 1.41
+# Sapata excêntrica (1 direção) - Eq. 1.39, 1.40, 1.41
 # ---------------------------------------------------------------------------
 def tensoes_sapata_excentrica_1d(
     N_kn: float, M_kncm: float, A_cm: float, B_cm: float,
 ) -> dict:
-    """Tensoes max/min na base de sapata isolada com excentricidade na
-    direcao A (um eixo).
+    """Tensões max/min na base de sapata isolada com excentricidade na
+    direção A (um eixo).
 
-    e = M/N (excentricidade da forca normal)
-    a) e <= A/6 (dentro do nucleo): sigma_max/min = (N/AB)*(1 +/- 6e/A)
+    e = M/N (excentricidade da força normal)
+    a) e <= A/6 (dentro do núcleo): sigma_max/min = (N/AB)*(1 +/- 6e/A)
     b) e = A/6 (no limite): sigma_max = 2N/(AB), sigma_min = 0
-    c) e > A/6 (fora do nucleo): area tracionada -> redistribuicao
+    c) e > A/6 (fora do núcleo): área tracionada -> redistribuição
        sigma_max = 2N / (3*B*(A/2 - e))
     """
     e = abs(M_kncm) / N_kn
@@ -243,7 +243,7 @@ def tensoes_sapata_excentrica_1d(
     else:
         # Caso c (Eq. 1.41)
         sigma_max = 2.0 * N_kn / (3.0 * B_cm * (A_cm / 2.0 - e))
-        sigma_min = 0.0  # area tracionada desconsiderada
+        sigma_min = 0.0  # área tracionada desconsiderada
         caso = "c-fora-nucleo"
     return {
         "e_cm": e,
@@ -259,12 +259,12 @@ def tensoes_sapata_excentrica_2d(
     N_kn: float, eA_cm: float, eB_cm: float,
     A_cm: float, B_cm: float,
 ) -> tuple[float, float, float, float]:
-    """Tensoes nos 4 cantos para excentricidade em 2 direcoes (n�cleo central).
+    """Tensões nos 4 cantos para excentricidade em 2 direções (núcleo central).
 
     sigma = N/(AB) * (1 +/- 6*eA/A +/- 6*eB/B)
 
     Retorna (sigma_++, sigma_+-, sigma_-+, sigma_--) em kN/cm2.
-    Valido apenas quando eA/A + eB/B <= 1/6."""
+    Válido apenas quando eA/A + eB/B <= 1/6."""
     base = N_kn / (A_cm * B_cm)
     fA = 6.0 * eA_cm / A_cm
     fB = 6.0 * eB_cm / B_cm
@@ -284,23 +284,23 @@ def projetar_sapata_corrida(
 ) -> dict:
     """Sapata corrida sob carga uniforme (parede de comprimento >> largura).
 
-    Trabalha sobre uma faixa de 1 m. A largura B e dimensionada para
-    Padm; o momento e As sao por metro de comprimento.
+    Trabalha sobre uma faixa de 1 m. A largura B é dimensionada para
+    Padm; o momento e As são por metro de comprimento.
 
-    Nk_por_metro: carga vertical caracteristica por metro de parede [kN/m]
+    Nk_por_metro: carga vertical característica por metro de parede [kN/m]
     ap          : largura da parede sobre a sapata [cm]
-    Padm        : tensao admissivel do solo [kN/cm2]
-    criterio_as_min: ver ``as_min_flexao_sapata`` (achado FUN-02, decisao 2).
+    Padm        : tensão admissível do solo [kN/cm2]
+    criterio_as_min: ver ``as_min_flexao_sapata`` (achado FUN-02, decisão 2).
 
-    Returns dict com B, c (balanco), pd, M1d/m, As_por_metro (>= minimo).
+    Returns dict com B, c (balanço), pd, M1d/m, As_por_metro (>= mínimo).
     """
-    # Dimensao B necessaria (faixa de 100 cm)
+    # Dimensão B necessária (faixa de 100 cm)
     B = K_maj * Nk_por_metro_kn / 100.0 / Padm_kncm2  # cm
     c = (B - ap_cm) / 2.0
     d = h_cm - cobrimento_cm - 1.0
     Nd_por_m = gama_f * Nk_por_metro_kn / 100.0   # kN/cm
     pd = Nd_por_m / B                              # kN/cm2
-    # Momento na secao S1 (CEB-70: x = c + 0.15*ap), por unidade de
+    # Momento na seção S1 (CEB-70: x = c + 0.15*ap), por unidade de
     # comprimento (faixa 100 cm = considerada implicitamente)
     x = c + 0.15 * ap_cm
     M1d_por_m = pd * x * x / 2.0 * 100.0           # kN.cm/m
@@ -322,30 +322,30 @@ def projetar_sapata_corrida(
 
 
 # ---------------------------------------------------------------------------
-# Sapata flexivel (item 1.6.8) - verificacao a forca cortante
+# Sapata flexível (item 1.6.8) - verificação à força cortante
 # ---------------------------------------------------------------------------
 def cortante_sapata_flexivel(
     pd_kncm2: float, A_cm: float, B_cm: float, ap_cm: float, bp_cm: float,
     d_cm: float, fck_mpa: float, gama_c: float = GAMA_C,
     secao_critica: str = "d",
 ) -> dict:
-    """Verificacao da forca cortante para sapata flexivel (NBR 19.4.1).
+    """Verificação da força cortante para sapata flexível (NBR 19.4.1).
 
-    Forca cortante na secao critica, na direcao A:
+    Força cortante na seção crítica, na direção A:
     VSd = pd * B * (cA - afastamento)
 
-    secao_critica (achado FUN-04, decisao 3 do plano de correcao):
-        "d"   (padrao) -- a secao critica fica a uma distancia d da face
-              do pilar, conforme 19.4.1 (PDF p. 181): "a uma distancia d
+    secao_critica (achado FUN-04, decisão 3 do plano de correção):
+        "d"   (padrão) -- a seção crítica fica a uma distância d da face
+              do pilar, conforme 19.4.1 (PDF p. 181): "a uma distância d
               da face do apoio".
-        "d/2" -- afastamento d/2, criterio do CEB-70 -- NAO e o da NBR;
-              use apenas quando o metodo adotado for o CEB-70 inteiro,
+        "d/2" -- afastamento d/2, critério do CEB-70 -- NÃO é o da NBR;
+              use apenas quando o método adotado for o CEB-70 inteiro,
               nunca atribuindo esse afastamento ao 19.4.1.
 
     VRd1 (sem armadura) = tau_Rd * k * (1,2 + 40 rho_l) * bw * d, com
-    tau_Rd = 0,25*fctd e fck limitado a 60 MPa (19.4.1, via nucleo
+    tau_Rd = 0,25*fctd e fck limitado a 60 MPa (19.4.1, via núcleo
     normativo). Para sapatas geralmente despreza-se rho_l e sigma_cp
-    (toma o termo conservador da formula).
+    (toma o termo conservador da fórmula).
     """
     if secao_critica not in ("d", "d/2"):
         raise ValueError(
@@ -417,12 +417,12 @@ def projetar_sapata_centrada(
 ) -> ResultadoSapata:
     """Projeta sapata isolada sob carga centrada (CEB-70).
 
-    Se A_cm/B_cm forem omitidos, calcula com balancos iguais a partir
+    Se A_cm/B_cm forem omitidos, calcula com balanços iguais a partir
     de Ssap.
 
-    criterio_as_min: ver ``as_min_flexao_sapata`` (achado FUN-02, decisao
-    2 do plano de correcao). As_A_cm2/As_B_cm2 saem elevados ao minimo
-    correspondente; o minimo aplicado fica em As_A_min_cm2/As_B_min_cm2.
+    criterio_as_min: ver ``as_min_flexao_sapata`` (achado FUN-02, decisão
+    2 do plano de correção). As_A_cm2/As_B_cm2 saem elevados ao mínimo
+    correspondente; o mínimo aplicado fica em As_A_min_cm2/As_B_min_cm2.
     """
     if A_cm is None or B_cm is None:
         Ssap = area_base_cm2(Nk_kn, Padm_kncm2, K_maj)
@@ -442,10 +442,10 @@ def projetar_sapata_centrada(
     M1B = momento_CEB70(pd, cB, bp_cm, A)
     As_A = As_flexao_sapata(M1A, d, fyk_mpa, gama_s)
     As_B = As_flexao_sapata(M1B, d, fyk_mpa, gama_s)
-    # FUN-02: As,minimo (22.6.4.1.3 remete a lajes/Tabela 19.1). As_A corre
+    # FUN-02: As,mínimo (22.6.4.1.3 remete a lajes/Tabela 19.1). As_A corre
     # ao longo de A e se distribui ao longo de B (e vice-versa para As_B)
-    # -- a largura perpendicular as barras de cada direcao e a OUTRA
-    # dimensao da sapata.
+    # -- a largura perpendicular às barras de cada direção é a OUTRA
+    # dimensão da sapata.
     As_A_min = as_min_flexao_sapata(B, h_cm, fck_mpa, criterio_as_min)
     As_B_min = as_min_flexao_sapata(A, h_cm, fck_mpa, criterio_as_min)
     As_A = max(As_A, As_A_min)
@@ -478,14 +478,14 @@ def _aprox(a: float, b: float, tol: float) -> bool:
 
 def test_classificacao_rigida_apostila() -> None:
     """Apostila ex.1: A=265, ap=80, h=70 -> (A-ap)/3 = 61.67;
-    h=70 > 61.67 -> rigida pela NBR."""
+    h=70 > 61.67 -> rígida pela NBR."""
     assert eh_rigida_nbr(h_cm=70.0, A_cm=265.0, ap_cm=80.0,
                          B_cm=205.0, bp_cm=20.0)
-    print("  OK  Classificacao NBR: rigida (70 >= 61.67 e 61.67)")
+    print("  OK  Classificação NBR: rígida (70 >= 61.67 e 61.67)")
 
 
 def test_classificacao_ceb70() -> None:
-    """tg(beta) = h/cA = 70/92.5 = 0.757; entre 0.5 e 1.5 -> rigida."""
+    """tg(beta) = h/cA = 70/92.5 = 0.757; entre 0.5 e 1.5 -> rígida."""
     cl = classificacao_ceb70(h_cm=70.0, cA_cm=92.5)
     assert cl == "rigida", f"classificacao={cl}"
     print(f"  OK  CEB-70: tg(beta) = {70/92.5:.3f} -> {cl}")
@@ -548,7 +548,7 @@ def test_metodo_bielas_d_min() -> None:
     """Ex.2: A=265, ap=80 -> d_min = 46.25 cm."""
     d = d_min_bielas(A_cm=265.0, ap_cm=80.0)
     assert _aprox(d, 46.25, 0.1), f"d_min={d}"
-    print(f"  OK  Metodo bielas: d_min = {d:.2f} cm  (apostila: 46.3)")
+    print(f"  OK  Método bielas: d_min = {d:.2f} cm  (apostila: 46.3)")
 
 
 def test_metodo_bielas_tracao() -> None:
@@ -571,10 +571,10 @@ def test_projetar_sapata_completo() -> None:
     """Reproduz o Exemplo 1 com A,B fixados.
 
     FUN-02 (22.6.4.1.3 remete a lajes; Tabela 19.1, "armaduras positivas
-    de lajes armadas nas duas direcoes": rho_s >= 0,67*rho_min): a Eq.
-    1.28 pura dava As_B = 16,20 cm2, 13% abaixo do minimo de 18,64 cm2
-    (rho_min(C25) = 0,15%; 0,67*0,0015*265*70 = 18,64). As_A (15,01) ja
-    estava acima do seu minimo (14,42 = 0,67*0,0015*205*70) e nao muda.
+    de lajes armadas nas duas direções": rho_s >= 0,67*rho_min): a Eq.
+    1.28 pura dava As_B = 16,20 cm2, 13% abaixo do mínimo de 18,64 cm2
+    (rho_min(C25) = 0,15%; 0,67*0,0015*265*70 = 18,64). As_A (15,01) já
+    estava acima do seu mínimo (14,42 = 0,67*0,0015*205*70) e não muda.
     """
     r = projetar_sapata_centrada(
         Nk_kn=1250.0, ap_cm=80.0, bp_cm=20.0, Padm_kncm2=0.026,
@@ -588,7 +588,7 @@ def test_projetar_sapata_completo() -> None:
     assert _aprox(r.As_B_cm2, 18.64, 0.05)
     assert r.ok_diagonal
     print(f"  OK  Sapata 265x205x70: As_A = {r.As_A_cm2:.2f}, "
-          f"As_B = {r.As_B_cm2:.2f} (minimo Tab. 19.1), diag={r.ok_diagonal}")
+          f"As_B = {r.As_B_cm2:.2f} (mínimo Tab. 19.1), diag={r.ok_diagonal}")
 
 
 def test_sapata_excentrica_dentro_nucleo() -> None:
@@ -601,7 +601,7 @@ def test_sapata_excentrica_dentro_nucleo() -> None:
     assert r["caso"] == "a-dentro-nucleo"
     assert _aprox(r["sigma_max_kncm2"], 0.04, 0.001)
     assert _aprox(r["sigma_min_kncm2"], 0.01, 0.001)
-    print(f"  OK  Excentrica dentro nucleo: e={r['e_cm']:.1f} cm, "
+    print(f"  OK  Excêntrica dentro núcleo: e={r['e_cm']:.1f} cm, "
           f"sigma_max/min = {r['sigma_max_kncm2']:.4f}/"
           f"{r['sigma_min_kncm2']:.4f} kN/cm2")
 
@@ -615,7 +615,7 @@ def test_sapata_excentrica_fora_nucleo() -> None:
     assert r["caso"] == "c-fora-nucleo"
     assert _aprox(r["sigma_max_kncm2"], 0.1111, 0.001)
     assert _aprox(r["sigma_min_kncm2"], 0.0, 0.001)
-    print(f"  OK  Excentrica fora nucleo: e={r['e_cm']:.1f} cm, "
+    print(f"  OK  Excêntrica fora núcleo: e={r['e_cm']:.1f} cm, "
           f"sigma_max = {r['sigma_max_kncm2']:.4f} kN/cm2")
 
 
@@ -633,7 +633,7 @@ def test_sapata_excentricidade_2d() -> None:
 def test_sapata_corrida_basica() -> None:
     """Parede ap=20 cm, Nk=300 kN/m, Padm=0.20 kN/cm2 (2 MPa).
     K_maj=1.05 -> B = 1.05*300/100/0.20 = 15.75 cm.
-    Mas B<ap nao faz sentido; ajuste para teste real:
+    Mas B<ap não faz sentido; ajuste para teste real:
     Nk=1000 kN/m, Padm=0.025 kN/cm2 -> B = 1.05*1000/100/0.025 = 420 cm."""
     r = projetar_sapata_corrida(
         Nk_por_metro_kn=1000.0, ap_cm=20.0, Padm_kncm2=0.025,
@@ -650,20 +650,20 @@ def test_cortante_sapata_flexivel() -> None:
     """Sapata 250x250x40, ap=bp=30, pd=0.05 kN/cm2 (~5 MPa), C25.
     cA = cB = 110; d = 35.
 
-    FUN-04 (19.4.1, p.181: secao critica "a uma distancia d da face do
-    apoio"; decisao 3 do plano de correcao): o padrao agora e a secao a
-    d, nao mais a d/2 do CEB-70.
-    VSd_A (secao a d)   = 0.05 * 250 * (110 - 35)   = 937.50 kN.
+    FUN-04 (19.4.1, p.181: seção crítica "a uma distância d da face do
+    apoio"; decisão 3 do plano de correção): o padrão agora é a seção a
+    d, não mais a d/2 do CEB-70.
+    VSd_A (seção a d)   = 0.05 * 250 * (110 - 35)   = 937.50 kN.
     VSd_A (d/2, CEB-70) = 0.05 * 250 * (110 - 17.5) = 1156.25 kN
-    (valor antigo, "+23% a favor da seguranca", so alcancavel agora com
-    secao_critica="d/2" explicito)."""
+    (valor antigo, "+23% a favor da segurança", só alcançável agora com
+    secao_critica="d/2" explícito)."""
     r = cortante_sapata_flexivel(
         pd_kncm2=0.05, A_cm=250.0, B_cm=250.0, ap_cm=30.0, bp_cm=30.0,
         d_cm=35.0, fck_mpa=25.0,
     )
     assert r["secao_critica"] == "d"
     assert _aprox(r["VSd_A_kN"], 937.50, 1.0)
-    print(f"  OK  Cortante sapata flex (secao a d): VSd_A={r['VSd_A_kN']:.0f}, "
+    print(f"  OK  Cortante sapata flex (seção a d): VSd_A={r['VSd_A_kN']:.0f}, "
           f"VRd1_A={r['VRd1_A_kN']:.0f} kN  (ok={r['ok_A']})")
 
     r_ceb70 = cortante_sapata_flexivel(
@@ -718,7 +718,7 @@ def _demo() -> None:
     )
     print(f"  Dim base : {r.A_cm:.0f} x {r.B_cm:.0f} cm")
     print(f"  cA, cB   : {r.cA_cm:.1f}, {r.cB_cm:.1f} cm")
-    print(f"  Rigida   : NBR={r.rigida_nbr}  CEB-70={r.rigida_ceb70}")
+    print(f"  Rígida   : NBR={r.rigida_nbr}  CEB-70={r.rigida_ceb70}")
     print(f"  pd       : {r.p_kncm2:.5f} kN/cm2 ({r.p_kncm2*10:.3f} MPa)")
     print(f"  M1A,d    : {r.M1A_kncm:.0f} kN.cm")
     print(f"  M1B,d    : {r.M1B_kncm:.0f} kN.cm")

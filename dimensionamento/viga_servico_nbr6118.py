@@ -1,24 +1,24 @@
-"""Vigas de Concreto Armado - Verificacoes de Servico (NBR 6118:2023).
+"""Vigas de Concreto Armado - Verificações de Serviço (NBR 6118:2023).
 
-Nome ate 19/09/2026: viga_servico_bastos.py. O credito as apostilas esta abaixo.
+Nome até 19/09/2026: viga_servico_bastos.py. O crédito às apostilas está abaixo.
 
-Implementa as verificacoes de servico (estado-limite de servico) seguindo
+Implementa as verificações de serviço (estado-limite de serviço) seguindo
 a apostila "VIGAS DE CONCRETO ARMADO - Dimensionamento, Flecha e
-Fissuracao", Prof. Paulo Sergio Bastos, UNESP/Bauru.
+Fissuração", Prof. Paulo Sérgio Bastos, UNESP/Bauru.
 
-A flexao, cortante e ancoragem estao em scripts irmaos:
+A flexão, cortante e ancoragem estão em scripts irmãos:
     vigas_nbr6118.py, cortante_nbr6118.py, ancoragem_nbr6118.py.
 
-Conteudo unico desta apostila implementado aqui:
-    - Posicao da linha neutra no Estadio II (Eq. 60 retangular e Eq. 64 T).
-    - Momento de inercia no Estadio II (Eq. 61 e Eq. 65).
-    - Razao modular alpha_e = Es / Ecs (Eq. 68).
-    - Decalagem do diagrama de forcas no banzo tracionado (Eq. 31, 34).
-    - Verificacao da fissuracao wk (Eqs. 86 e 87 / NBR 6118 17.3.3.2).
+Conteúdo único desta apostila implementado aqui:
+    - Posição da linha neutra no Estádio II (Eq. 60 retangular e Eq. 64 T).
+    - Momento de inércia no Estádio II (Eq. 61 e Eq. 65).
+    - Razão modular alpha_e = Es / Ecs (Eq. 68).
+    - Decalagem do diagrama de forças no banzo tracionado (Eq. 31, 34).
+    - Verificação da fissuração wk (Eqs. 86 e 87 / NBR 6118 17.3.3.2).
 
-Convencoes:
-    - Resistencias em MPa, geometria em cm, momentos em kN.cm,
-      tensao no aco em kN/cm2.
+Convenções:
+    - Resistências em MPa, geometria em cm, momentos em kN.cm,
+      tensão no aço em kN/cm2.
 """
 
 from __future__ import annotations
@@ -47,12 +47,12 @@ E_S_MPA = 210000.0
 
 
 # ---------------------------------------------------------------------------
-# Modulos de elasticidade do concreto (NBR 6118 8.2.8)
+# Módulos de elasticidade do concreto (NBR 6118 8.2.8)
 # ---------------------------------------------------------------------------
 def alpha_E(agregado: str = "granito") -> float:
     """Coef alpha_E pela NBR 6118 (Eq. 71/72).
 
-    granito/gnaisse = 1.0; basalto/diabasio = 1.2; calcario = 0.9;
+    granito/gnaisse = 1.0; basalto/diabásio = 1.2; calcário = 0.9;
     arenito = 0.7.
     """
     return {
@@ -64,7 +64,7 @@ def alpha_E(agregado: str = "granito") -> float:
 
 
 def Eci_mpa(fck_mpa: float, agregado: str = "granito") -> float:
-    """Modulo de elasticidade inicial Eci (MPa).
+    """Módulo de elasticidade inicial Eci (MPa).
     fck <= 50: Eci = alpha_E * 5600 * sqrt(fck);
     fck > 50:  Eci = 21500 * alpha_E * (fck/10 + 1.25)^(1/3)."""
     aE = alpha_E(agregado)
@@ -74,24 +74,24 @@ def Eci_mpa(fck_mpa: float, agregado: str = "granito") -> float:
 
 
 def Ecs_mpa(fck_mpa: float, agregado: str = "granito") -> float:
-    """Modulo secante Ecs = alpha_i * Eci, com
+    """Módulo secante Ecs = alpha_i * Eci, com
     alpha_i = 0.8 + 0.2 * fck/80 <= 1.0 (Eq. 70)."""
     alpha_i = min(1.0, 0.8 + 0.2 * fck_mpa / 80.0)
     return alpha_i * Eci_mpa(fck_mpa, agregado)
 
 
 def alpha_e(fck_mpa: float, agregado: str = "granito") -> float:
-    """Razao modular alpha_e = Es / Ecs (Eq. 68)."""
+    """Razão modular alpha_e = Es / Ecs (Eq. 68)."""
     return E_S_MPA / Ecs_mpa(fck_mpa, agregado)
 
 
 # ---------------------------------------------------------------------------
-# Estadio II - Posicao da linha neutra e Inercia
+# Estádio II - Posição da linha neutra e Inércia
 # ---------------------------------------------------------------------------
 def x_II_retangular(bw_cm: float, d_cm: float, As_cm2: float,
                     As_linha_cm2: float, d_linha_cm: float,
                     alpha_e_val: float) -> float:
-    """Posicao da linha neutra no Estadio II - secao retangular (Eq. 60).
+    """Posição da linha neutra no Estádio II - seção retangular (Eq. 60).
 
     bw/2 * x^2 + alpha_e * (As + As') * x
         - alpha_e * (As*d + As'*d') = 0
@@ -101,14 +101,14 @@ def x_II_retangular(bw_cm: float, d_cm: float, As_cm2: float,
     c = -alpha_e_val * (As_cm2 * d_cm + As_linha_cm2 * d_linha_cm)
     disc = b * b - 4.0 * a * c
     if disc < 0:
-        raise ValueError("discriminante negativo em x_II")
+        raise ValueError("Discriminante negativo em x_II.")
     return (-b + math.sqrt(disc)) / (2.0 * a)
 
 
 def I_II_retangular(bw_cm: float, d_cm: float, x_II_cm: float,
                     As_cm2: float, As_linha_cm2: float, d_linha_cm: float,
                     alpha_e_val: float) -> float:
-    """Momento de inercia no Estadio II - secao retangular (Eq. 61).
+    """Momento de inércia no Estádio II - seção retangular (Eq. 61).
 
     III = bw * x^3 / 3 + alpha_e*As*(d - x)^2 + alpha_e*As'*(x - d')^2
     """
@@ -120,7 +120,7 @@ def I_II_retangular(bw_cm: float, d_cm: float, x_II_cm: float,
 def x_II_secao_T(bf_cm: float, bw_cm: float, hf_cm: float, d_cm: float,
                  As_cm2: float, As_linha_cm2: float, d_linha_cm: float,
                  alpha_e_val: float) -> float:
-    """Linha neutra no Estadio II - secao T (Eq. 64), assumindo x > hf.
+    """Linha neutra no Estádio II - seção T (Eq. 64), assumindo x > hf.
 
     bw/2 * x^2 + [alpha_e*(As + As') + (bf - bw)*hf] * x
         - [alpha_e*(As*d + As'*d') + (bf - bw)*hf^2/2] = 0
@@ -131,14 +131,14 @@ def x_II_secao_T(bf_cm: float, bw_cm: float, hf_cm: float, d_cm: float,
           + (bf_cm - bw_cm) * hf_cm * hf_cm / 2.0)
     disc = b * b - 4.0 * a * c
     if disc < 0:
-        raise ValueError("discriminante negativo em x_II_secao_T")
+        raise ValueError("Discriminante negativo em x_II_secao_T.")
     return (-b + math.sqrt(disc)) / (2.0 * a)
 
 
 def I_II_secao_T(bf_cm: float, bw_cm: float, hf_cm: float, d_cm: float,
                  x_II_cm: float, As_cm2: float, As_linha_cm2: float,
                  d_linha_cm: float, alpha_e_val: float) -> float:
-    """Inercia Estadio II - secao T (Eq. 65), x > hf.
+    """Inércia Estádio II - seção T (Eq. 65), x > hf.
 
     III = bf*x^3/3 - (bf-bw)*(x-hf)^3/3
           + alpha_e*As*(d - x)^2 + alpha_e*As'*(x - d')^2
@@ -157,7 +157,7 @@ def I_II_secao_T(bf_cm: float, bw_cm: float, hf_cm: float, d_cm: float,
 def decalagem_modelo_I(d_cm: float, VSd_kn: float, Vc_kn: float,
                        alfa_deg: float = 90.0) -> float:
     """Decalagem a_l (cm) - Modelo I, banzo tracionado (NBR 6118:2026
-    17.4.2.2 c), PDF p. 158; generaliza a Eq. 31 da apostila, que so
+    17.4.2.2 c), PDF p. 158; generaliza a Eq. 31 da apostila, que só
     cobria estribos a 90 graus).
 
     a_l = d, para |VSd,max| <= |Vc| (antes devolvia 0.5*d - VIG-05: erro de
@@ -182,27 +182,27 @@ def decalagem_modelo_II(d_cm: float, theta_deg: float = 30.0,
                         VSd_kn: float | None = None,
                         Vc_kn: float | None = None) -> float:
     """Decalagem a_l (cm) - Modelo II, banzo tracionado (NBR 6118:2026
-    17.4.2.3 c), PDF p. 159: "mantidas a notacao e as limitacoes definidas
+    17.4.2.3 c), PDF p. 159: "mantidas a notação e as limitações definidas
     em 17.4.2.2").
 
-    Formula completa (usada quando VSd_kn e Vc_kn sao informados; Vc = Vc1
-    na flexao simples, 17.4.1.1):
+    Fórmula completa (usada quando VSd_kn e Vc_kn são informados; Vc = Vc1
+    na flexão simples, 17.4.1.1):
         a_l = 0.5*d*[VSd,max/(VSd,max - Vc)*(cotg theta + cotg alfa) - cotg alfa] <= d
     a_l = d, para |VSd,max| <= |Vc|. Pisos: a_l >= 0.5*d no caso geral;
     a_l >= 0.2*d para estribos inclinados a 45 graus.
 
-    Sem VSd_kn e Vc_kn a formula da norma nao pode ser calculada (falta
+    Sem VSd_kn e Vc_kn a fórmula da norma não pode ser calculada (falta
     Vc). A apostila simplifica fazendo Vc = 0 (a_l = 0.5*cotg(theta)*d),
-    mas isso sempre SUBESTIMA a_l - contra a seguranca (VIG-07: -13,4% no
-    caso d=46, theta=30, VSd=153, Vc=49.6, onde o correto e a_l = d).
-    Em vez de repetir esse atalho, a funcao avisa e devolve o limite
+    mas isso sempre SUBESTIMA a_l - contra a segurança (VIG-07: -13,4% no
+    caso d=46, theta=30, VSd=153, Vc=49.6, onde o correto é a_l = d).
+    Em vez de repetir esse atalho, a função avisa e devolve o limite
     conservador a_l = d.
     """
     piso = 0.2 * d_cm if abs(alfa_deg - 45.0) < 1e-9 else 0.5 * d_cm
     if VSd_kn is None or Vc_kn is None:
         warnings.warn(
-            "decalagem_modelo_II sem VSd_kn/Vc_kn: a formula completa da "
-            "NBR 6118:2026 17.4.2.3 c) exige Vc (= Vc1 na flexao simples). "
+            "decalagem_modelo_II sem VSd_kn/Vc_kn: a fórmula completa da "
+            "NBR 6118:2026 17.4.2.3 c) exige Vc (= Vc1 na flexão simples). "
             "O atalho antigo (Vc = 0) subestima a_l; adotado o limite "
             "conservador a_l = d. Informe VSd_kn e Vc_kn para o valor exato.",
             stacklevel=2,
@@ -217,7 +217,7 @@ def decalagem_modelo_II(d_cm: float, theta_deg: float = 30.0,
 
 
 # ---------------------------------------------------------------------------
-# Verificacao de fissuracao (NBR 6118 17.3.3.2)
+# Verificação de fissuração (NBR 6118 17.3.3.2)
 # ---------------------------------------------------------------------------
 @dataclass
 class ResultadoFissuracao:
@@ -234,23 +234,23 @@ class ResultadoFissuracao:
 
 
 def fctm_kncm2(fck_mpa: float) -> float:
-    """fct,m em kN/cm2, delegado ao nucleo normativo (8.2.5).
+    """fct,m em kN/cm2, delegado ao núcleo normativo (8.2.5).
 
-    Antes sempre 0,3*fck^(2/3) (valido so ate C50); a NBR 6118:2026 usa
+    Antes sempre 0,3*fck^(2/3) (válido só até C50); a NBR 6118:2026 usa
     2,12*ln[1 + 0,1*(fck + 8)] acima disso (nbr.fct_m). Usada em
-    abertura_fissura_wk (wk2): sem o ramo, fctm saia alto demais para
-    fck > 50 e wk2 saia baixo demais - 9,5% (C70) a 16,3% (C90), contra a
-    seguranca (VIG-10)."""
+    abertura_fissura_wk (wk2): sem o ramo, fctm saía alto demais para
+    fck > 50 e wk2 saía baixo demais - 9,5% (C70) a 16,3% (C90), contra a
+    segurança (VIG-10)."""
     return nbr.mpa_para_kncm2(nbr.fct_m(fck_mpa))
 
 
 # ---------------------------------------------------------------------------
 # Largura efetiva de mesa colaborante (NBR 6118 14.6.2.2)
 # ---------------------------------------------------------------------------
-# Promovidas para analise_linear_nbr6118.py no P14 (19/09/2026): a formula
-# (com o caso de borda/b4 da Figura 14.2 que faltava aqui) agora mora la.
-# Mantidas aqui como fachada de uma linha para nao quebrar quem ja importava
-# vao_a_para_mesa/largura_efetiva_mesa deste modulo - mesma assinatura e
+# Promovidas para analise_linear_nbr6118.py no P14 (19/09/2026): a fórmula
+# (com o caso de borda/b4 da Figura 14.2 que faltava aqui) agora mora lá.
+# Mantidas aqui como fachada de uma linha para não quebrar quem já importava
+# vao_a_para_mesa/largura_efetiva_mesa deste módulo - mesma assinatura e
 # mesmo resultado de antes.
 vao_a_para_mesa = _analise_linear.vao_a_para_mesa
 largura_efetiva_mesa = _analise_linear.largura_efetiva_mesa
@@ -264,20 +264,20 @@ def sigma_si_aproximada(Md_ser_kncm: float, d_cm: float,
 
 def sigma_si_estadio_II(Md_ser_kncm: float, d_cm: float, x_II_cm: float,
                         I_II_cm4: float, alpha_e_val: float) -> float:
-    """sigma_si na armadura tracionada, Estadio II (secao fissurada), kN/cm2.
+    """sigma_si na armadura tracionada, Estádio II (seção fissurada), kN/cm2.
 
-    sigma_si = alpha_e * Md,ser * (d - x_II) / I_II, pela mecanica da secao
-    transformada fissurada. Usa x_II e I_II ja calculados por
+    sigma_si = alpha_e * Md,ser * (d - x_II) / I_II, pela mecânica da seção
+    transformada fissurada. Usa x_II e I_II já calculados por
     x_II_retangular/x_II_secao_T e I_II_retangular/I_II_secao_T (o chamador
-    escolhe a formula pela forma da secao).
+    escolhe a fórmula pela forma da seção).
 
-    NBR 6118 17.3.3.2/17.3.3.3 pedem sigma_si no Estadio II para o calculo
-    de wk. sigma_si_aproximada() (Eq. 89 da apostila) usa braco fixo 0.85d
-    e fica a favor da seguranca (VIG-09, escolha documentada: +12,3% no
-    exemplo da apostila item 17.1 - viga-ponte); esta funcao usa a rigidez
+    NBR 6118 17.3.3.2/17.3.3.3 pedem sigma_si no Estádio II para o cálculo
+    de wk. sigma_si_aproximada() (Eq. 89 da apostila) usa braço fixo 0.85d
+    e fica a favor da segurança (VIG-09, escolha documentada: +12,3% no
+    exemplo da apostila item 17.1 - viga-ponte); esta função usa a rigidez
     fissurada real e reproduz o valor da norma nesse exemplo (22.43 kN/cm2
-    contra os 25.18 kN/cm2 de sigma_si_aproximada). Nao substitui
-    sigma_si_aproximada, que continua disponivel para o calculo rapido.
+    contra os 25.18 kN/cm2 de sigma_si_aproximada). Não substitui
+    sigma_si_aproximada, que continua disponível para o cálculo rápido.
     """
     return alpha_e_val * Md_ser_kncm * (d_cm - x_II_cm) / I_II_cm4
 
@@ -363,7 +363,7 @@ def test_x_II_retangular_apostila() -> None:
     III = I_II_retangular(bw_cm=12.0, d_cm=37.0, x_II_cm=x_II,
                           As_cm2=2.45, As_linha_cm2=0.0, d_linha_cm=0.0,
                           alpha_e_val=ae)
-    # Verificacao auto-consistente: somando momentos estaticos em x_II = 0
+    # Verificação auto-consistente: somando momentos estáticos em x_II = 0
     momento_estatico = (12.0 * x_II * x_II / 2.0
                         - ae * 2.45 * (37.0 - x_II))
     assert abs(momento_estatico) < 0.5, f"M_estatico={momento_estatico:.3f}"
@@ -381,7 +381,7 @@ def test_x_II_secao_T_apostila() -> None:
         As_cm2=137.20, As_linha_cm2=16.00, d_linha_cm=5.1,
         alpha_e_val=ae,
     )
-    # Apostila chega proximo a x_II = 24-26 cm
+    # Apostila chega próximo a x_II = 24-26 cm
     assert 18.0 < x_II < 35.0, f"x_II fora do esperado: {x_II:.2f}"
     III = I_II_secao_T(
         bf_cm=325.0, bw_cm=25.0, hf_cm=20.0, d_cm=186.5, x_II_cm=x_II,
@@ -392,23 +392,23 @@ def test_x_II_secao_T_apostila() -> None:
 
 def test_decalagem_modelo_I() -> None:
     """NBR 6118:2026 17.4.2.2 c). Com alfa=90 (cotg=0) o caso geral se
-    reduz a 0.5*d*VSd/(VSd-Vc), igual a apostila; por isso a1/a2 nao mudam
-    (atualizado apenas o comentario, para a formula certa). Casos novos:
+    reduz a 0.5*d*VSd/(VSd-Vc), igual à apostila; por isso a1/a2 não mudam
+    (atualizado apenas o comentário, para a fórmula certa). Casos novos:
     a3 cobre VIG-05 (|VSd|<=|Vc| -> a_l = d, antes 0.5d) e a4 cobre VIG-06
     (cotg(alfa), antes ignorado)."""
     d = 46.0
     a1 = decalagem_modelo_I(d_cm=d, VSd_kn=153.0, Vc_kn=49.6)
     # d*[153/(2*(153-49.6))*(1+0) - 0] = 46*153/206.8 = 34.04 cm; <= d
     assert _aprox(a1, 34.04, 0.5), f"a_l={a1:.2f}"
-    # caso Vsd ~ Vc (mas ainda > Vc) -> formula geral estoura d e e limitada a d
+    # caso Vsd ~ Vc (mas ainda > Vc) -> fórmula geral estoura d e é limitada a d
     a2 = decalagem_modelo_I(d_cm=d, VSd_kn=51.0, Vc_kn=49.6)
     assert _aprox(a2, d, 0.5), f"a_l={a2:.2f}"
     # VIG-05: |VSd| <= |Vc| -> a_l = d (achado: d=46,VSd=45,Vc=49.6 -> 46.0;
-    # o codigo antigo devolvia 23.0 = 0.5d, -50%).
+    # o código antigo devolvia 23.0 = 0.5d, -50%).
     a3 = decalagem_modelo_I(d_cm=d, VSd_kn=45.0, Vc_kn=49.6)
     assert _aprox(a3, d, 0.01), f"a_l={a3:.2f}"
     # VIG-06: cotg(alfa) com alfa=45 (achado: d=46,VSd=153,Vc=49.6,alfa=45
-    # -> 22.07; o codigo antigo ignorava alfa e devolvia 34.03).
+    # -> 22.07; o código antigo ignorava alfa e devolvia 34.03).
     a4 = decalagem_modelo_I(d_cm=d, VSd_kn=153.0, Vc_kn=49.6, alfa_deg=45.0)
     assert _aprox(a4, 22.07, 0.05), f"a_l={a4:.2f}"
     print(f"  OK  Modelo I: a_l(VSd=153,Vc=49.6) = {a1:.2f} cm  "
@@ -417,12 +417,12 @@ def test_decalagem_modelo_I() -> None:
 
 
 def test_decalagem_modelo_II() -> None:
-    """NBR 6118:2026 17.4.2.3 c). Sem VSd_kn/Vc_kn a formula com Vc=0 da
-    apostila subestima a_l (VIG-07): a funcao agora avisa e devolve o
+    """NBR 6118:2026 17.4.2.3 c). Sem VSd_kn/Vc_kn a fórmula com Vc=0 da
+    apostila subestima a_l (VIG-07): a função agora avisa e devolve o
     limite conservador a_l = d, em vez do antigo 0.5*cotg(theta)*d = 39.84.
     Com VSd_kn/Vc_kn informados (achado: d=46, theta=30, VSd=153, Vc=49.6),
-    o valor correto e a_l = d = 46.0 cm (o raw da formula, 58.94, e limitado
-    a d) - o codigo antigo dava 39.84 (-13,4%)."""
+    o valor correto é a_l = d = 46.0 cm (o raw da fórmula, 58.94, é limitado
+    a d) - o código antigo dava 39.84 (-13,4%)."""
     with warnings.catch_warnings(record=True) as avisos:
         warnings.simplefilter("always")
         a_sem_dados = decalagem_modelo_II(d_cm=46.0, theta_deg=30.0)
@@ -455,7 +455,7 @@ def test_fissuracao_apostila_ex17_1() -> None:
     assert _aprox(r.wk2_mm, 0.23, 0.02), f"wk2={r.wk2_mm:.3f}"
     assert _aprox(r.wk_mm, 0.11, 0.02), f"wk={r.wk_mm:.3f}"
     assert r.ok, "deveria atender wk <= 0.30"
-    print(f"  OK  Fissuracao: sigma={sigma:.2f}, wk1={r.wk1_mm:.3f}, "
+    print(f"  OK  Fissuração: sigma={sigma:.2f}, wk1={r.wk1_mm:.3f}, "
           f"wk2={r.wk2_mm:.3f}, wk={r.wk_mm:.3f} mm  (ok={r.ok})")
 
 
@@ -487,7 +487,7 @@ def test_largura_efetiva_mesa_T_biapoiada() -> None:
 
 def test_largura_efetiva_mesa_L_continua() -> None:
     """Viga L (extremidade), L=600, bw=20, b2_l=80 (apenas um lado).
-    Vao continuo extremo: a=0.75*600=450.
+    Vão contínuo extremo: a=0.75*600=450.
     b1 = min(0.5*80, 0.10*450) = min(40, 45) = 40.
     bf = 40 + 20 = 60."""
     r = largura_efetiva_mesa(
@@ -498,11 +498,11 @@ def test_largura_efetiva_mesa_L_continua() -> None:
     assert _aprox(r["b1_cm"], 40.0, 0.1)
     assert _aprox(r["b3_cm"], 0.0, 0.1)
     assert _aprox(r["bf_cm"], 60.0, 0.1)
-    print(f"  OK  Mesa L continua: bf = {r['bf_cm']:.0f} cm")
+    print(f"  OK  Mesa L contínua: bf = {r['bf_cm']:.0f} cm")
 
 
 def test_largura_efetiva_mesa_balanco() -> None:
-    """Balanco L=200, bw=20, b2_l=400.
+    """Balanço L=200, bw=20, b2_l=400.
     a = 2*200 = 400; b1 = b3 = min(0.5*400, 0.10*400) = min(200, 40) = 40.
     bf = 40+20+40 = 100."""
     r = largura_efetiva_mesa(
@@ -510,7 +510,7 @@ def test_largura_efetiva_mesa_balanco() -> None:
         L_cm=200.0, tipo_vao="balanco", tipo_secao="T",
     )
     assert _aprox(r["bf_cm"], 100.0, 0.1)
-    print(f"  OK  Mesa T balanco: bf = {r['bf_cm']:.0f} cm")
+    print(f"  OK  Mesa T balanço: bf = {r['bf_cm']:.0f} cm")
 
 
 def run_tests() -> int:
@@ -542,7 +542,7 @@ def run_tests() -> int:
 
 
 def _demo() -> None:
-    print("=== Verificacao de fissuracao - viga ponte (Apostila 17.1) ===")
+    print("=== Verificação de fissuração - viga ponte (Apostila 17.1) ===")
     sigma = sigma_si_aproximada(547750.0, 186.5, 137.20)
     r = abertura_fissura_wk(
         phi_mm=25.0, sigma_si_kncm2=sigma, Acr_cm2=1888.8,

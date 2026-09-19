@@ -1,31 +1,31 @@
-"""Forca Cortante - Vigas em Concreto Armado (NBR 6118:2026).
+"""Força Cortante - Vigas em Concreto Armado (NBR 6118:2026).
 
-Nome ate 19/09/2026: cortante_bastos.py. O credito as apostilas esta abaixo.
+Nome até 19/09/2026: cortante_bastos.py. O crédito às apostilas está abaixo.
 
 Implementa o dimensionamento da armadura transversal seguindo a apostila
-"DIMENSIONAMENTO DE VIGAS DE CONCRETO ARMADO - FORCA CORTANTE" (Mar/2025),
-Prof. Paulo Sergio Bastos, UNESP/Bauru, corrigida contra a NBR 6118:2026
+"DIMENSIONAMENTO DE VIGAS DE CONCRETO ARMADO - FORÇA CORTANTE" (Mar/2025),
+Prof. Paulo Sérgio Bastos, UNESP/Bauru, corrigida contra a NBR 6118:2026
 (auditoria de 18/09/2026: CRT-01, CRT-02, CRT-03, CRT-08). Grandezas de
-material (fct,m, fctd, fcd, fywd) vem de nucleo_nbr6118.
+material (fct,m, fctd, fcd, fywd) vêm de nucleo_nbr6118.
 
 Casos cobertos:
-    - Modelo de Calculo I (trelica classica de Ritter-Morsch, theta = 45 deg)
-        - Verificacao da diagonal comprimida (VRd2)
-        - Calculo da armadura transversal (Asw/s)
-    - Modelo de Calculo II (trelica generalizada, 30 deg <= theta <= 45 deg)
+    - Modelo de Cálculo I (treliça clássica de Ritter-Morsch, theta = 45 deg)
+        - Verificação da diagonal comprimida (VRd2)
+        - Cálculo da armadura transversal (Asw/s)
+    - Modelo de Cálculo II (treliça generalizada, 30 deg <= theta <= 45 deg)
         - VRd2 e Asw/s com Vc reduzido (Vc1)
-    - Equacoes simplificadas (item 5.11 da apostila, Tabelas 5.2 e 5.3)
-    - Armadura minima (Asw,min) item 5.10
-    - Verificacao de laje sem armadura para forca cortante (NBR 19.4.1)
+    - Equações simplificadas (item 5.11 da apostila, Tabelas 5.2 e 5.3)
+    - Armadura mínima (Asw,min) item 5.10
+    - Verificação de laje sem armadura para força cortante (NBR 19.4.1)
 
-Convencoes:
+Convenções:
     - fck, fyk em MPa (entrada).
     - bw, d em cm. VSd, VRd em kN. Asw em cm2/m.
     - fcd, fctd, fywd internamente em kN/cm2.
-    - Estribos verticais (alfa = 90 deg) por padrao.
+    - Estribos verticais (alfa = 90 deg) por padrão.
     - fywd <= 435 MPa = 43.5 kN/cm2 (limite NBR para CA-50/CA-60).
 
-Estrutura segue o padrao de vigas_nbr6118.py e lajes_nbr6118.py.
+Estrutura segue o padrão de vigas_nbr6118.py e lajes_nbr6118.py.
 """
 
 from __future__ import annotations
@@ -49,37 +49,37 @@ GAMA_F = nbr.GAMA_F  # Tabela 11.1 — lido do núcleo (P4)
 
 FYWD_MAX_KNCM2 = 43.5    # 435 MPa (NBR 6118 17.4.2.2 b)
 
-ALFA_MIN_DEG = 45.0      # 17.4.1.1.5 - inclinacao dos estribos
+ALFA_MIN_DEG = 45.0      # 17.4.1.1.5 - inclinação dos estribos
 ALFA_MAX_DEG = 90.0
 
 
 # ---------------------------------------------------------------------------
-# Helpers de resistencia (legado: delegam ao nucleo_nbr6118)
+# Helpers de resistência (legado: delegam ao nucleo_nbr6118)
 # ---------------------------------------------------------------------------
 def fcd_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
-    """fcd em kN/cm2 a partir de fck em MPa (delega ao nucleo, 12.3.3)."""
+    """fcd em kN/cm2 a partir de fck em MPa (delega ao núcleo, 12.3.3)."""
     return nbr.mpa_para_kncm2(nbr.fcd(fck_mpa, gama_c))
 
 
 def fctm_mpa(fck_mpa: float) -> float:
-    """fct,m, MPa (NBR 6118 8.2.5; delega ao nucleo).
+    """fct,m, MPa (NBR 6118 8.2.5; delega ao núcleo).
 
-    CRT-01: ate C50, fct,m = 0.3*fck^(2/3); acima disso,
-    fct,m = 2.12*ln[1 + 0.1*(fck+8)] (Grupo II). A formula antiga
-    (so o ramo do Grupo I) subestimava Vc e superestimava Asw acima de C50.
+    CRT-01: até C50, fct,m = 0.3*fck^(2/3); acima disso,
+    fct,m = 2.12*ln[1 + 0.1*(fck+8)] (Grupo II). A fórmula antiga
+    (só o ramo do Grupo I) subestimava Vc e superestimava Asw acima de C50.
     """
     return nbr.fct_m(fck_mpa)
 
 
 def fctd_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
-    """fctd = fctk,inf / gama_c, em kN/cm2 (delega ao nucleo)."""
+    """fctd = fctk,inf / gama_c, em kN/cm2 (delega ao núcleo)."""
     return nbr.mpa_para_kncm2(nbr.fctd(fck_mpa, gama_c))
 
 
 def fywd_kncm2(fywk_mpa: float, gama_s: float = GAMA_S,
                estribo: bool = True) -> float:
-    """Tensao de calculo da armadura transversal (kN/cm2).
-    Limite NBR 6118 17.4.2.2 b): fyd (nucleo) para estribos, 0.7*fyd para
+    """Tensão de cálculo da armadura transversal (kN/cm2).
+    Limite NBR 6118 17.4.2.2 b): fyd (núcleo) para estribos, 0.7*fyd para
     barras dobradas (sempre <= 435 MPa)."""
     fywd = nbr.fyd(fywk_mpa, gama_s)
     if not estribo:
@@ -89,12 +89,12 @@ def fywd_kncm2(fywk_mpa: float, gama_s: float = GAMA_S,
 
 
 def alfa_v2(fck_mpa: float) -> float:
-    """alpha_v2 = 1 - fck/250 (Eq. 5.15). Delega ao nucleo normativo."""
+    """alpha_v2 = 1 - fck/250 (Eq. 5.15). Delega ao núcleo normativo."""
     return nbr.alpha_v2(fck_mpa)
 
 
 def _validar_alfa_estribo(alfa_deg: float) -> None:
-    """17.4.1.1.5: 45 deg <= alfa <= 90 deg (inclinacao dos estribos)."""
+    """17.4.1.1.5: 45 deg <= alfa <= 90 deg (inclinação dos estribos)."""
     if not (ALFA_MIN_DEG - 1e-6 <= alfa_deg <= ALFA_MAX_DEG + 1e-6):
         raise ValueError(
             f"alfa deve estar entre 45 e 90 deg (recebido {alfa_deg})."
@@ -107,8 +107,8 @@ def _validar_alfa_estribo(alfa_deg: float) -> None:
 @dataclass
 class ResultadoCortante:
     modelo: str             # "I", "II" ou "simplificada-I"/"simplificada-II"
-    theta_deg: float        # angulo das bielas (45 ou 30..45)
-    alfa_deg: float         # angulo dos estribos (geralmente 90)
+    theta_deg: float        # ângulo das bielas (45 ou 30..45)
+    alfa_deg: float         # ângulo dos estribos (geralmente 90)
     bw: float               # cm
     d: float                # cm
     fck: float              # MPa
@@ -121,7 +121,7 @@ class ResultadoCortante:
     Asw_s: float            # cm2/cm (Asw por unidade de comprimento)
     Asw_m: float            # cm2/m
     Asw_min_m: float        # cm2/m
-    VSd_min: float = 0.0    # kN (forca cortante limite para armadura minima)
+    VSd_min: float = 0.0    # kN (força cortante limite para armadura mínima)
     Asw_adotada: float = 0.0  # max(Asw_m, Asw_min_m)
     ok_bielas: bool = True  # True se VSd <= VRd2
     erro: str = ""
@@ -131,11 +131,11 @@ class ResultadoCortante:
 
 
 # ---------------------------------------------------------------------------
-# Armadura minima (item 5.10)
+# Armadura mínima (item 5.10)
 # ---------------------------------------------------------------------------
 def asw_min_cm2_por_m(bw_cm: float, fck_mpa: float, fywk_mpa: float = 500.0,
                      alfa_deg: float = 90.0) -> float:
-    """Armadura transversal minima Asw,min (cm2/m). Eq. 5.45-5.46.
+    """Armadura transversal mínima Asw,min (cm2/m). Eq. 5.45-5.46.
 
     rho_sw,min = 0.2 * fct,m / fywk
     Asw,min/s = rho_sw,min * bw * sin(alfa); para s = 100 cm e fct,m em
@@ -148,7 +148,7 @@ def asw_min_cm2_por_m(bw_cm: float, fck_mpa: float, fywk_mpa: float = 500.0,
 
 
 # ---------------------------------------------------------------------------
-# Modelo de Calculo I (theta = 45 deg)
+# Modelo de Cálculo I (theta = 45 deg)
 # ---------------------------------------------------------------------------
 def modelo_calculo_I(
     VSd_kn: float,
@@ -167,7 +167,7 @@ def modelo_calculo_I(
     h_laje_cm: float | None = None,
     fadiga: bool = False,
 ) -> ResultadoCortante:
-    """Modelo de Calculo I (trelica classica, theta = 45 deg).
+    """Modelo de Cálculo I (treliça clássica, theta = 45 deg).
 
     P15: os parâmetros Nsd_kn (compressão positiva), M0_kncm, MSd_max_kncm e
     linha_neutra_fora escolhem o ramo de Vc de 17.4.2.2 b) (ver
@@ -175,7 +175,7 @@ def modelo_calculo_I(
     (19.4.2). Com os padrões, o resultado é o de antes (flexão simples).
 
     Eq. 5.18: VRd2 = 0.27 * v2 * fcd * bw * d
-    Eq. 5.20: Vc = Vc0 = 0.6 * fctd * bw * d (flexao simples)
+    Eq. 5.20: Vc = Vc0 = 0.6 * fctd * bw * d (flexão simples)
     Eq. 5.25: Asw/s = Vsw / [0.9 * d * fywd * (sin alfa + cos alfa)]
 
     CRT-03 (17.4.1.1.5): 45 deg <= alfa <= 90 deg, mesma faixa validada em
@@ -241,7 +241,7 @@ def modelo_calculo_I(
 
 
 # ---------------------------------------------------------------------------
-# Modelo de Calculo II (30 deg <= theta <= 45 deg)
+# Modelo de Cálculo II (30 deg <= theta <= 45 deg)
 # ---------------------------------------------------------------------------
 def modelo_calculo_II(
     VSd_kn: float,
@@ -261,7 +261,7 @@ def modelo_calculo_II(
     h_laje_cm: float | None = None,
     fadiga: bool = False,
 ) -> ResultadoCortante:
-    """Modelo de Calculo II (trelica generalizada).
+    """Modelo de Cálculo II (treliça generalizada).
 
     P15: Nsd_kn, M0_kncm, MSd_max_kncm e linha_neutra_fora escolhem o ramo
     de Vc de 17.4.2.3 b) sobre Vc1 (ver ``vc_por_regime``); h_laje_cm
@@ -342,7 +342,7 @@ def modelo_calculo_II(
         Asw_s=asw_s,
         Asw_m=asw_m,
         Asw_min_m=asw_min_m,
-        VSd_min=Vc0 + 0.0,  # quando VSd=Vc0 a armadura ainda e minima
+        VSd_min=Vc0 + 0.0,  # quando VSd=Vc0 a armadura ainda é mínima
         Asw_adotada=max(asw_m, asw_min_m),
         ok_bielas=VSd_kn <= VRd2,
         erro="" if VSd_kn <= VRd2 else f"VSd={VSd_kn:.1f} > VRd2={VRd2:.1f}",
@@ -353,12 +353,12 @@ def modelo_calculo_II(
 
 
 # ---------------------------------------------------------------------------
-# Equacoes simplificadas (item 5.11)
+# Equações simplificadas (item 5.11)
 # ---------------------------------------------------------------------------
 def simplificada_modelo_I(
     VSd_kn: float, bw_cm: float, d_cm: float, fck_mpa: float,
 ) -> ResultadoCortante:
-    """Equacoes simplificadas Modelo I (estribos verticais, CA-50/60).
+    """Equações simplificadas Modelo I (estribos verticais, CA-50/60).
 
     Eq. 5.47:  VRd2 = 0.027 * (1 - fck/250) * fcd * bw * d   (kN, fcd em MPa)
                      com fcd = fck/gama_c
@@ -367,16 +367,16 @@ def simplificada_modelo_I(
 
     CRT-08: as constantes 0.0137/0.023 da apostila embutem
     fct,m = 0.3*fck^(2/3) (Grupo I, 8.2.5). Para o resultado continuar
-    identico ate C50 e ficar correto no Grupo II, fck^(2/3) e substituido
+    idêntico até C50 e ficar correto no Grupo II, fck^(2/3) é substituído
     pelo "fck^(2/3) equivalente" nucleo_nbr6118.fct_m(fck)/0.3 (identidade
-    para fck <= 50; usa o ramo logaritmico do nucleo acima disso).
+    para fck <= 50; usa o ramo logarítmico do núcleo acima disso).
     """
     fck23 = nbr.fct_m(fck_mpa) / 0.3
     fcd_mpa = fck_mpa / GAMA_C
     VRd2 = 0.027 * (1.0 - fck_mpa / 250.0) * fcd_mpa * bw_cm * d_cm
     VSd_min = 0.0137 * bw_cm * d_cm * fck23
     if VSd_kn <= VSd_min:
-        asw_m = 0.0  # cobre-se com armadura minima
+        asw_m = 0.0  # cobre-se com armadura mínima
     else:
         asw_m = 2.55 * VSd_kn / d_cm - 0.023 * bw_cm * fck23
     asw_min_m = asw_min_cm2_por_m(bw_cm, fck_mpa)
@@ -420,8 +420,8 @@ def simplificada_modelo_II(
 
 
 def _swap_vrd2_modelo_II(VSd_kn, bw_cm, d_cm, fck_mpa, theta_deg, VRd2):
-    """Helper: roda o Modelo II teorico e substitui VRd2 pela versao
-    simplificada (e recalcula Vc1/Vsw em funcao do novo VRd2)."""
+    """Helper: roda o Modelo II teórico e substitui VRd2 pela versão
+    simplificada (e recalcula Vc1/Vsw em função do novo VRd2)."""
     base = modelo_calculo_II(VSd_kn, bw_cm, d_cm, fck_mpa, theta_deg)
     Vc0 = 0.6 * fctd_kncm2(fck_mpa) * bw_cm * d_cm
     if VSd_kn <= Vc0:
@@ -454,14 +454,14 @@ def laje_sem_armadura(
     rho_l: float = 0.0, sigma_cp_mpa: float = 0.0, k_imp: bool = True,
     gama_c: float = GAMA_C,
 ) -> dict:
-    """Verifica laje sem armadura para forca cortante (NBR 6118 19.4.1).
+    """Verifica laje sem armadura para força cortante (NBR 6118 19.4.1).
 
     VRd1 = [tau_Rd * k * (1.2 + 40 * rho_l) + 0.15 * sigma_cp] * bw * d
     com:
-        tau_Rd = 0.25 * fctd, com fck limitado a 60 MPa nesta formula
+        tau_Rd = 0.25 * fctd, com fck limitado a 60 MPa nesta fórmula
             (CRT-02, 19.4.1; delega a nucleo_nbr6118.tau_Rd)
         k = |1.6 - d| (d em metros, k >= 1) se as barras tracionadas chegam
-            ao apoio; senao k = 1.
+            ao apoio; senão k = 1.
         rho_l = As1 / (bw*d) <= 0.02
     """
     tau_rd = nbr.mpa_para_kncm2(nbr.tau_Rd(fck_mpa, gama_c))   # kN/cm2
@@ -516,12 +516,12 @@ def test_exemplo_5_15_modeloII_30() -> None:
 def test_exemplo_5_15_simplificada_I() -> None:
     """Apostila 5.15.2.1 - Simplificada I, C25."""
     r = simplificada_modelo_I(VSd_kn=153.0, bw_cm=14.0, d_cm=46.0, fck_mpa=25.0)
-    # Tabela: VRd2 = 0.43 bw d = 276.9 kN (coef arredondado); formula
-    # exata Eq. 5.47 da 279.45 kN. Tolerancia cobre o arredondamento.
+    # Tabela: VRd2 = 0.43 bw d = 276.9 kN (coef arredondado); fórmula
+    # exata Eq. 5.47 dá 279.45 kN. Tolerância cobre o arredondamento.
     assert _aprox(r.VRd2, 277.0, 3.0), f"VRd2={r.VRd2:.2f}"
     assert _aprox(r.VSd_min, 75.3, 0.5), f"VSd,min={r.VSd_min:.2f}"
     # Asw = 2.55 . 153 / 46 + 0.20 . 14 = 8.48 + 2.8? -- apostila usa 0.20
-    # mas a forma generica e 0.023 . bw . fck^(2/3) = 0.023*14*25^(2/3)
+    # mas a forma genérica é 0.023 . bw . fck^(2/3) = 0.023*14*25^(2/3)
     # = 0.023*14*8.55 = 2.75 -> Asw = 5.73 (apostila tabela arredonda 0.20)
     assert _aprox(r.Asw_m, 5.68, 0.15), f"Asw={r.Asw_m:.3f}"
     print(f"  OK  Simpl. I  VRd2={r.VRd2:.1f} VSd,min={r.VSd_min:.1f} "
@@ -553,7 +553,7 @@ def test_v2_alfa_v2() -> None:
 
 
 def test_VRd2_consistencia_simpl_vs_teorica() -> None:
-    """A simplificada (Eq. 5.47) e a teorica (Eq. 5.18) coincidem.
+    """A simplificada (Eq. 5.47) e a teórica (Eq. 5.18) coincidem.
     0.27 * v2 * fcd[kN/cm2] * bw * d == 0.027 * v2 * fcd[MPa] * bw * d
     pois fcd[MPa] = 10 * fcd[kN/cm2]."""
     fck = 25.0
@@ -565,7 +565,7 @@ def test_VRd2_consistencia_simpl_vs_teorica() -> None:
 
 
 def test_laje_sem_armadura() -> None:
-    """Laje C25, b=100, d=10, rho_l=0.005, sem protensao."""
+    """Laje C25, b=100, d=10, rho_l=0.005, sem protensão."""
     r = laje_sem_armadura(
         VSd_kn=15.0, bw_cm=100.0, d_cm=10.0, fck_mpa=25.0, rho_l=0.005,
     )

@@ -1,30 +1,30 @@
 """Pilares de Concreto Armado (NBR 6118:2026).
 
-Nome ate 19/09/2026: pilares_bastos.py. O credito as apostilas esta abaixo.
+Nome até 19/09/2026: pilares_bastos.py. O crédito às apostilas está abaixo.
 
-Implementa o dimensionamento de pilares isolados (no fixos) seguindo a
-apostila "PILARES DE CONCRETO ARMADO", Prof. Paulo Sergio Bastos,
+Implementa o dimensionamento de pilares isolados (nós fixos) seguindo a
+apostila "PILARES DE CONCRETO ARMADO", Prof. Paulo Sérgio Bastos,
 UNESP/Bauru, corrigida contra a NBR 6118:2026 (auditoria de 18/09/2026:
-PIL-01 a PIL-04). Grandezas de material vem de nucleo_nbr6118.
+PIL-01 a PIL-04). Grandezas de material vêm de nucleo_nbr6118.
 
 Casos cobertos:
-    - Indice de esbeltez lambda = 3.46 * le / h         (Eq. 62)
+    - Índice de esbeltez lambda = 3.46 * le / h         (Eq. 62)
     - Esbeltez limite lambda1                           (Eq. 82)
     - Coeficiente alpha_b                               (Eq. 84)
-    - Momento fletor minimo M1d,min                     (Eq. 92)
-    - Excentricidade minima e1,min                      (Eq. 93)
-    - Forca normal adimensional nu                      (Eq. 78)
+    - Momento fletor mínimo M1d,min                     (Eq. 92)
+    - Excentricidade mínima e1,min                      (Eq. 93)
+    - Força normal adimensional nu                      (Eq. 78)
     - Curvatura aproximada 1/r                          (Eq. 77)
     - Excentricidade de 2a ordem e2                     (Eq. 75)
     - Momento fletor de 2a ordem M2d                    (Eq. 76)
-    - Momento total: pilar-padrao com curvatura aprox.
-    - Momento total: pilar-padrao com rigidez kappa aprox. (Eq. 100-102)
+    - Momento total: pilar-padrão com curvatura aprox.
+    - Momento total: pilar-padrão com rigidez kappa aprox. (Eq. 100-102)
 
-Convencoes:
+Convenções:
     - fck em MPa.
-    - Geometria em cm. Forcas em kN. Momentos em kN.cm.
-    - Os dois metodos do pilar-padrao so valem para lambda <= 90
-      (15.8.3.3.2 e 15.8.3.3.3); acima disso as funcoes levantam erro.
+    - Geometria em cm. Forças em kN. Momentos em kN.cm.
+    - Os dois métodos do pilar-padrão só valem para lambda <= 90
+      (15.8.3.3.2 e 15.8.3.3.3); acima disso as funções levantam erro.
     - M1d,A < M1d,min: usa-se M1d,min com alpha_b = 1,0 (11.3.3.4.3 e
       15.8.2 d), e o momento de 2a ordem se soma a ele.
 """
@@ -60,7 +60,7 @@ def fcd_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
 # Esbeltez
 # ---------------------------------------------------------------------------
 def esbeltez_lambda(le_cm: float, h_cm: float) -> float:
-    """lambda = le / i, i = h / sqrt(12). Para secao retangular,
+    """lambda = le / i, i = h / sqrt(12). Para seção retangular,
     lambda = 3.46 * le / h  (Eq. 62)."""
     return 3.46 * le_cm / h_cm
 
@@ -82,12 +82,12 @@ def alpha_b(MA_kncm: float, MB_kncm: float,
        mesma face que MA;
     b) 'biapoiado-cargas-transv': 1,0;
     c) 'balanco': 1,0;
-    d) momentos menores que o momento minimo de 11.3.3.4.3: 1,0. Informe
+    d) momentos menores que o momento mínimo de 11.3.3.4.3: 1,0. Informe
        M1d_min_kncm para que este caso seja aplicado.
     """
     if tipo in ("biapoiado-cargas-transv", "balanco"):
         return 1.0
-    if abs(MB_kncm) > abs(MA_kncm):   # MA e o de maior valor absoluto
+    if abs(MB_kncm) > abs(MA_kncm):   # MA é o de maior valor absoluto
         MA_kncm, MB_kncm = MB_kncm, MA_kncm
     if M1d_min_kncm is not None and abs(MA_kncm) < M1d_min_kncm:
         return 1.0
@@ -106,7 +106,7 @@ def n1_majoracao(lambda_val: float) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Momento fletor minimo (Eq. 92, Eq. 93)
+# Momento fletor mínimo (Eq. 92, Eq. 93)
 # ---------------------------------------------------------------------------
 def M1d_min_kncm(Nd_kn: float, h_cm: float) -> float:
     """M1d,min = Nd * (1.5 + 0.03 * h_cm)  (apostila Eq. 92, h em cm).
@@ -122,7 +122,7 @@ def e1_min_cm(h_cm: float) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Forca normal adimensional (Eq. 78)
+# Força normal adimensional (Eq. 78)
 # ---------------------------------------------------------------------------
 def nu_adimensional(Nd_kn: float, Ac_cm2: float, fck_mpa: float,
                     gama_c: float = GAMA_C) -> float:
@@ -131,7 +131,7 @@ def nu_adimensional(Nd_kn: float, Ac_cm2: float, fck_mpa: float,
 
 
 # ---------------------------------------------------------------------------
-# Pilar-padrao com curvatura aproximada (item 10.1.2)
+# Pilar-padrão com curvatura aproximada (item 10.1.2)
 # ---------------------------------------------------------------------------
 def curvatura_aproximada(h_cm: float, nu: float) -> float:
     """1/r = 0.005 / (h * (nu + 0.5))  <=  0.005/h   (Eq. 77).
@@ -152,9 +152,9 @@ def M2d_kncm(Nd_kn: float, e2_cm_val: float) -> float:
 
 
 def _validar_lambda_pilar_padrao(le_cm: float, h_cm: float, metodo: str) -> float:
-    """lambda <= 90 para os metodos do pilar-padrao (15.8.3.3.2 e 15.8.3.3.3)."""
+    """lambda <= 90 para os métodos do pilar-padrão (15.8.3.3.2 e 15.8.3.3.3)."""
     lam = esbeltez_lambda(le_cm, h_cm)
-    if lam > LAMBDA_MAX_PILAR_PADRAO + 1e-9:   # tolerancia de arredondamento
+    if lam > LAMBDA_MAX_PILAR_PADRAO + 1e-9:   # tolerância de arredondamento
         raise nbr.FaixaNormativaError(
             f"λ = {lam:.1f} > 90: o método do pilar-padrão {metodo} só pode ser "
             "empregado com λ ≤ 90 (NBR 6118:2026, 15.8.3.3). Acima disso é "
@@ -166,9 +166,9 @@ def _validar_lambda_pilar_padrao(le_cm: float, h_cm: float, metodo: str) -> floa
 
 def M1d_A_efetivo(Nd_kn: float, h_cm: float, M1d_A_kncm: float,
                   alpha_b_val: float = 1.0) -> tuple[float, float, float]:
-    """M1d,A e alpha_b a usar no pilar-padrao, com o momento minimo.
+    """M1d,A e alpha_b a usar no pilar-padrão, com o momento mínimo.
 
-    O efeito das imperfeicoes locais e atendido pelo momento minimo de 1a
+    O efeito das imperfeições locais é atendido pelo momento mínimo de 1a
     ordem M1d,min = Nd(0,015 + 0,03h), ao qual se somam os momentos de 2a
     ordem (11.3.3.4.3, PDF p. 80). Quando |M1d,A| < M1d,min, usa-se M1d,min
     com alpha_b = 1,0 (15.8.2 d, PDF p. 128).
@@ -186,14 +186,14 @@ def Mdtot_curvatura_aprox(
     M1d_A_kncm: float, alpha_b_val: float = 1.0,
     Ac_cm2: float | None = None,
 ) -> dict:
-    """Md,tot pelo metodo do pilar-padrao com curvatura aproximada (15.8.3.3.2).
+    """Md,tot pelo método do pilar-padrão com curvatura aproximada (15.8.3.3.2).
 
     Md,tot = alpha_b * M1d,A + Nd * (le^2/10) * (1/r) >= M1d,A,
-    com M1d,A >= M1d,min (e alpha_b = 1,0 quando o minimo governa).
-    So vale para lambda <= 90.
+    com M1d,A >= M1d,min (e alpha_b = 1,0 quando o mínimo governa).
+    Só vale para lambda <= 90.
     """
     if Ac_cm2 is None:
-        # nao temos Ac aqui; o usuario deve passar
+        # não temos Ac aqui; o usuário deve passar
         raise ValueError("Ac_cm2 é necessário para calcular ν.")
     lam = _validar_lambda_pilar_padrao(le_cm, h_cm, "com curvatura aproximada")
     nu = nu_adimensional(Nd_kn, Ac_cm2, fck_mpa)
@@ -216,22 +216,22 @@ def Mdtot_curvatura_aprox(
 
 
 # ---------------------------------------------------------------------------
-# Pilar-padrao com rigidez kappa aproximada (item 10.1.3)
+# Pilar-padrão com rigidez kappa aproximada (item 10.1.3)
 # ---------------------------------------------------------------------------
 def Mdtot_rigidez_aprox(
     Nd_kn: float, le_cm: float, h_cm: float, fck_mpa: float,
     M1d_A_kncm: float, alpha_b_val: float = 1.0,
     Ac_cm2: float | None = None,
 ) -> dict:
-    """Md,tot pelo metodo do pilar-padrao com rigidez kappa aproximada (15.8.3.3.3).
+    """Md,tot pelo método do pilar-padrão com rigidez kappa aproximada (15.8.3.3.3).
 
-    Formulacao direta para dimensionamento (PDF p. 130):
+    Formulação direta para dimensionamento (PDF p. 130):
        a*Md,tot^2 + b*Md,tot + c = 0
        a = 5h
        b = h^2 * Nd - Nd*le^2/320 - 5h*alpha_b*M1d,A
        c = -Nd * h^2 * alpha_b * M1d,A
-    Da-se a raiz positiva, com Md,tot >= M1d,A. M1d,A >= M1d,min (e
-    alpha_b = 1,0 quando o minimo governa). So vale para lambda <= 90.
+    Dá-se a raiz positiva, com Md,tot >= M1d,A. M1d,A >= M1d,min (e
+    alpha_b = 1,0 quando o mínimo governa). Só vale para lambda <= 90.
     """
     lam = _validar_lambda_pilar_padrao(le_cm, h_cm, "com rigidez κ aproximada")
     M1d_A_ef, ab_ef, M1d_min = M1d_A_efetivo(Nd_kn, h_cm, M1d_A_kncm, alpha_b_val)
@@ -267,10 +267,10 @@ def Mdtot_rigidez_aprox(
 def ea_acidental_cm(le_cm: float) -> float:
     """ea = theta1 * le / 2; theta1 = 1/(100*sqrt(le_m)),
     com 1/300 <= theta1 <= 1/200 (11.3.3.4.1: theta1,min = 1/300 para
-    estruturas reticuladas e imperfeicoes locais; theta1,max = 1/200).
+    estruturas reticuladas e imperfeições locais; theta1,max = 1/200).
     Resultado: ea = le/(200*sqrt(le_m)).
-    Nota: a norma admite substituir as imperfeicoes locais pelo momento
-    minimo de 11.3.3.4.3 (M1d_min_kncm), que e o que o pilar-padrao usa.
+    Nota: a norma admite substituir as imperfeições locais pelo momento
+    mínimo de 11.3.3.4.3 (M1d_min_kncm), que é o que o pilar-padrão usa.
     """
     le_m = le_cm / 100.0
     theta1 = 1.0 / (100.0 * math.sqrt(le_m))
@@ -295,7 +295,7 @@ def test_esbeltez_apostila() -> None:
 
 
 def test_M1d_min_apostila() -> None:
-    """Pilar intermediario, Nd=1400 kN, sec 20x50.
+    """Pilar intermediário, Nd=1400 kN, sec 20x50.
     M1d,min,x = 4200, M1d,min,y = 2940 kN.cm."""
     Mx = M1d_min_kncm(Nd_kn=1400.0, h_cm=50.0)
     My = M1d_min_kncm(Nd_kn=1400.0, h_cm=20.0)
@@ -305,7 +305,7 @@ def test_M1d_min_apostila() -> None:
 
 
 def test_lambda1_pilar_intermediario() -> None:
-    """Pilar intermediario tem e1 = 0 -> lambda1 = 25/1 = 25 -> 35 (limite)."""
+    """Pilar intermediário tem e1 = 0 -> lambda1 = 25/1 = 25 -> 35 (limite)."""
     l1 = lambda1_limite(e1_cm=0.0, h_cm=20.0, alpha_b=1.0)
     assert _aprox(l1, 35.0, 0.01), f"lambda1={l1:.2f}"
     print(f"  OK  lambda1 (e1=0, alpha_b=1) = {l1:.2f}")
@@ -333,11 +333,11 @@ def test_curvatura_e2_M2d_apostila() -> None:
 
 
 def test_Mdtot_curvatura_apostila() -> None:
-    """Dir y exemplo 13.1.1: M1d,A = 0 (pilar intermediario).
+    """Dir y exemplo 13.1.1: M1d,A = 0 (pilar intermediário).
     M1d,A < M1d,min -> M1d,A = M1d,min = 2940 e alpha_b = 1,0; o M2d se soma
     (11.3.3.4.3 e 15.8.2 d): Md,tot,y = 2940 + 2379 = 5319 kN.cm.
-    Apostila: 2940 + 2380 = 5320 kN.cm. (Auditoria PIL-01: o codigo antigo
-    tomava max(M2d, M1d,min) = 2940 e este teste so conferia as parcelas.)"""
+    Apostila: 2940 + 2380 = 5320 kN.cm. (Auditoria PIL-01: o código antigo
+    tomava max(M2d, M1d,min) = 2940 e este teste só conferia as parcelas.)"""
     r = Mdtot_curvatura_aprox(
         Nd_kn=1400.0, le_cm=280.0, h_cm=20.0, fck_mpa=30.0,
         M1d_A_kncm=0.0, alpha_b_val=1.0, Ac_cm2=1000.0,
@@ -357,27 +357,27 @@ def test_alpha_b_biapoiado() -> None:
     # MA=100, MB=-100: alpha_b = 0.6 + 0.4*(-1) = 0.2 -> limitado a 0.4
     a2 = alpha_b(MA_kncm=100.0, MB_kncm=-100.0)
     assert _aprox(a2, 0.4, 0.01), f"alpha_b={a2}"
-    # Pilar em balanco
+    # Pilar em balanço
     a3 = alpha_b(MA_kncm=100.0, MB_kncm=0.0, tipo="balanco")
     assert _aprox(a3, 1.0, 0.01)
-    # 15.8.2 d): momentos menores que o minimo -> 1,0 (auditoria PIL-03)
+    # 15.8.2 d): momentos menores que o mínimo -> 1,0 (auditoria PIL-03)
     a4 = alpha_b(MA_kncm=500.0, MB_kncm=200.0, M1d_min_kncm=2940.0)
     assert _aprox(a4, 1.0, 1e-9), f"alpha_b={a4}"
     print(f"  OK  αb: 0,8; 0,4 (limite); 1,0 (balanço); 1,0 (< mínimo)")
 
 
 def test_rigidez_aprox_consistencia() -> None:
-    """Comparacao entre os dois metodos para o exemplo da apostila.
-    Apostila Tabela ex.1: ambos os metodos dao armaduras proximas, com
+    """Comparação entre os dois métodos para o exemplo da apostila.
+    Apostila Tabela ex.1: ambos os métodos dão armaduras próximas, com
     rigidez kappa dando armadura ~5% menor."""
-    # Pilar interm, dir y: M1d,A = M1d,min,y = 2940 (sem M2 explicito)
+    # Pilar interm, dir y: M1d,A = M1d,min,y = 2940 (sem M2 explícito)
     r = Mdtot_rigidez_aprox(
         Nd_kn=1400.0, le_cm=280.0, h_cm=20.0, fck_mpa=30.0,
         M1d_A_kncm=2940.0, alpha_b_val=1.0, Ac_cm2=1000.0,
     )
-    # Formulacao direta de 15.8.3.3.3: a=100, b=-77000, c=-1,6464e9 -> 4460,8
+    # Formulação direta de 15.8.3.3.3: a=100, b=-77000, c=-1,6464e9 -> 4460,8
     assert _aprox(r["Md_tot_kncm"], 4460.8, 1.0), f"Md_tot={r['Md_tot_kncm']}"
-    # M1d,A = 0 tem de dar o mesmo resultado (minimo governa; PIL-02)
+    # M1d,A = 0 tem de dar o mesmo resultado (mínimo governa; PIL-02)
     r0 = Mdtot_rigidez_aprox(
         Nd_kn=1400.0, le_cm=280.0, h_cm=20.0, fck_mpa=30.0,
         M1d_A_kncm=0.0, alpha_b_val=1.0, Ac_cm2=1000.0,
@@ -388,14 +388,14 @@ def test_rigidez_aprox_consistencia() -> None:
 
 
 def test_lambda_maior_que_90_recusado() -> None:
-    """15.8.3.3.2/3: pilar-padrao so para lambda <= 90 (auditoria PIL-04)."""
+    """15.8.3.3.2/3: pilar-padrão só para lambda <= 90 (auditoria PIL-04)."""
     for f in (Mdtot_curvatura_aprox, Mdtot_rigidez_aprox):
         try:
             f(Nd_kn=1400.0, le_cm=600.0, h_cm=20.0, fck_mpa=30.0,
               M1d_A_kncm=2940.0, Ac_cm2=1000.0)
         except ValueError:
             continue
-        raise AssertionError(f"{f.__name__} aceitou lambda = 103,8")
+        raise AssertionError(f"{f.__name__} aceitou lambda = 103,8.")
     print("  OK  λ = 103,8 recusado nos dois métodos")
 
 
@@ -438,7 +438,7 @@ def run_tests() -> int:
 
 
 def _demo() -> None:
-    print("=== Exemplo 13.1.1 - pilar intermediario 20x50 ===")
+    print("=== Exemplo 13.1.1 - pilar intermediário 20x50 ===")
     print("  Nk = 1000 kN, C30, le = 280 cm")
     Nd = 1400.0
     Ac = 1000.0
@@ -457,19 +457,19 @@ def _demo() -> None:
           f"{M1d_min_kncm(Nd, 20.0) + M2d:.0f} kN.cm")
 
 
-# === P10: gama_n de pilar esbelto critico com b < 19 cm (11.7.1, remissao a 13.2.3) ===
+# === P10: gama_n de pilar esbelto crítico com b < 19 cm (11.7.1, remissão a 13.2.3) ===
 def aplicar_gama_n(b_cm: float, esforco: float) -> tuple[float, float]:
-    """Aplica o coeficiente adicional gama_n ao esforco solicitante de
-    calculo quando a menor dimensao b < 19 cm (11.7.1, PDF p. 84: "Para
-    elementos estruturais esbeltos criticos para a seguranca de estrutura,
+    """Aplica o coeficiente adicional gama_n ao esforço solicitante de
+    cálculo quando a menor dimensão b < 19 cm (11.7.1, PDF p. 84: "Para
+    elementos estruturais esbeltos críticos para a segurança de estrutura,
     como pilares e pilares-paredes com espessura inferior a 19 cm [...] os
-    esforcos solicitantes de calculo devem ser multiplicados pelo
+    esforços solicitantes de cálculo devem ser multiplicados pelo
     coeficiente de ajustamento gama_n").
 
-    Devolve (esforco majorado, gama_n usado). Para b >= 19 cm, gama_n = 1,0
-    e o esforco volta inalterado. Delega a
+    Devolve (esforço majorado, gama_n usado). Para b >= 19 cm, gama_n = 1,0
+    e o esforço volta inalterado. Delega a
     limites_geometricos_nbr6118.gama_n_pilar (13.2.3, Tabela 13.1); aquele
-    modulo tambem cobre a dimensao minima e a area minima de 13.2.3.
+    módulo também cobre a dimensão mínima e a área mínima de 13.2.3.
     """
     gn = _limites.gama_n_pilar(b_cm)
     return esforco * gn, gn

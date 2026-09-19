@@ -32,7 +32,7 @@ itens — não há fórmula na imagem da página para conferir). O que este
 módulo faz, em ``dimensionar_consolo``/``dimensionar_dente_gerber``, é o
 modelo clássico de braço de alavanca (z = 0,85·d) e equilíbrio de momento
 para achar a força do tirante — a mesma família de escolha de
-``blocos_nbr6118.py`` ao adotar o método de Blevot para blocos sobre
+``blocos_nbr6118.py`` ao adotar o método de Blévot para blocos sobre
 estacas: um critério de engenharia amplamente usado na prática brasileira
 de projeto, documentado como tal, e não uma transcrição literal da norma.
 A verificação da tensão de compressão na biela (contra fcd1/fcd3, que este

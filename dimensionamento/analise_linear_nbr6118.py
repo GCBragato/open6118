@@ -125,7 +125,7 @@ def vao_a_para_mesa(L_cm: float, tipo: str = "biapoiada") -> float:
         return 0.6 * L_cm
     if t == "balanco":
         return 2.0 * L_cm
-    raise ValueError(f"tipo desconhecido: {tipo}")
+    raise ValueError(f"tipo desconhecido: {tipo}.")
 
 
 def largura_colaborante_cm(

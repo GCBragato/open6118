@@ -375,7 +375,7 @@ def analise_plastica_permitida(
     Além disso, no caso de carregamento cíclico com possibilidade de fadiga,
     deve-se evitar o cálculo plástico (Seção 23):
 
-        permitida = NAO segunda_ordem_global E dutilidade_suficiente E NAO risco_fadiga
+        permitida = NÃO segunda_ordem_global E dutilidade_suficiente E NÃO risco_fadiga
 
     segunda_ordem_global: True se a análise considera efeitos globais de 2ª
         ordem.

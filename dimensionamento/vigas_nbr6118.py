@@ -1,37 +1,37 @@
-"""Flexao Normal Simples - Vigas em Concreto Armado (NBR 6118:2023).
+"""Flexão Normal Simples - Vigas em Concreto Armado (NBR 6118:2023).
 
-Nome ate 19/09/2026: vigas_bastos.py. O credito as apostilas esta abaixo.
+Nome até 19/09/2026: vigas_bastos.py. O crédito às apostilas está abaixo.
 
-Implementa o dimensionamento das vigas a flexao simples seguindo a apostila
-"FLEXAO NORMAL SIMPLES - VIGAS" (Out/2023), Prof. Paulo Sergio Bastos,
+Implementa o dimensionamento das vigas à flexão simples seguindo a apostila
+"FLEXÃO NORMAL SIMPLES - VIGAS" (Out/2023), Prof. Paulo Sérgio Bastos,
 UNESP/Bauru, baseada na NBR 6118:2023.
 
 Casos cobertos:
-    - Secao retangular com armadura simples (apostila item 7).
-    - Secao retangular com armadura dupla (item 8).
-    - Secao T com armadura simples (item 9).
-    - Verificacao: momento resistente dado As (problema inverso).
+    - Seção retangular com armadura simples (apostila item 7).
+    - Seção retangular com armadura dupla (item 8).
+    - Seção T com armadura simples (item 9).
+    - Verificação: momento resistente dado As (problema inverso).
 
-Convencoes da apostila:
+Convenções da apostila:
     - Diagrama retangular simplificado com y = lambda*x e sigma_cd =
-      alpha_c*eta_c*fcd (Eq. 15-16 da apostila, generalizadas pelo nucleo
-      normativo para o Grupo II tambem - NBR 6118:2026 17.2.2 e), 8.2.10.1).
-    - Limite de dutilidade NBR 6118:2026 14.6.4.3: x/d <= 0.45 ate C50 e
+      alpha_c*eta_c*fcd (Eq. 15-16 da apostila, generalizadas pelo núcleo
+      normativo para o Grupo II também - NBR 6118:2026 17.2.2 e), 8.2.10.1).
+    - Limite de dutilidade NBR 6118:2026 14.6.4.3: x/d <= 0.45 até C50 e
       x/d <= 0.35 de C55 a C90 (nbr.xd_limite_dutilidade).
-    - Aco CA-50 (fyk = 500 MPa) por padrao.
-    - Coeficientes de ponderacao: gama_c = 1.4, gama_s = 1.15, gama_f = 1.4
-      (combinacao normal).
-    - Unidades: kN e cm em todas as funcoes (igual aos coeficientes K
+    - Aço CA-50 (fyk = 500 MPa) por padrão.
+    - Coeficientes de ponderação: gama_c = 1.4, gama_s = 1.15, gama_f = 1.4
+      (combinação normal).
+    - Unidades: kN e cm em todas as funções (igual aos coeficientes K
       tabelados pelo professor).
 
-As grandezas de material (fcd, fyd, eps_cu, lambda, tensao do bloco
-retangular, x/d-limite e rho_min) delegam ao nucleo normativo
-(nucleo_nbr6118.py); nao reimplemente essas formulas aqui.
+As grandezas de material (fcd, fyd, eps_cu, lambda, tensão do bloco
+retangular, x/d-limite e rho_min) delegam ao núcleo normativo
+(nucleo_nbr6118.py); não reimplemente essas fórmulas aqui.
 
 Estrutura segue:
-    - alv_est/viga_mista_v3.py: dataclasses de resultado, funcoes puras,
-      testes contra exemplos numericos do livro.
-    - open6118/dimensionamento/vigas.py: funcoes de calculo isoladas, sem GUI.
+    - alv_est/viga_mista_v3.py: dataclasses de resultado, funções puras,
+      testes contra exemplos numéricos do livro.
+    - open6118/dimensionamento/vigas.py: funções de cálculo isoladas, sem GUI.
 """
 
 from __future__ import annotations
@@ -53,17 +53,17 @@ GAMA_C = 1.4
 GAMA_S = 1.15
 GAMA_F = nbr.GAMA_F  # Tabela 11.1 — lido do núcleo (P4)
 
-E_S = 21000.0          # kN/cm2 (modulo de elasticidade do aco - 210 GPa).
-EPS_CU = 3.5           # %o (deformacao ultima do concreto, fck <= 50 MPa;
-                       # valor de referencia do Grupo I - use nbr.eps_cu(fck)).
+E_S = 21000.0          # kN/cm2 (módulo de elasticidade do aço - 210 GPa).
+EPS_CU = 3.5           # %o (deformação última do concreto, fck <= 50 MPa;
+                       # valor de referência do Grupo I - use nbr.eps_cu(fck)).
 EPS_C2 = 2.0           # %o (idem, fck <= 50 MPa; use nbr.eps_c2(fck)).
 LIMITE_BETA_X = 0.45   # NBR 6118 14.6.4.3 para fck <= 50 MPa; valor de
-                       # referencia - use nbr.xd_limite_dutilidade(fck).
-ALPHA_C = 0.85         # Coef. de referencia (fck <= 50); use nbr.alpha_c(fck).
+                       # referência - use nbr.xd_limite_dutilidade(fck).
+ALPHA_C = 0.85         # Coef. de referência (fck <= 50); use nbr.alpha_c(fck).
 
-# Taxas minimas de armadura de flexao (Tabela 17.3 da NBR 6118), so ate C50.
-# Mantida para referencia; as_min() delega a nbr.rho_min_flexao(fck), que
-# cobre C20 a C90 com interpolacao entre classes (corrige VIG-08).
+# Taxas mínimas de armadura de flexão (Tabela 17.3 da NBR 6118), só até C50.
+# Mantida para referência; as_min() delega a nbr.rho_min_flexao(fck), que
+# cobre C20 a C90 com interpolação entre classes (corrige VIG-08).
 RHO_MIN_TABELA = {
     20: 0.00150, 25: 0.00150, 30: 0.00150, 35: 0.00164, 40: 0.00179,
     45: 0.00194, 50: 0.00208,
@@ -74,25 +74,25 @@ RHO_MIN_TABELA = {
 # Helpers
 # ---------------------------------------------------------------------------
 def fcd_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
-    """fck em MPa -> fcd em kN/cm2, delegado ao nucleo normativo (12.3.3)."""
+    """fck em MPa -> fcd em kN/cm2, delegado ao núcleo normativo (12.3.3)."""
     return nbr.mpa_para_kncm2(nbr.fcd(fck_mpa, gama_c))
 
 
 def fyd_kncm2(fyk_mpa: float, gama_s: float = GAMA_S) -> float:
-    """fyk em MPa -> fyd em kN/cm2, delegado ao nucleo normativo."""
+    """fyk em MPa -> fyd em kN/cm2, delegado ao núcleo normativo."""
     return nbr.mpa_para_kncm2(nbr.fyd(fyk_mpa, gama_s))
 
 
 def eps_yd_permil(fyk_mpa: float, gama_s: float = GAMA_S) -> float:
-    """Deformacao de inicio de escoamento em %o, delegado ao nucleo normativo."""
+    """Deformação de início de escoamento em %o, delegado ao núcleo normativo."""
     return nbr.eps_yd(fyk_mpa, gama_s, nbr.ES_MPA)
 
 
 def x2lim(d_cm: float, fck_mpa: float = 50.0) -> float:
-    """Limite x entre dominios 2 e 3 (Fig. 17.1), delegado ao nucleo normativo.
+    """Limite x entre domínios 2 e 3 (Fig. 17.1), delegado ao núcleo normativo.
 
     Antes fixo em 0.26*d (eps_cu = 3.5 %o, Grupo I); eps_cu agora depende de
-    fck (nbr.eps_cu). fck_mpa entra no fim com padrao 50 (Grupo I) para nao
+    fck (nbr.eps_cu). fck_mpa entra no fim com padrão 50 (Grupo I) para não
     quebrar quem chamava x2lim(d) sem fck.
     """
     return nbr.x_lim_dominio_2_3(d_cm, fck_mpa)
@@ -100,16 +100,16 @@ def x2lim(d_cm: float, fck_mpa: float = 50.0) -> float:
 
 def x3lim(d_cm: float, fyk_mpa: float = 500.0, gama_s: float = GAMA_S,
           fck_mpa: float = 50.0) -> float:
-    """Limite x entre dominios 3 e 4 (Fig. 17.1), delegado ao nucleo normativo.
+    """Limite x entre domínios 3 e 4 (Fig. 17.1), delegado ao núcleo normativo.
 
-    fck_mpa entra no fim com padrao 50 (Grupo I), pelo mesmo motivo de x2lim.
+    fck_mpa entra no fim com padrão 50 (Grupo I), pelo mesmo motivo de x2lim.
     """
     return nbr.x_lim_dominio_3_4(d_cm, fck_mpa, fyk_mpa, gama_s, nbr.ES_MPA)
 
 
 def dominio(x_cm: float, d_cm: float, fyk_mpa: float = 500.0,
             fck_mpa: float = 50.0) -> int:
-    """Retorna o dominio de deformacao (2, 3 ou 4)."""
+    """Retorna o domínio de deformação (2, 3 ou 4)."""
     if x_cm <= x2lim(d_cm, fck_mpa):
         return 2
     if x_cm <= x3lim(d_cm, fyk_mpa, GAMA_S, fck_mpa):
@@ -118,11 +118,11 @@ def dominio(x_cm: float, d_cm: float, fyk_mpa: float = 500.0,
 
 
 def as_min(bw_cm: float, h_cm: float, fck_mpa: float) -> float:
-    """Armadura minima de flexao (cm2), delegado ao nucleo normativo.
+    """Armadura mínima de flexão (cm2), delegado ao núcleo normativo.
 
     Tabela 17.3 da NBR 6118:2026 (nbr.rho_min_flexao), interpolada entre
-    classes e valida de C20 a C90 (corrige VIG-08: antes, fck fora dos
-    multiplos de 5 ou acima de C50 caia no valor do C50)."""
+    classes e válida de C20 a C90 (corrige VIG-08: antes, fck fora dos
+    múltiplos de 5 ou acima de C50 caía no valor do C50)."""
     return nbr.rho_min_flexao(fck_mpa) * bw_cm * h_cm
 
 
@@ -138,7 +138,7 @@ class ResultadoFlexao:
     fck: float          # MPa
     fyk: float          # MPa
 
-    x: float            # cm (posicao da linha neutra)
+    x: float            # cm (posição da linha neutra)
     beta_x: float       # x/d
     dominio: int        # 2, 3 ou 4
     As: float           # cm2 (armadura tracionada)
@@ -150,11 +150,11 @@ class ResultadoFlexao:
     M2d: float = 0.0          # kN.cm (parcela do M associada a A's ou mesa)
     tipo: str = "simples"
     erro: str = ""
-    minimo_governou: bool = False   # True se As,min (17.3.5.2.1) > As de equilibrio
+    minimo_governou: bool = False   # True se As,min (17.3.5.2.1) > As de equilíbrio
 
 
 # ---------------------------------------------------------------------------
-# 1. Secao retangular - armadura simples (apostila item 7)
+# 1. Seção retangular - armadura simples (apostila item 7)
 # ---------------------------------------------------------------------------
 def secao_retangular_simples(
     Md_kncm: float,
@@ -167,22 +167,22 @@ def secao_retangular_simples(
     gama_s: float = GAMA_S,
     bw_as_min_cm: float | None = None,
 ) -> ResultadoFlexao:
-    """Dimensiona armadura simples para secao retangular.
+    """Dimensiona armadura simples para seção retangular.
 
-    Generalizacao da Eq. 23 da apostila para o bloco retangular da NBR
+    Generalização da Eq. 23 da apostila para o bloco retangular da NBR
     6118:2026 17.2.2 e): |Md| = lambda*bw*x*sigma_ret*(d - 0.5*lambda*x),
     com sigma_ret = alpha_c*eta_c*fcd (nbr.tensao_retangulo) e lambda =
-    nbr.lambda_retangulo(fck) (0.8 ate C50; decrescente de C55 a C90).
+    nbr.lambda_retangulo(fck) (0.8 até C50; decrescente de C55 a C90).
     Antes usava 0.68/0.272/0.4 fixos (sigma = 0.85 fcd sem eta_c), o que
-    subestima o bloco ja em C45/C50 (eta_c < 1) - VIG-02.
-    Resolve quadratica em x e calcula As com sigma_sd = fyd
-    (valido nos dominios 2 e 3). As,min (17.3.5.2.1) passa a ser aplicado
-    ao resultado (As = max(As, As_min); antes so era informado - VIG-04).
+    subestima o bloco já em C45/C50 (eta_c < 1) - VIG-02.
+    Resolve quadrática em x e calcula As com sigma_sd = fyd
+    (válido nos domínios 2 e 3). As,min (17.3.5.2.1) passa a ser aplicado
+    ao resultado (As = max(As, As_min); antes só era informado - VIG-04).
 
-    bw_as_min_cm: largura usada so para o As,min (17.3.5.2.1); por padrao
+    bw_as_min_cm: largura usada só para o As,min (17.3.5.2.1); por padrão
     igual a bw_cm. Uso: chamada de secao_T_simples no Caso A, que passa bf
     como bw_cm (bloco cabe na mesa) mas precisa do As,min com a largura da
-    nervura, nao da mesa.
+    nervura, não da mesa.
     """
     Md = abs(Md_kncm)
     fyd = fyd_kncm2(fyk_mpa, gama_s)
@@ -200,11 +200,11 @@ def secao_retangular_simples(
         return ResultadoFlexao(
             Md=Md, bw=bw_cm, d=d_cm, h=h_cm, fck=fck_mpa, fyk=fyk_mpa,
             x=0, beta_x=0, dominio=0, As=0,
-            erro=("Discriminante negativo: a secao nao resiste com armadura "
+            erro=("Discriminante negativo: a seção não resiste com armadura "
                   "simples. Use armadura dupla ou aumente h/fck."),
         )
 
-    # Raiz menor (LN dentro da secao).
+    # Raiz menor (LN dentro da seção).
     x = (-b - math.sqrt(disc)) / (2.0 * a)
     beta_x = x / d_cm
     dom = dominio(x, d_cm, fyk_mpa, fck_mpa)
@@ -239,7 +239,7 @@ def secao_retangular_simples(
 
 
 # ---------------------------------------------------------------------------
-# 2. Secao retangular - armadura dupla (apostila item 8)
+# 2. Seção retangular - armadura dupla (apostila item 8)
 # ---------------------------------------------------------------------------
 def secao_retangular_dupla(
     Md_kncm: float,
@@ -255,22 +255,22 @@ def secao_retangular_dupla(
 ) -> ResultadoFlexao:
     """Dimensiona armadura dupla fixando x = beta_x_lim * d (item 8).
 
-    Decompoe Md = M1d + M2d (Eq. 39), generalizado pelo bloco retangular da
+    Decompõe Md = M1d + M2d (Eq. 39), generalizado pelo bloco retangular da
     NBR 6118:2026 17.2.2 e) (nbr.tensao_retangulo, nbr.lambda_retangulo):
       M1d = lambda*bw*x*sigma_ret*(d - 0.5*lambda*x) - resistido por As1 + concreto.
       M2d = Md - M1d                                  - resistido por A's e As2.
     Antes usava 0.68*fcd*(d-0.4x) fixo (sigma = 0.85 fcd sem eta_c); com x
-    fixo em beta_x_lim*d o erro nao se cancela e se concentra em A's
+    fixo em beta_x_lim*d o erro não se cancela e se concentra em A's
     (VIG-01: -41% em C50).
 
     beta_x_lim: None usa o limite de dutilidade do fck
-    (nbr.xd_limite_dutilidade - 0.45 ate C50, 0.35 de C55 a C90; VIG-03).
-    O padrao do parametro continua LIMITE_BETA_X (0.45) por compatibilidade
-    com quem ja chamava esta funcao sem argumentos nomeados; passe
-    beta_x_lim=None para usar o limite correto tambem em fck > 50.
+    (nbr.xd_limite_dutilidade - 0.45 até C50, 0.35 de C55 a C90; VIG-03).
+    O padrão do parâmetro continua LIMITE_BETA_X (0.45) por compatibilidade
+    com quem já chamava esta função sem argumentos nomeados; passe
+    beta_x_lim=None para usar o limite correto também em fck > 50.
 
-    A tensao na armadura comprimida sigma'_sd eh calculada por
-    compatibilidade de deformacoes (Eq. 48), limitada a fyd. As,min
+    A tensão na armadura comprimida sigma'_sd é calculada por
+    compatibilidade de deformações (Eq. 48), limitada a fyd. As,min
     (17.3.5.2.1) passa a ser aplicado ao As total (VIG-04).
     """
     Md = abs(Md_kncm)
@@ -285,12 +285,12 @@ def secao_retangular_dupla(
     M2d = Md - M1d
 
     if M2d <= 0:
-        # Armadura simples ja resolve com folga; redireciona.
+        # Armadura simples já resolve com folga; redireciona.
         return secao_retangular_simples(
             Md, bw_cm, d_cm, h_cm, fck_mpa, fyk_mpa, gama_c, gama_s,
         )
 
-    # Deformacao na armadura comprimida (Eq. 48):
+    # Deformação na armadura comprimida (Eq. 48):
     # eps'_sd / (x - d') = eps_cu / x
     eps_cu_val = nbr.eps_cu(fck_mpa)
     eps_sd_linha = eps_cu_val * (x - d_linha_cm) / x  # %o
@@ -298,7 +298,7 @@ def secao_retangular_dupla(
     if eps_sd_linha >= eps_yd:
         sigma_sd_linha = fyd  # kN/cm2
     else:
-        # Lei de Hooke no trecho elastico do aco.
+        # Lei de Hooke no trecho elástico do aço.
         sigma_sd_linha = (eps_sd_linha / 1000.0) * E_S
 
     As_linha = M2d / (sigma_sd_linha * (d_cm - d_linha_cm))
@@ -324,7 +324,7 @@ def secao_retangular_dupla(
 
 
 # ---------------------------------------------------------------------------
-# 3. Secao T - armadura simples (apostila item 9)
+# 3. Seção T - armadura simples (apostila item 9)
 # ---------------------------------------------------------------------------
 def secao_T_simples(
     Md_kncm: float,
@@ -338,17 +338,17 @@ def secao_T_simples(
     gama_c: float = GAMA_C,
     gama_s: float = GAMA_S,
 ) -> ResultadoFlexao:
-    """Dimensiona secao T com armadura simples.
+    """Dimensiona seção T com armadura simples.
 
-    Caso A (lambda*x <= hf): a regiao comprimida cabe na mesa, calcula como
-        secao retangular bf x h.
-    Caso B (lambda*x > hf): a regiao comprimida invade a alma; decompoe a
-        secao em mesa colaborante (Eq. 58) + alma (Eq. 60).
+    Caso A (lambda*x <= hf): a região comprimida cabe na mesa, calcula como
+        seção retangular bf x h.
+    Caso B (lambda*x > hf): a região comprimida invade a alma; decompõe a
+        seção em mesa colaborante (Eq. 58) + alma (Eq. 60).
 
     O bloco retangular usa nbr.tensao_retangulo (alpha_c*eta_c*fcd) e
     nbr.lambda_retangulo(fck) em vez de 0.85*fcd e lambda=0.8 fixos
-    (VIG-02: sem eta_c, ja incorreto em C45/C50). A fronteira do Caso A
-    tambem usa lambda(fck) em vez de 0.8 fixo, pela mesma razao.
+    (VIG-02: sem eta_c, já incorreto em C45/C50). A fronteira do Caso A
+    também usa lambda(fck) em vez de 0.8 fixo, pela mesma razão.
     """
     Md = abs(Md_kncm)
     fyd = fyd_kncm2(fyk_mpa, gama_s)
@@ -356,9 +356,9 @@ def secao_T_simples(
     sigma_ret = nbr.mpa_para_kncm2(nbr.tensao_retangulo(fck_mpa, gama_c))
     limite_beta_x = nbr.xd_limite_dutilidade(fck_mpa)
 
-    # Tentativa: secao retangular bf x h. As,min usa bw da nervura, nao bf
+    # Tentativa: seção retangular bf x h. As,min usa bw da nervura, não bf
     # (bw_as_min_cm evita que secao_retangular_simples aplique o piso de
-    # As,min com a largura errada - complemento de VIG-04 para secao T).
+    # As,min com a largura errada - complemento de VIG-04 para seção T).
     r_ret = secao_retangular_simples(
         Md, bf_cm, d_cm, h_cm, fck_mpa, fyk_mpa, gama_c, gama_s,
         bw_as_min_cm=bw_cm,
@@ -372,11 +372,11 @@ def secao_T_simples(
         r_ret.tipo = "T (mesa, lambda*x <= hf)"
         return r_ret
 
-    # Caso B: lambda*x > hf. Decompoe a secao.
+    # Caso B: lambda*x > hf. Decompõe a seção.
     M1d = (bf_cm - bw_cm) * hf_cm * sigma_ret * (d_cm - 0.5 * hf_cm)
     M2d = Md - M1d
 
-    # M2d na alma (bw): equacao retangular para x (mesmo bloco de VIG-01/02).
+    # M2d na alma (bw): equação retangular para x (mesmo bloco de VIG-01/02).
     a = 0.5 * lam * lam * sigma_ret * bw_cm
     b = -lam * sigma_ret * bw_cm * d_cm
     c = M2d
@@ -387,7 +387,7 @@ def secao_T_simples(
             Md=Md, bw=bw_cm, d=d_cm, h=h_cm, fck=fck_mpa, fyk=fyk_mpa,
             x=0, beta_x=0, dominio=0, As=0,
             tipo="T (insuficiente)", M1d=M1d, M2d=M2d,
-            erro=("Secao T insuficiente para armadura simples. Aumentar h "
+            erro=("Seção T insuficiente para armadura simples. Aumentar h "
                   "ou usar armadura dupla."),
         )
 
@@ -426,7 +426,7 @@ def secao_T_simples(
 
 
 # ---------------------------------------------------------------------------
-# 4. Verificacao - momento resistente dado As (apostila item 7.3, ex. 4 e 5)
+# 4. Verificação - momento resistente dado As (apostila item 7.3, ex. 4 e 5)
 # ---------------------------------------------------------------------------
 def momento_resistente_simples(
     As_cm2: float,
@@ -437,10 +437,10 @@ def momento_resistente_simples(
     gama_c: float = GAMA_C,
     gama_s: float = GAMA_S,
 ) -> tuple[float, float, int]:
-    """Retorna (MRd em kN.cm, x em cm, dominio) para uma secao retangular.
+    """Retorna (MRd em kN.cm, x em cm, domínio) para uma seção retangular.
 
-    Supoe sigma_sd = fyd (valido nos dominios 2 e 3). A posicao da LN sai
-    do equilibrio de forcas com o bloco retangular da NBR 6118:2026
+    Supõe sigma_sd = fyd (válido nos domínios 2 e 3). A posição da LN sai
+    do equilíbrio de forças com o bloco retangular da NBR 6118:2026
     17.2.2 e): lambda*bw*x*sigma_ret = As*fyd -> x = As*fyd/(lambda*bw*sigma_ret),
     com sigma_ret = nbr.tensao_retangulo(fck) e lambda = nbr.lambda_retangulo(fck)
     (antes 0.68*fcd fixo, sem eta_c - VIG-02).
@@ -454,7 +454,7 @@ def momento_resistente_simples(
 
 
 # ---------------------------------------------------------------------------
-# Impressao
+# Impressão
 # ---------------------------------------------------------------------------
 def imprimir(r: ResultadoFlexao) -> None:
     print(f"=== {r.tipo.upper()} ===")
@@ -462,9 +462,9 @@ def imprimir(r: ResultadoFlexao) -> None:
           f"d = {r.d:.2f} cm | h = {r.h:.1f} cm")
     print(f"  fck = {r.fck:>4.0f} MPa     | fyk = {r.fyk:.0f} MPa")
     if r.erro:
-        print(f"  ATENCAO: {r.erro}")
+        print(f"  ATENÇÃO: {r.erro}")
     print(f"  x   = {r.x:>6.2f} cm  | x/d = {r.beta_x:.3f}  | "
-          f"dominio {r.dominio}")
+          f"domínio {r.dominio}")
     print(f"  As  = {r.As:>6.2f} cm2  (As,min = {r.As_min:.2f} cm2)")
     if r.minimo_governou:
         print(f"  (As,min governou o dimensionamento - NBR 6118 17.3.5.2.1)")
@@ -476,7 +476,7 @@ def imprimir(r: ResultadoFlexao) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Testes contra exemplos numericos da apostila
+# Testes contra exemplos numéricos da apostila
 # ---------------------------------------------------------------------------
 def teste_apostila_7_3_ex1() -> bool:
     """Apostila 7.3 ex.1: bw=20, h=50, d=47, C20, CA-50, Mk=+10000.
@@ -484,7 +484,7 @@ def teste_apostila_7_3_ex1() -> bool:
     r = secao_retangular_simples(
         Md_kncm=14000.0, bw_cm=20, d_cm=47, h_cm=50, fck_mpa=20,
     )
-    print("\n--- Apostila 7.3 ex.1 (armadura simples, dominio 3) ---")
+    print("\n--- Apostila 7.3 ex.1 (armadura simples, domínio 3) ---")
     imprimir(r)
     ok = (abs(r.x - 18.1) < 0.2 and abs(r.As - 8.10) < 0.1
           and r.dominio == 3 and not r.erro)
@@ -507,15 +507,15 @@ def teste_apostila_7_3_ex3() -> bool:
 
 
 def teste_apostila_7_3_ex4() -> bool:
-    """Apostila 7.3 ex.4 (verificacao): bw=20, h=50, d=46, As=8.00, C20.
+    """Apostila 7.3 ex.4 (verificação): bw=20, h=50, d=46, As=8.00, C20.
     Esperado: x ~ 17.9, Mk ~ 9650 kN.cm, dom 3."""
     MRd, x, dom = momento_resistente_simples(
         As_cm2=8.00, bw_cm=20, d_cm=46, fck_mpa=20,
     )
     Mk = MRd / GAMA_F
-    print("\n--- Apostila 7.3 ex.4 (verificacao) ---")
+    print("\n--- Apostila 7.3 ex.4 (verificação) ---")
     print(f"  As = 8.00 cm2 | bw=20 | d=46 | C20 | CA-50")
-    print(f"  x   = {x:.2f} cm  | dominio {dom}")
+    print(f"  x   = {x:.2f} cm  | domínio {dom}")
     print(f"  MRd = {MRd:.1f} kN.cm  ->  Mk = {Mk:.1f} kN.cm")
     ok = abs(x - 17.9) < 0.2 and abs(Mk - 9650) < 30 and dom == 3
     print(f"  {'PASSOU' if ok else 'FALHOU'}")
@@ -542,9 +542,9 @@ def teste_apostila_8_3_ex2() -> bool:
     Mk=-18500. Esperado: As ~ 13.17, A's ~ 2.03.
 
     Apostila resolve via Kc tabelado (Kc lim = 1.9, valor arredondado da
-    Tabela A-1) e da M1d = 21.486 kN.cm. Este script usa a equacao direta
-    (Eq. 40), mais precisa, e da M1d ~ 21.953 -> A's ~ 1.82, As ~ 13.22.
-    Tolerancia maior cobre o arredondamento da tabela."""
+    Tabela A-1) e dá M1d = 21.486 kN.cm. Este script usa a equação direta
+    (Eq. 40), mais precisa, e dá M1d ~ 21.953 -> A's ~ 1.82, As ~ 13.22.
+    Tolerância maior cobre o arredondamento da tabela."""
     r = secao_retangular_dupla(
         Md_kncm=25900.0, bw_cm=14, d_cm=54, d_linha_cm=4, h_cm=60,
         fck_mpa=30,
@@ -575,7 +575,7 @@ def teste_apostila_9_2_ex1() -> bool:
 
 def teste_apostila_9_2_ex2() -> bool:
     """Apostila 9.2.4 ex.2 (T): bf=45, hf=7, bw=18, h=30, d=25, C25,
-    Mk=+8000. 0.8x > hf -> formulacao T propria.
+    Mk=+8000. 0.8x > hf -> formulação T própria.
     Esperado: x ~ 11.2, dom 3, As ~ 12.20."""
     r = secao_T_simples(
         Md_kncm=11200.0, bw_cm=18, bf_cm=45, hf_cm=7,
@@ -623,44 +623,44 @@ def rodar_testes() -> bool:
     return all(resultados)
 
 
-# === P12: armaduras minima, maxima e de pele; instabilidade lateral (Onda 2) ===
+# === P12: armaduras mínima, máxima e de pele; instabilidade lateral (Onda 2) ===
 #
-# Completa os limites de armadura de viga que faltavam: taxa mecanica minima
-# de flexao (17.1), armadura de pele com seu espacamento maximo (17.3.5.2.3 e
-# 18.3.5), o teto de As + A's <= 4% Ac (17.3.5.2.4, valendo tambem para laje
-# por 19.3.3.3), o criterio de concentracao de forcas em grupos de barras
-# (17.2.4.1) e a verificacao aproximada de instabilidade lateral de vigas com
+# Completa os limites de armadura de viga que faltavam: taxa mecânica mínima
+# de flexão (17.1), armadura de pele com seu espaçamento máximo (17.3.5.2.3 e
+# 18.3.5), o teto de As + A's <= 4% Ac (17.3.5.2.4, valendo também para laje
+# por 19.3.3.3), o critério de concentração de forças em grupos de barras
+# (17.2.4.1) e a verificação aproximada de instabilidade lateral de vigas com
 # a Tabela 15.1 (15.10). Reusa nucleo_nbr6118 para fcd, fyd, rho_min_flexao e
-# xd_limite_dutilidade; nao reimplementa nenhuma formula de material.
+# xd_limite_dutilidade; não reimplementa nenhuma fórmula de material.
 # ---------------------------------------------------------------------------
 
-# --- 17.1 — Taxa mecanica minima de armadura de flexao (PDF p. 140) --------
+# --- 17.1 — Taxa mecânica mínima de armadura de flexão (PDF p. 140) --------
 def omega_min(fck_mpa: float, fyk_mpa: float = 500.0,
              gama_c: float = GAMA_C, gama_s: float = GAMA_S) -> float:
-    """Taxa mecanica minima de armadura longitudinal de flexao para vigas
+    """Taxa mecânica mínima de armadura longitudinal de flexão para vigas
     (17.1, PDF p. 140): wmin = (As,min * fyd) / (Ac * fcd).
 
     Como As,min = rho_min(fck) * Ac (Tabela 17.3, nbr.rho_min_flexao), a
-    razao independe da geometria da secao e se reduz a
+    razão independe da geometria da seção e se reduz a
     wmin = rho_min(fck) * fyd / fcd, com fyd e fcd em MPa (nbr.fyd, nbr.fcd) -
-    a razao e adimensional, entao a unidade de fyd/fcd nao importa desde que
-    seja a mesma nos dois. Grandeza usada so para checagem/relatorio: o
-    dimensionamento em si ja usa As,min diretamente (as_min).
+    a razão é adimensional, então a unidade de fyd/fcd não importa desde que
+    seja a mesma nos dois. Grandeza usada só para checagem/relatório: o
+    dimensionamento em si já usa As,min diretamente (as_min).
 
-    A Tabela 17.3 (nbr.rho_min_flexao) pressupoe aco CA-50 (fyk = 500 MPa),
+    A Tabela 17.3 (nbr.rho_min_flexao) pressupõe aço CA-50 (fyk = 500 MPa),
     d/h = 0,8, gama_c = 1,4 e gama_s = 1,15 (docstring de rho_min_flexao); fora
-    desses valores, rho_min(fck) nao reproduz As,min/Ac quando o criterio do
-    momento minimo (nao o piso de 0,15%) e' quem governa, e o wmin calculado
-    aqui ficaria incorreto. Por isso a funcao so aceita esses valores; para
-    outro aco ou outro gama, calcule wmin a partir de
+    desses valores, rho_min(fck) não reproduz As,min/Ac quando o critério do
+    momento mínimo (não o piso de 0,15%) é quem governa, e o wmin calculado
+    aqui ficaria incorreto. Por isso a função só aceita esses valores; para
+    outro aço ou outro gama, calcule wmin a partir de
     ``nbr.As_min_flexao_retangular`` (que exige a geometria) dividido por Ac.
     """
     if fyk_mpa != 500.0 or gama_c != GAMA_C or gama_s != GAMA_S:
         raise nbr.FaixaNormativaError(
-            "omega_min so vale para os parametros que a Tabela 17.3 "
-            f"pressupoe (fyk = 500 MPa, gama_c = {GAMA_C:g}, gama_s = "
+            "omega_min só vale para os parâmetros que a Tabela 17.3 "
+            f"pressupõe (fyk = 500 MPa, gama_c = {GAMA_C:g}, gama_s = "
             f"{GAMA_S:g}); recebido fyk_mpa={fyk_mpa!r}, gama_c={gama_c!r}, "
-            f"gama_s={gama_s!r}. Para outro aco ou outro gama, calcule wmin "
+            f"gama_s={gama_s!r}. Para outro aço ou outro gama, calcule wmin "
             "a partir de nbr.As_min_flexao_retangular (que exige a "
             "geometria) dividido por Ac."
         )
@@ -670,23 +670,23 @@ def omega_min(fck_mpa: float, fyk_mpa: float = 500.0,
 
 
 # --- 17.3.5.2.3 e 18.3.5 — Armadura de pele (PDF p. 153 e 172) -------------
-TETO_PELE_CM2_POR_M = 5.0        # 17.3.5.2.3 — nao precisa exceder 5 cm2/m por face
+TETO_PELE_CM2_POR_M = 5.0        # 17.3.5.2.3 — não precisa exceder 5 cm2/m por face
 TAXA_PELE = 0.0010               # 17.3.5.2.3 — 0,10% de Ac,alma, por face
-H_DISPENSA_PELE_CM = 60.0        # 17.3.5.2.3 — dispensavel se h <= 60 cm
+H_DISPENSA_PELE_CM = 60.0        # 17.3.5.2.3 — dispensável se h <= 60 cm
 
 
 def armadura_pele_cm2_por_face(bw_cm: float, h_cm: float) -> float:
-    """Armadura de pele minima por face da alma, em cm2/m (17.3.5.2.3, PDF
+    """Armadura de pele mínima por face da alma, em cm2/m (17.3.5.2.3, PDF
     p. 153): 0,10% * Ac,alma por face, sem exceder 5 cm2/m por face.
 
     Expressa como taxa por metro de altura da alma (Ac,alma de uma faixa de
-    1 m de altura = bw_cm * 100), que e a grandeza que o detalhista usa para
-    escolher bitola e espacamento (igual ao uso corrente em escritorio e nos
-    demais softwares de detalhamento); nao e a area total da alma inteira.
-    Dispensavel em vigas com h <= 60 cm (17.3.5.2.3): retorna 0,0.
+    1 m de altura = bw_cm * 100), que é a grandeza que o detalhista usa para
+    escolher bitola e espaçamento (igual ao uso corrente em escritório e nos
+    demais softwares de detalhamento); não é a área total da alma inteira.
+    Dispensável em vigas com h <= 60 cm (17.3.5.2.3): retorna 0,0.
 
     AVISO: ``blocos_nbr6118.Asp_pele_face`` calcula outra grandeza (pele de
-    bloco sobre estacas, 1/8 de As,total) - nao confundir com esta funcao.
+    bloco sobre estacas, 1/8 de As,total) - não confundir com esta função.
     """
     if h_cm <= H_DISPENSA_PELE_CM:
         return 0.0
@@ -695,13 +695,13 @@ def armadura_pele_cm2_por_face(bw_cm: float, h_cm: float) -> float:
 
 
 def espacamento_max_pele_cm(d_cm: float) -> float:
-    """Espacamento maximo entre barras de pele ao longo da altura da alma
-    (18.3.5, PDF p. 172): min(d/3, 20 cm). A area da armadura de pele em si
-    e calculada por ``armadura_pele_cm2_por_face`` (17.3.5.2.3)."""
+    """Espaçamento máximo entre barras de pele ao longo da altura da alma
+    (18.3.5, PDF p. 172): min(d/3, 20 cm). A área da armadura de pele em si
+    é calculada por ``armadura_pele_cm2_por_face`` (17.3.5.2.3)."""
     return min(d_cm / 3.0, 20.0)
 
 
-# --- 17.3.5.2.4 e 19.3.3.3 — Soma maxima de As e A's (PDF p. 153 e 181) ----
+# --- 17.3.5.2.4 e 19.3.3.3 — Soma máxima de As e A's (PDF p. 153 e 181) ----
 @dataclass(frozen=True)
 class ResultadoAsMaxViga:
     As: float
@@ -720,12 +720,12 @@ LIMITE_AS_MAIS_AS_LINHA = 0.04   # 17.3.5.2.4 — (As + A's) <= 4% Ac
 def verificar_As_max_viga(As_cm2: float, As_linha_cm2: float,
                           Ac_cm2: float) -> ResultadoAsMaxViga:
     """Verifica (As + A's) <= 4% Ac fora da zona de emendas (17.3.5.2.4,
-    PDF p. 153). Vale tambem para a armadura maxima de flexao de laje, que
+    PDF p. 153). Vale também para a armadura máxima de flexão de laje, que
     19.3.3.3 (PDF p. 181) remete a este mesmo limite de 17.3.5.2.
 
-    Nao confere sozinha a dutilidade de 14.6.4.3 (que a norma tambem exige
+    Não confere sozinha a dutilidade de 14.6.4.3 (que a norma também exige
     junto deste teto) - use ``verificar_limites_armadura_viga`` para as duas
-    verificacoes combinadas a partir de um ``ResultadoFlexao``.
+    verificações combinadas a partir de um ``ResultadoFlexao``.
     """
     soma = As_cm2 + As_linha_cm2
     limite = LIMITE_AS_MAIS_AS_LINHA * Ac_cm2
@@ -756,12 +756,12 @@ class ResultadoLimitesViga:
 
 def verificar_limites_armadura_viga(resultado: ResultadoFlexao,
                                     Ac_cm2: float | None = None) -> ResultadoLimitesViga:
-    """Confere, a partir de um ``ResultadoFlexao`` ja dimensionado, o teto de
+    """Confere, a partir de um ``ResultadoFlexao`` já dimensionado, o teto de
     As + A's <= 4% Ac (17.3.5.2.4) e a dutilidade de x/d <= xd_limite_dutilidade
-    (17.2.3, que remete a 14.6.4.3), consolidando as duas verificacoes.
+    (17.2.3, que remete a 14.6.4.3), consolidando as duas verificações.
 
-    Ac_cm2: area da secao para o limite de 4%; por padrao bw * h do proprio
-    resultado (secao retangular). Passe explicitamente para secao T.
+    Ac_cm2: área da seção para o limite de 4%; por padrão bw * h do próprio
+    resultado (seção retangular). Passe explicitamente para seção T.
     """
     Ac = Ac_cm2 if Ac_cm2 is not None else resultado.bw * resultado.h
     r_as_max = verificar_As_max_viga(resultado.As, resultado.As_linha, Ac)
@@ -788,21 +788,21 @@ def verificar_limites_armadura_viga(resultado: ResultadoFlexao,
     )
 
 
-# --- 17.2.4.1 — Concentracao de forcas de barras no centroide (p. 143) ----
-FATOR_AGRUPAMENTO_H = 0.10   # 17.2.4.1 — distancia < 10% de h
+# --- 17.2.4.1 — Concentração de forças de barras no centroide (p. 143) ----
+FATOR_AGRUPAMENTO_H = 0.10   # 17.2.4.1 — distância < 10% de h
 
 
 def agrupamento_barras_permitido(dist_cm: float, h_cm: float) -> bool:
-    """17.2.4.1 (PDF p. 143): as forcas de um grupo de barras podem ser
-    consideradas concentradas no centroide correspondente se a distancia
-    deste centroide a barra mais afastada do grupo (medida normal a linha
-    neutra) for menor que 10% de h. dist_cm e essa distancia; devolve True
-    quando o agrupamento e permitido."""
+    """17.2.4.1 (PDF p. 143): as forças de um grupo de barras podem ser
+    consideradas concentradas no centroide correspondente se a distância
+    deste centroide à barra mais afastada do grupo (medida normal à linha
+    neutra) for menor que 10% de h. dist_cm é essa distância; devolve True
+    quando o agrupamento é permitido."""
     return dist_cm < FATOR_AGRUPAMENTO_H * h_cm
 
 
 # --- 15.10 — Instabilidade lateral de vigas e Tabela 15.1 (PDF p. 134) -----
-TABELA_15_1 = {   # beta_fl pela tipologia da secao (15.10, Tabela 15.1)
+TABELA_15_1 = {   # beta_fl pela tipologia da seção (15.10, Tabela 15.1)
     "retangular": 0.40,
     "t": 0.40,
     "i": 0.40,
@@ -829,16 +829,16 @@ class ResultadoInstabilidadeLateral:
 
 def verificar_instabilidade_lateral(b_cm: float, h_cm: float, l0_cm: float,
                                     tipo: str) -> ResultadoInstabilidadeLateral:
-    """Verificacao aproximada de instabilidade lateral (flambagem lateral)
+    """Verificação aproximada de instabilidade lateral (flambagem lateral)
     de vigas (15.10, PDF p. 134): b >= l0/50 e b >= beta_fl * h, com beta_fl
-    pela Tabela 15.1 (0,40 para secao retangular, T ou I isoladas; 0,20 para
-    duplo T ou secoes em caixao, quando a mesa comprimida e compartilhada
+    pela Tabela 15.1 (0,40 para seção retangular, T ou I isoladas; 0,20 para
+    duplo T ou seções em caixão, quando a mesa comprimida é compartilhada
     por duas almas).
 
     b_cm: largura da zona comprimida. h_cm: altura total da viga. l0_cm:
     comprimento do flange comprimido entre suportes que garantem o
     contraventamento lateral. tipo: chave de TABELA_15_1 ('retangular',
-    't', 'i', 'duplo_t' ou 'caixao'), sem distincao de maiusculas.
+    't', 'i', 'duplo_t' ou 'caixao'), sem distinção de maiúsculas.
     """
     chave = str(tipo).strip().lower().replace(" ", "_").replace("-", "_")
     if chave not in TABELA_15_1:
@@ -883,7 +883,7 @@ def main() -> None:
     if "--test" in sys.argv:
         sys.exit(0 if rodar_testes() else 1)
 
-    # Sem flag: roda os exemplos da apostila como demonstracao.
+    # Sem flag: roda os exemplos da apostila como demonstração.
     rodar_testes()
 
 

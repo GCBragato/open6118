@@ -1,26 +1,26 @@
-"""Torcao em Vigas de Concreto Armado (NBR 6118:2026).
+"""Torção em Vigas de Concreto Armado (NBR 6118:2026).
 
-Nome ate 19/09/2026: torcao_bastos.py. O credito as apostilas esta abaixo.
+Nome até 19/09/2026: torcao_bastos.py. O crédito às apostilas está abaixo.
 
-Implementa o dimensionamento a torcao seguindo a apostila
-"TORCAO EM VIGAS DE CONCRETO ARMADO", Prof. Paulo Sergio Bastos,
+Implementa o dimensionamento à torção seguindo a apostila
+"TORÇÃO EM VIGAS DE CONCRETO ARMADO", Prof. Paulo Sérgio Bastos,
 UNESP/Bauru, corrigida contra a NBR 6118:2026 (auditoria de 18/09/2026:
 CRT-04, CRT-05, CRT-06, CRT-07). Grandezas de material (fct,m, fcd, fywd)
-vem de nucleo_nbr6118.
+vêm de nucleo_nbr6118.
 
 Casos cobertos:
-    - Secao vazada equivalente (Eq. 19/20; 17.5.1.4.1).
+    - Seção vazada equivalente (Eq. 19/20; 17.5.1.4.1).
     - TRd,2 - diagonais comprimidas (Eq. 22).
-    - As/s    - armadura transversal de torcao (Eq. 24).
-    - As/ue   - armadura longitudinal de torcao (Eq. 27).
-    - Armaduras minimas (Eq. 32/33).
-    - Combinacao torcao + cortante: VSd/VRd2 + TSd/TRd2 <= 1 (Eq. 35).
+    - As/s    - armadura transversal de torção (Eq. 24).
+    - As/ue   - armadura longitudinal de torção (Eq. 27).
+    - Armaduras mínimas (Eq. 32/33).
+    - Combinação torção + cortante: VSd/VRd2 + TSd/TRd2 <= 1 (Eq. 35).
 
-Convencoes:
+Convenções:
     - fck, fyk em MPa.
     - bw, h, c1 em cm. TSd em kN.cm. As em cm2 ou cm2/m.
-    - 30 deg <= theta <= 45 deg (17.5.1.1, mesma faixa do dimensionamento a
-      forca cortante Modelo II).
+    - 30 deg <= theta <= 45 deg (17.5.1.1, mesma faixa do dimensionamento à
+      força cortante Modelo II).
 """
 
 from __future__ import annotations
@@ -40,22 +40,22 @@ GAMA_S = nbr.GAMA_S
 
 FYWD_MAX_KNCM2 = 43.5
 
-THETA_MIN_DEG = 30.0    # 17.5.1.1 - inclinacao das diagonais de torcao
+THETA_MIN_DEG = 30.0    # 17.5.1.1 - inclinação das diagonais de torção
 THETA_MAX_DEG = 45.0
 
-FYWK_TETO_TORCAO_MPA = 500.0   # 17.5.1.2 - teto de fywk nos minimos de torcao
+FYWK_TETO_TORCAO_MPA = 500.0   # 17.5.1.2 - teto de fywk nos mínimos de torção
 
 
 def fcd_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
-    """fcd em kN/cm2 (delega ao nucleo, 12.3.3)."""
+    """fcd em kN/cm2 (delega ao núcleo, 12.3.3)."""
     return nbr.mpa_para_kncm2(nbr.fcd(fck_mpa, gama_c))
 
 
 def fctm_mpa(fck_mpa: float) -> float:
-    """fct,m, MPa (NBR 6118 8.2.5; delega ao nucleo).
+    """fct,m, MPa (NBR 6118 8.2.5; delega ao núcleo).
 
-    CRT-04: copia local sem o ramo fck > 50 subestimava fct,m (e portanto
-    Asw,min/As,min de torcao) acima de C50; agora delega ao nucleo, que
+    CRT-04: cópia local sem o ramo fck > 50 subestimava fct,m (e portanto
+    Asw,min/As,min de torção) acima de C50; agora delega ao núcleo, que
     cobre os dois ramos (Grupo I e II).
     """
     return nbr.fct_m(fck_mpa)
@@ -63,24 +63,24 @@ def fctm_mpa(fck_mpa: float) -> float:
 
 def fywd_kncm2(fywk_mpa: float = 500.0,
                gama_s: float = GAMA_S) -> float:
-    """fywd em kN/cm2, limitado a 435 MPa (17.4.2.2 b; fyd vem do nucleo)."""
+    """fywd em kN/cm2, limitado a 435 MPa (17.4.2.2 b; fyd vem do núcleo)."""
     return nbr.mpa_para_kncm2(min(nbr.fyd(fywk_mpa, gama_s), 435.0))
 
 
 def alfa_v2(fck_mpa: float) -> float:
-    """alpha_v2 = 1 - fck/250 (17.5.1.5). Delega ao nucleo normativo."""
+    """alpha_v2 = 1 - fck/250 (17.5.1.5). Delega ao núcleo normativo."""
     return nbr.alpha_v2(fck_mpa)
 
 
 def _validar_theta_torcao(theta_deg: float) -> None:
     """17.5.1.1: 30 deg <= theta <= 45 deg (CRT-07; mesma faixa/forma da
-    validacao ja existente em cortante_nbr6118.modelo_calculo_II).
+    validação já existente em cortante_nbr6118.modelo_calculo_II).
 
-    P16 (achado da verificacao independente, volta 1): o erro fora da faixa
+    P16 (achado da verificação independente, volta 1): o erro fora da faixa
     normativa tem de ser ``nbr.FaixaNormativaError`` (subclasse de
-    ValueError), nao um ValueError generico -- convencao 3.3 item 3 do
-    plano. FaixaNormativaError e ValueError, entao quem hoje captura
-    ValueError continua funcionando sem mudanca.
+    ValueError), não um ValueError genérico -- convenção 3.3 item 3 do
+    plano. FaixaNormativaError é ValueError, então quem hoje captura
+    ValueError continua funcionando sem mudança.
     """
     if not (THETA_MIN_DEG - 1e-6 <= theta_deg <= THETA_MAX_DEG + 1e-6):
         raise nbr.FaixaNormativaError(
@@ -89,25 +89,25 @@ def _validar_theta_torcao(theta_deg: float) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Secao vazada equivalente
+# Seção vazada equivalente
 # ---------------------------------------------------------------------------
 def secao_vazada_retangular(
     bw_cm: float, h_cm: float, c1_cm: float,
     he_adotado_cm: float | None = None,
 ) -> dict:
-    """Define he, Ae e ue para secao retangular cheia (17.5.1.4.1, Eq. 19/20).
+    """Define he, Ae e ue para seção retangular cheia (17.5.1.4.1, Eq. 19/20).
 
     Caso geral (A/u >= 2*c1): he <= A/u (limite superior) e he >= 2*c1
     (limite inferior); adota-se he = A/u. Ae = (bw-he)*(h-he);
     ue = 2*[(bw-he)+(h-he)] (eixos no meio da parede equivalente).
 
-    CRT-06 - caso A/u < 2*c1 (secao "cheia" demais para a parede media
+    CRT-06 - caso A/u < 2*c1 (seção "cheia" demais para a parede média
     caber entre a face e o eixo das barras de canto): a norma manda
     adotar he = A/u, limitado a bw - 2*c1, com Ae e ue determinados pelos
-    eixos das armaduras de canto (retangulo (bw-2c1) x (h-2c1)), e nao
-    mais pela parede de espessura he. Antes desta correcao o codigo
-    adotava he = 2*c1 (o limite inferior, nao o previsto pela norma) com a
-    formula generica de Ae, o que reduzia Ae/TRd2/Asw sem base normativa.
+    eixos das armaduras de canto (retângulo (bw-2c1) x (h-2c1)), e não
+    mais pela parede de espessura he. Antes desta correção o código
+    adotava he = 2*c1 (o limite inferior, não o previsto pela norma) com a
+    fórmula genérica de Ae, o que reduzia Ae/TRd2/Asw sem base normativa.
     """
     A = bw_cm * h_cm
     u = 2.0 * (bw_cm + h_cm)
@@ -157,7 +157,7 @@ def Asw_torcao_cm2_por_m(
     TSd_kncm: float, Ae_cm2: float, theta_deg: float = 45.0,
     fywk_mpa: float = 500.0, gama_s: float = GAMA_S,
 ) -> float:
-    """Asw/s para torcao (Eq. 24): por unidade de comprimento (cm2/m).
+    """Asw/s para torção (Eq. 24): por unidade de comprimento (cm2/m).
 
     Asw/s = (TSd * tan(theta)) / (2 * Ae * fywd) -> cm2/cm.
 
@@ -173,7 +173,7 @@ def As_long_torcao_cm2_por_m(
     TSd_kncm: float, Ae_cm2: float, theta_deg: float = 45.0,
     fywk_mpa: float = 500.0, gama_s: float = GAMA_S,
 ) -> float:
-    """As,long/ue para torcao (Eq. 27): por unidade de perimetro (cm2/m).
+    """As,long/ue para torção (Eq. 27): por unidade de perímetro (cm2/m).
 
     As/ue = TSd / (2 * Ae * fywd * tan(theta)) -> cm2/cm.
 
@@ -190,8 +190,8 @@ def Asw_min_cm2_por_m(bw_cm: float, fck_mpa: float,
                       fywk_mpa: float = 500.0) -> float:
     """Eq. 33: As,90,min = 20 * fctm * bw / fywk  (cm2/m).
 
-    CRT-05 (17.5.1.2): fywk e limitado a 500 MPa nesta verificacao (o teto
-    e especifico dos minimos de torcao; nao existe em 17.4.1.1.1, cortante).
+    CRT-05 (17.5.1.2): fywk é limitado a 500 MPa nesta verificação (o teto
+    é específico dos mínimos de torção; não existe em 17.4.1.1.1, cortante).
     """
     fctm_kncm2 = fctm_mpa(fck_mpa) * 0.1
     fywk_kncm2 = min(fywk_mpa, FYWK_TETO_TORCAO_MPA) * 0.1
@@ -202,7 +202,7 @@ def As_long_min_cm2_por_m(he_cm: float, fck_mpa: float,
                           fywk_mpa: float = 500.0) -> float:
     """Eq. 32: As,min = 20 * fctm * he / fywk  (cm2/m).
 
-    CRT-05 (17.5.1.2): fywk e limitado a 500 MPa nesta verificacao.
+    CRT-05 (17.5.1.2): fywk é limitado a 500 MPa nesta verificação.
     """
     fctm_kncm2 = fctm_mpa(fck_mpa) * 0.1
     fywk_kncm2 = min(fywk_mpa, FYWK_TETO_TORCAO_MPA) * 0.1
@@ -210,7 +210,7 @@ def As_long_min_cm2_por_m(he_cm: float, fck_mpa: float,
 
 
 # ---------------------------------------------------------------------------
-# Combinacao torcao + cortante (Eq. 35)
+# Combinação torção + cortante (Eq. 35)
 # ---------------------------------------------------------------------------
 def verifica_combinacao(VSd_kn: float, VRd2_kn: float,
                         TSd_kncm: float, TRd2_kncm: float) -> dict:
@@ -238,7 +238,7 @@ class ResultadoTorcao:
     Ae: float
     ue: float
     TRd2_kncm: float
-    Asw_m: float           # cm2/m (transversal de torcao)
+    Asw_m: float           # cm2/m (transversal de torção)
     As_long_total_cm2: float  # As longitudinal total (= As/ue * ue)
     Asw_min_m: float
     As_long_min_m: float
@@ -251,14 +251,14 @@ def dimensionar_torcao(
     gama_c: float = GAMA_C, gama_s: float = GAMA_S,
     he_adotado_cm: float | None = None,
 ) -> ResultadoTorcao:
-    """Dimensiona viga retangular cheia a torcao."""
+    """Dimensiona viga retangular cheia à torção."""
     sec = secao_vazada_retangular(bw_cm, h_cm, c1_cm, he_adotado_cm)
     Ae, he, ue = sec["Ae_cm2"], sec["he_cm"], sec["ue_cm"]
     TRd2 = TRd2_kncm(fck_mpa, Ae, he, theta_deg, gama_c)
     asw_m = Asw_torcao_cm2_por_m(TSd_kncm, Ae, theta_deg, fywk_mpa, gama_s)
     as_ue_m = As_long_torcao_cm2_por_m(TSd_kncm, Ae, theta_deg,
                                         fywk_mpa, gama_s)
-    as_long_total = as_ue_m / 100.0 * ue   # cm2 distribuido no perimetro
+    as_long_total = as_ue_m / 100.0 * ue   # cm2 distribuído no perímetro
     asw_min = Asw_min_cm2_por_m(bw_cm, fck_mpa, fywk_mpa)
     as_long_min = As_long_min_cm2_por_m(he, fck_mpa, fywk_mpa)
     return ResultadoTorcao(
@@ -287,7 +287,7 @@ def test_secao_vazada_apostila() -> None:
     assert _aprox(sec["he_min_cm"], 8.25, 0.05), f"he_min={sec['he_min_cm']}"
     assert _aprox(sec["Ae_cm2"], 1000.0, 0.5), f"Ae={sec['Ae_cm2']}"
     assert _aprox(sec["ue_cm"], 130.0, 0.5), f"ue={sec['ue_cm']}"
-    print(f"  OK  Secao: he={sec['he_cm']:.2f} cm  Ae={sec['Ae_cm2']:.0f} "
+    print(f"  OK  Seção: he={sec['he_cm']:.2f} cm  Ae={sec['Ae_cm2']:.0f} "
           f"ue={sec['ue_cm']:.0f}")
 
 
@@ -311,7 +311,7 @@ def test_As_long_apostila() -> None:
     as_m = As_long_torcao_cm2_por_m(TSd_kncm=6808.0, Ae_cm2=1000.0,
                                     theta_deg=38.0)
     assert _aprox(as_m, 10.02, 0.05), f"As/ue={as_m:.3f}"
-    # Total no perimetro ue=130 cm: 13.03 cm2
+    # Total no perímetro ue=130 cm: 13.03 cm2
     print(f"  OK  As_long/ue = {as_m:.2f} cm2/m  (apostila: 10.02)")
 
 
@@ -328,12 +328,12 @@ def test_armaduras_minimas_apostila() -> None:
 
 def test_combinacao_apostila() -> None:
     """Apostila: VSd=83.4, VRd2=679.5, TSd=6808, TRd2=7797.
-    Razao = 83.4/679.5 + 6808/7797 = 0.123 + 0.873 = 0.996 <= 1 OK."""
+    Razão = 83.4/679.5 + 6808/7797 = 0.123 + 0.873 = 0.996 <= 1 OK."""
     r = verifica_combinacao(VSd_kn=83.4, VRd2_kn=679.5,
                             TSd_kncm=6808.0, TRd2_kncm=7797.0)
     assert _aprox(r["razao"], 0.996, 0.005), f"razao={r['razao']:.4f}"
     assert r["ok"], "deveria atender"
-    print(f"  OK  Combinacao V+T: razao = {r['razao']:.3f}  ok={r['ok']}")
+    print(f"  OK  Combinação V+T: razão = {r['razao']:.3f}  ok={r['ok']}")
 
 
 def test_dimensionar_completo() -> None:
@@ -392,7 +392,7 @@ def _demo() -> None:
           f"(distribuir nos 4 lados)")
 
 
-# === P16: Torcao completa e combinacao com flexao e cortante ===
+# === P16: Torção completa e combinação com flexão e cortante ===
 #
 # Completa a torção de 17.5: dispensa da torção de compatibilidade e limite
 # de VSd em trecho curto (17.5.1.2), condição tripla de resistência à

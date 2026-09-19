@@ -1,35 +1,35 @@
-"""Blocos de Fundacao sobre Estacas (NBR 6118:2023 + Metodo de Blevot).
+"""Blocos de Fundação sobre Estacas (NBR 6118:2023 + Método de Blévot).
 
-Nome ate 19/09/2026: blocos_bastos.py. O credito as apostilas esta abaixo.
+Nome até 19/09/2026: blocos_bastos.py. O crédito às apostilas está abaixo.
 
-Implementa o dimensionamento de blocos rigidos sobre estacas seguindo a
-apostila "BLOCOS DE FUNDACAO", Prof. Paulo Sergio Bastos, UNESP/Bauru,
-pelo Metodo das Bielas (Blevot).
+Implementa o dimensionamento de blocos rígidos sobre estacas seguindo a
+apostila "BLOCOS DE FUNDAÇÃO", Prof. Paulo Sérgio Bastos, UNESP/Bauru,
+pelo Método das Bielas (Blévot).
 
 Casos cobertos:
     - Bloco sobre 2 estacas
-    - Bloco sobre 3 estacas (em triangulo equilatero)
+    - Bloco sobre 3 estacas (em triângulo equilátero)
     - Bloco sobre 4 estacas (em quadrado)
 
 Para cada um:
-    - Limites de altura util (45 deg <= beta <= 55 deg)
-    - Tensao de compressao nas bielas (junto ao pilar e a estaca)
-    - Tensao limite (Blevot, apostila): 1.4/1.75/2.1 * KR * fcd (2/3/4
-      estacas). Este NAO e um limite da NBR 6118 -- e o criterio adotado
-      por este modulo (decisao 2 do plano de correcao / achado FUN-01).
-      A verificacao equivalente da propria norma (22.3.2: fcd1 = 0,85 *
-      alpha_v2 * fcd no no CCC sob o pilar; fcd3 = 0,72 * alpha_v2 * fcd
-      no no CCT sobre a estaca) sai ao lado, so como informacao, em
-      ResultadoBloco / verifica_bielas_22_3_2 -- nao substitui ok_bielas.
+    - Limites de altura útil (45 deg <= beta <= 55 deg)
+    - Tensão de compressão nas bielas (junto ao pilar e à estaca)
+    - Tensão limite (Blévot, apostila): 1.4/1.75/2.1 * KR * fcd (2/3/4
+      estacas). Este NÃO é um limite da NBR 6118 -- é o critério adotado
+      por este módulo (decisão 2 do plano de correção / achado FUN-01).
+      A verificação equivalente da própria norma (22.3.2: fcd1 = 0,85 *
+      alpha_v2 * fcd no nó CCC sob o pilar; fcd3 = 0,72 * alpha_v2 * fcd
+      no nó CCT sobre a estaca) sai ao lado, só como informação, em
+      ResultadoBloco / verifica_bielas_22_3_2 -- não substitui ok_bielas.
     - Armadura principal
-    - Armadura de suspensao
+    - Armadura de suspensão
     - Armadura superior e de pele
 
-Convencoes:
+Convenções:
     - fck, fyk em MPa.
-    - Geometria em cm. Forcas em kN. Areas em cm2.
-    - phi_e = diametro da estaca circular; ap, bp = lados do pilar.
-    - "ap" = lado do pilar na direcao das estacas (a direcao "longa").
+    - Geometria em cm. Forças em kN. Áreas em cm2.
+    - phi_e = diâmetro da estaca circular; ap, bp = lados do pilar.
+    - "ap" = lado do pilar na direção das estacas (a direção "longa").
 """
 
 from __future__ import annotations
@@ -50,18 +50,18 @@ GAMA_F = nbr.GAMA_F  # Tabela 11.1 — lido do núcleo (P4)
 
 
 def fcd_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
-    """fcd em kN/cm2 (delegado ao nucleo normativo: nbr.fcd, 12.3.3)."""
+    """fcd em kN/cm2 (delegado ao núcleo normativo: nbr.fcd, 12.3.3)."""
     return nbr.mpa_para_kncm2(nbr.fcd(fck_mpa, gama_c))
 
 
 def fyd_kncm2(fyk_mpa: float = 500.0,
               gama_s: float = GAMA_S) -> float:
-    """fyd em kN/cm2 (delegado ao nucleo normativo: nbr.fyd)."""
+    """fyd em kN/cm2 (delegado ao núcleo normativo: nbr.fyd)."""
     return nbr.mpa_para_kncm2(nbr.fyd(fyk_mpa, gama_s))
 
 
 # ---------------------------------------------------------------------------
-# 22.3.2 -- parametros de resistencia das bielas e nos (informativo, FUN-01)
+# 22.3.2 -- parâmetros de resistência das bielas e nos (informativo, FUN-01)
 #
 # fcd1_no_pilar_kncm2 e fcd3_na_estaca_kncm2 foram promovidas (P35) para
 # bielas_tirantes_nbr6118.py (fcd1_kncm2 / fcd3_kncm2, junto com fcd2_kncm2,
@@ -71,16 +71,16 @@ def fyd_kncm2(fyk_mpa: float = 500.0,
 # ---------------------------------------------------------------------------
 def alpha_v2(fck_mpa: float) -> float:
     """alpha_v2 = 1 - fck/250, fck em MPa (17.4.2.2, 19.5.3.1, 22.3.2).
-    Delega ao nucleo normativo."""
+    Delega ao núcleo normativo."""
     return nbr.alpha_v2(fck_mpa)
 
 
 def fcd1_no_pilar_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
-    """fcd1 = 0,85 * alpha_v2 * fcd -- biela prismatica / no CCC, sob o
-    pilar (22.3.2, PDF p. 204). NAO e o criterio adotado por este modulo
-    (Blevot, ver sigma_lim_2/3/4_estacas etc.); e a verificacao
-    equivalente da propria NBR, calculada aqui so como informacao
-    (decisao 2 do plano de correcao / achado FUN-01).
+    """fcd1 = 0,85 * alpha_v2 * fcd -- biela prismática / nó CCC, sob o
+    pilar (22.3.2, PDF p. 204). NÃO é o critério adotado por este módulo
+    (Blévot, ver sigma_lim_2/3/4_estacas etc.); é a verificação
+    equivalente da própria NBR, calculada aqui só como informação
+    (decisão 2 do plano de correção / achado FUN-01).
 
     Reexportação fina de bielas_tirantes_nbr6118.fcd1_kncm2 (P35): a fórmula
     mora lá agora, fonte única do método de bielas e tirantes."""
@@ -92,9 +92,9 @@ def fcd1_no_pilar_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
 
 
 def fcd3_na_estaca_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
-    """fcd3 = 0,72 * alpha_v2 * fcd -- no CCT, atravessado por tirante
-    unico, sobre a estaca (22.3.2, PDF p. 204). Mesma ressalva de
-    fcd1_no_pilar_kncm2: informativo, nao substitui ok_bielas (Blevot).
+    """fcd3 = 0,72 * alpha_v2 * fcd -- nó CCT, atravessado por tirante
+    único, sobre a estaca (22.3.2, PDF p. 204). Mesma ressalva de
+    fcd1_no_pilar_kncm2: informativo, não substitui ok_bielas (Blévot).
 
     Reexportação fina de bielas_tirantes_nbr6118.fcd3_kncm2 (P35): a fórmula
     mora lá agora, fonte única do método de bielas e tirantes."""
@@ -107,10 +107,10 @@ def fcd3_na_estaca_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
 
 def verifica_bielas_22_3_2(sigma_pil_kncm2: float, sigma_est_kncm2: float,
                            fck_mpa: float, gama_c: float = GAMA_C) -> dict:
-    """Verificacao informativa das tensoes nas bielas/nos pela NBR 6118
-    22.3.2 (PDF p. 204), ao lado do criterio de Blevot que o modulo usa
-    de fato (ok_bielas, em ResultadoBloco). fcd1 no no do pilar (CCC),
-    fcd3 no no da estaca (CCT); alpha_v2 = 1 - fck/250 (fck em MPa)."""
+    """Verificação informativa das tensões nas bielas/nós pela NBR 6118
+    22.3.2 (PDF p. 204), ao lado do critério de Blévot que o módulo usa
+    de fato (ok_bielas, em ResultadoBloco). fcd1 no nó do pilar (CCC),
+    fcd3 no nó da estaca (CCT); alpha_v2 = 1 - fck/250 (fck em MPa)."""
     fcd1 = fcd1_no_pilar_kncm2(fck_mpa, gama_c)
     fcd3 = fcd3_na_estaca_kncm2(fck_mpa, gama_c)
     razao_pil = sigma_pil_kncm2 / fcd1
@@ -124,7 +124,7 @@ def verifica_bielas_22_3_2(sigma_pil_kncm2: float, sigma_est_kncm2: float,
 
 
 def aest_quadrado_equivalente(phi_e_cm: float) -> float:
-    """Lado de estaca quadrada com area = pi*phi^2/4."""
+    """Lado de estaca quadrada com área = pi*phi^2/4."""
     return math.sqrt(math.pi) / 2.0 * phi_e_cm
 
 
@@ -132,7 +132,7 @@ def aest_quadrado_equivalente(phi_e_cm: float) -> float:
 # Bloco sobre 2 estacas
 # ---------------------------------------------------------------------------
 def d_limites_2_estacas(e_cm: float, ap_cm: float) -> tuple[float, float]:
-    """45 deg <= beta <= 55 deg para 2 estacas (Blevot/Machado).
+    """45 deg <= beta <= 55 deg para 2 estacas (Blévot/Machado).
        d_min = 0.5 * (e - ap/2);  d_max = 0.71 * (e - ap/2)."""
     base = e_cm - ap_cm / 2.0
     return 0.5 * base, 0.71 * base
@@ -145,7 +145,7 @@ def beta_2_estacas(d_cm: float, e_cm: float, ap_cm: float) -> float:
 
 def sigma_bielas_2_estacas(Nd_kn: float, Ap_cm2: float, Ae_cm2: float,
                            beta_rad: float) -> tuple[float, float]:
-    """Tensao na biela junto ao pilar e junto a estaca (kN/cm2).
+    """Tensão na biela junto ao pilar e junto à estaca (kN/cm2).
     sigma_pil = Nd / (Ap * sin^2 beta)
     sigma_est = Nd / (2 * Ae * sin^2 beta)"""
     sb2 = math.sin(beta_rad) ** 2
@@ -158,24 +158,24 @@ def sigma_lim_2_estacas(fck_mpa: float, KR: float = 0.95,
                         gama_c: float = GAMA_C) -> float:
     """sigma_lim = 1,4 * KR * fcd (2 estacas).
 
-    Coeficiente 1,4 do metodo das bielas de Blevot (apostila) -- NAO da
-    NBR 6118. A verificacao equivalente da norma e a 22.3.2 (ver
+    Coeficiente 1,4 do método das bielas de Blévot (apostila) -- NÃO da
+    NBR 6118. A verificação equivalente da norma é a 22.3.2 (ver
     verifica_bielas_22_3_2 / fcd1_no_pilar_kncm2 / fcd3_na_estaca_kncm2),
-    calculada a parte, so como informacao (decisao 2 / achado FUN-01)."""
+    calculada à parte, só como informação (decisão 2 / achado FUN-01)."""
     return 1.4 * KR * fcd_kncm2(fck_mpa, gama_c)
 
 
 def As_principal_2_estacas(Nd_kn: float, e_cm: float, ap_cm: float,
                            d_cm: float, fyk_mpa: float = 500.0,
                            gama_s: float = GAMA_S) -> float:
-    """As = 1.15 * Nd * (2e - ap) / (8 * d * fyd)  (Blevot)."""
+    """As = 1.15 * Nd * (2e - ap) / (8 * d * fyd)  (Blévot)."""
     fyd = fyd_kncm2(fyk_mpa, gama_s) * 10.0  # MPa
     fyd_kncm = fyd / 10.0
     return 1.15 * Nd_kn * (2.0 * e_cm - ap_cm) / (8.0 * d_cm * fyd_kncm)
 
 
 # ---------------------------------------------------------------------------
-# Bloco sobre 3 estacas (em triangulo equilatero)
+# Bloco sobre 3 estacas (em triângulo equilátero)
 # ---------------------------------------------------------------------------
 def d_limites_3_estacas(e_cm: float, ap_cm: float) -> tuple[float, float]:
     """45 deg <= beta <= 55 deg para 3 estacas:
@@ -198,8 +198,8 @@ def sigma_lim_3_estacas(fck_mpa: float, KR: float = 0.95,
                         gama_c: float = GAMA_C) -> float:
     """sigma_lim = 1,75 * KR * fcd (3 estacas).
 
-    Coeficiente de Blevot (apostila) -- NAO da NBR. Ver nota em
-    sigma_lim_2_estacas (decisao 2 / achado FUN-01)."""
+    Coeficiente de Blévot (apostila) -- NÃO da NBR. Ver nota em
+    sigma_lim_2_estacas (decisão 2 / achado FUN-01)."""
     return 1.75 * KR * fcd_kncm2(fck_mpa, gama_c)
 
 
@@ -237,8 +237,8 @@ def sigma_lim_4_estacas(fck_mpa: float, KR: float = 0.95,
                         gama_c: float = GAMA_C) -> float:
     """sigma_lim = 2,1 * KR * fcd (4 estacas).
 
-    Coeficiente de Blevot (apostila) -- NAO da NBR. Ver nota em
-    sigma_lim_2_estacas (decisao 2 / achado FUN-01)."""
+    Coeficiente de Blévot (apostila) -- NÃO da NBR. Ver nota em
+    sigma_lim_2_estacas (decisão 2 / achado FUN-01)."""
     return 2.1 * KR * fcd_kncm2(fck_mpa, gama_c)
 
 
@@ -272,26 +272,26 @@ def sigma_bielas_5_estacas(Nd_kn: float, Ap_cm2: float, Ae_cm2: float,
 
 def sigma_lim_5_estacas_pil(fck_mpa: float, KR: float = 0.95,
                             gama_c: float = GAMA_C) -> float:
-    """sigma_lim_pil = 2,6 * KR * fcd (5 estacas, no do pilar).
+    """sigma_lim_pil = 2,6 * KR * fcd (5 estacas, nó do pilar).
 
-    Coeficiente de Blevot (apostila) -- NAO da NBR. Ver nota em
-    sigma_lim_2_estacas (decisao 2 / achado FUN-01)."""
+    Coeficiente de Blévot (apostila) -- NÃO da NBR. Ver nota em
+    sigma_lim_2_estacas (decisão 2 / achado FUN-01)."""
     return 2.6 * KR * fcd_kncm2(fck_mpa, gama_c)
 
 
 def sigma_lim_5_estacas_est(fck_mpa: float, KR: float = 0.95,
                             gama_c: float = GAMA_C) -> float:
-    """sigma_lim_est = 2,1 * KR * fcd (5 estacas, no da estaca).
+    """sigma_lim_est = 2,1 * KR * fcd (5 estacas, nó da estaca).
 
-    Coeficiente de Blevot (apostila) -- NAO da NBR. Ver nota em
-    sigma_lim_2_estacas (decisao 2 / achado FUN-01)."""
+    Coeficiente de Blévot (apostila) -- NÃO da NBR. Ver nota em
+    sigma_lim_2_estacas (decisão 2 / achado FUN-01)."""
     return 2.1 * KR * fcd_kncm2(fck_mpa, gama_c)
 
 
 def As_principal_5_estacas(Nd_kn: float, e_cm: float, ap_cm: float,
                            d_cm: float, fyk_mpa: float = 500.0,
                            gama_s: float = GAMA_S) -> float:
-    """As,lado = Nd * (2e - ap) / (20 * d * fyd) (4/5 da formula de 4 estacas)."""
+    """As,lado = Nd * (2e - ap) / (20 * d * fyd) (4/5 da fórmula de 4 estacas)."""
     fyd_kncm = fyd_kncm2(fyk_mpa, gama_s)
     return Nd_kn * (2.0 * e_cm - ap_cm) / (20.0 * d_cm * fyd_kncm)
 
@@ -304,7 +304,7 @@ def As_suspensao_5_estacas(Nd_kn: float, fyk_mpa: float = 500.0,
 
 
 # ---------------------------------------------------------------------------
-# Armaduras complementares (suspensao, superior, pele)
+# Armaduras complementares (suspensão, superior, pele)
 # ---------------------------------------------------------------------------
 def As_suspensao_total(Nd_kn: float, n_estacas: int,
                        fyk_mpa: float = 500.0,
@@ -315,7 +315,7 @@ def As_suspensao_total(Nd_kn: float, n_estacas: int,
 
 
 def As_superior_dir(As_principal_cm2: float) -> float:
-    """As,sup = 0.20 * As (em cada direcao da malha)."""
+    """As,sup = 0.20 * As (em cada direção da malha)."""
     return 0.20 * As_principal_cm2
 
 
@@ -342,7 +342,7 @@ class ResultadoBloco:
     ok_bielas: bool
     As_principal_cm2: float
     As_suspensao_cm2: float
-    # 22.3.2, informativo (decisao 2 / achado FUN-01) -- nao muda ok_bielas
+    # 22.3.2, informativo (decisão 2 / achado FUN-01) -- não muda ok_bielas
     fcd1_kncm2: float = 0.0
     fcd3_kncm2: float = 0.0
     razao_pil_fcd1: float = 0.0
@@ -357,15 +357,15 @@ def projetar_bloco(
     gama_f: float = GAMA_F, gama_c: float = GAMA_C,
     gama_s: float = GAMA_S, cobrimento_cm: float = 3.0,
 ) -> ResultadoBloco:
-    """Projeta bloco sobre 2, 3 ou 4 estacas, metodo das bielas (Blevot).
+    """Projeta bloco sobre 2, 3 ou 4 estacas, método das bielas (Blévot).
 
-    ok_bielas usa os limites de Blevot -- o criterio que este modulo
-    adota (decisao 2 do plano de correcao / achado FUN-01). fcd1/fcd3 e
-    razao_pil_fcd1/razao_est_fcd3 trazem, lado a lado, a verificacao
-    equivalente da NBR 22.3.2, so como informacao: nao mudam ok_bielas.
+    ok_bielas usa os limites de Blévot -- o critério que este módulo
+    adota (decisão 2 do plano de correção / achado FUN-01). fcd1/fcd3 e
+    razao_pil_fcd1/razao_est_fcd3 trazem, lado a lado, a verificação
+    equivalente da NBR 22.3.2, só como informação: não mudam ok_bielas.
     """
     if n_estacas not in (2, 3, 4):
-        raise ValueError("n_estacas deve ser 2, 3 ou 4")
+        raise ValueError("n_estacas deve ser 2, 3 ou 4.")
 
     aest = aest_quadrado_equivalente(phi_e_cm)
     d = h_cm - max(5.0, aest / 5.0) - cobrimento_cm
@@ -379,8 +379,8 @@ def projetar_bloco(
         sigma_lim = sigma_lim_2_estacas(fck_mpa, KR, gama_c)
         As_p = As_principal_2_estacas(Nd, e_cm, ap_cm, d, fyk_mpa, gama_s)
     elif n_estacas == 3:
-        # 3 estacas: usa-se a direcao da mediana; beta = atan(d / (e/sqrt(3) - ap/4))
-        # apostila usa formula simplificada para tensoes via Ap/3
+        # 3 estacas: usa-se a direção da mediana; beta = atan(d / (e/sqrt(3) - ap/4))
+        # apostila usa fórmula simplificada para tensões via Ap/3
         beta = math.atan(d / (e_cm / math.sqrt(3.0) - ap_cm / 4.0))
         sigma_pil, sigma_est = sigma_bielas_3_estacas(Nd, Ap, Ae, beta)
         sigma_lim = sigma_lim_3_estacas(fck_mpa, KR, gama_c)
@@ -469,7 +469,7 @@ def test_As_principal_apostila() -> None:
 
 def test_As_suspensao_apostila() -> None:
     """As,susp,total bloco 2 estacas: Nd/(3*fyd) = 920.4/(3*43.48) = 7.06 cm2.
-    Em '1.5 ne' generico = 1.5*2 = 3 -> mesmo valor."""
+    Em '1.5 ne' genérico = 1.5*2 = 3 -> mesmo valor."""
     As = As_suspensao_total(Nd_kn=920.4, n_estacas=2)
     assert _aprox(As, 7.06, 0.05), f"As_susp={As}"
     print(f"  OK  As,susp (total) = {As:.2f} cm2")
@@ -513,9 +513,9 @@ def test_projetar_bloco_2est_apostila() -> None:
         phi_e_cm=30.0, h_cm=50.0, fck_mpa=25.0, KR=0.95,
         cobrimento_cm=3.0,
     )
-    # d na apostila e 45 cm; nosso calculo usa h - max(5, aest/5) - c
+    # d na apostila é 45 cm; nosso cálculo usa h - max(5, aest/5) - c
     # aest = 26.59; aest/5 = 5.32; max(5, 5.32) = 5.32 -> d = 50-5.32-3=41.7
-    # Apostila adota d' simplificado = 5 cm -> d = 45. Nosso d sera ~41.7
+    # Apostila adota d' simplificado = 5 cm -> d = 45. Nosso d será ~41.7
     assert 40.0 < r.d_cm < 46.0, f"d={r.d_cm}"
     assert _aprox(r.beta_deg, 51.5, 5.0), f"beta={r.beta_deg}"
     assert r.As_principal_cm2 > 8.0, f"As_p={r.As_principal_cm2}"
@@ -532,7 +532,7 @@ def test_d_limites_5_estacas() -> None:
 
 
 def test_As_5_estacas_consistencia() -> None:
-    """As,lado(5 estacas) = 0.8 * As,lado(4 estacas) (formula 4/5 da NBR)."""
+    """As,lado(5 estacas) = 0.8 * As,lado(4 estacas) (fórmula 4/5 da NBR)."""
     Nd, e, ap, d = 5000.0, 250.0, 40.0, 180.0
     As4 = As_principal_4_estacas(Nd, e, ap, d)
     As5 = As_principal_5_estacas(Nd, e, ap, d)

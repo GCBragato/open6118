@@ -7,6 +7,7 @@ norma (paginas do PDF).
 """
 
 import sys
+import unicodedata
 from pathlib import Path
 
 import pytest
@@ -32,7 +33,9 @@ def test_FUN01_docstrings_nao_atribuem_blevot_a_nbr():
     for fn in (BLO.sigma_lim_2_estacas, BLO.sigma_lim_3_estacas,
                BLO.sigma_lim_4_estacas, BLO.sigma_lim_5_estacas_pil,
                BLO.sigma_lim_5_estacas_est):
-        doc = (fn.__doc__ or "").lower()
+        # sem acento: a docstring escreve "Blévot" e "não"
+        doc = unicodedata.normalize("NFKD", (fn.__doc__ or "").lower())
+        doc = "".join(c for c in doc if not unicodedata.combining(c))
         assert "blevot" in doc
         assert "nao" in doc
 

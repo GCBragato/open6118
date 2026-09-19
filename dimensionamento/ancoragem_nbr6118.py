@@ -1,22 +1,22 @@
 """Ancoragem e Emenda de Armaduras Passivas (NBR 6118:2023).
 
-Nome ate 19/09/2026: ancoragem_bastos.py. O credito as apostilas esta abaixo.
+Nome até 19/09/2026: ancoragem_bastos.py. O crédito às apostilas está abaixo.
 
-Implementa o calculo de comprimentos de ancoragem e de transpasse seguindo
-a apostila "ANCORAGEM E EMENDA DE ARMADURAS", Prof. Paulo Sergio Bastos,
+Implementa o cálculo de comprimentos de ancoragem e de transpasse seguindo
+a apostila "ANCORAGEM E EMENDA DE ARMADURAS", Prof. Paulo Sérgio Bastos,
 UNESP/Bauru.
 
 Casos cobertos:
-    - Resistencia de aderencia fbd = eta1 * eta2 * eta3 * fctd  (Eq. 1)
-    - Comprimento de ancoragem basico lb = phi/4 * fyd/fbd       (Eq. 3)
-    - Comprimento de ancoragem necessario lb_nec                  (Eq. 4)
-    - Comprimento minimo lb,min                                   (Eq. 5)
+    - Resistência de aderência fbd = eta1 * eta2 * eta3 * fctd  (Eq. 1)
+    - Comprimento de ancoragem básico lb = phi/4 * fyd/fbd       (Eq. 3)
+    - Comprimento de ancoragem necessário lb_nec                  (Eq. 4)
+    - Comprimento mínimo lb,min                                   (Eq. 5)
     - Comprimento de transpasse para barras tracionadas l0t       (Eq. 6/7)
     - Comprimento de transpasse para barras comprimidas l0c       (Eq. 8/9)
 
-Convencoes:
+Convenções:
     - fck, fyk em MPa.
-    - phi (diametro) em mm.
+    - phi (diâmetro) em mm.
     - Resultados de comprimento em cm.
 """
 
@@ -52,7 +52,7 @@ ETA1_TIPO_ACO = {
 # ---------------------------------------------------------------------------
 def fctm_mpa(fck_mpa: float) -> float:
     """fct,m, MPa (8.2.5). ANC-07: agora cobre fck > 50 MPa (antes só tinha
-    o ramo 0,3*fck^(2/3), sem o ramo logaritmico do Grupo II)."""
+    o ramo 0,3*fck^(2/3), sem o ramo logarítmico do Grupo II)."""
     return nbr.fct_m(fck_mpa)
 
 
@@ -67,15 +67,15 @@ def fyd_mpa(fyk_mpa: float, gama_s: float = GAMA_S) -> float:
 
 
 def eta1(tipo_aco: str) -> float:
-    """eta1 pela categoria do aco (Tabela 8.2): CA-25 1,00; CA-50 2,25;
+    """eta1 pela categoria do aço (Tabela 8.2): CA-25 1,00; CA-50 2,25;
     CA-60 1,00."""
     if tipo_aco not in ETA1_TIPO_ACO:
-        raise ValueError(f"tipo_aco deve ser CA-25, CA-50 ou CA-60: {tipo_aco}")
+        raise ValueError(f"tipo_aco deve ser CA-25, CA-50 ou CA-60: {tipo_aco}.")
     return nbr.eta1(tipo_aco)
 
 
 def eta2(boa_aderencia: bool) -> float:
-    """eta2 = 1,0 em boa aderencia; 0,7 em ma aderencia (9.3.2.1)."""
+    """eta2 = 1,0 em boa aderência; 0,7 em má aderência (9.3.2.1)."""
     return nbr.eta2(boa_aderencia)
 
 
@@ -94,7 +94,7 @@ def fbd_mpa(fck_mpa: float, tipo_aco: str = "CA-50",
 
 
 # ---------------------------------------------------------------------------
-# Comprimento de ancoragem basico (Eq. 3)
+# Comprimento de ancoragem básico (Eq. 3)
 # ---------------------------------------------------------------------------
 def lb_basico_cm(phi_mm: float, fck_mpa: float, fyk_mpa: float = 500.0,
                  tipo_aco: str = "CA-50", boa_aderencia: bool = True,
@@ -130,7 +130,7 @@ def alpha_ancoragem(com_gancho: bool = False,
 
 
 # ---------------------------------------------------------------------------
-# Comprimento de ancoragem necessario (Eq. 4)
+# Comprimento de ancoragem necessário (Eq. 4)
 # ---------------------------------------------------------------------------
 @dataclass
 class ResultadoAncoragem:
@@ -148,11 +148,11 @@ class ResultadoAncoragem:
     fbd_mpa: float
     fyd_mpa: float
 
-    lb_cm: float           # comprimento basico
-    lb_min_cm: float       # minimo
+    lb_cm: float           # comprimento básico
+    lb_min_cm: float       # mínimo
     alpha: float
     As_calc_As_ef: float
-    lb_nec_cm: float       # comprimento necessario adotado
+    lb_nec_cm: float       # comprimento necessário adotado
 
 
 def comprimento_ancoragem(
@@ -168,7 +168,7 @@ def comprimento_ancoragem(
     gama_c: float = GAMA_C,
     gama_s: float = GAMA_S,
 ) -> ResultadoAncoragem:
-    """Comprimento de ancoragem necessario lb,nec."""
+    """Comprimento de ancoragem necessário lb,nec."""
     fctd = fctd_mpa(fck_mpa, gama_c)
     e1 = eta1(tipo_aco)
     e2 = eta2(boa_aderencia)
@@ -227,7 +227,7 @@ def transpasse_tracionado_cm(
 
     l0t,min = max(0.3 * alpha_0t * lb, 15*phi, 20 cm)
 
-    ANC-08: emenda por traspasse nao e permitida para phi > 32 mm (9.5.2).
+    ANC-08: emenda por traspasse não é permitida para phi > 32 mm (9.5.2).
 
     P27 (9.5.2.1 e 9.5.2.2.2, PDF p. 62-63):
     - ``diametros_diferentes``: diâmetros (mm) das duas barras emendadas
@@ -279,7 +279,7 @@ def transpasse_comprimido_cm(
 ) -> dict:
     """l0c = lb_nec >= l0c,min = max(0.6*lb, 15*phi, 20 cm)  (Eq. 8/9).
 
-    ANC-08: emenda por traspasse nao e permitida para phi > 32 mm (9.5.2).
+    ANC-08: emenda por traspasse não é permitida para phi > 32 mm (9.5.2).
 
     P27: ``diametros_diferentes`` segue 9.5.2.1 (traspasse pela barra de
     menor diâmetro; mais de duas barras levanta ``FaixaNormativaError``),
@@ -328,21 +328,21 @@ def _aprox(a: float, b: float, tol: float) -> bool:
 
 
 def test_tabela_A1_ca50_C25_phi10_boa_sem() -> None:
-    """CA-50, C25, phi=10mm, boa aderencia, sem gancho -> 38 cm."""
+    """CA-50, C25, phi=10mm, boa aderência, sem gancho -> 38 cm."""
     lb = lb_basico_cm(phi_mm=10.0, fck_mpa=25.0)
     assert _aprox(lb, 38.0, 0.5), f"lb={lb:.2f}"
     print(f"  OK  CA-50 C25 phi10 boa sem: lb = {lb:.2f} cm (Tabela A-1: 38)")
 
 
 def test_tabela_A1_ca50_C25_phi10_ma_sem() -> None:
-    """CA-50, C25, phi=10mm, ma aderencia, sem gancho -> 54 cm."""
+    """CA-50, C25, phi=10mm, má aderência, sem gancho -> 54 cm."""
     lb = lb_basico_cm(phi_mm=10.0, fck_mpa=25.0, boa_aderencia=False)
     assert _aprox(lb, 54.0, 0.5), f"lb={lb:.2f}"
-    print(f"  OK  CA-50 C25 phi10 ma sem:  lb = {lb:.2f} cm (Tabela A-1: 54)")
+    print(f"  OK  CA-50 C25 phi10 má sem:  lb = {lb:.2f} cm (Tabela A-1: 54)")
 
 
 def test_tabela_A1_ca50_C25_phi10_boa_com() -> None:
-    """CA-50, C25, phi=10mm, boa aderencia, com gancho -> 27 cm."""
+    """CA-50, C25, phi=10mm, boa aderência, com gancho -> 27 cm."""
     r = comprimento_ancoragem(phi_mm=10.0, fck_mpa=25.0, com_gancho=True)
     assert _aprox(r.lb_nec_cm, 26.4, 0.7), f"lb_nec={r.lb_nec_cm:.2f}"
     print(f"  OK  CA-50 C25 phi10 boa com: lb_nec = {r.lb_nec_cm:.2f} cm "
@@ -350,21 +350,21 @@ def test_tabela_A1_ca50_C25_phi10_boa_com() -> None:
 
 
 def test_tabela_A1_ca50_C20_phi10_boa_sem() -> None:
-    """CA-50, C20, phi=10mm, boa aderencia, sem gancho -> 44 cm."""
+    """CA-50, C20, phi=10mm, boa aderência, sem gancho -> 44 cm."""
     lb = lb_basico_cm(phi_mm=10.0, fck_mpa=20.0)
     assert _aprox(lb, 44.0, 0.5), f"lb={lb:.2f}"
     print(f"  OK  CA-50 C20 phi10 boa sem: lb = {lb:.2f} cm (Tabela A-1: 44)")
 
 
 def test_tabela_A1_ca50_C30_phi16_boa_sem() -> None:
-    """CA-50, C30, phi=16mm, boa aderencia, sem gancho -> 53 cm."""
+    """CA-50, C30, phi=16mm, boa aderência, sem gancho -> 53 cm."""
     lb = lb_basico_cm(phi_mm=16.0, fck_mpa=30.0)
     assert _aprox(lb, 53.0, 0.5), f"lb={lb:.2f}"
     print(f"  OK  CA-50 C30 phi16 boa sem: lb = {lb:.2f} cm (Tabela A-1: 53)")
 
 
 def test_tabela_A1_ca50_C25_phi32_boa_sem() -> None:
-    """CA-50, C25, phi=32mm, boa aderencia, sem gancho -> 121 cm.
+    """CA-50, C25, phi=32mm, boa aderência, sem gancho -> 121 cm.
     Para phi >= 32mm aplica-se eta3 = (132 - 32)/100 = 1.0 -> mesmo valor."""
     lb = lb_basico_cm(phi_mm=32.0, fck_mpa=25.0)
     assert _aprox(lb, 121.0, 1.0), f"lb={lb:.2f}"
@@ -372,7 +372,7 @@ def test_tabela_A1_ca50_C25_phi32_boa_sem() -> None:
 
 
 def test_tabela_A2_ca60_C25_phi8_boa_sem() -> None:
-    """CA-60, C25, phi=8mm, boa aderencia, sem gancho -> 81 cm.
+    """CA-60, C25, phi=8mm, boa aderência, sem gancho -> 81 cm.
     Para CA-60 eta1 = 1.0 (vs 2.25 do CA-50)."""
     lb = lb_basico_cm(phi_mm=8.0, fck_mpa=25.0, fyk_mpa=600.0,
                       tipo_aco="CA-60")
@@ -674,7 +674,7 @@ def diametro_pino_gancho(phi_mm: float, aco: str) -> float:
     9.4.2.3, PDF p. 56). aco: 'CA-25', 'CA-50' ou 'CA-60'.
     """
     if aco not in ETA1_TIPO_ACO:
-        raise ValueError(f"aco deve ser CA-25, CA-50 ou CA-60: {aco!r}")
+        raise ValueError(f"aco deve ser CA-25, CA-50 ou CA-60: {aco!r}.")
     faixa = "<20" if phi_mm < 20.0 else ">=20"
     D = TABELA_9_1.get((faixa, aco))
     if D is None:
@@ -700,7 +700,7 @@ def comprimento_gancho(phi_mm: float, tipo: str,
     mult = _PONTA_RETA_GANCHO_MULT.get(chave)
     if mult is None:
         raise ValueError(
-            f"tipo de gancho deve ser 'semicircular', '45' ou 'reto': {tipo!r}"
+            f"tipo de gancho deve ser 'semicircular', '45' ou 'reto': {tipo!r}."
         )
     if (tipo_barra is not None
             and str(tipo_barra).strip().lower() == "lisa"
@@ -846,7 +846,7 @@ def diametro_pino_estribo(phi_t_mm: float, aco: str) -> float:
     aco: 'CA-25', 'CA-50' ou 'CA-60'.
     """
     if aco not in ETA1_TIPO_ACO:
-        raise ValueError(f"aco deve ser CA-25, CA-50 ou CA-60: {aco!r}")
+        raise ValueError(f"aco deve ser CA-25, CA-50 ou CA-60: {aco!r}.")
     if phi_t_mm <= 10.0:
         faixa = "<=10"
     elif phi_t_mm < 20.0:
@@ -884,7 +884,7 @@ def ponta_reta_estribo_cm(phi_t_mm: float, tipo: str,
         return max(10.0 * phi_t_mm / 10.0, 7.0)
     raise ValueError(
         f"tipo de gancho de estribo deve ser 'semicircular', '135' ou "
-        f"'reto': {tipo!r}"
+        f"'reto': {tipo!r}."
     )
 
 

@@ -1,29 +1,29 @@
 """Concreto Protendido - Fundamentos (NBR 6118:2026).
 
-Nome ate 19/09/2026: protendido_bastos.py. O credito as apostilas esta abaixo.
+Nome até 19/09/2026: protendido_bastos.py. O crédito às apostilas está abaixo.
 
-Implementa as analises elasticas e perdas de protensao seguindo a apostila
-"FUNDAMENTOS DO CONCRETO PROTENDIDO", Prof. Paulo Sergio Bastos,
+Implementa as análises elásticas e perdas de protensão seguindo a apostila
+"FUNDAMENTOS DO CONCRETO PROTENDIDO", Prof. Paulo Sérgio Bastos,
 UNESP/Bauru. As grandezas de material (fct,m, Eci, Ecs, o diagrama
-retangular e o limite de dutilidade) delegam ao nucleo normativo
+retangular e o limite de dutilidade) delegam ao núcleo normativo
 (nucleo_nbr6118.py), que segue a NBR 6118:2026.
 
 Casos cobertos:
-    - Tensoes elasticas em viga protendida (Eq. 1.7-1.12)
-    - Modulos de resistencia W_b, W_t (Eq. 1.9, 1.10)
-    - Nucleo central de inercia (h/6 para retangular)
-    - Estimativa de forca de protensao (axial e excentrica) - laje exemplo 1.6.1
-    - Perda por relaxacao do aco (Eq. 5.11-5.13)
-    - Perda por encurtamento elastico imediato do concreto (Eq. 5.56)
-    - Perda por retracao/fluencia simplificada (Eq. 5.16, 5.17)
-    - Perda progressiva simplificada com interacao retracao+fluencia+
-      relaxacao (NBR 6118 9.6.3.4.2)
+    - Tensões elásticas em viga protendida (Eq. 1.7-1.12)
+    - Módulos de resistência W_b, W_t (Eq. 1.9, 1.10)
+    - Núcleo central de inércia (h/6 para retangular)
+    - Estimativa de força de protensão (axial e excêntrica) - laje exemplo 1.6.1
+    - Perda por relaxação do aço (Eq. 5.11-5.13)
+    - Perda por encurtamento elástico imediato do concreto (Eq. 5.56)
+    - Perda por retração/fluência simplificada (Eq. 5.16, 5.17)
+    - Perda progressiva simplificada com interação retração+fluência+
+      relaxação (NBR 6118 9.6.3.4.2)
 
-Convencoes:
+Convenções:
     - fck, fyk em MPa.
-    - Geometria em cm. Forcas em kN. Momentos em kN.cm.
-    - Tensoes internamente em kN/cm2 (= 10 MPa).
-    - Convencao de sinais: compressao negativa, tracao positiva.
+    - Geometria em cm. Forças em kN. Momentos em kN.cm.
+    - Tensões internamente em kN/cm2 (= 10 MPa).
+    - Convenção de sinais: compressão negativa, tração positiva.
 """
 
 from __future__ import annotations
@@ -44,37 +44,37 @@ GAMA_C = 1.4
 GAMA_S = 1.15
 
 E_S_MPA = 210000.0
-E_P_MPA = 200000.0    # aco de protensao (NBR 6118 8.4.5)
+E_P_MPA = 200000.0    # aço de protensão (NBR 6118 8.4.5)
 
 
 # ---------------------------------------------------------------------------
-# Resistencias e modulos
+# Resistências e módulos
 # ---------------------------------------------------------------------------
 def fctm_mpa(fck_mpa: float) -> float:
-    """fct,m, MPa - delega ao nucleo (nbr.fct_m). Inclui o ramo de fck > 50
-    (8.2.5); corrige PRO-01, que so tinha a formula do Grupo I."""
+    """fct,m, MPa - delega ao núcleo (nbr.fct_m). Inclui o ramo de fck > 50
+    (8.2.5); corrige PRO-01, que só tinha a fórmula do Grupo I."""
     return nbr.fct_m(fck_mpa)
 
 
 def fct_flexao_mpa(fck_mpa: float, alpha: float = 1.5) -> float:
-    """Resistencia a tracao na flexao: fct,f = alpha * fct,m,
-    com alpha=1.2 para secao T, 1.5 para retangular."""
+    """Resistência à tração na flexão: fct,f = alpha * fct,m,
+    com alpha=1.2 para seção T, 1.5 para retangular."""
     return alpha * fctm_mpa(fck_mpa)
 
 
 def Eci_mpa(fck_mpa: float, agregado: str = "granito") -> float:
-    """Modulo de elasticidade tangente inicial Eci, MPa - delega ao nucleo
+    """Módulo de elasticidade tangente inicial Eci, MPa - delega ao núcleo
     (nbr.Eci). Inclui o ramo de fck > 50 (8.2.8); corrige PRO-01."""
     return nbr.Eci(fck_mpa, nbr.alpha_E(agregado))
 
 
 def Ecs_mpa(fck_mpa: float, agregado: str = "granito") -> float:
-    """Modulo de deformacao secante Ecs, MPa - delega ao nucleo (nbr.Ecs)."""
+    """Módulo de deformação secante Ecs, MPa - delega ao núcleo (nbr.Ecs)."""
     return nbr.Ecs(fck_mpa, nbr.alpha_E(agregado))
 
 
 # ---------------------------------------------------------------------------
-# Propriedades geometricas - secao retangular
+# Propriedades geométricas - seção retangular
 # ---------------------------------------------------------------------------
 def Ac_retangular(b_cm: float, h_cm: float) -> float:
     return b_cm * h_cm
@@ -85,26 +85,26 @@ def Ic_retangular(b_cm: float, h_cm: float) -> float:
 
 
 def W_retangular(b_cm: float, h_cm: float) -> float:
-    """W = bh^2/6 (modulo de resistencia)."""
+    """W = bh^2/6 (módulo de resistência)."""
     return b_cm * h_cm ** 2 / 6.0
 
 
 def nucleo_central_retangular(h_cm: float) -> float:
-    """Limite inferior/superior do nucleo central: h/6."""
+    """Limite inferior/superior do núcleo central: h/6."""
     return h_cm / 6.0
 
 
 # ---------------------------------------------------------------------------
-# Tensoes elasticas em viga protendida
+# Tensões elásticas em viga protendida
 # ---------------------------------------------------------------------------
 def sigma_base_topo(P_kn: float, ep_cm: float, M_kncm: float,
                     Ac_cm2: float, Wb_cm3: float, Wt_cm3: float,
                     sinal_P: int = -1) -> tuple[float, float]:
-    """Tensoes na base e no topo (Eq. 1.11/1.12), em kN/cm2.
+    """Tensões na base e no topo (Eq. 1.11/1.12), em kN/cm2.
 
-    Convencao: compressao negativa, tracao positiva.
-    sinal_P = -1 (default): forca de protensao comprime axialmente
-              (P entra como valor positivo de modulo).
+    Convenção: compressão negativa, tração positiva.
+    sinal_P = -1 (default): força de protensão comprime axialmente
+              (P entra como valor positivo de módulo).
 
     sigma_b = -P/Ac - P*ep/Wb + M/Wb
     sigma_t = -P/Ac + P*ep/Wt - M/Wt
@@ -119,8 +119,8 @@ def sigma_base_topo(P_kn: float, ep_cm: float, M_kncm: float,
 def forca_protensao_axial(sigma_alvo_base_kncm2: float,
                           M_kncm: float, Ac_cm2: float,
                           Wb_cm3: float) -> float:
-    """Calcula P para que a tensao na base atinja sigma_alvo (geralmente 0
-    ou um pequeno valor de tracao admitido).
+    """Calcula P para que a tensão na base atinja sigma_alvo (geralmente 0
+    ou um pequeno valor de tração admitido).
 
     sigma_b = -P/Ac + M/Wb = sigma_alvo  ->  P = (M/Wb - sigma_alvo) * Ac
     """
@@ -138,11 +138,11 @@ def forca_protensao_excentrica(sigma_alvo_base_kncm2: float,
 
 
 # ---------------------------------------------------------------------------
-# Perdas de protensao
+# Perdas de protensão
 # ---------------------------------------------------------------------------
 # Tabela 8.3 (NBR 6118 8.4.8, PDF p. 51) - psi_1000 (%) por tipo de armadura
-# (fio ou cordoalha), categoria de relaxacao (RN normal, RB baixa) e razao
-# sigma_pi/fptk. "Barras" tem uma unica coluna (sem RN/RB).
+# (fio ou cordoalha), categoria de relaxação (RN normal, RB baixa) e razão
+# sigma_pi/fptk. "Barras" tem uma única coluna (sem RN/RB).
 TABELA_8_3_PSI_1000 = {
     ("cordoalha", "RN"): {0.5: 0.0, 0.6: 3.5, 0.7: 7.0, 0.8: 12.0},
     ("cordoalha", "RB"): {0.5: 0.0, 0.6: 1.3, 0.7: 2.5, 0.8: 3.5},
@@ -153,9 +153,9 @@ TABELA_8_3_PSI_1000_BARRA = {0.5: 0.0, 0.6: 1.5, 0.7: 4.0, 0.8: 7.0}
 
 
 def psi_1000(tipo: str, relaxacao: str, sigma_pi_sobre_fptk: float) -> float:
-    """psi_1000 (%) pela Tabela 8.3 (NBR 6118 8.4.8), por interpolacao linear
+    """psi_1000 (%) pela Tabela 8.3 (NBR 6118 8.4.8), por interpolação linear
     entre as linhas de sigma_pi/fptk tabeladas. O texto de 8.4.8 define
-    psi_1000 exatamente nessa faixa (tensoes de 0,5 fptk a 0,8 fptk).
+    psi_1000 exatamente nessa faixa (tensões de 0,5 fptk a 0,8 fptk).
     Abaixo de 0,5 fptk devolve 0: "para tensões inferiores a 0,5 fptk,
     admite-se que não haja perda de tensão por relaxação" (9.6.3.4.5,
     PDF p. 74; P30 — antes levantava ValueError). Acima de 0,8 fptk (ou
@@ -175,7 +175,7 @@ def psi_1000(tipo: str, relaxacao: str, sigma_pi_sobre_fptk: float) -> float:
             )
         relax_key = relaxacao.strip().upper()
         if relax_key not in ("RN", "RB"):
-            raise ValueError(f"relaxacao desconhecida: {relaxacao!r}. Use 'RN' ou 'RB'.")
+            raise ValueError(f"relaxação desconhecida: {relaxacao!r}. Use 'RN' ou 'RB'.")
         tabela = TABELA_8_3_PSI_1000[(tipo_key, relax_key)]
 
     razao = float(sigma_pi_sobre_fptk)
@@ -195,9 +195,9 @@ def psi_1000(tipo: str, relaxacao: str, sigma_pi_sobre_fptk: float) -> float:
 
 
 PSI_1000_TIPICOS = {
-    # (categoria comercial, relaxacao) -> psi_1000 (%) a 0,8 fptk, Tabela 8.3.
-    # CP-175 e fio; CP-190 e CP-210 sao cordoalhas (ver propriedades_cordoalha
-    # abaixo). Corrige PRO-04 (valores antigos nao eram os da Tabela 8.3).
+    # (categoria comercial, relaxação) -> psi_1000 (%) a 0,8 fptk, Tabela 8.3.
+    # CP-175 e fio; CP-190 e CP-210 são cordoalhas (ver propriedades_cordoalha
+    # abaixo). Corrige PRO-04 (valores antigos não eram os da Tabela 8.3).
     ("CP-175", "RN"): 8.5,
     ("CP-175", "RB"): 3.0,
     ("CP-190", "RN"): 12.0,
@@ -228,10 +228,10 @@ def perda_relaxacao_kncm2(psi_percent: float,
                           sigma_pi_kncm2: float) -> float:
     """delta sigma_pr = psi/100 * sigma_pi  (Eq. 5.10).
 
-    Parcela ISOLADA de relaxacao. A NBR 6118 9.6.3.4.2 nao soma esta parcela
+    Parcela ISOLADA de relaxação. A NBR 6118 9.6.3.4.2 não soma esta parcela
     com perda_retracao_kncm2 e perda_fluencia_kncm2: a perda progressiva
-    exige considerar a interacao entre as tres causas (ha um denominador de
-    interacao). Para o processo da norma use perda_progressiva_simplificada
+    exige considerar a interação entre as três causas (há um denominador de
+    interação). Para o processo da norma use perda_progressiva_simplificada
     (corrige a lacuna PRO-07 - a soma das isoladas superestimou a perda em
     +41% no achado)."""
     return psi_percent / 100.0 * sigma_pi_kncm2
@@ -244,7 +244,7 @@ def perda_encurtamento_elastico_kncm2(
     """delta sigma_p,enc = alpha_p * sigma_cp  (Eq. 5.56), com
     alpha_p = Ep/Eci (NBR 6118 9.1 e 9.6.3.3.2.1). Corrige PRO-03, que usava
     Ecs em vez de Eci.
-    sigma_cp = tensao no concreto ao nivel do CG da armadura."""
+    sigma_cp = tensão no concreto ao nível do CG da armadura."""
     Eci = Eci_mpa(fck_mpa, agregado)
     alpha_p = Ep_mpa / Eci
     return alpha_p * sigma_cp_kncm2
@@ -253,10 +253,10 @@ def perda_encurtamento_elastico_kncm2(
 def perda_retracao_kncm2(eps_cs_permil: float,
                          Ep_mpa: float = E_P_MPA) -> float:
     """delta sigma_pcs = eps_cs * Ep  (Eq. 5.16).
-    eps_cs em por mil (deformacao de retracao no infinito).
+    eps_cs em por mil (deformação de retração no infinito).
 
-    Parcela ISOLADA de retracao - ver nota de perda_relaxacao_kncm2 sobre
-    nao somar as tres parcelas isoladas (9.6.3.4.2, PRO-07)."""
+    Parcela ISOLADA de retração - ver nota de perda_relaxacao_kncm2 sobre
+    não somar as três parcelas isoladas (9.6.3.4.2, PRO-07)."""
     eps = eps_cs_permil / 1000.0
     return abs(eps) * Ep_mpa * 0.1  # MPa -> kN/cm2
 
@@ -267,15 +267,15 @@ def perda_fluencia_kncm2(phi_inf: float, sigma_c_to_kncm2: float,
     """delta sigma_pcc = alpha_p * phi * sigma_c(to)  (Eq. 5.17/5.18), com
     alpha_p = Ep/Eci. Corrige PRO-03, que usava Ecs em vez de Eci.
 
-    Parcela ISOLADA de fluencia - ver nota de perda_relaxacao_kncm2 sobre
-    nao somar as tres parcelas isoladas (9.6.3.4.2, PRO-07)."""
+    Parcela ISOLADA de fluência - ver nota de perda_relaxacao_kncm2 sobre
+    não somar as três parcelas isoladas (9.6.3.4.2, PRO-07)."""
     Eci = Eci_mpa(fck_mpa, agregado)
     alpha_p = Ep_mpa / Eci
     return alpha_p * phi_inf * abs(sigma_c_to_kncm2)
 
 
 # ---------------------------------------------------------------------------
-# Perda progressiva simplificada (9.6.3.4.2 - fases unicas de operacao)
+# Perda progressiva simplificada (9.6.3.4.2 - fases únicas de operação)
 # ---------------------------------------------------------------------------
 def perda_progressiva_simplificada(
     eps_cs_permil: float, psi_percent: float, phi_inf: float,
@@ -285,18 +285,18 @@ def perda_progressiva_simplificada(
     t0_dias: float = 28.0, cimento: str = "CPII",
     Eci_t0_mpa: float | None = None,
 ) -> float:
-    """Perda progressiva de protensao pelo processo simplificado da NBR 6118
-    9.6.3.4.2 (fases unicas de operacao; PDF p. 71-73), considerando a
-    interacao entre retracao, fluencia do concreto e relaxacao do aco -
-    ao contrario de somar as tres parcelas isoladas (perda_retracao_kncm2 +
-    perda_fluencia_kncm2 + perda_relaxacao_kncm2), que NAO e o processo da
-    norma (superestimou a perda em +41% no achado que motivou esta funcao -
+    """Perda progressiva de protensão pelo processo simplificado da NBR 6118
+    9.6.3.4.2 (fases únicas de operação; PDF p. 71-73), considerando a
+    interação entre retração, fluência do concreto e relaxação do aço -
+    ao contrário de somar as três parcelas isoladas (perda_retracao_kncm2 +
+    perda_fluencia_kncm2 + perda_relaxacao_kncm2), que NÃO é o processo da
+    norma (superestimou a perda em +41% no achado que motivou esta função -
     lacuna PRO-07).
 
     delta_sigma_p(t,t0) = [|eps_cs|*Ep + alpha_p(t)*sigma_c,p0g*phi + sigma_p0*chi]
                           / [chi_p + chi_c*alpha_p*eta*rho_p]
     com:
-        chi        = -ln(1 - psi/100)   (coeficiente de fluencia do aco)
+        chi        = -ln(1 - psi/100)   (coeficiente de fluência do aço)
         chi_c      = 1 + 0,5*phi
         chi_p      = 1 + chi
         eta        = 1 + ep^2*Ac/Ic
@@ -308,27 +308,27 @@ def perda_progressiva_simplificada(
     (12.3.3, pelo cimento). A estimativa de 8.2.8 vale de 7 a 28 dias; abaixo
     de 7 dias informe Eci_t0_mpa (de ensaio).
 
-    Unidades - todas as tensoes desta funcao em MPa (nao kN/cm2 como o
-    resto do modulo), para casar direto com a formula da norma:
-        eps_cs_permil   : retracao entre t0 e t (negativa), em per mil (8.2.11).
-        psi_percent     : coeficiente de relaxacao do aco psi(t,t0), em %
+    Unidades - todas as tensões desta função em MPa (não kN/cm2 como o
+    resto do módulo), para casar direto com a fórmula da norma:
+        eps_cs_permil   : retração entre t0 e t (negativa), em per mil (8.2.11).
+        psi_percent     : coeficiente de relaxação do aço psi(t,t0), em %
                           (psi_infinito ou psi_t_em_dias/psi_t_em_horas).
-        phi_inf         : coeficiente de fluencia do concreto phi(t,t0)
+        phi_inf         : coeficiente de fluência do concreto phi(t,t0)
                           (phi_eps_cs_NBR).
-        sigma_c_p0g_mpa : tensao no concreto junto ao cabo resultante apos
+        sigma_c_p0g_mpa : tensão no concreto junto ao cabo resultante após
                           as perdas imediatas e a carga permanente em t0,
-                          MPa, positiva se compressao.
-        sigma_p0_mpa    : tensao na armadura ativa apos as perdas imediatas
-                          em t0, MPa, sempre positiva (tracao).
-        Ap_cm2, Ac_cm2, Ic_cm4, ep_cm : area do cabo resultante, area e
-                          inercia do concreto e excentricidade do cabo
-                          resultante em relacao ao CG da secao de concreto.
+                          MPa, positiva se compressão.
+        sigma_p0_mpa    : tensão na armadura ativa após as perdas imediatas
+                          em t0, MPa, sempre positiva (tração).
+        Ap_cm2, Ac_cm2, Ic_cm4, ep_cm : área do cabo resultante, área e
+                          inércia do concreto e excentricidade do cabo
+                          resultante em relação ao CG da seção de concreto.
         fck_mpa, agregado : para alpha_p = Ep/Eci.
-        t0_dias, cimento  : idade do concreto na protensao/carregamento e o
+        t0_dias, cimento  : idade do concreto na protensão/carregamento e o
                           cimento (para beta1), para alpha_p(t).
         Eci_t0_mpa      : Eci(t0) de ensaio; substitui a estimativa.
 
-    Retorna delta_sigma_p em MPa (perda de tensao na armadura ativa)."""
+    Retorna delta_sigma_p em MPa (perda de tensão na armadura ativa)."""
     Eci = Eci_mpa(fck_mpa, agregado)
     alpha_p = Ep_mpa / Eci
     if Eci_t0_mpa is not None:
@@ -357,46 +357,46 @@ def perda_progressiva_simplificada(
 
 
 # ---------------------------------------------------------------------------
-# Perda por atrito na pos-tensao (NBR 9.6.3.3.2.2 / Eq. 5.65)
+# Perda por atrito na pós-tensão (NBR 9.6.3.3.2.2 / Eq. 5.65)
 # ---------------------------------------------------------------------------
 def perda_atrito_kn(Pi_kn: float, mu: float, theta_rad: float,
                     k_per_m: float, x_m: float) -> float:
     """delta P_atr(x) = Pi * (1 - exp(-(mu * theta + k * x))).
 
-    Pi    : forca aplicada pelo cilindro hidraulico (kN)
+    Pi    : força aplicada pelo cilindro hidráulico (kN)
     mu    : coef. de atrito aparente cabo/bainha (1/rad)
-    theta : soma dos angulos de desvio entre ancoragem e ponto x (rad)
-    k     : coef. ondulacao parasita da bainha (1/m, NBR sugere 0.01*mu)
+    theta : soma dos ângulos de desvio entre ancoragem e ponto x (rad)
+    k     : coef. ondulação parasita da bainha (1/m, NBR sugere 0.01*mu)
     x     : abscissa em metros desde a ancoragem ativa
     """
     return Pi_kn * (1.0 - math.exp(-(mu * theta_rad + k_per_m * x_m)))
 
 
 def theta_arco_circulo_rad(y_cm: float, x_m: float) -> float:
-    """Angulo total de desvio para cabo em arco de circulo:
-    theta = 8*y / x  (NBR 9.6.3.3.2.2, com y = fleche e x = vao em metros).
-    Apostila aplica diretamente em metros, com y tambem em metros."""
+    """Ângulo total de desvio para cabo em arco de círculo:
+    theta = 8*y / x  (NBR 9.6.3.3.2.2, com y = fleche e x = vão em metros).
+    Apostila aplica diretamente em metros, com y também em metros."""
     y_m = y_cm / 100.0
     return 8.0 * y_m / x_m
 
 
 def theta_parabola_rad(y_cm: float, x_m: float) -> float:
-    """Angulo total de desvio para parabola de 2o grau:
-    theta = 4*y / x (entre o vertice e o apoio - NBR)."""
+    """Ângulo total de desvio para parábola de 2o grau:
+    theta = 4*y / x (entre o vértice e o apoio - NBR)."""
     y_m = y_cm / 100.0
     return 4.0 * y_m / x_m
 
 
 # ---------------------------------------------------------------------------
-# Estimativa da forca de protensao final P (item 4.6.1)
+# Estimativa da força de protensão final P (item 4.6.1)
 # ---------------------------------------------------------------------------
 def fct_admissivel_traçao_kncm2(fck_mpa: float, secao: str = "T") -> float:
-    """fct para tensao admissivel de tracao no ELS-F (NBR/Bastos Eq. 4.16).
+    """fct para tensão admissível de tração no ELS-F (NBR/Bastos Eq. 4.16).
 
-    secao = 'T' ou 'duplo-T'  -> alpha = 1.2
-    secao = 'I' ou 'T-invertido' -> alpha = 1.3
-    secao = 'retangular'     -> alpha = 1.5
-    fct = alpha * 0.7 * fct,m  (fct,m do nucleo, com o ramo de fck > 50 -
+    seção = 'T' ou 'duplo-T'  -> alpha = 1.2
+    seção = 'I' ou 'T-invertido' -> alpha = 1.3
+    seção = 'retangular'     -> alpha = 1.5
+    fct = alpha * 0.7 * fct,m  (fct,m do núcleo, com o ramo de fck > 50 -
     8.2.5; corrige PRO-01); resultado em kN/cm2."""
     alpha = {"t": 1.2, "duplo-t": 1.2, "duplo t": 1.2,
              "i": 1.3, "t-invertido": 1.3, "t invertido": 1.3,
@@ -410,11 +410,11 @@ def P_estimado_ELS(
     sigma_b_carga_kncm2: float,
     Ac_cm2: float, Wb_cm3: float, ep_cm: float,
 ) -> float:
-    """Estimativa de P para que a soma de tensoes na base atinja sigma_alvo.
+    """Estimativa de P para que a soma de tensões na base atinja sigma_alvo.
 
-    Equacao geral: sigma_b_carga + sigma_b_P = sigma_b_alvo
-    com sigma_b_P = -P/Ac - P*ep/Wb (forca P comprime axialmente e gera
-    momento que tambem comprime a base quando ep > 0 abaixo do CG).
+    Equação geral: sigma_b_carga + sigma_b_P = sigma_b_alvo
+    com sigma_b_P = -P/Ac - P*ep/Wb (força P comprime axialmente e gera
+    momento que também comprime a base quando ep > 0 abaixo do CG).
 
     -P * (1/Ac + ep/Wb) = sigma_alvo - sigma_carga
     P = (sigma_carga - sigma_alvo) / (1/Ac + ep/Wb)
@@ -429,12 +429,12 @@ def estimar_P_protensao_completa(
     Ac_cm2: float, Wb_cm3: float, ep_cm: float,
     fck_mpa: float, secao: str = "T",
 ) -> dict:
-    """Forca de protensao final P para protensao completa (item 4.6.1.1).
+    """Força de protensão final P para protensão completa (item 4.6.1.1).
 
     Verifica simultaneamente:
-    - ELS-D (combinacao frequente): sigma_b_total = 0
+    - ELS-D (combinação frequente): sigma_b_total = 0
         sigma_bg1 + sigma_bg2 + psi1*sigma_bq1 + psi2*sigma_bq2 + sigma_bP = 0
-    - ELS-F (combinacao rara): sigma_b_total = +fct (limite de tracao)
+    - ELS-F (combinação rara): sigma_b_total = +fct (limite de tração)
         sigma_bg1 + sigma_bg2 + sigma_bq1 + psi1*sigma_bq2 + sigma_bP = fct
 
     Adota P = max(P_estA, P_estB).
@@ -444,11 +444,11 @@ def estimar_P_protensao_completa(
     bq1 = Mq1_kncm / Wb_cm3
     bq2 = Mq2_kncm / Wb_cm3
 
-    # ELS-D combinacao frequente -> sigma_alvo = 0
+    # ELS-D combinação frequente -> sigma_alvo = 0
     sigma_carga_D = bg1 + bg2 + psi1 * bq1 + psi2 * bq2
     P_A = P_estimado_ELS(0.0, sigma_carga_D, Ac_cm2, Wb_cm3, ep_cm)
 
-    # ELS-F combinacao rara -> sigma_alvo = +fct
+    # ELS-F combinação rara -> sigma_alvo = +fct
     fct = fct_admissivel_traçao_kncm2(fck_mpa, secao)
     sigma_carga_F = bg1 + bg2 + bq1 + psi1 * bq2
     P_B = P_estimado_ELS(fct, sigma_carga_F, Ac_cm2, Wb_cm3, ep_cm)
@@ -469,11 +469,11 @@ def estimar_P_protensao_limitada(
     Ac_cm2: float, Wb_cm3: float, ep_cm: float,
     fck_mpa: float, secao: str = "T",
 ) -> dict:
-    """Forca de protensao final P para protensao limitada (item 4.6.1.2).
+    """Força de protensão final P para protensão limitada (item 4.6.1.2).
 
-    - ELS-D (combinacao quase permanente): sigma_b_total = 0
+    - ELS-D (combinação quase permanente): sigma_b_total = 0
         sigma_bg1 + sigma_bg2 + psi2*sigma_bq1 + psi2*sigma_bq2 + sigma_bP = 0
-    - ELS-F (combinacao frequente): sigma_b_total = +fct
+    - ELS-F (combinação frequente): sigma_b_total = +fct
         sigma_bg1 + sigma_bg2 + psi1*sigma_bq1 + psi2*sigma_bq2 + sigma_bP = fct
     """
     bg1 = Mg1_kncm / Wb_cm3
@@ -505,14 +505,14 @@ def estimar_P_protensao_parcial(
     fck_mpa: float, sigma_traçao_kncm2: float,
     secao: str = "T",
 ) -> dict:
-    """Forca de protensao final P para protensao parcial (item 4.6.1.3).
+    """Força de protensão final P para protensão parcial (item 4.6.1.3).
 
-    Permite tensao de tracao na base superior a fct (controle por ELS-W com
-    abertura maxima de 0.2 mm). O usuario informa sigma_traçao_kncm2 como
-    a tensao de tracao admitida na borda inferior em ELS-F freq.
+    Permite tensão de tração na base superior a fct (controle por ELS-W com
+    abertura máxima de 0.2 mm). O usuário informa sigma_traçao_kncm2 como
+    a tensão de tração admitida na borda inferior em ELS-F freq.
 
-    - ELS-D (combinacao quase permanente): sigma_b_total = 0
-    - ELS-F (combinacao frequente): sigma_b_total = sigma_traçao_kncm2 (>fct)
+    - ELS-D (combinação quase permanente): sigma_b_total = 0
+    - ELS-F (combinação frequente): sigma_b_total = sigma_traçao_kncm2 (>fct)
     """
     bg1 = Mg1_kncm / Wb_cm3
     bg2 = Mg2_kncm / Wb_cm3
@@ -536,7 +536,7 @@ def estimar_P_protensao_parcial(
 
 
 # ---------------------------------------------------------------------------
-# ELU a flexao (capitulo 6 - secao retangular com aderencia)
+# ELU à flexão (capítulo 6 - seção retangular com aderência)
 # ---------------------------------------------------------------------------
 def MRd_secao_retangular_protendida(
     bw_cm: float, dp_cm: float, ds_cm: float, d_linha_cm: float,
@@ -545,9 +545,9 @@ def MRd_secao_retangular_protendida(
     fyk_mpa: float = 500.0, gama_c: float = GAMA_C,
     gama_s: float = GAMA_S, alpha_c: float | None = None,
 ) -> dict:
-    """Momento fletor resistente MRd no ELU para secao retangular com
+    """Momento fletor resistente MRd no ELU para seção retangular com
     armaduras Ap, As e A's, com o diagrama retangular de 17.2.2 e) da
-    NBR 6118: y = lambda*x e tensao constante alpha_c*etac*fcd, ambos
+    NBR 6118: y = lambda*x e tensão constante alpha_c*etac*fcd, ambos
     dependentes de fck para fck > 50 (corrige PRO-05, que usava
     lambda = 0,8 e alpha_c*fcd fixos, sem etac).
 
@@ -555,13 +555,13 @@ def MRd_secao_retangular_protendida(
     Eq. 6.11: MRd = sigma_pd*Ap*(dp - lambda/2*x) + fyd*As*(ds - lambda/2*x)
                   + fyd*A's*(lambda/2*x - d')
 
-    sigma_pd e o valor de tensao na armadura de protensao no ELU
+    sigma_pd é o valor de tensão na armadura de protensão no ELU
     (estimado, geralmente ~1.520 MPa para CP-190 RB).
-    alpha_c=None (padrao) usa o alpha_c(fck) do nucleo (0,85 ate C50,
-    decrescente acima - 17.2.2 e). Um valor explicito substitui so o
-    alpha_c, mantendo etac e fcd do nucleo (compatibilidade com chamadas
+    alpha_c=None (padrão) usa o alpha_c(fck) do núcleo (0,85 até C50,
+    decrescente acima - 17.2.2 e). Um valor explícito substitui só o
+    alpha_c, mantendo etac e fcd do núcleo (compatibilidade com chamadas
     antigas que passavam alpha_c=0.85).
-    "ductil" usa o limite x/d de 14.6.4.3 (0,45 ate C50; 0,35 acima -
+    "ductil" usa o limite x/d de 14.6.4.3 (0,45 até C50; 0,35 acima -
     corrige PRO-06, que usava 0,45 fixo).
     Resultado: MRd em kN.cm.
     """
@@ -591,14 +591,14 @@ def MRd_secao_retangular_protendida(
 
 
 def Pi_de_P(P_kn: float, R: float = 0.85) -> float:
-    """Forca de estiramento Pi a partir da forca final P, dado o fator
+    """Força de estiramento Pi a partir da força final P, dado o fator
     de efetividade R (P = R * Po, Po ~= Pi nas perdas iniciais).
-    R tipico: 0.80-0.90."""
+    R típico: 0.80-0.90."""
     return P_kn / R
 
 
 # ---------------------------------------------------------------------------
-# Perda por encurtamento elastico cabos restantes (Eq. 5.62, item 5.6.2)
+# Perda por encurtamento elástico cabos restantes (Eq. 5.62, item 5.6.2)
 # ---------------------------------------------------------------------------
 def perda_encurtamento_cabos_restantes_kncm2(
     n_cabos: int, sigma_cpog_kncm2: float,
@@ -612,26 +612,26 @@ def perda_encurtamento_cabos_restantes_kncm2(
     nem Eci_t0_mpa usa alpha_p = Ep/Eci de 28 dias (comportamento anterior).
     Corrige PRO-03, que usava Ecs em vez de Eci.
 
-    Perda media por cabo na pos-tensao quando os cabos sao estirados
-    sucessivamente. sigma_cpog = tensao no concreto adjacente ao cabo
-    apos perdas por atrito e ancoragem (positiva se compressao).
-    n_cabos = numero de grupos de cabos protendidos simultaneamente.
+    Perda média por cabo na pós-tensão quando os cabos são estirados
+    sucessivamente. sigma_cpog = tensão no concreto adjacente ao cabo
+    após perdas por atrito e ancoragem (positiva se compressão).
+    n_cabos = número de grupos de cabos protendidos simultaneamente.
     """
     if n_cabos < 1:
-        raise ValueError("n_cabos deve ser >= 1")
+        raise ValueError("n_cabos deve ser >= 1.")
     alpha_p = alpha_p_t(fck_mpa, t0_dias, cimento, agregado, Ep_mpa, Eci_t0_mpa)
     return alpha_p * (n_cabos - 1) / (2.0 * n_cabos) * abs(sigma_cpog_kncm2)
 
 
 # ---------------------------------------------------------------------------
-# Escorregamento na ancoragem (pos-tensao, item 5.6.4)
+# Escorregamento na ancoragem (pós-tensão, item 5.6.4)
 # ---------------------------------------------------------------------------
 def omega_perfil(perfil: str, mu: float, k_per_m: float, **kwargs) -> float:
-    """Coeficiente omega (1/m) que define a inclinacao da curva de
+    """Coeficiente omega (1/m) que define a inclinação da curva de
     perda por atrito (NAAMAN, Tabela 5.6).
 
     perfil = 'linear':  omega = k
-    perfil = 'parabolico':  omega = 2*mu*a/b^2 + k, onde a = fleche, b = vao
+    perfil = 'parabolico':  omega = 2*mu*a/b^2 + k, onde a = fleche, b = vão
     perfil = 'circular':  omega = mu/R + k
     """
     p = perfil.lower()
@@ -644,16 +644,16 @@ def omega_perfil(perfil: str, mu: float, k_per_m: float, **kwargs) -> float:
     if p in ("circular", "arco"):
         R_m = kwargs["R_m"]
         return mu / R_m + k_per_m
-    raise ValueError(f"perfil desconhecido: {perfil}")
+    raise ValueError(f"perfil desconhecido: {perfil}.")
 
 
 def X_escorregamento_m(delta_anc_m: float, sigma_pi_kncm2: float,
                        omega_per_m: float,
                        Ep_mpa: float = E_P_MPA) -> float:
-    """Distancia X (m) ate onde a perda por escorregamento e nula (Eq. 5.78).
+    """Distância X (m) até onde a perda por escorregamento é nula (Eq. 5.78).
 
     X = sqrt(delta * Ep / (sigma_pi * omega))
-    delta_anc em metros. sigma_pi em kN/cm2 (sera convertida para MPa).
+    delta_anc em metros. sigma_pi em kN/cm2 (será convertida para MPa).
     """
     sigma_pi_mpa = sigma_pi_kncm2 * 10.0
     return math.sqrt(delta_anc_m * Ep_mpa / (sigma_pi_mpa * omega_per_m))
@@ -667,12 +667,12 @@ def perda_escorregamento_kncm2(delta_anc_m: float, X_m: float,
 
 
 # ---------------------------------------------------------------------------
-# NBR 6118 8.2.11 - Retracao e fluencia (Tabela 8.1, versao simplificada)
+# NBR 6118 8.2.11 - Retração e fluência (Tabela 8.1, versão simplificada)
 # ---------------------------------------------------------------------------
 # A Tabela 8.1 (NBR 6118:2026 8.2.11, PDF p. 47) e phi_eps_cs_NBR foram
-# promovidas ao nucleo no pacote P6 (19/09/2026); os nomes abaixo sao
-# reexportacoes, para nao quebrar quem importa daqui. O procedimento completo
-# do Anexo A (fluencia e retracao com precisao) esta em tempo_concreto_nbr6118.
+# promovidas ao núcleo no pacote P6 (19/09/2026); os nomes abaixo são
+# reexportações, para não quebrar quem importa daqui. O procedimento completo
+# do Anexo A (fluência e retração com precisão) está em tempo_concreto_nbr6118.
 TABELA_8_1_PHI = nbr.TABELA_8_1_PHI
 TABELA_8_1_EPS_CS = nbr.TABELA_8_1_EPS_CS
 _T0_TAB_8_1 = nbr._T0_TAB_8_1
@@ -686,14 +686,14 @@ phi_eps_cs_NBR = nbr.phi_eps_cs_NBR
 
 def h_ficticia_cm(Ac_cm2: float, u_ar_cm: float, gama_humid: float = 1.0) -> float:
     """h_fic = gamma * 2*Ac / u_ar  (NBR 6118 A.2.4.2 e Tabela A.1).
-    u_ar = perimetro em contato com o ar. Delega a
+    u_ar = perímetro em contato com o ar. Delega a
     tempo_concreto_nbr6118.espessura_ficticia_cm (P6); gama_humid=1,0
-    (padrao) devolve a espessura ficticia sem ponderacao."""
+    (padrão) devolve a espessura fictícia sem ponderação."""
     return gama_humid * tc.espessura_ficticia_cm(Ac_cm2, u_ar_cm)
 
 
 # ---------------------------------------------------------------------------
-# ELU - Secao T protendida (Eq. 6.16, 6.17)
+# ELU - Seção T protendida (Eq. 6.16, 6.17)
 # ---------------------------------------------------------------------------
 def MRd_secao_T_protendida(
     bf_cm: float, bw_cm: float, hf_cm: float,
@@ -703,23 +703,23 @@ def MRd_secao_T_protendida(
     fyk_mpa: float = 500.0, gama_c: float = GAMA_C,
     gama_s: float = GAMA_S, alpha_c: float | None = None,
 ) -> dict:
-    """MRd para secao T protendida (Eq. 6.16, 6.17), com lambda, tensao do
+    """MRd para seção T protendida (Eq. 6.16, 6.17), com lambda, tensão do
     bloco (alpha_c*etac*fcd) e limite de dutilidade dependentes de fck para
     fck > 50 (corrige PRO-05/PRO-06 - ver MRd_secao_retangular_protendida).
 
-    Inicialmente assume secao retangular bf. Se lambda*x <= hf, retorna esse
-    resultado. Caso contrario aplica formula T:
+    Inicialmente assume seção retangular bf. Se lambda*x <= hf, retorna esse
+    resultado. Caso contrário aplica fórmula T:
        x = (sigma_pd*Ap + fyd*As - tensao_kncm2*(bf-bw)*hf - fyd*A's)
             / (tensao_kncm2 * lambda * bw)
        MRd = tensao_kncm2*(bf-bw)*hf*(lambda/2*x - 0.5*hf)
              + sigma_pd*Ap*(dp - lambda/2*x) + fyd*As*(ds - lambda/2*x)
              + fyd*A's*(lambda/2*x - d')
-    A mesa recebe a mesma tensao alpha_c*etac*fcd da nervura: com a mesa
-    comprimida a largura nao diminui em direcao a borda comprimida (17.2.2 e).
-    O codigo antigo multiplicava a mesa por um 0,85 extra (0,72*fcd em vez de
-    0,85*fcd; achado PRO-09 da consolidacao, a favor da seguranca, ~3 % em MRd).
-    alpha_c=None (padrao) usa o alpha_c(fck) do nucleo; um valor explicito
-    substitui so o alpha_c, mantendo etac e fcd do nucleo (compatibilidade).
+    A mesa recebe a mesma tensão alpha_c*etac*fcd da nervura: com a mesa
+    comprimida a largura não diminui em direção à borda comprimida (17.2.2 e).
+    O código antigo multiplicava a mesa por um 0,85 extra (0,72*fcd em vez de
+    0,85*fcd; achado PRO-09 da consolidação, a favor da segurança, ~3 % em MRd).
+    alpha_c=None (padrão) usa o alpha_c(fck) do núcleo; um valor explícito
+    substitui só o alpha_c, mantendo etac e fcd do núcleo (compatibilidade).
     """
     fyd_kncm = fyk_mpa / gama_s * 0.1
     sigma_pd_kncm = sigma_pd_mpa * 0.1
@@ -741,7 +741,7 @@ def MRd_secao_T_protendida(
         r_ret["secao"] = "T-como-retangular-bf"
         return r_ret
 
-    # 2) LN na nervura - Eq. 6.16, com a mesma tensao na mesa (17.2.2 e; PRO-09)
+    # 2) LN na nervura - Eq. 6.16, com a mesma tensão na mesa (17.2.2 e; PRO-09)
     Rcc_mes = tensao_kncm2 * (bf_cm - bw_cm) * hf_cm
     num = (sigma_pd_kncm * Ap_cm2 + fyd_kncm * As_cm2
            - Rcc_mes - fyd_kncm * As_linha_cm2)
@@ -763,7 +763,7 @@ def MRd_secao_T_protendida(
 
 
 # ---------------------------------------------------------------------------
-# Determinacao direta de P e ep (Magnel/Hurst - item 4.6.2)
+# Determinação direta de P e ep (Magnel/Hurst - item 4.6.2)
 # ---------------------------------------------------------------------------
 def fuso_limite_excentricidade(
     Po_kn: float, Mo_kncm: float, Mtot_kncm: float,
@@ -771,21 +771,21 @@ def fuso_limite_excentricidade(
     R: float, sigma_tr_o_kncm2: float, sigma_c_o_kncm2: float,
     sigma_tr_tot_kncm2: float, sigma_c_tot_kncm2: float,
 ) -> dict:
-    """Calcula limites de excentricidade ep para uma secao (Eq. 4.77-4.80).
+    """Calcula limites de excentricidade ep para uma seção (Eq. 4.77-4.80).
 
-    Cada equacao retorna o limite de ep que satisfaz uma das tensoes
-    admissiveis. A interseccao define o fuso limite.
+    Cada equação retorna o limite de ep que satisfaz uma das tensões
+    admissíveis. A intersecção define o fuso limite.
 
-    sigma_tr_o    : tensao admissivel a tracao na transferencia (>0)
-    sigma_c_o     : tensao admissivel a compressao na transf. (<0)
-    sigma_tr_tot  : tensao admissivel a tracao apos perdas (>0)
-    sigma_c_tot   : tensao admissivel a compressao apos perdas (<0)
+    sigma_tr_o    : tensão admissível à tração na transferência (>0)
+    sigma_c_o     : tensão admissível à compressão na transf. (<0)
+    sigma_tr_tot  : tensão admissível à tração após perdas (>0)
+    sigma_c_tot   : tensão admissível à compressão após perdas (<0)
 
-    Nao e item da NBR 6118 (apostila, item 4.6.2) - a norma nao impõe este
-    metodo. As quatro equacoes foram re-derivadas em 09/2026 isolando ep em
-    sigma_base_topo (a convencao de sinais deste modulo: compressao
-    negativa, tracao positiva, sinal_P=-1): as originais tinham sinal
-    trocado e nao reproduziam a tensao-alvo ao realimentar ep em
+    Não é item da NBR 6118 (apostila, item 4.6.2) - a norma não impõe este
+    método. As quatro equações foram re-derivadas em 09/2026 isolando ep em
+    sigma_base_topo (a convenção de sinais deste módulo: compressão
+    negativa, tração positiva, sinal_P=-1): as originais tinham sinal
+    trocado e não reproduziam a tensão-alvo ao realimentar ep em
     sigma_base_topo (achado PRO-08).
 
     Retorna ep_min e ep_max (cm) e os 4 limites individuais.
@@ -793,16 +793,16 @@ def fuso_limite_excentricidade(
     eta_t = Ac_cm2 / Wt_cm3
     eta_b = Ac_cm2 / Wb_cm3
 
-    # Eq. 4.77 (transferencia, fibra topo, tracao admissivel): isola ep de
+    # Eq. 4.77 (transferência, fibra topo, tração admissível): isola ep de
     # sigma_t(Po, Mo, ep) = -Po/Ac + Po*ep/Wt - Mo/Wt = sigma_tr_o
     ep_77 = Mo_kncm / Po_kn + Wt_cm3 * sigma_tr_o_kncm2 / Po_kn + 1.0 / eta_t
-    # Eq. 4.78 (transferencia, fibra base, compressao admissivel): isola ep de
+    # Eq. 4.78 (transferência, fibra base, compressão admissível): isola ep de
     # sigma_b(Po, Mo, ep) = -Po/Ac - Po*ep/Wb + Mo/Wb = sigma_c_o
     ep_78 = Mo_kncm / Po_kn - Wb_cm3 * sigma_c_o_kncm2 / Po_kn - 1.0 / eta_b
-    # Eq. 4.79 (apos perdas, fibra topo, compressao admissivel): isola ep de
+    # Eq. 4.79 (após perdas, fibra topo, compressão admissível): isola ep de
     # sigma_t(R*Po, Mtot, ep) = -R*Po/Ac + R*Po*ep/Wt - Mtot/Wt = sigma_c_tot
     ep_79 = Mtot_kncm / (R * Po_kn) + Wt_cm3 * sigma_c_tot_kncm2 / (R * Po_kn) + 1.0 / eta_t
-    # Eq. 4.80 (apos perdas, fibra base, tracao admissivel): isola ep de
+    # Eq. 4.80 (após perdas, fibra base, tração admissível): isola ep de
     # sigma_b(R*Po, Mtot, ep) = -R*Po/Ac - R*Po*ep/Wb + Mtot/Wb = sigma_tr_tot
     ep_80 = Mtot_kncm / (R * Po_kn) - Wb_cm3 * sigma_tr_tot_kncm2 / (R * Po_kn) - 1.0 / eta_b
 
@@ -825,7 +825,7 @@ def Wb_min_secao_excentricidade_variavel(
     Mo_kncm: float, Mtot_kncm: float, R: float,
     sigma_tr_tot_kncm2: float, sigma_c_o_kncm2: float,
 ) -> float:
-    """Modulo de flexao Wb minimo (Eq. 4.58):
+    """Módulo de flexão Wb mínimo (Eq. 4.58):
     Wb_min = (M_tot - R*M_o) / (sigma_tr_tot - R*sigma_c_o).
     sigma_c_o e sigma_c_tot devem ser passadas com sinal negativo."""
     return (Mtot_kncm - R * Mo_kncm) \
@@ -836,7 +836,7 @@ def Wt_min_secao_excentricidade_variavel(
     Mo_kncm: float, Mtot_kncm: float, R: float,
     sigma_tr_o_kncm2: float, sigma_c_tot_kncm2: float,
 ) -> float:
-    """Modulo de flexao Wt minimo (Eq. 4.59):
+    """Módulo de flexão Wt mínimo (Eq. 4.59):
     Wt_min = (M_tot - R*M_o) / (R*sigma_tr_o - sigma_c_tot).
     sigma_c_tot deve ser passada com sinal negativo."""
     return (Mtot_kncm - R * Mo_kncm) \
@@ -846,7 +846,7 @@ def Wt_min_secao_excentricidade_variavel(
 # ---------------------------------------------------------------------------
 # Tabela de cordoalhas (NBR 7483 - ArcelorMittal)
 # ---------------------------------------------------------------------------
-# (designacao, fptk_MPa): (diam_mm, area_mm2, massa_kg_per_m, F_max_kN)
+# (designação, fptk_MPa): (diam_mm, area_mm2, massa_kg_per_m, F_max_kN)
 TABELA_CORDOALHAS_CP190_RB = {
     # 7-fios
     9.5:  (9.5,  55.5, 0.432, 105.4),
@@ -867,7 +867,7 @@ def propriedades_cordoalha(diam_mm: float,
                            categoria: str = "CP-190 RB") -> dict:
     """Retorna propriedades da cordoalha de 7 fios.
 
-    Areas em mm2; F_max = forca de ruptura caracteristica = fptk * Ap.
+    Áreas em mm2; F_max = força de ruptura característica = fptk * Ap.
 
     ``categoria`` só precisa conter "CP-190" ou "CP-210": um eventual sufixo
     RN/RB (ex.: "CP-190 RB", "CP-190 RN") é aceito mas ignorado aqui de
@@ -883,9 +883,9 @@ def propriedades_cordoalha(diam_mm: float,
         tab = TABELA_CORDOALHAS_CP210_RB
         fptk = 2100.0
     else:
-        raise ValueError(f"categoria desconhecida: {categoria}")
+        raise ValueError(f"categoria desconhecida: {categoria}.")
     if diam_mm not in tab:
-        raise ValueError(f"diametro {diam_mm} nao tabelado em {cat}")
+        raise ValueError(f"diâmetro {diam_mm} não tabelado em {cat}.")
     d, area, massa, F_max = tab[diam_mm]
     return {
         "diam_mm": d,
@@ -943,7 +943,7 @@ def test_propriedades_geometricas_laje() -> None:
 
 def test_tensao_carga_apostila() -> None:
     """Apostila: Mg=Mq=2813 kN.cm, faixa 30x30
-    -> sigma = 6Mg/(bh^2) = 6.25 MPa (compressao topo, tracao base)."""
+    -> sigma = 6Mg/(bh^2) = 6.25 MPa (compressão topo, tração base)."""
     Mg = 2813.0
     sigma_g_kncm2 = 6.0 * Mg / (30.0 * 30.0 ** 2)
     assert _aprox(sigma_g_kncm2 * 10.0, 6.25, 0.05)
@@ -951,7 +951,7 @@ def test_tensao_carga_apostila() -> None:
 
 
 def test_protensao_axial_apostila() -> None:
-    """Caso 3 apostila: anular tracao na base.
+    """Caso 3 apostila: anular tração na base.
     P/Ac = 12.5 MPa -> P = 1125 kN."""
     Ac = 900.0
     Wb = 4500.0
@@ -960,7 +960,7 @@ def test_protensao_axial_apostila() -> None:
     P = forca_protensao_axial(sigma_alvo_base_kncm2=0.0,
                               M_kncm=M_total, Ac_cm2=Ac, Wb_cm3=Wb)
     assert _aprox(P, 1125.0, 1.0), f"P={P:.2f}"
-    print(f"  OK  Protensao axial: P = {P:.1f} kN  (apostila: 1125)")
+    print(f"  OK  Protensão axial: P = {P:.1f} kN  (apostila: 1125)")
 
 
 def test_protensao_excentrica_h_sobre_6() -> None:
@@ -972,24 +972,24 @@ def test_protensao_excentrica_h_sobre_6() -> None:
                                     M_kncm=5626.0, ep_cm=5.0,
                                     Ac_cm2=900.0, Wb_cm3=4500.0)
     assert _aprox(P, 562.5, 0.5), f"P={P:.2f}"
-    print(f"  OK  Protensao ep=h/6: P = {P:.1f} kN  (apostila: 562.5)")
+    print(f"  OK  Protensão ep=h/6: P = {P:.1f} kN  (apostila: 562.5)")
 
 
 def test_protensao_excentrica_max_apostila() -> None:
-    """Caso 5 apostila: ep = 10 cm (maxima possivel para d_p=27).
+    """Caso 5 apostila: ep = 10 cm (máxima possível para d_p=27).
     P = 375 kN."""
     P = forca_protensao_excentrica(sigma_alvo_base_kncm2=0.0,
                                     M_kncm=5626.0, ep_cm=10.0,
                                     Ac_cm2=900.0, Wb_cm3=4500.0)
     assert _aprox(P, 375.0, 0.5), f"P={P:.2f}"
-    print(f"  OK  Protensao ep=10cm: P = {P:.1f} kN  (apostila: 375)")
+    print(f"  OK  Protensão ep=10cm: P = {P:.1f} kN  (apostila: 375)")
 
 
 def test_tensao_combinada_protensao_max_apostila() -> None:
     """Caso 5 apostila: P=375, ep=10, M=5626.
     sigma_topo (com P) = -P/Ac + P*ep/Wt = -0.4167 + 0.8333 = +0.4167 kN/cm2
-                       = +4.17 MPa (tracao)
-    Apostila informa +4.2 MPa de tracao no topo devido a P."""
+                       = +4.17 MPa (tração)
+    Apostila informa +4.2 MPa de tração no topo devido a P."""
     sb, st = sigma_base_topo(P_kn=375.0, ep_cm=10.0, M_kncm=0.0,
                               Ac_cm2=900.0, Wb_cm3=4500.0, Wt_cm3=4500.0)
     assert _aprox(st * 10.0, 4.17, 0.05), f"sigma_t={st*10:.2f}"
@@ -997,7 +997,7 @@ def test_tensao_combinada_protensao_max_apostila() -> None:
     sb_tot, st_tot = sigma_base_topo(P_kn=375.0, ep_cm=10.0, M_kncm=5626.0,
                                       Ac_cm2=900.0, Wb_cm3=4500.0,
                                       Wt_cm3=4500.0)
-    # apostila: sigma_topo final ~ -8.3 MPa (compressao); base ~ 0
+    # apostila: sigma_topo final ~ -8.3 MPa (compressão); base ~ 0
     assert _aprox(sb_tot, 0.0, 0.05), f"sigma_b_tot={sb_tot:.4f}"
     print(f"  OK  Caso 5: sigma_topo(somente P) = {st*10:.2f} MPa  "
           f"sigma_base(total) = {sb_tot*10:.3f} MPa")
@@ -1017,7 +1017,7 @@ def test_relaxacao_perda_apostila() -> None:
     sigma_pi = 0.8 * fptk
     perda = perda_relaxacao_kncm2(psi, sigma_pi)
     assert _aprox(perda, 0.039 * fptk, 0.001), f"perda={perda}"
-    print(f"  OK  Perda relaxacao = {perda:.4f} fptk  (apostila: 0.039)")
+    print(f"  OK  Perda relaxação = {perda:.4f} fptk  (apostila: 0.039)")
 
 
 def test_relaxacao_infinito() -> None:
@@ -1045,7 +1045,7 @@ def test_perda_retracao() -> None:
     """eps_cs=-0.5 permil, Ep=200 GPa -> perda = 100 MPa = 10 kN/cm2."""
     p = perda_retracao_kncm2(eps_cs_permil=-0.5)
     assert _aprox(p, 10.0, 0.1), f"perda={p}"
-    print(f"  OK  Perda retracao (eps_cs=0.5permil) = {p:.2f} kN/cm2 "
+    print(f"  OK  Perda retração (eps_cs=0.5permil) = {p:.2f} kN/cm2 "
           f"({p*10:.0f} MPa)")
 
 
@@ -1057,7 +1057,7 @@ def test_perda_fluencia() -> None:
     Eci = Eci_mpa(50.0)
     expected = (E_P_MPA / Eci) * 2.0 * 1.0
     assert _aprox(p, expected, 0.01)
-    print(f"  OK  Perda fluencia: {p:.3f} kN/cm2 ({p*10:.1f} MPa)")
+    print(f"  OK  Perda fluência: {p:.3f} kN/cm2 ({p*10:.1f} MPa)")
 
 
 def test_perda_atrito_arco_apostila() -> None:
@@ -1078,8 +1078,8 @@ def test_perda_atrito_arco_apostila() -> None:
 
 
 def test_perda_atrito_parabola_apostila() -> None:
-    """Apostila 5.6.3.2 ex.2: cabo parabolico, L=42m, fleche=1.0 m no centro.
-    No meio do vao (x=21): theta_metade = 4*1/42 = 0.0952 rad.
+    """Apostila 5.6.3.2 ex.2: cabo parabólico, L=42m, fleche=1.0 m no centro.
+    No meio do vão (x=21): theta_metade = 4*1/42 = 0.0952 rad.
     Pi = 1687.2 kN, mu=0.20, k=0.002/m.
     Patr(21) = 1687.2 * (1 - exp(-(0.20*0.0952 + 0.002*21)))
             = 1687.2 * (1 - exp(-0.06104))."""
@@ -1089,12 +1089,12 @@ def test_perda_atrito_parabola_apostila() -> None:
                            k_per_m=0.002, x_m=21.0)
     expected = 1687.2 * (1.0 - math.exp(-(0.20 * 0.0952 + 0.002 * 21.0)))
     assert _aprox(Patr, expected, 0.5)
-    print(f"  OK  Atrito parabola: theta_meio={theta:.4f} rad, "
+    print(f"  OK  Atrito parábola: theta_meio={theta:.4f} rad, "
           f"Patr(21m)={Patr:.1f} kN")
 
 
 def test_fct_admissivel_secao() -> None:
-    """C50, secao duplo T: fct = 1.2 * 0.7 * 0.3 * 50^(2/3) = 3.42 MPa."""
+    """C50, seção duplo T: fct = 1.2 * 0.7 * 0.3 * 50^(2/3) = 3.42 MPa."""
     fct_T = fct_admissivel_traçao_kncm2(50.0, "T")
     fct_I = fct_admissivel_traçao_kncm2(50.0, "I")
     fct_R = fct_admissivel_traçao_kncm2(50.0, "retangular")
@@ -1124,7 +1124,7 @@ def test_protensao_completa_viga_duplo_T_apostila() -> None:
     assert _aprox(r["P_estB_ELS_F_kN"], 992.0, 5.0), \
         f"P_B={r['P_estB_ELS_F_kN']:.1f}"
     assert _aprox(r["P_est_kN"], 1083.0, 5.0)
-    print(f"  OK  Protensao completa: P_estA={r['P_estA_ELS_D_kN']:.0f}, "
+    print(f"  OK  Protensão completa: P_estA={r['P_estA_ELS_D_kN']:.0f}, "
           f"P_estB={r['P_estB_ELS_F_kN']:.0f}, P_est={r['P_est_kN']:.0f}")
 
 
@@ -1148,14 +1148,14 @@ def test_protensao_limitada_viga_duplo_T_apostila() -> None:
     assert _aprox(r["P_estB_ELS_F_kN"], 896.0, 5.0), \
         f"P_B={r['P_estB_ELS_F_kN']:.1f}"
     assert _aprox(r["P_est_kN"], 1067.0, 5.0)
-    print(f"  OK  Protensao limitada: P_estA={r['P_estA_ELS_D_kN']:.0f}, "
+    print(f"  OK  Protensão limitada: P_estA={r['P_estA_ELS_D_kN']:.0f}, "
           f"P_estB={r['P_estB_ELS_F_kN']:.0f}, P_est={r['P_est_kN']:.0f}")
 
 
 def test_protensao_parcial_basica() -> None:
-    """Protensao parcial admite tracao maior que fct na base. Para a
+    """Protensão parcial admite tração maior que fct na base. Para a
     mesma viga, tomando sigma_traçao = 0.50 kN/cm2 (~5 MPa, > fct):
-    P_estB sera menor que na limitada."""
+    P_estB será menor que na limitada."""
     r_lim = estimar_P_protensao_limitada(
         18619.0, 13500.0, 5063.0, 0.0, 0.4, 0.3,
         2648.0, 17260.0, 25.0, 50.0, "duplo-T",
@@ -1165,10 +1165,10 @@ def test_protensao_parcial_basica() -> None:
         2648.0, 17260.0, 25.0, 50.0,
         sigma_traçao_kncm2=0.50, secao="duplo-T",
     )
-    # parcial deve ter P_B menor que limitada (mais tracao admitida)
+    # parcial deve ter P_B menor que limitada (mais tração admitida)
     assert r_par["P_estB_ELS_F_kN"] < r_lim["P_estB_ELS_F_kN"]
     assert _aprox(r_par["P_estA_ELS_D_kN"], r_lim["P_estA_ELS_D_kN"], 1.0)
-    print(f"  OK  Protensao parcial: P_estA={r_par['P_estA_ELS_D_kN']:.0f}, "
+    print(f"  OK  Protensão parcial: P_estA={r_par['P_estA_ELS_D_kN']:.0f}, "
           f"P_estB={r_par['P_estB_ELS_F_kN']:.0f}  "
           f"(<lim P_estB={r_lim['P_estB_ELS_F_kN']:.0f})")
 
@@ -1188,15 +1188,15 @@ def test_MRd_secao_retangular_protendida() -> None:
         alpha_c=0.85,
     )
     assert _aprox(r["x_cm"], 31.37, 0.1), f"x={r['x_cm']:.2f}"
-    # Apostila resolveu por equacao do 2o grau dando As = 9.89 -> MRd ~ 210000
+    # Apostila resolveu por equação do 2o grau dando As = 9.89 -> MRd ~ 210000
     assert _aprox(r["MRd_kncm"], 210000.0, 1500.0), f"MRd={r['MRd_kncm']:.0f}"
     print(f"  OK  ELU sec ret: x={r['x_cm']:.2f} cm, "
           f"MRd={r['MRd_kncm']:.0f} kN.cm  (apostila: 210000, x=31.37)")
 
 
 def test_MRd_apenas_armadura_ativa() -> None:
-    """Sem armadura passiva (As=A's=0), so a armadura ativa.
-    Caso simples para validar a equacao basica."""
+    """Sem armadura passiva (As=A's=0), só a armadura ativa.
+    Caso simples para validar a equação básica."""
     r = MRd_secao_retangular_protendida(
         bw_cm=40.0, dp_cm=110.0, ds_cm=110.0, d_linha_cm=0.0,
         Ap_cm2=11.20, As_cm2=0.0, As_linha_cm2=0.0,
@@ -1207,7 +1207,7 @@ def test_MRd_apenas_armadura_ativa() -> None:
     # MRd = 152*11.20*(110 - 0.4*25.04) = 1702.4 * 99.98 = 170226
     expected = 152.0 * 11.20 * (110.0 - 0.4 * 25.04)
     assert _aprox(r["MRd_kncm"], expected, 5.0)
-    print(f"  OK  ELU so Ap: x={r['x_cm']:.2f}, MRd={r['MRd_kncm']:.0f}")
+    print(f"  OK  ELU só Ap: x={r['x_cm']:.2f}, MRd={r['MRd_kncm']:.0f}")
 
 
 def test_Pi_de_P() -> None:
@@ -1233,20 +1233,20 @@ def test_perda_cabos_restantes_n4() -> None:
 
 
 def test_perda_cabos_restantes_n_1() -> None:
-    """Caso degenerado n=1: nenhuma perda (cabo unico)."""
+    """Caso degenerado n=1: nenhuma perda (cabo único)."""
     p = perda_encurtamento_cabos_restantes_kncm2(
         n_cabos=1, sigma_cpog_kncm2=1.0, fck_mpa=40.0,
     )
     assert _aprox(p, 0.0, 1e-9)
-    print(f"  OK  Perda cabos restantes (n=1): zero (cabo unico)")
+    print(f"  OK  Perda cabos restantes (n=1): zero (cabo único)")
 
 
 def test_omega_perfis() -> None:
-    """omega para perfis tipicos (Tabela 5.6 Naaman)."""
+    """omega para perfis típicos (Tabela 5.6 Naaman)."""
     # Linear: omega = k
     o_lin = omega_perfil("linear", mu=0.20, k_per_m=0.005)
     assert _aprox(o_lin, 0.005, 1e-6)
-    # Parabolico: omega = 2*mu*a/b^2 + k. Apostila ex.5.6.4: a=0.45, b=8m
+    # Parabólico: omega = 2*mu*a/b^2 + k. Apostila ex.5.6.4: a=0.45, b=8m
     # omega = 2*0.20*0.45/64 + 0.002 = 0.00281 + 0.002 = 0.00481
     o_par = omega_perfil("parabolico", mu=0.20, k_per_m=0.002,
                          a_m=0.45, b_m=8.0)
@@ -1276,7 +1276,7 @@ def test_escorregamento_apostila_5_6_4() -> None:
 
 
 def test_h_ficticia() -> None:
-    """h_fic = 2*Ac/u_ar. Viga 30x60 com perimetro exposto = 150 cm:
+    """h_fic = 2*Ac/u_ar. Viga 30x60 com perímetro exposto = 150 cm:
     h_fic = 2*1800/150 = 24 cm."""
     h = h_ficticia_cm(Ac_cm2=1800.0, u_ar_cm=150.0)
     assert _aprox(h, 24.0, 0.01)
@@ -1285,9 +1285,9 @@ def test_h_ficticia() -> None:
 
 def test_phi_eps_cs_NBR() -> None:
     """Tabela 8.1 NBR 6118:2026 (8.2.11, PDF p.47): U=75%, h_fic=20cm,
-    to=30d (padrao), fck=30 (padrao, bloco C20-C45): phi_inf=2.2,
-    eps_cs=-0.33 permil. Corrige PRO-02: a versao antiga ignorava to_dias e
-    dava 2.8 (valor de t0=5, nao t0=30) para este ponto."""
+    to=30d (padrão), fck=30 (padrão, bloco C20-C45): phi_inf=2.2,
+    eps_cs=-0.33 permil. Corrige PRO-02: a versão antiga ignorava to_dias e
+    dava 2.8 (valor de t0=5, não t0=30) para este ponto."""
     phi, eps = phi_eps_cs_NBR(umidade_pct=75.0, h_fic_cm=20.0)
     assert _aprox(phi, 2.2, 0.01)
     assert _aprox(eps, -0.33, 0.001)
@@ -1296,7 +1296,7 @@ def test_phi_eps_cs_NBR() -> None:
 
 
 def test_MRd_secao_T_LN_mesa() -> None:
-    """Secao T com 0.8x <= hf -> retorna como retangular bf.
+    """Seção T com 0.8x <= hf -> retorna como retangular bf.
     Caso simples: bf=120, bw=20, hf=10, dp=50, Ap=2.0 cm2,
     sigma_pd=1500 MPa, fck=30. Como Ap pequena, x deve ser pequeno."""
     r = MRd_secao_T_protendida(
@@ -1310,11 +1310,11 @@ def test_MRd_secao_T_LN_mesa() -> None:
     # x = 300/175 = 1.71 cm -- LN na mesa
     assert "T-como-retangular" in r["secao"]
     assert _aprox(r["x_cm"], 1.715, 0.05), f"x={r['x_cm']}"
-    print(f"  OK  Secao T (LN na mesa): {r['secao']}, x={r['x_cm']:.2f} cm")
+    print(f"  OK  Seção T (LN na mesa): {r['secao']}, x={r['x_cm']:.2f} cm")
 
 
 def test_MRd_secao_T_LN_nervura() -> None:
-    """Secao T com 0.8x > hf -> usa formula T.
+    """Seção T com 0.8x > hf -> usa fórmula T.
     bf=120, bw=20, hf=5, dp=80, Ap=15 cm2, sigma_pd=1500, fck=30.
     Espera-se LN na nervura."""
     r = MRd_secao_T_protendida(
@@ -1325,7 +1325,7 @@ def test_MRd_secao_T_LN_nervura() -> None:
     )
     # Verifica que retornou como T-LN-nervura
     assert r["secao"] == "T-LN-nervura"
-    # Verifica balanco de forcas, com a mesma tensao 0,85*fcd na mesa e na
+    # Verifica balanço de forças, com a mesma tensão 0,85*fcd na mesa e na
     # nervura (17.2.2 e; PRO-09: o 0,85 extra da mesa foi removido):
     fcd = 30.0 / 1.4 * 0.1
     Rcc_mes = 0.85 * fcd * (120 - 20) * 5.0
@@ -1334,19 +1334,19 @@ def test_MRd_secao_T_LN_nervura() -> None:
     Rpt = 150.0 * 15.0
     assert _aprox(Rcc_mes + Rcc_nerv, Rpt, 1.0), \
         f"Cc_mes+Cc_nerv={Rcc_mes+Rcc_nerv:.1f} vs Rpt={Rpt}"
-    print(f"  OK  Secao T (LN na nervura): x={r['x_cm']:.2f}, "
+    print(f"  OK  Seção T (LN na nervura): x={r['x_cm']:.2f}, "
           f"MRd={r['MRd_kncm']:.0f} kN.cm")
 
 
 def test_fuso_limite_basico() -> None:
-    """PRO-08: as 4 equacoes de fuso_limite_excentricidade foram
+    """PRO-08: as 4 equações de fuso_limite_excentricidade foram
     re-derivadas isolando ep em sigma_base_topo (as originais tinham sinal
-    trocado; o teste antigo so conferia se as chaves existiam). Entrada do
+    trocado; o teste antigo só conferia se as chaves existiam). Entrada do
     achado: Po=800, Mo=4000, Ac=1800, Wb=Wt=18000, R=0.85, Mtot=9000,
     sigma_tr_o=0.10, sigma_c_o=-1.6, sigma_tr_tot=0.12, sigma_c_tot=-1.5.
     Esperado: ep_77=+17,25; ep_78=+31,00; ep_79=-16,47; ep_80=+0,059 cm -
     e cada um deve, ao realimentar sigma_base_topo, reproduzir a
-    tensao-alvo correspondente."""
+    tensão-alvo correspondente."""
     Po, Mo, Mtot, R = 800.0, 4000.0, 9000.0, 0.85
     Ac, Wb, Wt = 1800.0, 18000.0, 18000.0
     sigma_tr_o, sigma_c_o = 0.10, -1.6
@@ -1363,7 +1363,7 @@ def test_fuso_limite_basico() -> None:
     assert _aprox(fuso["ep_79_top_tot"], -16.47, 0.005), fuso["ep_79_top_tot"]
     assert _aprox(fuso["ep_80_base_tot"], 0.059, 0.005), fuso["ep_80_base_tot"]
 
-    # Realimenta cada ep em sigma_base_topo: tem que reproduzir a tensao-alvo.
+    # Realimenta cada ep em sigma_base_topo: tem que reproduzir a tensão-alvo.
     _, st_o = sigma_base_topo(Po, fuso["ep_77_top_o"], Mo, Ac, Wb, Wt)
     assert _aprox(st_o, sigma_tr_o, 1e-6), f"st_o={st_o}"
     sb_o, _ = sigma_base_topo(Po, fuso["ep_78_base_o"], Mo, Ac, Wb, Wt)
@@ -1479,7 +1479,7 @@ def _demo() -> None:
     P_max = forca_protensao_excentrica(0.0, M_tot, 10.0, Ac, Wb)
     print(f"  P axial (ep=0)        = {P_axial:.1f} kN")
     print(f"  P ep=h/6 = 5 cm       = {P_h6:.1f} kN")
-    print(f"  P ep=10 cm (maxima)   = {P_max:.1f} kN")
+    print(f"  P ep=10 cm (máxima)   = {P_max:.1f} kN")
 
 
 # === P3: Catálogo de aço ativo (8.4.1, p.49) e dutilidade (8.4.6, p.50) ===
@@ -1518,7 +1518,7 @@ def propriedades_fio(diam_mm: float, categoria: str | None = None) -> dict:
     """
     opcoes = {c: (a, f) for (d, c), (a, f) in TABELA_FIOS_NBR7482.items() if d == diam_mm}
     if not opcoes:
-        raise ValueError(f"diâmetro {diam_mm} não tabelado em TABELA_FIOS_NBR7482")
+        raise ValueError(f"diâmetro {diam_mm} não tabelado em TABELA_FIOS_NBR7482.")
     if categoria is None:
         if len(opcoes) > 1:
             raise ValueError(
@@ -1529,7 +1529,7 @@ def propriedades_fio(diam_mm: float, categoria: str | None = None) -> dict:
     elif categoria not in opcoes:
         raise ValueError(
             f"categoria {categoria!r} não tabelada para o diâmetro {diam_mm} "
-            f"(opções: {sorted(opcoes)})"
+            f"(opções: {sorted(opcoes)})."
         )
     area, fptk = opcoes[categoria]
     return {
@@ -3160,7 +3160,7 @@ def limite_compressao_servico_mpa(fck_mpa: float, combinacao: str,
     comb = _chave_p30(combinacao)
     if comb not in FATOR_COMPRESSAO_SERVICO:
         raise ValueError(
-            f"combinacao {combinacao!r} desconhecida: use 'quase_permanente', "
+            f"combinação {combinacao!r} desconhecida: use 'quase_permanente', "
             "'frequente' ou 'rara'."
         )
     if comb == "rara" and niv != "completa":
@@ -3275,7 +3275,7 @@ def verificar_descompressao_fissuracao(
     tração máxima da seção, comparada com:
         ELS-D: tensão-limite = 0 (descompressão exata);
         ELS-F: tensão-limite = limite_tracao_servico_mpa(fck_mpa, 'ELS-F',
-               secao), 17.2.4.4.2 — exige fck_mpa.
+               seção), 17.2.4.4.2 — exige fck_mpa.
     P_kn, ep_cm, M_kncm, Ac_cm2, Wb_cm3, Wt_cm3, sinal_P: mesma convenção de
     sigma_base_topo (compressão negativa, tração positiva). A comparação
     usa seguranca_nbr6118.verificar_seguranca (igualdade passa — cobre o

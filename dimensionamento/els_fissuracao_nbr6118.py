@@ -1,25 +1,25 @@
-"""Tensoes em servico (Estadio II) e fissuracao -- NBR 6118:2026 (Pacote P9).
+"""Tensões em serviço (Estádio II) e fissuração -- NBR 6118:2026 (Pacote P9).
 
-Fecha o ciclo tensao de servico -> abertura de fissura para secao generica
-(nao so retangular/T com formula fechada, como em `viga_servico_nbr6118`):
-expoe uma verificacao de tensoes em Estadio I/II sobre o kernel de flexao
-obliqua (`rotinas.flexao_composta_obliqua`), a geometria da area de
-envolvimento Acri (Figura 17.4), a Tabela 17.2 (controle de fissuracao sem
-calcular wk) e a armadura minima sob deformacoes impostas.
+Fecha o ciclo tensão de serviço -> abertura de fissura para seção genérica
+(não só retangular/T com fórmula fechada, como em `viga_servico_nbr6118`):
+expõe uma verificação de tensões em Estádio I/II sobre o kernel de flexão
+oblíqua (`rotinas.flexao_composta_obliqua`), a geometria da área de
+envolvimento Acri (Figura 17.4), a Tabela 17.2 (controle de fissuração sem
+calcular wk) e a armadura mínima sob deformações impostas.
 
-Itens da NBR 6118:2026 cobertos (pagina do PDF = pagina impressa + 18):
-    - 23.5.3 (PDF p. 218) -- alpha_e = Es/Ecs para fadiga (estadio II).
-    - 17.3.3.2 (PDF p. 149-150) -- area de envolvimento Acri (Figura 17.4).
-    - 17.3.3.3 (PDF p. 150) -- Tabela 17.2, controle de fissuracao sem wk.
-    - 19.3.2 (PDF p. 179) -- fissuracao/descompressao em lajes remete a
-      17.3.3/17.3.4 (mesmos criterios de viga, com bw da faixa de laje).
-    - 17.3.5.2.2 (PDF p. 152-153) -- As,min sob deformacoes impostas.
+Itens da NBR 6118:2026 cobertos (página do PDF = página impressa + 18):
+    - 23.5.3 (PDF p. 218) -- alpha_e = Es/Ecs para fadiga (estádio II).
+    - 17.3.3.2 (PDF p. 149-150) -- área de envolvimento Acri (Figura 17.4).
+    - 17.3.3.3 (PDF p. 150) -- Tabela 17.2, controle de fissuração sem wk.
+    - 19.3.2 (PDF p. 179) -- fissuração/descompressão em lajes remete a
+      17.3.3/17.3.4 (mesmos critérios de viga, com bw da faixa de laje).
+    - 17.3.5.2.2 (PDF p. 152-153) -- As,min sob deformações impostas.
 
-Convencoes: como o nucleo e o kernel de flexao obliqua -- fck e tensoes em
-MPa, geometria em cm, esforcos em kN e kN.cm, deformacao em por mil,
-compressao positiva. `sigma_s` no retorno do kernel segue essa mesma
-convencao (compressao positiva); os valores de tensao no aco desta
-verificacao (sigma_si, Delta sigma_pi, Tabela 17.2) sao tensao de tracao e
+Convenções: como o núcleo e o kernel de flexão oblíqua -- fck e tensões em
+MPa, geometria em cm, esforços em kN e kN.cm, deformação em por mil,
+compressão positiva. `sigma_s` no retorno do kernel segue essa mesma
+convenção (compressão positiva); os valores de tensão no aço desta
+verificação (sigma_si, Delta sigma_pi, Tabela 17.2) são tensão de tração e
 entram como magnitude positiva.
 """
 
@@ -42,22 +42,22 @@ except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
 
 # ---------------------------------------------------------------------------
 # 23.5.3 -- alpha_e para fadiga (PDF p. 218) e 17.3.3.2/17.3.3.3 -- alpha_e
-# simplificado para fissuracao (PDF p. 150)
+# simplificado para fissuração (PDF p. 150)
 # ---------------------------------------------------------------------------
 def alpha_e_fadiga(fck_mpa: float | None = None, agregado: str = "granito") -> float:
-    """Razao alpha_e = Es/Ecs para a verificacao de fadiga em regime elastico,
-    Estadio II (23.5.3, PDF p. 218).
+    """Razão alpha_e = Es/Ecs para a verificação de fadiga em regime elástico,
+    Estádio II (23.5.3, PDF p. 218).
 
-    Formula/regra (imagem conferida): "Para o calculo dos esforcos
-    solicitantes e a verificacao das tensoes, admite-se o modelo linear
-    elastico com a relacao alpha_e entre os modulos de deformacao do aco e
+    Fórmula/regra (imagem conferida): "Para o cálculo dos esforços
+    solicitantes e a verificação das tensões, admite-se o modelo linear
+    elástico com a relação alpha_e entre os módulos de deformação do aço e
     do concreto, alpha_e = Es/Ecs, podendo, neste caso, ser adotado igual
     a 10."
 
-    Sem fck_mpa (padrao), devolve o valor simplificado que a norma permite
+    Sem fck_mpa (padrão), devolve o valor simplificado que a norma permite
     adotar (10,0), sem precisar do fck. Com fck_mpa, calcula o valor exato
-    -- delega a `viga_servico_nbr6118.alpha_e` (mesma razao Es/Ecs, Eq. 68
-    da apostila; nao reimplementa Eci/Ecs, que vem do nucleo).
+    -- delega a `viga_servico_nbr6118.alpha_e` (mesma razão Es/Ecs, Eq. 68
+    da apostila; não reimplementa Eci/Ecs, que vêm do núcleo).
     """
     if fck_mpa is None:
         return 10.0
@@ -65,54 +65,54 @@ def alpha_e_fadiga(fck_mpa: float | None = None, agregado: str = "granito") -> f
 
 
 ALPHA_E_SIMPLIFICADO_FISSURACAO = 15.0
-"""alpha_e = 15 (Es/Ecs), razao simplificada que a NBR 6118:2026 permite
-adotar no calculo em Estadio II para controle de fissuracao (17.3.3.2/
-17.3.3.3, PDF p. 150, conferido na imagem): "O calculo no estadio II (que
-admite comportamento linear dos materiais e despreza a resistencia a
-tracao do concreto) pode ser feito considerando a relacao alpha_e entre os
-modulos de elasticidade do aco e do concreto igual a 15."
+"""alpha_e = 15 (Es/Ecs), razão simplificada que a NBR 6118:2026 permite
+adotar no cálculo em Estádio II para controle de fissuração (17.3.3.2/
+17.3.3.3, PDF p. 150, conferido na imagem): "O cálculo no estádio II (que
+admite comportamento linear dos materiais e despreza a resistência à
+tração do concreto) pode ser feito considerando a relação alpha_e entre os
+módulos de elasticidade do aço e do concreto igual a 15."
 
-Divergencia registrada em relacao ao JSON do plano: o JSON so lista o
-alpha_e=10 do item 23.5.3 (fadiga); a pagina 150 traz uma segunda
-simplificacao, para fissuracao, com valor diferente (15) -- as duas
-convivem porque sao usos distintos (fadiga x controle de fissuracao).
+Divergência registrada em relação ao JSON do plano: o JSON só lista o
+alpha_e=10 do item 23.5.3 (fadiga); a página 150 traz uma segunda
+simplificação, para fissuração, com valor diferente (15) -- as duas
+convivem porque são usos distintos (fadiga x controle de fissuração).
 
 Use `tensoes_servico(..., alpha_e=ALPHA_E_SIMPLIFICADO_FISSURACAO)` para
-adotar essa razao, ou `alpha_e=None` (padrao) para o valor exato pelo fck
-real de cada parte da secao.
+adotar essa razão, ou `alpha_e=None` (padrão) para o valor exato pelo fck
+real de cada parte da seção.
 """
 
 
 # ---------------------------------------------------------------------------
-# 23.5.3/17.3.3.3 -- tensoes em servico, Estadio I/II, secao generica
+# 23.5.3/17.3.3.3 -- tensões em serviço, Estádio I/II, seção genérica
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class ResultadoTensoes:
-    """Estado de tensoes em servico (Estadio I ou II), NBR 6118:2026
+    """Estado de tensões em serviço (Estádio I ou II), NBR 6118:2026
     17.3.3.3 (PDF p. 150) e 23.5.3 (PDF p. 218).
 
     x_cm: profundidade da linha neutra a partir da fibra mais comprimida,
-        medida ao longo do eixo perpendicular a ela (mesma convencao de
+        medida ao longo do eixo perpendicular a ela (mesma convenção de
         `viga_servico_nbr6118.x_II_retangular`/`x_II_secao_T`). Rigoroso em
-        flexao uniaxial (Mx ou My nulo -- o caso das formulas fechadas de
-        comparacao); em flexao obliqua (os dois momentos simultaneos), usa
-        o mesmo criterio mas deixa de ser uma unica "profundidade reta" --
+        flexão uniaxial (Mx ou My nulo -- o caso das fórmulas fechadas de
+        comparação); em flexão oblíqua (os dois momentos simultâneos), usa
+        o mesmo critério mas deixa de ser uma única "profundidade reta" --
         para esse caso prefira o estado completo (eps_cg/kx/ky) ao x_cm
         isolado.
-    sigma_c_max_kncm2: tensao maxima de compressao no concreto (>= 0).
-        Calculada nos 4 cantos do retangulo envolvente da secao: exata para
-        secao retangular e para secao T/L com a mesa (parte de largura
-        total) do lado comprimido; pode subestimar/nao se aplicar se a
-        fibra mais comprimida cair numa reentrancia do poligono (ex.: alma
-        estreita de uma secao T invertida) -- caso fora do escopo testado
+    sigma_c_max_kncm2: tensão máxima de compressão no concreto (>= 0).
+        Calculada nos 4 cantos do retângulo envolvente da seção: exata para
+        seção retangular e para seção T/L com a mesa (parte de largura
+        total) do lado comprimido; pode subestimar/não se aplicar se a
+        fibra mais comprimida cair numa reentrância do polígono (ex.: alma
+        estreita de uma seção T invertida) -- caso fora do escopo testado
         neste pacote.
-    sigma_s_kncm2: tensao em cada barra (ordem de `secao.barras`), na
-        convencao do kernel (compressao positiva): uma barra tracionada
+    sigma_s_kncm2: tensão em cada barra (ordem de `secao.barras`), na
+        convenção do kernel (compressão positiva): uma barra tracionada
         aparece com valor negativo. Use `sigma_s_tracao_max_kncm2` para a
-        magnitude de tracao da barra mais tracionada.
-    alpha_e: razao Es/Ecs efetivamente usada (informada ou calculada pelo
-        fck). Com Secao poligonal multi-fck e alpha_e=None, e a razao da
-        primeira parte (a memoria de calculo lista o alpha_e de cada uma).
+        magnitude de tração da barra mais tracionada.
+    alpha_e: razão Es/Ecs efetivamente usada (informada ou calculada pelo
+        fck). Com Secao poligonal multi-fck e alpha_e=None, e a razão da
+        primeira parte (a memória de cálculo lista o alpha_e de cada uma).
     """
     estadio: str
     alpha_e: float
@@ -127,14 +127,14 @@ class ResultadoTensoes:
 
     @property
     def sigma_s_tracao_max_kncm2(self) -> float:
-        """Maior tensao de tracao entre as barras (>= 0; 0 se nenhuma tracionada)."""
+        """Maior tensão de tração entre as barras (>= 0; 0 se nenhuma tracionada)."""
         if not self.sigma_s_kncm2:
             return 0.0
         return max(0.0, -min(self.sigma_s_kncm2))
 
 
 def _extensao_y(secao) -> tuple[float, float]:
-    """(y_min, y_max) da secao, retangular ou poligonal."""
+    """(y_min, y_max) da seção, retangular ou poligonal."""
     if hasattr(secao, "partes"):
         _, y_min, _, y_max = fco._bbox_secao(secao)
         return y_min, y_max
@@ -155,51 +155,51 @@ def tensoes_servico(
     n_grid: int = 80,
     x0: tuple[float, float, float] | None = None,
 ) -> ResultadoTensoes:
-    """Tensoes em servico (sigma_c maximo, sigma_s por barra e a posicao da
-    linha neutra) para secao generica em concreto armado ou protendido, no
-    Estadio I ou II (17.3.3.3, PDF p. 150; 23.5.3, PDF p. 218).
+    """Tensões em serviço (sigma_c máximo, sigma_s por barra e a posição da
+    linha neutra) para seção genérica em concreto armado ou protendido, no
+    Estádio I ou II (17.3.3.3, PDF p. 150; 23.5.3, PDF p. 218).
 
-    Modelo linear elastico (a norma: "admite-se o modelo linear elastico").
-    No Estadio II (`estadio="II"`, padrao), despreza a resistencia a tracao
-    do concreto (secao fissurada, o caso normal de calculo de sigma_si para
-    wk). No Estadio I (`estadio="I"`), o concreto trabalha linearmente nos
-    dois sentidos (secao integra) -- usado para checar a descompressao ou o
-    inicio de fissuracao (17.3.4, referida por 19.3.2 para lajes).
+    Modelo linear elástico (a norma: "admite-se o modelo linear elástico").
+    No Estádio II (`estadio="II"`, padrão), despreza a resistência à tração
+    do concreto (seção fissurada, o caso normal de cálculo de sigma_si para
+    wk). No Estádio I (`estadio="I"`), o concreto trabalha linearmente nos
+    dois sentidos (seção íntegra) -- usado para checar a descompressão ou o
+    início de fissuração (17.3.4, referida por 19.3.2 para lajes).
 
     `secao` aceita tanto `SecaoRetangular` quanto `Secao` poligonal (T, L,
-    U, multi-fck) do kernel `rotinas.flexao_composta_obliqua`. `concreto` e
-    o Concreto real da peca quando `secao` e retangular (usado so para
+    U, multi-fck) do kernel `rotinas.flexao_composta_obliqua`. `concreto` é
+    o Concreto real da peça quando `secao` é retangular (usado só para
     achar Ecs a partir do fck, a menos que `alpha_e` seja informado); passe
-    None com `Secao` poligonal -- cada Parte ja tem o proprio Concreto.
+    None com `Secao` poligonal -- cada Parte já tem o próprio Concreto.
 
-    `alpha_e`: razao Es/Ecs a plugar na curva linear do concreto. None
-    (padrao) calcula Ecs pelo fck real de cada parte (nucleo, 8.2.8) e usa
+    `alpha_e`: razão Es/Ecs a plugar na curva linear do concreto. None
+    (padrão) calcula Ecs pelo fck real de cada parte (núcleo, 8.2.8) e usa
     o Es de `aco`. Informe um valor -- por exemplo, `alpha_e_fadiga()` (10,
     23.5.3) ou `ALPHA_E_SIMPLIFICADO_FISSURACAO` (15, 17.3.3.2/17.3.3.3) --
-    para forcar a razao modular simplificada que a norma permite adotar
+    para forcar a razão modular simplificada que a norma permite adotar
     nesses dois contextos; nesse caso Ecs_kncm2 = aco.Es_kncm2/alpha_e para
-    a secao inteira (uniforme, mesmo com Secao multi-fck).
+    a seção inteira (uniforme, mesmo com Secao multi-fck).
 
-    Reusa a integracao numerica do kernel de flexao obliqua
-    (`_esforcos_internos_els`/`_esforcos_internos_els_pol`, ja usadas por
-    `solver_els`/`solver_els_generico`): o unico elemento novo e o modelo
+    Reusa a integração numérica do kernel de flexão oblíqua
+    (`_esforcos_internos_els`/`_esforcos_internos_els_pol`, já usadas por
+    `solver_els`/`solver_els_generico`): o único elemento novo é o modelo
     constitutivo linear do concreto (`CurvaCLinearFissurada`/
-    `CurvaCLinearNaoFissurada`) no lugar da parabola-retangulo do ELU.
+    `CurvaCLinearNaoFissurada`) no lugar da parábola-retângulo do ELU.
 
-    N_kn, Mx_kncm, My_kncm: esforcos de servico -- o chamador ja aplicou a
-    combinacao adequada (ELS-W usa a frequente, 11.8.3.2;
+    N_kn, Mx_kncm, My_kncm: esforços de serviço -- o chamador já aplicou a
+    combinação adequada (ELS-W usa a frequente, 11.8.3.2;
     `acoes_nbr6118.combinacao_servico`). Mx em torno de x (comprime +y), My
-    em torno de y (comprime +x) -- convencao do kernel de flexao obliqua.
+    em torno de y (comprime +x) -- convenção do kernel de flexão oblíqua.
     """
     if estadio not in ("I", "II"):
         raise ValueError(f"estádio deve ser 'I' ou 'II', recebido {estadio!r}.")
     if x0 is None:
-        # x0=(0,0,0) e um ponto degenerado quando N_kn=0 (flexao pura): toda
-        # fibra fica exatamente em eps=0, que e o "kink" das curvas lineares
-        # (derivada descontinua entre tracao e compressao), e o jacobiano
-        # numerico do fsolve fica singular ali -- nao converge. Uma
-        # semente pequena na direcao do momento pedido tira o chute inicial
-        # do kink sem alterar a solucao (so a convergencia).
+        # x0=(0,0,0) é um ponto degenerado quando N_kn=0 (flexão pura): toda
+        # fibra fica exatamente em eps=0, que é o "kink" das curvas lineares
+        # (derivada descontínua entre tração e compressão), e o jacobiano
+        # numérico do fsolve fica singular ali -- não converge. Uma
+        # semente pequena na direção do momento pedido tira o chute inicial
+        # do kink sem alterar a solução (só a convergência).
         kx0 = 1e-3 if Mx_kncm > 0.0 else (-1e-3 if Mx_kncm < 0.0 else 0.0)
         ky0 = 1e-3 if My_kncm > 0.0 else (-1e-3 if My_kncm < 0.0 else 0.0)
         x0 = (0.0, kx0, ky0)
@@ -283,7 +283,7 @@ def tensoes_servico(
         )
 
     if not r["convergiu"]:
-        raise ValueError(f"Estado de tensões em serviço não convergiu: {r.get('mensagem')}")
+        raise ValueError(f"Estado de tensões em serviço não convergiu: {r.get('mensagem')}.")
 
     eps_cg, kx, ky = r["eps_cg_pmilh"], r["kx_pmilh_cm"], r["ky_pmilh_cm"]
     y_min, y_max = _extensao_y(secao)
@@ -291,9 +291,9 @@ def tensoes_servico(
         y0 = -eps_cg / kx
         x_cm = (y_max - y0) if kx > 0.0 else (y0 - y_min)
     elif eps_cg > 0.0:
-        x_cm = y_max - y_min   # compressao uniforme: secao inteira comprimida
+        x_cm = y_max - y_min   # compressão uniforme: seção inteira comprimida
     else:
-        x_cm = 0.0             # tracao uniforme: nenhuma fibra comprimida
+        x_cm = 0.0             # tração uniforme: nenhuma fibra comprimida
     x_cm = max(0.0, min(x_cm, y_max - y_min))
 
     barras = secao.barras
@@ -327,13 +327,13 @@ def tensoes_servico(
 
 
 # ---------------------------------------------------------------------------
-# 17.3.3.2 -- area de envolvimento Acri (Figura 17.4, PDF p. 149)
+# 17.3.3.2 -- área de envolvimento Acri (Figura 17.4, PDF p. 149)
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class BarraFissuracao:
-    """Barra usada so para a geometria de Acri (17.3.3.2): posicao e
-    diametro. Distinta de `flexao_composta_obliqua.Barra` (posicao + area),
-    que nao carrega o diametro."""
+    """Barra usada só para a geometria de Acri (17.3.3.2): posição e
+    diâmetro. Distinta de `flexao_composta_obliqua.Barra` (posição + área),
+    que não carrega o diâmetro."""
     x_cm: float
     y_cm: float
     phi_mm: float
@@ -344,26 +344,26 @@ def area_envolvimento_acri(
     bw_cm: float,
     h_cm: float,
 ) -> list[float]:
-    """Area de envolvimento Acri de cada barra (Figura 17.4, 17.3.3.2,
+    """Área de envolvimento Acri de cada barra (Figura 17.4, 17.3.3.2,
     PDF p. 149-150).
 
-    Formula/regra (imagem conferida): "deve ser considerada uma area Acri
-    do concreto de envolvimento, constituida por um retangulo cujos lados
-    nao distem mais que 7,5*phi do eixo da barra" -- ou seja, um retangulo
+    Fórmula/regra (imagem conferida): "deve ser considerada uma área Acri
+    do concreto de envolvimento, constituída por um retângulo cujos lados
+    não distem mais que 7,5*phi do eixo da barra" -- ou seja, um retângulo
     de lado 15*phi (mm convertido para cm) centrado no eixo de cada barra.
 
-    A norma nao detalha a regra de particao entre barras vizinhas quando
-    as regioes 7,5*phi se sobrepoem (so diz "particionada... quando as
-    regioes se sobrepoem" -- risco 8.6 do plano: escolha declarada aqui). A
-    funcao parte a zona disputada pela bissetriz (metade da distancia entre
-    os eixos das duas barras), o criterio usual (Bastos, item 17.1), e so o
+    A norma não detalha a regra de partição entre barras vizinhas quando
+    as regiões 7,5*phi se sobrepõem (só diz "particionada... quando as
+    regiões se sobrepõem" -- risco 8.6 do plano: escolha declarada aqui). A
+    função parte a zona disputada pela bissetriz (metade da distância entre
+    os eixos das duas barras), o critério usual (Bastos, item 17.1), e só o
     faz entre barras exatamente alinhadas na mesma linha (mesmo y) ou na
     mesma coluna (mesmo x) -- o caso comum de viga (uma ou mais camadas
-    horizontais de barras). Para arranjo generico nao alinhado, barras
-    vizinhas fora de uma linha/coluna comum nao sao particionadas entre si
-    (a funcao devolve a area plena, so recortada pelo contorno fisico da
-    secao bw_cm x h_cm centrada na origem -- pode entao se sobrepor a de
-    outra barra nao alinhada; registre essa limitacao ao usar arranjos
+    horizontais de barras). Para arranjo genérico não alinhado, barras
+    vizinhas fora de uma linha/coluna comum não são particionadas entre si
+    (a função devolve a área plena, só recortada pelo contorno físico da
+    seção bw_cm x h_cm centrada na origem -- pode então se sobrepor à de
+    outra barra não alinhada; registre essa limitação ao usar arranjos
     irregulares).
 
     Retorna Acri (cm^2) na mesma ordem de `barras`.
@@ -399,12 +399,12 @@ def area_envolvimento_acri(
 
 
 # ---------------------------------------------------------------------------
-# 17.3.3.3 -- Tabela 17.2, controle de fissuracao sem verificar wk (PDF p. 150)
+# 17.3.3.3 -- Tabela 17.2, controle de fissuração sem verificar wk (PDF p. 150)
 # ---------------------------------------------------------------------------
 # (sigma_si/Delta_sigma_pi em MPa) -> (phi_max sem armaduras ativas [mm],
 #  s_max sem armaduras ativas [cm], phi_max com armaduras ativas [mm] ou
-#  None, s_max com armaduras ativas [cm] ou None). None = celula "-" da
-#  tabela (a norma nao define esse par tensao/armadura-ativa).
+#  None, s_max com armaduras ativas [cm] ou None). None = célula "-" da
+#  tabela (a norma não define esse par tensão/armadura-ativa).
 TABELA_17_2 = {
     160.0: (32.0, 30.0, 25.0, 20.0),
     200.0: (25.0, 25.0, 16.0, 15.0),
@@ -430,32 +430,32 @@ def controle_fissuracao_sem_wk(
     sigma_si_mpa: float, com_armadura_ativa: bool = False,
 ) -> ResultadoControleFissuracao:
     """phi_max e s_max da Tabela 17.2 (17.3.3.3, PDF p. 150), dispensando o
-    calculo de wk (aberturas esperadas da ordem de 0,3 mm em concreto
+    cálculo de wk (aberturas esperadas da ordem de 0,3 mm em concreto
     armado e 0,2 mm com armaduras ativas). sigma_si (ou Delta sigma_pi) em
-    MPa, calculada no Estadio II (`tensoes_servico`).
+    MPa, calculada no Estádio II (`tensoes_servico`).
 
-    A tabela nao diz como tratar tensao entre as 7 linhas tabeladas (160 a
-    400 MPa, de 40 em 40 MPa); phi_max e s_max so decrescem com a tensao
-    (mais restritivos quanto maior sigma). Na ausencia de regra de
-    interpolacao (a NBR nao diz que pode, risco 8.6 do plano: so interpolar
-    quando a norma manda), a funcao usa o degrau imediatamente igual ou
-    acima de sigma_si -- a favor da seguranca (o mesmo criterio usado hoje
-    para alpha_0t, Tabela 9.4). Acima de 400 MPa, ou numa celula "-" (a
-    tabela nao define esse par tensao/armadura-ativa), levanta
+    A tabela não diz como tratar tensão entre as 7 linhas tabeladas (160 a
+    400 MPa, de 40 em 40 MPa); phi_max e s_max só decrescem com a tensão
+    (mais restritivos quanto maior sigma). Na ausência de regra de
+    interpolação (a NBR não diz que pode, risco 8.6 do plano: só interpolar
+    quando a norma manda), a função usa o degrau imediatamente igual ou
+    acima de sigma_si -- a favor da segurança (o mesmo critério usado hoje
+    para alpha_0t, Tabela 9.4). Acima de 400 MPa, ou numa célula "-" (a
+    tabela não define esse par tensão/armadura-ativa), levanta
     FaixaNormativaError.
 
-    Divergencia registrada em relacao ao "O que criar" do plano do pacote,
+    Divergência registrada em relação ao "O que criar" do plano do pacote,
     que descreve `controle_fissuracao_sem_wk(sigma_s_mpa, phi_mm, s_cm,
-    tipo)` -- uma verificacao completa (compara o phi/espacamento REAIS do
+    tipo)` -- uma verificação completa (compara o phi/espaçamento REAIS do
     detalhamento contra os limites da tabela e devolve ok: bool). Esta
-    funcao e uma consulta aos limites phi_max/s_max da Tabela 17.2 para uma
-    tensao dada, no mesmo espirito de `ResultadoTensoes` (que tambem nao
-    carrega ok/governante por nao ser, ela propria, uma verificacao) --
-    por isso `ResultadoControleFissuracao` nao segue aqui a convencao 3.3
-    item 4 (dataclass de verificacao com ok/governante), que vale para
-    dataclasses que checam um resultado, nao para as que so expoem um valor
+    função é uma consulta aos limites phi_max/s_max da Tabela 17.2 para uma
+    tensão dada, no mesmo espírito de `ResultadoTensoes` (que também não
+    carrega ok/governante por não ser, ela própria, uma verificação) --
+    por isso `ResultadoControleFissuracao` não segue aqui a convenção 3.3
+    item 4 (dataclass de verificação com ok/governante), que vale para
+    dataclasses que checam um resultado, não para as que só expõem um valor
     calculado ou tabelado. Quem for verificar um detalhamento real (phi_mm,
-    s_cm escolhidos) compara na mao com phi_max_mm/s_max_cm devolvidos
+    s_cm escolhidos) compara na mão com phi_max_mm/s_max_cm devolvidos
     aqui: `ok = phi_mm <= r.phi_max_mm and s_cm <= r.s_max_cm`.
     """
     if sigma_si_mpa <= 0.0:
@@ -491,7 +491,7 @@ def controle_fissuracao_sem_wk(
 
 
 # ---------------------------------------------------------------------------
-# 19.3.2 -- fissuracao/descompressao em lajes remete a 17.3.3/17.3.4 (PDF p. 179)
+# 19.3.2 -- fissuração/descompressão em lajes remete a 17.3.3/17.3.4 (PDF p. 179)
 # ---------------------------------------------------------------------------
 def wk_verificacao(
     phi_mm: float,
@@ -506,18 +506,18 @@ def wk_verificacao(
     nivel_protensao: int | None = None,
     tipo_protensao: str | None = None,
 ) -> "vserv.ResultadoFissuracao":
-    """Fecha o ciclo sigma_si (Estadio II) -> Acri -> wk (17.3.3.2/17.3.3.3),
-    valendo tambem para lajes: 19.3.2 (PDF p. 179) remete, sem formula
-    propria, aos "critérios dados em 17.3.3 e 17.3.4" -- os mesmos de viga,
-    trocando so bw pela largura da faixa de laje considerada (o teste
+    """Fecha o ciclo sigma_si (Estádio II) -> Acri -> wk (17.3.3.2/17.3.3.3),
+    valendo também para lajes: 19.3.2 (PDF p. 179) remete, sem fórmula
+    própria, aos "critérios dados em 17.3.3 e 17.3.4" -- os mesmos de viga,
+    trocando só bw pela largura da faixa de laje considerada (o teste
     sugerido no plano, bw=100 cm, e exatamente isso).
 
-    Fachada fina sobre `viga_servico_nbr6118.abertura_fissura_wk` (nao
-    reimplementa a Eq. 86/87 nem a Tabela 13.4 -- so reune os tres insumos:
+    Fachada fina sobre `viga_servico_nbr6118.abertura_fissura_wk` (não
+    reimplementa a Eq. 86/87 nem a Tabela 13.4 -- só reúne os três insumos:
     sigma_si de `tensoes_servico`, Acri de `area_envolvimento_acri` e o
-    wk_max de `nucleo_nbr6118.wk_max_mm`, esse ultimo via `caa`). Os
-    parametros sao os mesmos de `abertura_fissura_wk`; ver la a
-    documentacao completa (inclusive do `caa`).
+    wk_max de `nucleo_nbr6118.wk_max_mm`, esse último via `caa`). Os
+    parâmetros são os mesmos de `abertura_fissura_wk`; ver lá a
+    documentação completa (inclusive do `caa`).
     """
     return vserv.abertura_fissura_wk(
         phi_mm=phi_mm,
@@ -535,29 +535,29 @@ def wk_verificacao(
 
 
 # ---------------------------------------------------------------------------
-# 17.3.5.2.2 -- As,min sob deformacoes impostas (PDF p. 152-153)
+# 17.3.5.2.2 -- As,min sob deformações impostas (PDF p. 152-153)
 # ---------------------------------------------------------------------------
 def k_deformacao_imposta(
     intrinseca: bool, h_m: float | None = None, retangular: bool = True,
 ) -> float:
     """Coeficiente k da NBR 6118:2026 17.3.5.2.2 (PDF p. 152), armadura
-    minima de tracao sob deformacoes impostas.
+    mínima de tração sob deformações impostas.
 
-    a) deformacoes intrinsecas (ex.: calor de hidratacao, retracao
-       restringida) -- a imagem da pagina 152 traz DOIS ramos, nao um so:
-         - caso geral de qualquer forma de secao (`retangular=False`):
+    a) deformações intrínsecas (ex.: calor de hidratação, retração
+       restringida) -- a imagem da página 152 traz DOIS ramos, não um só:
+         - caso geral de qualquer forma de seção (`retangular=False`):
            k = 0,8, sem depender de h;
-         - caso especifico de secoes retangulares (`retangular=True`,
-           padrao -- mantem o comportamento anterior desta funcao): k = 0,8
-           para h <= 0,3 m; k = 0,5 para h >= 0,8 m; interpolacao linear
-           entre 0,3 m e 0,8 m (`h_m` obrigatorio nesse ramo);
-    b) deformacoes extrinsecas (ex.: recalque de apoio): k = 1,0
+         - caso específico de seções retangulares (`retangular=True`,
+           padrão -- mantém o comportamento anterior desta função): k = 0,8
+           para h <= 0,3 m; k = 0,5 para h >= 0,8 m; interpolação linear
+           entre 0,3 m e 0,8 m (`h_m` obrigatório nesse ramo);
+    b) deformações extrínsecas (ex.: recalque de apoio): k = 1,0
        (`intrinseca=False`, `h_m` e `retangular` dispensados).
 
-    Para secao nao retangular (T, caixao, celular etc.) com deformacao
-    intrinseca, use `retangular=False`: usar o ramo retangular nesse caso
+    Para seção não retangular (T, caixão, celular etc.) com deformação
+    intrínseca, use `retangular=False`: usar o ramo retangular nesse caso
     aplicaria k=0,5 (h>=0,8 m) em vez do k=0,8 do caso geral, subestimando
-    As,min -- contra a seguranca.
+    As,min -- contra a segurança.
     """
     if not intrinseca:
         return 1.0
@@ -582,29 +582,29 @@ def kc_deformacao_imposta(
     h_cm: float | None = None,
 ) -> float:
     """Coeficiente kc da NBR 6118:2026 17.3.5.2.2 (PDF p. 152-153), natureza
-    da distribuicao de tensoes na secao imediatamente antes da fissuracao.
+    da distribuição de tensões na seção imediatamente antes da fissuração.
 
     caso:
         'tracao_pura'                          -> kc = 1,0
         'flexao_simples'                       -> kc = 0,4
         'nervura_vazada_protendida'             -> kc = 0,4 (nervuras de
-            elementos protendidos ou sob flexao composta, secoes vazadas
-            celular ou caixao)
+            elementos protendidos ou sob flexão composta, seções vazadas
+            celular ou caixão)
         'mesa_tracionada_vazada_protendida'     -> kc = 0,8 (mesa
             tracionada, mesmo tipo de elemento)
         'interpolado' -> interpola linearmente entre 0 e 0,4 conforme a
-            altura da zona tracionada calculada no Estadio II sob os
-            esforcos que conduzem ao inicio da fissuracao
-            (`altura_zona_tracionada_cm`), quando essa altura nao exceder
-            o menor dos dois valores h/2 e 0,5 m (`h_cm` obrigatorio, para
-            achar h/2). A norma nao detalha o sentido da interpolacao
-            (risco 8.6 do plano: registrar a leitura adotada); esta funcao
-            le kc crescendo de 0 (altura da zona tracionada nula) ate 0,4
-            (na propria altura-limite, aproximando-se do caso de flexao
+            altura da zona tracionada calculada no Estádio II sob os
+            esforços que conduzem ao início da fissuração
+            (`altura_zona_tracionada_cm`), quando essa altura não exceder
+            o menor dos dois valores h/2 e 0,5 m (`h_cm` obrigatório, para
+            achar h/2). A norma não detalha o sentido da interpolação
+            (risco 8.6 do plano: registrar a leitura adotada); esta função
+            lê kc crescendo de 0 (altura da zona tracionada nula) até 0,4
+            (na própria altura-limite, aproximando-se do caso de flexão
             simples) -- a leitura mais direta do texto ("interpolado entre
             0,4 ... e zero" conforme a altura se aproxima ou se afasta do
-            limite), mas e uma decisao de leitura, nao uma formula
-            explicita da norma.
+            limite), mas é uma decisão de leitura, não uma fórmula
+            explícita da norma.
     """
     valores = {
         "tracao_pura": 1.0,
@@ -640,17 +640,17 @@ def kc_deformacao_imposta(
 def As_min_deformacao_imposta(
     k: float, kc: float, fctef_mpa: float, Act_cm2: float, sigma_s_mpa: float,
 ) -> float:
-    """Armadura minima de tracao sob deformacoes impostas (17.3.5.2.2,
+    """Armadura mínima de tração sob deformações impostas (17.3.5.2.2,
     PDF p. 152): As = k*kc*fct,ef*Act/sigma_s.
 
     k: `k_deformacao_imposta`. kc: `kc_deformacao_imposta`. fctef_mpa:
-    resistencia media a tracao efetiva do concreto na idade em que se
-    formam as primeiras fissuras (8.2.5); a norma recomenda o minimo de
-    3 MPa quando essa idade nao puder ser definida com confianca. Act_cm2:
-    area de concreto na zona tracionada. sigma_s_mpa: tensao maxima
-    permitida na armadura logo apos a fissuracao (pode ser limitada pela
+    resistência média à tração efetiva do concreto na idade em que se
+    formam as primeiras fissuras (8.2.5); a norma recomenda o mínimo de
+    3 MPa quando essa idade não puder ser definida com confiança. Act_cm2:
+    área de concreto na zona tracionada. sigma_s_mpa: tensão máxima
+    permitida na armadura logo após a fissuração (pode ser limitada pela
     Tabela 17.2). fctef_mpa e sigma_s_mpa devem estar na mesma unidade (a
-    razao e adimensional); devolve As em cm^2 (mesma unidade de Act_cm2).
+    razão é adimensional); devolve As em cm^2 (mesma unidade de Act_cm2).
     """
     if sigma_s_mpa <= 0.0:
         raise ValueError("sigma_s_mpa deve ser positiva.")
@@ -658,5 +658,5 @@ def As_min_deformacao_imposta(
 
 
 FCTEF_MINIMO_RECOMENDADO_MPA = 3.0
-"""Valor minimo de fct,ef recomendado pela norma (17.3.5.2.2, PDF p. 152)
-quando a idade de fissuracao nao puder ser definida com valor confiavel."""
+"""Valor mínimo de fct,ef recomendado pela norma (17.3.5.2.2, PDF p. 152)
+quando a idade de fissuração não puder ser definida com valor confiável."""

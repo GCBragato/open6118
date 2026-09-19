@@ -522,10 +522,10 @@ class CasoCarga:
 
     def __init__(self, nome: str = "caso"):
         self.nome = nome
-        self.nodais: list = []        # (no, vetor 6)
+        self.nodais: list = []        # (nó, vetor 6)
         self.barra_cargas: list = []  # (barra, tipo, dados)
         self.temperaturas: list = []  # (barra, dtu, dtf, h, plano)
-        self.recalques: dict = {}     # no -> {idx: valor}
+        self.recalques: dict = {}     # nó -> {idx: valor}
 
     def nodal(self, no, Fx: float = 0.0, Fy: float = 0.0, Fz: float = 0.0,
               Mx: float = 0.0, My: float = 0.0, Mz: float = 0.0) -> "CasoCarga":

@@ -1,40 +1,40 @@
-"""Lajes Macicas em Concreto Armado (NBR 6118:2023).
+"""Lajes Maciças em Concreto Armado (NBR 6118:2023).
 
-Nome ate 19/09/2026: lajes_bastos.py. O credito as apostilas esta abaixo.
+Nome até 19/09/2026: lajes_bastos.py. O crédito às apostilas está abaixo.
 
-Implementa o calculo de lajes macicas seguindo a apostila
-"LAJES DE CONCRETO ARMADO" (Out/2023), Prof. Paulo Sergio Bastos,
+Implementa o cálculo de lajes maciças seguindo a apostila
+"LAJES DE CONCRETO ARMADO" (Out/2023), Prof. Paulo Sérgio Bastos,
 UNESP/Bauru, baseada na NBR 6118:2023 e Teoria das Placas (tabelas de Bares).
 
 Casos cobertos:
-    - Classificacao (uma direcao vs duas direcoes).
-    - Vao efetivo.
-    - Pre-dimensionamento da altura util/total.
-    - Momentos fletores e flecha em laje armada em uma direcao
-      (apoio simples, engaste-apoio, biengastada, balanco).
-    - Momentos fletores, reacoes de apoio e flecha imediata em laje armada em
-      duas direcoes via tabelas de Bares (tipos 1, 2A, 2B, 3, 4A, 4B, 5A, 5B, 6).
-    - Compatibilizacao de momentos negativos entre lajes adjacentes.
-    - Momento de fissuracao e verificacao do estadio (Mr vs Ma).
-    - Flecha total (com fluencia, coeficiente alpha_f).
-    - Dimensionamento a flexao (faixa de 1 m).
-    - Verificacao de forca cortante sem armadura transversal (item 19.4.1 NBR).
+    - Classificação (uma direção vs duas direções).
+    - Vão efetivo.
+    - Pré-dimensionamento da altura útil/total.
+    - Momentos fletores e flecha em laje armada em uma direção
+      (apoio simples, engaste-apoio, biengastada, balanço).
+    - Momentos fletores, reações de apoio e flecha imediata em laje armada em
+      duas direções via tabelas de Bares (tipos 1, 2A, 2B, 3, 4A, 4B, 5A, 5B, 6).
+    - Compatibilização de momentos negativos entre lajes adjacentes.
+    - Momento de fissuração e verificação do estádio (Mr vs Ma).
+    - Flecha total (com fluência, coeficiente alpha_f).
+    - Dimensionamento à flexão (faixa de 1 m).
+    - Verificação de força cortante sem armadura transversal (item 19.4.1 NBR).
 
-Convencoes:
+Convenções:
     - Concretos do Grupo I e II (C20 a C90, NBR 6118 8.2.1); diagrama
       retangular simplificado com y = lambda*x e sigma_cd = alpha_c*eta_c*fcd,
-      lambda/alpha_c/eta_c vindos do nucleo normativo (nucleo_nbr6118.py) e
+      lambda/alpha_c/eta_c vindos do núcleo normativo (nucleo_nbr6118.py) e
       iguais a 0.8/0.85/1.0 para fck <= 40 MPa.
     - Limite de ductilidade NBR 6118 14.6.4.3: x/d <= 0.45 (fck <= 50 MPa) ou
       x/d <= 0.35 (fck > 50 MPa), via nucleo_nbr6118.xd_limite_dutilidade.
-    - Aco CA-50 (fyk = 500 MPa) por padrao.
-    - gama_c = 1.4, gama_s = 1.15, gama_f = 1.4 (combinacao normal).
-    - Unidades: kN e cm em todas as funcoes; cargas distribuidas em kN/m^2.
-    - Interpolacao linear nas tabelas de Bares.
+    - Aço CA-50 (fyk = 500 MPa) por padrão.
+    - gama_c = 1.4, gama_s = 1.15, gama_f = 1.4 (combinação normal).
+    - Unidades: kN e cm em todas as funções; cargas distribuídas em kN/m^2.
+    - Interpolação linear nas tabelas de Bares.
 
 Estrutura segue:
-    - alv_est/viga_mista_v3.py: dataclasses, funcoes puras, testes.
-    - open6118/dimensionamento/vigas_nbr6118.py: mesmo padrao para vigas.
+    - alv_est/viga_mista_v3.py: dataclasses, funções puras, testes.
+    - open6118/dimensionamento/vigas_nbr6118.py: mesmo padrão para vigas.
 """
 
 from __future__ import annotations
@@ -69,18 +69,18 @@ GAMA_F = nbr.GAMA_F  # Tabela 11.1 — lido do núcleo (P4)
 
 E_S = 21000.0          # kN/cm2 (210 GPa).
 GAMA_CONC = 25.0       # kN/m3 (concreto armado).
-EPS_CU = 3.5           # %o. Legado: so vale para fck <= 50 (Grupo I); ver
+EPS_CU = 3.5           # %o. Legado: só vale para fck <= 50 (Grupo I); ver
                        # nucleo_nbr6118.eps_cu para os dois ramos (8.2.10.1).
 LIMITE_BETA_X = 0.45   # NBR 6118 14.6.4.3 para fck <= 50 MPa. Legado: mantido
                        # para compatibilidade (nome exportado). dimensionar_flexao
                        # usa nbr.xd_limite_dutilidade(fck), que cobre fck > 50
                        # com o limite 0.35 da norma (LAJ-02).
 
-# Taxas minimas de armadura (Tabela 17.3 NBR 6118), so ate C50. Legado:
+# Taxas mínimas de armadura (Tabela 17.3 NBR 6118), só até C50. Legado:
 # mantido para compatibilidade; as_min_laje usa nbr.rho_min_flexao(fck), que
-# cobre a Tabela 17.3 completa (C20 a C90, com interpolacao - LAJ-06). O fator
-# 0.67 para armadura positiva de laje armada em duas direcoes (Tabela 19.1)
-# continua aplicado neste modulo.
+# cobre a Tabela 17.3 completa (C20 a C90, com interpolação - LAJ-06). O fator
+# 0.67 para armadura positiva de laje armada em duas direções (Tabela 19.1)
+# continua aplicado neste módulo.
 RHO_MIN_TABELA = {
     20: 0.00150, 25: 0.00150, 30: 0.00150, 35: 0.00164, 40: 0.00179,
     45: 0.00194, 50: 0.00208,
@@ -91,9 +91,9 @@ RHO_MIN_TABELA = {
 # Helpers
 # ---------------------------------------------------------------------------
 def fcd_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
-    """Resistencia de calculo a compressao (NBR 6118 12.3.3), em kN/cm2.
+    """Resistência de cálculo à compressão (NBR 6118 12.3.3), em kN/cm2.
 
-    Delega ao nucleo normativo (nbr.fcd; t = 28 dias por padrao).
+    Delega ao núcleo normativo (nbr.fcd; t = 28 dias por padrão).
     """
     return nbr.mpa_para_kncm2(nbr.fcd(fck_mpa, gama_c))
 
@@ -103,31 +103,31 @@ def fyd_kncm2(fyk_mpa: float, gama_s: float = GAMA_S) -> float:
 
 
 def fct_m_kncm2(fck_mpa: float) -> float:
-    """Resistencia media a tracao direta (NBR 6118 8.2.5), em kN/cm2.
+    """Resistência média à tração direta (NBR 6118 8.2.5), em kN/cm2.
 
-    Delega ao nucleo normativo (nbr.fct_m), que cobre os dois ramos de 8.2.5:
+    Delega ao núcleo normativo (nbr.fct_m), que cobre os dois ramos de 8.2.5:
     fck <= 50 MPa e fck > 50 MPa (LAJ-03).
     """
     return nbr.mpa_para_kncm2(nbr.fct_m(fck_mpa))
 
 
 def fctk_inf_kncm2(fck_mpa: float) -> float:
-    """fctk,inf (NBR 6118 8.2.5), em kN/cm2. Delega ao nucleo (nbr.fctk_inf)."""
+    """fctk,inf (NBR 6118 8.2.5), em kN/cm2. Delega ao núcleo (nbr.fctk_inf)."""
     return nbr.mpa_para_kncm2(nbr.fctk_inf(fck_mpa))
 
 
 def Ecs_kncm2(fck_mpa: float, alpha_E: float = 1.0) -> float:
-    """Modulo de elasticidade secante (NBR 6118 8.2.8), em kN/cm2.
-    alpha_E: 1.0 granito/gnaisse, 1.2 basalto/diabasio, 0.9 calcario, 0.7 arenito.
+    """Módulo de elasticidade secante (NBR 6118 8.2.8), em kN/cm2.
+    alpha_E: 1.0 granito/gnaisse, 1.2 basalto/diabásio, 0.9 calcário, 0.7 arenito.
 
-    Delega ao nucleo normativo (nbr.Ecs), que cobre os dois ramos de Eci:
+    Delega ao núcleo normativo (nbr.Ecs), que cobre os dois ramos de Eci:
     fck <= 50 MPa e fck > 50 MPa (LAJ-04).
     """
     return nbr.mpa_para_kncm2(nbr.Ecs(fck_mpa, alpha_E))
 
 
 # ---------------------------------------------------------------------------
-# Classificacao e geometria
+# Classificação e geometria
 # ---------------------------------------------------------------------------
 def classificar(lx_cm: float, ly_cm: float) -> tuple[float, str]:
     """Retorna (lambda, 'duas_direcoes' ou 'uma_direcao'). lx <= ly."""
@@ -138,8 +138,8 @@ def classificar(lx_cm: float, ly_cm: float) -> tuple[float, str]:
 
 
 # Promovida para analise_linear_nbr6118.py no P14 (19/09/2026); fachada de
-# uma linha mantida aqui para nao quebrar quem ja importava vao_efetivo
-# deste modulo - mesma assinatura e mesmo resultado de antes.
+# uma linha mantida aqui para não quebrar quem já importava vao_efetivo
+# deste módulo - mesma assinatura e mesmo resultado de antes.
 vao_efetivo = _analise_linear.vao_efetivo
 
 
@@ -147,7 +147,7 @@ def predim_altura(
     lx_cm: float, ly_cm: float, n_engastes: int,
     c_cm: float = 2.0, phi_cm: float = 1.0,
 ) -> tuple[float, float]:
-    """Pre-dimensiona altura util d (cm) e altura total h (cm).
+    """Pré-dimensiona altura útil d (cm) e altura total h (cm).
 
     Eq. 15-17 da apostila: d = (2.5 - 0.1 n) l*; l* = min(lx, 0.7 ly).
     """
@@ -163,12 +163,12 @@ def as_min_laje(
     bw_cm: float, h_cm: float, fck_mpa: float,
     armadura_positiva: bool = False, duas_direcoes: bool = False,
 ) -> float:
-    """Armadura minima de flexao em laje (cm2/m).
+    """Armadura mínima de flexão em laje (cm2/m).
 
-    rho_min da Tabela 17.3 NBR 6118 vem do nucleo normativo (nbr.rho_min_flexao),
-    que cobre C20 a C90 com interpolacao entre classes (LAJ-06; antes, fck > 50
-    MPa caia no valor do C50). O fator 0.67 para armadura positiva em laje
-    armada em duas direcoes (Tabela 19.1 NBR 6118) continua aplicado aqui.
+    rho_min da Tabela 17.3 NBR 6118 vem do núcleo normativo (nbr.rho_min_flexao),
+    que cobre C20 a C90 com interpolação entre classes (LAJ-06; antes, fck > 50
+    MPa caía no valor do C50). O fator 0.67 para armadura positiva em laje
+    armada em duas direções (Tabela 19.1 NBR 6118) continua aplicado aqui.
     """
     rho = nbr.rho_min_flexao(fck_mpa)
     fator = 0.67 if (armadura_positiva and duas_direcoes) else 1.0
@@ -180,7 +180,7 @@ def as_min_laje(
 # ---------------------------------------------------------------------------
 # Cada tabela mapeia tipo -> {lambda: tupla de coeficientes}.
 # - MU: coef de momento fletor; M = mu * p * lx^2 / 100
-# - NU: coef de reacao de apoio; V = nu * p * lx / 10
+# - NU: coef de reação de apoio; V = nu * p * lx / 10
 # - ALPHA: coef de flecha imediata; a = alpha/12 * p * lx^4 / EI
 #
 # Coeficientes por tipo:
@@ -196,12 +196,12 @@ def as_min_laje(
 #   tipo 6   : (mu_x, mu_x_, mu_y, mu_y_, nu_x_, nu_y_)        4 bordas engastadas
 #
 # Para simplificar, encodamos como dict de listas de tuplas:
-# (lambda, mu_x, mu_x_, mu_y, mu_y_) - usar 0 quando nao se aplica.
+# (lambda, mu_x, mu_x_, mu_y, mu_y_) - usar 0 quando não se aplica.
 
 # --- MU (momentos fletores) ---
 # Subset focado em apostila ex 3.17. Apenas valores essenciais para os testes.
 # Formato: tipo -> [(lambda, mu_x, mu_x_prime, mu_y, mu_y_prime), ...]
-# mu_*_prime = 0 quando borda nao eh engastada.
+# mu_*_prime = 0 quando borda não é engastada.
 
 MU_TIPO_1: list[tuple[float, float, float, float, float]] = [
     # apoio simples nas 4 bordas; mu_x_=mu_y_=0
@@ -243,7 +243,7 @@ MU_TIPO_3: list[tuple[float, float, float, float, float]] = [
 ]
 
 MU_TIPO_5A: list[tuple[float, float, float, float, float]] = [
-    # tres bordas engastadas (uma livre na direcao y).
+    # três bordas engastadas (uma livre na direção y).
     # Apostila Tabela A-10. mu_y_ refere-se a uma borda engastada em y.
     (1.00, 2.02, 5.46, 2.52, 6.17),
     (1.05, 2.27, 5.98, 2.56, 6.46),
@@ -294,7 +294,7 @@ MU_TABELAS: dict[str, list] = {
     "6": MU_TIPO_6,
 }
 
-# --- NU (reacoes de apoio) ---
+# --- NU (reações de apoio) ---
 # Formato: tipo -> [(lambda, nu_x, nu_x_prime, nu_y, nu_y_prime), ...]
 
 NU_TIPO_1 = [
@@ -390,9 +390,9 @@ ALPHA_FLECHA: dict[str, list[tuple[float, float]]] = {
 
 
 def _interp_linear(tabela: list[tuple], lam: float) -> tuple:
-    """Interpolacao linear nos valores da tabela. Cada linha eh (lambda, ...).
+    """Interpolação linear nos valores da tabela. Cada linha é (lambda, ...).
 
-    Se lam estiver fora dos limites, retorna a linha mais proxima.
+    Se lam estiver fora dos limites, retorna a linha mais próxima.
     """
     if not tabela:
         raise ValueError("Tabela vazia.")
@@ -449,12 +449,12 @@ class ResultadoFlexao:
 
 
 # ---------------------------------------------------------------------------
-# 1. Laje armada em uma direcao
+# 1. Laje armada em uma direção
 # ---------------------------------------------------------------------------
 # gama_n_laje_balanco morava aqui (achado LAJ-07); com o P10 (Limites
-# geometricos e coeficiente gama_n) ela mudou de casa para
+# geométricos e coeficiente gama_n) ela mudou de casa para
 # limites_geometricos_nbr6118.py, junto com a Tabela 13.1 dos pilares (mesma
-# forma de formula). Reexportada aqui para nao quebrar quem importa
+# forma de fórmula). Reexportada aqui para não quebrar quem importa
 # lajes_nbr6118.gama_n_laje_balanco.
 gama_n_laje_balanco = _limites.gama_n_laje_balanco
 
@@ -463,8 +463,8 @@ def momentos_uma_direcao(
     p_kn_m2: float, lef_cm: float, vinculacao: str,
     h_cm: float | None = None,
 ) -> dict[str, float]:
-    """Momentos fletores e flecha (caracteristicos) de laje 1 direcao,
-    calculada como viga de 1 m de largura no menor vao.
+    """Momentos fletores e flecha (característicos) de laje 1 direção,
+    calculada como viga de 1 m de largura no menor vão.
 
     vinculacao:
       'apoio_simples'    : Mmax = p L^2/8;          flecha = 5/384 pL^4/EI
@@ -472,15 +472,15 @@ def momentos_uma_direcao(
       'biengastada'      : Mmax+ = pL^2/24;         M_eng = -pL^2/12
       'balanco'          : M_eng = -pL^2/2;         Mmax = M_eng
 
-    h_cm (usado so quando vinculacao='balanco'): espessura da laje. Quando
-    informado, aplica o coeficiente adicional gama_n de laje em balanco (NBR
+    h_cm (usado só quando vinculacao='balanco'): espessura da laje. Quando
+    informado, aplica o coeficiente adicional gama_n de laje em balanço (NBR
     6118 13.2.4.1, Tabela 13.2 - LAJ-07) a M_max_pos e M_eng, e devolve o
-    valor usado na chave 'gama_n'. Quando omitido, os esforcos saem sem
-    gama_n (como antes) e a funcao emite ``warnings.warn`` avisando que o
-    coeficiente exigido pela norma nao foi aplicado.
+    valor usado na chave 'gama_n'. Quando omitido, os esforços saem sem
+    gama_n (como antes) e a função emite ``warnings.warn`` avisando que o
+    coeficiente exigido pela norma não foi aplicado.
 
     Retorna dict com chaves: M_max_pos, M_eng (kN.cm/m por faixa de 1 m), e
-    gama_n quando aplicavel (vinculacao='balanco' com h_cm informado).
+    gama_n quando aplicável (vinculacao='balanco' com h_cm informado).
     """
     p = p_kn_m2 / 100.0     # kN/cm por faixa de 1 m (= kN/m / 100)
     L = lef_cm
@@ -498,32 +498,32 @@ def momentos_uma_direcao(
         if h_cm is None:
             warnings.warn(
                 "momentos_uma_direcao('balanco'): gama_n (NBR 6118 13.2.4.1, "
-                "Tabela 13.2) nao foi aplicado porque h_cm nao foi "
+                "Tabela 13.2) não foi aplicado porque h_cm não foi "
                 "informado. O momento de engaste sai sem o coeficiente "
-                "adicional que a norma exige para laje em balanco.",
+                "adicional que a norma exige para laje em balanço.",
                 stacklevel=2,
             )
             return {"M_max_pos": M_max_pos, "M_eng": M_eng}
         gn = gama_n_laje_balanco(h_cm)
         return {"M_max_pos": M_max_pos * gn, "M_eng": M_eng * gn, "gama_n": gn}
-    raise ValueError(f"Vinculacao desconhecida: {vinculacao}")
+    raise ValueError(f"Vinculação desconhecida: {vinculacao}.")
 
 
 # ---------------------------------------------------------------------------
-# 2. Laje armada em duas direcoes (Bares)
+# 2. Laje armada em duas direções (Bares)
 # ---------------------------------------------------------------------------
 def momentos_duas_direcoes(
     tipo: str, lx_cm: float, ly_cm: float, p_kn_m2: float,
 ) -> MomentosLaje:
-    """Momentos fletores caracteristicos via tabelas de Bares.
+    """Momentos fletores característicos via tabelas de Bares.
 
     Retorna MomentosLaje em kN.cm/m. Eq. 21 da apostila:
         M = mu * p * lx^2 / 100        (com p em kN/m^2 e lx em m)
     Para sair em kN.cm/m, multiplica-se por 100 (1 kN.m = 100 kN.cm).
     """
     if tipo not in MU_TABELAS:
-        raise ValueError(f"Tipo {tipo} nao tabelado. Disponiveis: "
-                         f"{list(MU_TABELAS)}")
+        raise ValueError(f"Tipo {tipo} não tabelado. Disponíveis: "
+                         f"{list(MU_TABELAS)}.")
     if lx_cm > ly_cm:
         lx_cm, ly_cm = ly_cm, lx_cm
     lam = ly_cm / lx_cm
@@ -542,12 +542,12 @@ def momentos_duas_direcoes(
 def reacoes_duas_direcoes(
     tipo: str, lx_cm: float, ly_cm: float, p_kn_m2: float,
 ) -> ReacoesLaje:
-    """Reacoes de apoio caracteristicas via tabelas de Bares.
+    """Reações de apoio características via tabelas de Bares.
 
     Eq. 24: V = nu * p * lx / 10. Retorna ReacoesLaje em kN/m.
     """
     if tipo not in NU_TABELAS:
-        raise ValueError(f"Tipo {tipo} nao tabelado.")
+        raise ValueError(f"Tipo {tipo} não tabelado.")
     if lx_cm > ly_cm:
         lx_cm, ly_cm = ly_cm, lx_cm
     lam = ly_cm / lx_cm
@@ -566,7 +566,7 @@ def reacoes_duas_direcoes(
 def flecha_imediata_duas_direcoes(
     tipo: str, lx_cm: float, ly_cm: float, p_kn_m2: float, EI_kncm2: float,
 ) -> float:
-    """Flecha imediata em laje armada em duas direcoes (Eq. 46 da apostila).
+    """Flecha imediata em laje armada em duas direções (Eq. 46 da apostila).
 
     a_i = alpha/12 * p * lx^4 / EI    (em cm).
     """
@@ -582,22 +582,22 @@ def flecha_imediata_duas_direcoes(
 
 
 # ---------------------------------------------------------------------------
-# 3. Compatibilizacao, fissuracao e fluencia
+# 3. Compatibilização, fissuração e fluência
 # ---------------------------------------------------------------------------
 def compat_momento_negativo(M1: float, M2: float, regra: str = "media_08") -> float:
     """Compatibiliza o momento negativo sobre um apoio comum a duas lajes
     calculadas isoladamente (NBR 6118 14.7.6.2, PDF p. 117). Retorna positivo.
 
     regra:
-      'media_08' (default; Eq. 22 da apostila, classica): X = max(0,8*max(|M1|,|M2|), (|M1|+|M2|)/2).
+      'media_08' (default; Eq. 22 da apostila, clássica): X = max(0,8*max(|M1|,|M2|), (|M1|+|M2|)/2).
       'maior'    (simplificado, texto da norma): X = max(|M1|, |M2|) — "Permite-se,
-                 simplificadamente, a adocao do maior valor de momento negativo em
+                 simplificadamente, a adoção do maior valor de momento negativo em
                  vez de equilibrar os momentos de lajes diferentes sobre uma borda
                  comum."
 
-    Default mantido em 'media_08' para nao mudar o comportamento de quem ja chama
-    esta funcao. O procedimento iterativo de compatibilizacao para analise
-    plastica, descrito no mesmo item 14.7.6.2, nao e implementado aqui (P17).
+    Default mantido em 'media_08' para não mudar o comportamento de quem já chama
+    esta função. O procedimento iterativo de compatibilização para análise
+    plástica, descrito no mesmo item 14.7.6.2, não é implementado aqui (P17).
     """
     a, b = abs(M1), abs(M2)
     if regra == "maior":
@@ -612,7 +612,7 @@ def momento_fissuracao(
 ) -> float:
     """Mr = alpha * fct,m * Ic / yt   (Eq. 25 NBR 6118 17.3.1).
 
-    Para verificacao do estado-limite de deformacao usar fct_m (default).
+    Para verificação do estado-limite de deformação usar fct_m (default).
     Retorna em kN.cm.
     """
     fct = fct_m_kncm2(fck_mpa)        # kN/cm2
@@ -623,7 +623,7 @@ def momento_fissuracao(
 
 def alpha_f(t_meses: float, t0_meses: float = 1.0,
             rho_linha: float = 0.0) -> float:
-    """Coeficiente de fluencia para flecha diferida (Eq. 39 NBR).
+    """Coeficiente de fluência para flecha diferida (Eq. 39 NBR).
 
     alpha_f = (xi(t) - xi(t0)) / (1 + 50 rho').
     """
@@ -635,7 +635,7 @@ def alpha_f(t_meses: float, t0_meses: float = 1.0,
 
 
 # ---------------------------------------------------------------------------
-# 4. Dimensionamento a flexao (faixa de 1 m)
+# 4. Dimensionamento à flexão (faixa de 1 m)
 # ---------------------------------------------------------------------------
 def dimensionar_flexao(
     Md_kncm: float, d_cm: float, h_cm: float,
@@ -646,17 +646,17 @@ def dimensionar_flexao(
 ) -> ResultadoFlexao:
     """Dimensiona armadura simples para uma faixa de bw (default 1 m).
 
-    Bloco retangular (NBR 6118 17.2.2 e): forca = tensao_retangulo(fck) * bw *
-    (lambda * x); braco = d - lambda * x / 2. Para fck <= 40 MPa (eta_c = 1) e
-    lambda = 0.8 (fck <= 50 MPa), a equacao se reduz a classica
+    Bloco retangular (NBR 6118 17.2.2 e): força = tensao_retangulo(fck) * bw *
+    (lambda * x); braço = d - lambda * x / 2. Para fck <= 40 MPa (eta_c = 1) e
+    lambda = 0.8 (fck <= 50 MPa), a equação se reduz à clássica
     |Md| = 0.68 bw x fcd (d - 0.4 x); acima disso entram eta_c e o lambda
     reduzido do Grupo II (8.2.10.1, 17.2.2 e - LAJ-01), e o limite de x/d passa
     a vir de nbr.xd_limite_dutilidade (14.6.4.3 - LAJ-02).
 
     gama_n (13.2.4.1, Tabela 13.2 - LAJ-07): coeficiente adicional de laje em
-    balanco. Default 1.0 (sem majoracao); quem chama aplica
+    balanço. Default 1.0 (sem majoração); quem chama aplica
     ``gama_n_laje_balanco(h_cm)`` aqui quando Md_kncm vier de uma laje em
-    balanco e ainda nao tiver sido majorado (por exemplo, se
+    balanço e ainda não tiver sido majorado (por exemplo, se
     ``momentos_uma_direcao`` foi usada sem passar h_cm).
     """
     Md = abs(Md_kncm) * gama_n
@@ -707,7 +707,7 @@ def dimensionar_flexao(
 
 
 # ---------------------------------------------------------------------------
-# 5. Forca cortante - laje sem armadura transversal (NBR 19.4.1)
+# 5. Força cortante - laje sem armadura transversal (NBR 19.4.1)
 # ---------------------------------------------------------------------------
 def cortante_resistente_laje(
     bw_cm: float, d_cm: float, As_long_cm2: float, fck_mpa: float,
@@ -716,9 +716,9 @@ def cortante_resistente_laje(
 ) -> float:
     """VRd1 = [τRd·k·(1,2 + 40·ρ1) + 0,15·σcp]·bw·d, kN (19.4.1, PDF p. 181).
 
-    Eq. 56-62 da apostila. Se a forca cortante solicitante VSd <= V_Rd1,
-    nao eh necessaria armadura transversal. tau_Rd = 0.25 fctd, com fck
-    limitado a 60 MPa (NBR 6118 19.4.1 - LAJ-05), via nucleo normativo.
+    Eq. 56-62 da apostila. Se a força cortante solicitante VSd <= V_Rd1,
+    não é necessária armadura transversal. tau_Rd = 0.25 fctd, com fck
+    limitado a 60 MPa (NBR 6118 19.4.1 - LAJ-05), via núcleo normativo.
 
     P15 (decisão 6 do plano): delega a cortante_nbr6118.laje_sem_armadura,
     que tem a fórmula completa. σcp = NSd/Ac em MPa, compressão positiva
@@ -737,7 +737,7 @@ def cortante_resistente_laje(
 
 
 # ---------------------------------------------------------------------------
-# Impressao
+# Impressão
 # ---------------------------------------------------------------------------
 def imprimir_momentos(m: MomentosLaje, label: str = "") -> None:
     if label:
@@ -768,7 +768,7 @@ def imprimir_reacoes(r: ReacoesLaje, label: str = "") -> None:
 # ---------------------------------------------------------------------------
 def teste_classificacao() -> bool:
     """Apostila 3.17: L2 (lx=586, ly=606) -> duas dir; L4 (lx=286, ly=786) -> uma dir."""
-    print("\n--- Teste classificacao ---")
+    print("\n--- Teste classificação ---")
     lam_L2, tipo_L2 = classificar(586, 606)
     lam_L4, tipo_L4 = classificar(286, 786)
     print(f"  L2: lambda={lam_L2:.3f}, {tipo_L2}")
@@ -783,7 +783,7 @@ def teste_classificacao() -> bool:
 
 def teste_vao_efetivo() -> bool:
     """Apostila 3.17: lx_livre=580 cm, t1=t2=20 cm, h=10 cm -> ef=586."""
-    print("\n--- Teste vao efetivo ---")
+    print("\n--- Teste vão efetivo ---")
     ef = vao_efetivo(580, 20, 20, 10)
     print(f"  l_ef = {ef:.1f} cm   (esperado 586)")
     ok = abs(ef - 586) < 1.0
@@ -793,7 +793,7 @@ def teste_vao_efetivo() -> bool:
 
 def teste_predim_altura() -> bool:
     """Apostila 3.17.2 L3: lx=586, ly=656, n=2 -> d~10.6 cm, h~13 cm."""
-    print("\n--- Teste pre-dimensionamento (L3) ---")
+    print("\n--- Teste pré-dimensionamento (L3) ---")
     d, h = predim_altura(586, 656, n_engastes=2, c_cm=2.0, phi_cm=1.0)
     print(f"  d = {d:.2f} cm (esperado ~10.6) | h = {h:.2f} cm (esperado ~13.1)")
     ok = abs(d - 10.6) < 0.2 and abs(h - 13.1) < 0.2
@@ -817,8 +817,8 @@ def teste_momentos_L2() -> bool:
     """Apostila 3.17 L2: tipo 3, lx=586, ly=606, p=5.78.
 
     Apostila usa Tabela A-9 com nearest-neighbor (lambda=1.05 para 1.03).
-    Este script usa interpolacao linear -> valores ~3% menores. Tolerancia
-    aumentada para cobrir essa diferenca."""
+    Este script usa interpolação linear -> valores ~3% menores. Tolerância
+    aumentada para cobrir essa diferença."""
     print("\n--- Teste momentos L2 (tipo 3, lambda=1.03) ---")
     m = momentos_duas_direcoes("3", 586, 606, 5.78)
     imprimir_momentos(m)
@@ -833,7 +833,7 @@ def teste_momentos_L2() -> bool:
 def teste_reacoes_L5() -> bool:
     """Apostila 3.17 L5: tipo 6, lambda=1.00, p=6.9, lx=486 cm.
     Esperado: V'x = V'y = 8.38 kN/m."""
-    print("\n--- Teste reacoes L5 (tipo 6, lambda=1.00) ---")
+    print("\n--- Teste reações L5 (tipo 6, lambda=1.00) ---")
     r = reacoes_duas_direcoes("6", 486, 486, 6.9)
     imprimir_reacoes(r)
     ok = abs(r.Vx_eng - 8.38) < 0.1 and abs(r.Vy_eng - 8.38) < 0.1
@@ -843,7 +843,7 @@ def teste_reacoes_L5() -> bool:
 
 def teste_compat_momento() -> bool:
     """Apostila 3.17.5: borda L2/L3 -> M1=1425, M2=1663 -> X = 1544."""
-    print("\n--- Teste compatibilizacao ---")
+    print("\n--- Teste compatibilização ---")
     X = compat_momento_negativo(1425, 1663)
     print(f"  X = {X:.1f} kN.cm/m   (esperado max(1330, 1544) = 1544)")
     ok = abs(X - 1544) < 5
@@ -853,7 +853,7 @@ def teste_compat_momento() -> bool:
 
 def teste_momento_fissuracao() -> bool:
     """Apostila 3.17.6 L2: b=100, h=12, C25 -> Mr ~ 923 kN.cm."""
-    print("\n--- Teste momento de fissuracao (L2) ---")
+    print("\n--- Teste momento de fissuração (L2) ---")
     Mr = momento_fissuracao(100, 12, 25.0, alpha=1.5)
     print(f"  Mr = {Mr:.1f} kN.cm   (esperado ~923)")
     ok = abs(Mr - 923) < 10
@@ -865,8 +865,8 @@ def teste_flecha_L2() -> bool:
     """Apostila 3.17.6.1 L2: tipo 3, lambda=1.03, lx=586, p_qp=4.73 kN/m^2,
     h=12, fck=25 -> a_i ~ 0.36 cm; alpha_f ~ 1.32 -> a_t ~ 0.85 cm.
 
-    Apostila usa alpha=2.72 (tabela tipo 3, lambda=1.05). Linear interp da
-    valor um pouco menor para lambda=1.03; tolerancia maior."""
+    Apostila usa alpha=2.72 (tabela tipo 3, lambda=1.05). Linear interp dá
+    valor um pouco menor para lambda=1.03; tolerância maior."""
     print("\n--- Teste flecha L2 (tipo 3, lambda=1.03) ---")
     Ecs = Ecs_kncm2(25.0, alpha_E=1.0)
     Ic = 100.0 * 12.0 ** 3 / 12.0
@@ -901,7 +901,7 @@ def teste_dimensionamento_L2() -> bool:
 
 def teste_cortante_L1() -> bool:
     """Apostila 3.17.7 L1: VSd=25.76 kN/m -> V_Rd1 ~ 69.7 kN/m."""
-    print("\n--- Teste cortante L1 (laje em balanco) ---")
+    print("\n--- Teste cortante L1 (laje em balanço) ---")
     V_Rd1 = cortante_resistente_laje(
         bw_cm=100, d_cm=10, As_long_cm2=6.25, fck_mpa=25.0,
     )
@@ -912,8 +912,8 @@ def teste_cortante_L1() -> bool:
 
 
 def teste_balanco_L1() -> bool:
-    """Apostila 3.17.4 L1: balanco lx=163, p=6.83 + gradil 0.5 kN/m -> M_eng~989."""
-    print("\n--- Teste momento balanco L1 ---")
+    """Apostila 3.17.4 L1: balanço lx=163, p=6.83 + gradil 0.5 kN/m -> M_eng~989."""
+    print("\n--- Teste momento balanço L1 ---")
     m = momentos_uma_direcao(p_kn_m2=6.83, lef_cm=163.0, vinculacao="balanco")
     # Soma da carga concentrada (gradil) = 0.5 * 1.63 = 0.815 kN.m = 81.5 kN.cm
     M_eng_total = abs(m["M_eng"]) + 0.5 * 1.63 * 100.0
@@ -956,11 +956,11 @@ def main() -> None:
 
 
 # ---------------------------------------------------------------------------
-# === P17: Lajes - flexao, armaduras minimas e momentos ===
+# === P17: Lajes - flexão, armaduras mínimas e momentos ===
 # ---------------------------------------------------------------------------
-# Tabela 19.1 (NBR 6118 19.3.3.2, PDF p. 180) - valores minimos para
-# armaduras passivas aderentes de laje, como fracao de rho_min (Tabela 17.3,
-# ja no nucleo: nbr.rho_min_flexao). rho_s = As/(bw h); rho_p = Ap/(bw h).
+# Tabela 19.1 (NBR 6118 19.3.3.2, PDF p. 180) - valores mínimos para
+# armaduras passivas aderentes de laje, como fração de rho_min (Tabela 17.3,
+# já no núcleo: nbr.rho_min_flexao). rho_s = As/(bw h); rho_p = Ap/(bw h).
 TIPOS_ARMADURA_LAJE = (
     "negativa",
     "negativa_borda_sem_continuidade",
@@ -970,9 +970,9 @@ TIPOS_ARMADURA_LAJE = (
 )
 SITUACOES_ATIVA_LAJE = ("sem", "aderente", "nao_aderente")
 
-# Documentacao da tabela como dado (as formulas de verdade estao em
-# rho_min_laje; aqui e so o registro legivel da celula, para quem consulta
-# a tabela sem ler o codigo). "-" (None) = a norma nao define aquele caso.
+# Documentação da tabela como dado (as fórmulas de verdade estão em
+# rho_min_laje; aqui é só o registro legível da célula, para quem consulta
+# a tabela sem ler o código). "-" (None) = a norma não define aquele caso.
 TABELA_19_1 = {
     "negativa": {
         "sem": "rho_min",
@@ -1003,23 +1003,23 @@ TABELA_19_1 = {
 def rho_min_laje(
     tipo_armadura: str, situacao_ativa: str, fck_mpa: float, rho_p: float = 0.0,
 ) -> float:
-    """rho_s minimo (Tabela 19.1, NBR 6118 19.3.3.2, PDF p. 180), como fracao.
+    """rho_s mínimo (Tabela 19.1, NBR 6118 19.3.3.2, PDF p. 180), como fração.
 
-    rho_s = As/(bw h); rho_p = Ap/(bw h) (armadura ativa; default 0 quando nao
-    ha). rho_min vem da Tabela 17.3 (nbr.rho_min_flexao, com interpolacao
+    rho_s = As/(bw h); rho_p = Ap/(bw h) (armadura ativa; default 0 quando não
+    há). rho_min vem da Tabela 17.3 (nbr.rho_min_flexao, com interpolação
     entre classes de fck). Com rho_p = 0, as colunas 'aderente' e
     'nao_aderente' colapsam no valor da coluna 'sem'.
 
     tipo_armadura: 'negativa', 'negativa_borda_sem_continuidade',
     'positiva_duas_direcoes', 'positiva_principal_uma_direcao' ou
-    'positiva_secundaria_uma_direcao' (esta ultima devolve so a parcela em
-    rho_min da celula; use as_min_secundaria_uma_direcao_cm2_por_m para o
-    criterio inteiro, que inclui tambem As/s >= 20% da principal e
+    'positiva_secundaria_uma_direcao' (esta última devolve só a parcela em
+    rho_min da célula; use as_min_secundaria_uma_direcao_cm2_por_m para o
+    critério inteiro, que inclui também As/s >= 20% da principal e
     As/s >= 0,9 cm2/m).
     situacao_ativa: 'sem', 'aderente' ou 'nao_aderente'.
 
-    Levanta FaixaNormativaError na celula "-" da tabela (armadura secundaria
-    com armadura ativa nao aderente: a norma nao define esse caso).
+    Levanta FaixaNormativaError na célula "-" da tabela (armadura secundária
+    com armadura ativa não aderente: a norma não define esse caso).
     """
     if tipo_armadura not in TIPOS_ARMADURA_LAJE:
         raise ValueError(
@@ -1037,9 +1037,9 @@ def rho_min_laje(
     if tipo_armadura == "positiva_secundaria_uma_direcao":
         if situacao_ativa == "nao_aderente":
             raise nbr.FaixaNormativaError(
-                "Tabela 19.1 (19.3.3.2, PDF p. 180): a NBR 6118 nao define "
-                "armadura secundaria minima para laje com armadura ativa "
-                'nao aderente (celula "-" da tabela).'
+                "Tabela 19.1 (19.3.3.2, PDF p. 180): a NBR 6118 não define "
+                "armadura secundária mínima para laje com armadura ativa "
+                'não aderente (célula "-" da tabela).'
             )
         return 0.5 * rho_min
 
@@ -1069,28 +1069,28 @@ def as_min_secundaria_uma_direcao_cm2_por_m(
     As_principal_cm2_por_m: float, bw_cm: float, h_cm: float, fck_mpa: float,
     situacao_ativa: str = "sem",
 ) -> float:
-    """As/s minima da armadura secundaria de laje armada em uma direcao
-    (Tabela 19.1, ultima linha, NBR 6118 19.3.3.2, PDF p. 180), em cm2/m:
+    """As/s mínima da armadura secundária de laje armada em uma direção
+    (Tabela 19.1, última linha, NBR 6118 19.3.3.2, PDF p. 180), em cm2/m:
 
         As/s >= max(0,20 * As_principal, 0,9 cm2/m, 0,5 rho_min bw h)
 
     situacao_ativa: 'sem' ou 'aderente' (colunas onde a norma define valor).
-    'nao_aderente' levanta FaixaNormativaError (celula "-" da tabela).
+    'nao_aderente' levanta FaixaNormativaError (célula "-" da tabela).
     """
     rho_s_min = rho_min_laje("positiva_secundaria_uma_direcao", situacao_ativa, fck_mpa)
     return max(0.20 * As_principal_cm2_por_m, 0.9, rho_s_min * bw_cm * h_cm)
 
 
 def as_min_laje_lisa_nao_aderente_cm2(h_cm: float, l_cm: float) -> float:
-    """As minima da armadura passiva negativa sobre apoios de laje lisa ou
-    laje-cogumelo com armadura ativa nao aderente (NBR 6118 19.3.3.2, PDF
+    """As mínima da armadura passiva negativa sobre apoios de laje lisa ou
+    laje-cogumelo com armadura ativa não aderente (NBR 6118 19.3.3.2, PDF
     p. 180):
 
         As >= 0,00075 h l
 
-    h = altura da laje (cm); l = vao medio da laje na direcao da armadura a
-    ser colocada (cm). Resultado em cm2 (faixa de 1 m ja embutida no
-    coeficiente, como no restante deste modulo).
+    h = altura da laje (cm); l = vão médio da laje na direção da armadura a
+    ser colocada (cm). Resultado em cm2 (faixa de 1 m já embutida no
+    coeficiente, como no restante deste módulo).
     """
     return 0.00075 * h_cm * l_cm
 
@@ -1098,32 +1098,32 @@ def as_min_laje_lisa_nao_aderente_cm2(h_cm: float, l_cm: float) -> float:
 def largura_cobertura_negativa_lisa_cm(dimensao_apoio_cm: float, h_cm: float) -> float:
     """Largura da faixa transversal que a armadura de
     as_min_laje_lisa_nao_aderente_cm2 deve cobrir (NBR 6118 19.3.3.2, PDF
-    p. 180): dimensao do apoio (pilar/capitel), na direcao considerada,
+    p. 180): dimensão do apoio (pilar/capitel), na direção considerada,
     acrescida de 1,5 h para cada lado.
     """
     return dimensao_apoio_cm + 2.0 * 1.5 * h_cm
 
 
 def extensao_negativa_borda_cm(l_menor_cm: float) -> float:
-    """Extensao minima da armadura negativa de borda sem continuidade (NBR
-    6118 19.3.3.2, PDF p. 179): >= 0,15 do vao menor da laje, medida a
+    """Extensão mínima da armadura negativa de borda sem continuidade (NBR
+    6118 19.3.3.2, PDF p. 179): >= 0,15 do vão menor da laje, medida a
     partir da face do apoio.
     """
     return 0.15 * l_menor_cm
 
 
 def verificar_desvio_armadura_tensoes_principais(angulo_desvio_graus: float) -> None:
-    """Avisa quando a direcao adotada para a armadura desviar das direcoes
-    das tensoes principais em mais de 15 graus (NBR 6118 19.2, PDF p. 179):
-    "esse fato deve ser considerado no calculo das armaduras". Esta funcao
-    nao aplica nenhuma correcao automatica (a norma nao da uma formula
-    unica para isso); ela so emite AvisoNBR6118 para quem decide o
-    tratamento (por exemplo, majorar As ou refazer a analise com a direcao
-    real das tensoes principais).
+    """Avisa quando a direção adotada para a armadura desviar das direções
+    das tensões principais em mais de 15 graus (NBR 6118 19.2, PDF p. 179):
+    "esse fato deve ser considerado no cálculo das armaduras". Esta função
+    não aplica nenhuma correção automática (a norma não dá uma fórmula
+    única para isso); ela só emite AvisoNBR6118 para quem decide o
+    tratamento (por exemplo, majorar As ou refazer a análise com a direção
+    real das tensões principais).
 
-    Mensagem de aviso em portugues com acento (texto mostrado ao usuario
-    final em tempo de execucao); o restante deste modulo segue em ASCII por
-    convencao pre-existente do arquivo (ver retorno da verificacao do P17).
+    Mensagem de aviso em português com acento (texto mostrado ao usuário
+    final em tempo de execução); o restante deste módulo segue em ASCII por
+    convenção preexistente do arquivo (ver retorno da verificação do P17).
     """
     if abs(angulo_desvio_graus) > 15.0:
         warnings.warn(
@@ -1135,25 +1135,25 @@ def verificar_desvio_armadura_tensoes_principais(angulo_desvio_graus: float) -> 
         )
 
 
-# --- 14.7.6.1 (PDF p. 117) - reacoes de apoio por charneiras plasticas -----
-# Metodo aproximado do item b: charneiras substituidas por retas a partir
-# dos vertices, com 45 graus entre dois apoios do mesmo tipo, 60 graus a
-# partir do apoio engastado (30 graus do lado apoiado - os dois angulos do
+# --- 14.7.6.1 (PDF p. 117) - reações de apoio por charneiras plásticas -----
+# Método aproximado do item b: charneiras substituídas por retas a partir
+# dos vértices, com 45 graus entre dois apoios do mesmo tipo, 60 graus a
+# partir do apoio engastado (30 graus do lado apoiado - os dois ângulos do
 # canto somam 90 graus) quando o outro for simplesmente apoiado, e 90 graus
 # a partir do apoio quando a borda vizinha for livre.
 #
-# Generaliza-se o angulo de canto para toda a laje com um "esqueleto reto"
+# Generaliza-se o ângulo de canto para toda a laje com um "esqueleto reto"
 # (straight skeleton) ponderado por peso de borda: peso 1,0 para apoiada,
-# tan(60 graus) para engastada (a razao entre os dois pesos, num canto entre
+# tan(60 graus) para engastada (a razão entre os dois pesos, num canto entre
 # uma borda apoiada e uma engastada, reproduz exatamente arctan(1,0) = 45
-# graus quando os pesos sao iguais e arctan(tan60/1) = 60 graus quando nao -
+# graus quando os pesos são iguais e arctan(tan60/1) = 60 graus quando não -
 # conferido em tests/test_p17_lajes_flexao.py) e 0 (fora da disputa) para
-# livre. A regiao de cada borda e o lugar geometrico onde o "tempo"
-# (distancia perpendicular a borda / peso da borda) e o menor entre as
-# bordas apoiadas ou engastadas; a reacao equivalente e a carga uniforme
-# vezes a area dessa regiao, dividida pelo comprimento da borda - exatamente
-# a aproximacao (a) do item 14.7.6.1 ("as reacoes... podem ser, de maneira
-# aproximada, consideradas uniformemente distribuidas").
+# livre. A região de cada borda é o lugar geométrico onde o "tempo"
+# (distância perpendicular à borda / peso da borda) é o menor entre as
+# bordas apoiadas ou engastadas; a reação equivalente é a carga uniforme
+# vezes a área dessa região, dividida pelo comprimento da borda - exatamente
+# a aproximação (a) do item 14.7.6.1 ("as reações... podem ser, de maneira
+# aproximada, consideradas uniformemente distribuídas").
 _PESO_BORDA_CHARNEIRA = {
     "apoiada": 1.0,
     "engastada": math.tan(math.radians(60.0)),
@@ -1175,7 +1175,7 @@ def _tempo_borda_charneira(
 
 
 def _clip_semiplano(poligono: list[tuple[float, float]], valor) -> list[tuple[float, float]]:
-    """Recorta um poligono convexo (Sutherland-Hodgman), mantendo os pontos
+    """Recorta um polígono convexo (Sutherland-Hodgman), mantendo os pontos
     onde valor(x, y) >= 0."""
     if not poligono:
         return []
@@ -1216,25 +1216,25 @@ def _area_poligono(pontos: list[tuple[float, float]]) -> float:
 def reacoes_charneiras(
     lx_cm: float, ly_cm: float, p_kn_m2: float, vinculos: dict[str, str],
 ) -> dict[str, float]:
-    """Reacoes de apoio de laje macica retangular pelo metodo aproximado das
-    charneiras plasticas (NBR 6118 14.7.6.1 b, PDF p. 117), para qualquer
-    combinacao de vinculacao nas 4 bordas - cobre o que NU_TABELAS (tabelas
-    de Bares, elasticas) so cobre para as 5 vinculacoes ja tabeladas (tipos
-    1, 3, 5A, 5B, 6): fora delas (por exemplo, uma so borda engastada, ou
-    uma borda livre), esta funcao da a aproximacao que a norma permite em
+    """Reações de apoio de laje maciça retangular pelo método aproximado das
+    charneiras plásticas (NBR 6118 14.7.6.1 b, PDF p. 117), para qualquer
+    combinação de vinculação nas 4 bordas - cobre o que NU_TABELAS (tabelas
+    de Bares, elásticas) só cobre para as 5 vinculações já tabeladas (tipos
+    1, 3, 5A, 5B, 6): fora delas (por exemplo, uma só borda engastada, ou
+    uma borda livre), esta função dá a aproximação que a norma permite em
     vez de exigir uma tabela nova.
 
     vinculos: dict com as 4 chaves 'x0', 'x1' (bordas perpendiculares a x,
     comprimento ly_cm, nos extremos x=0 e x=lx) e 'y0', 'y1' (bordas
     perpendiculares a y, comprimento lx_cm, nos extremos y=0 e y=ly), cada
-    valor em 'apoiada', 'engastada' ou 'livre'. lx_cm e ly_cm sao os vaos
-    nas direcoes x e y e nao precisam vir ordenados (lx_cm pode ser o maior).
+    valor em 'apoiada', 'engastada' ou 'livre'. lx_cm e ly_cm são os vãos
+    nas direções x e y e não precisam vir ordenados (lx_cm pode ser o maior).
 
-    Retorna dict {'x0':.., 'x1':.., 'y0':.., 'y1':..} com a reacao
-    uniformemente distribuida equivalente a carga do triangulo/trapezio de
-    cada borda, em kN/m (0,0 quando a borda e livre).
+    Retorna dict {'x0':.., 'x1':.., 'y0':.., 'y1':..} com a reação
+    uniformemente distribuída equivalente à carga do triângulo/trapézio de
+    cada borda, em kN/m (0,0 quando a borda é livre).
 
-    Para o caso classico (as 4 bordas do mesmo tipo, angulo de 45 graus em
+    Para o caso clássico (as 4 bordas do mesmo tipo, ângulo de 45 graus em
     todo canto), reproduz exatamente os coeficientes nu_x/nu_y de NU_TIPO_1
     (tudo apoiada) e NU_TIPO_6 (tudo engastada) para qualquer lambda.
     """
@@ -1245,15 +1245,15 @@ def reacoes_charneiras(
             )
         if vinculos[borda] not in ("apoiada", "engastada", "livre"):
             raise ValueError(
-                f"Vinculo desconhecido em {borda!r}: {vinculos[borda]!r}. "
+                f"Vínculo desconhecido em {borda!r}: {vinculos[borda]!r}. "
                 "Use 'apoiada', 'engastada' ou 'livre'."
             )
     apoiadas = [b for b in _BORDAS_LAJE_CHARNEIRA if vinculos[b] != "livre"]
     if len(apoiadas) < 2:
         raise ValueError(
-            "O metodo das charneiras precisa de pelo menos 2 bordas apoiadas "
-            "ou engastadas; com 0 ou 1 borda de apoio a laje nao fecha uma "
-            "placa em equilibrio nos 4 lados."
+            "O método das charneiras precisa de pelo menos 2 bordas apoiadas "
+            "ou engastadas; com 0 ou 1 borda de apoio a laje não fecha uma "
+            "placa em equilíbrio nos 4 lados."
         )
 
     lx_m, ly_m = lx_cm / 100.0, ly_cm / 100.0
@@ -1285,10 +1285,10 @@ def reacoes_charneiras(
 
 # --- 14.7.8 (PDF p. 118, Figura 14.9) - faixas de laje lisa ----------------
 def repartir_momentos_faixas(M_portico: float, tipo: str) -> dict[str, float]:
-    """Reparte o momento obtido no portico multiplo (por direcao, com a
+    """Reparte o momento obtido no pórtico múltiplo (por direção, com a
     carga total) entre a faixa interna (as duas juntas) e cada faixa
     externa, conforme a Figura 14.9 (NBR 6118 14.7.8, PDF p. 118), para laje
-    lisa ou laje-cogumelo calculada por porticos multiplos.
+    lisa ou laje-cogumelo calculada por pórticos múltiplos.
 
     tipo: 'positivo' ou 'negativo'.
     Retorna dict com 'faixas_internas' (as duas juntas: 45 % dos momentos
@@ -1297,9 +1297,9 @@ def repartir_momentos_faixas(M_portico: float, tipo: str) -> dict[str, float]:
     2 * faixa_externa fecha 100 % de M_portico.
 
     Larguras das faixas (Figura 14.9): faixa externa = l2/4 de cada lado;
-    faixas internas = o restante, l2/2, por vao l1 analisado (nao calculadas
-    aqui - a funcao so reparte o momento, ja obtido para a largura l2 do
-    portico).
+    faixas internas = o restante, l2/2, por vão l1 analisado (não calculadas
+    aqui - a função só reparte o momento, já obtido para a largura l2 do
+    pórtico).
     """
     chave = tipo.strip().lower()
     percentuais = {
