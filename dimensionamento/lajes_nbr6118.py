@@ -49,6 +49,11 @@ try:  # executado como script, ou com dimensionamento/ no sys.path
 except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
     from dimensionamento import nucleo_nbr6118 as nbr
 
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import limites_geometricos_nbr6118 as _limites
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import limites_geometricos_nbr6118 as _limites
+
 
 # ---------------------------------------------------------------------------
 # Constantes
@@ -442,23 +447,12 @@ class ResultadoFlexao:
 # ---------------------------------------------------------------------------
 # 1. Laje armada em uma direcao
 # ---------------------------------------------------------------------------
-def gama_n_laje_balanco(h_cm: float) -> float:
-    """Coeficiente adicional gama_n para laje em balanco (NBR 6118 13.2.4.1,
-    Tabela 13.2, PDF p. 94).
-
-    gama_n = 1.95 - 0.05 h para 10 <= h < 19 cm; 1.00 para h >= 19 cm. A NBR
-    6118 13.2.4.1 c) exige espessura minima de 10 cm para laje em balanco;
-    abaixo disso a Tabela 13.2 nao se aplica e a funcao levanta erro (LAJ-07).
-    """
-    h = float(h_cm)
-    if h < 10.0:
-        raise nbr.FaixaNormativaError(
-            f"h = {h:g} cm abaixo do minimo da NBR 6118 13.2.4.1 c) "
-            "para laje em balanco (10 cm)."
-        )
-    if h >= 19.0:
-        return 1.0
-    return 1.95 - 0.05 * h
+# gama_n_laje_balanco morava aqui (achado LAJ-07); com o P10 (Limites
+# geometricos e coeficiente gama_n) ela mudou de casa para
+# limites_geometricos_nbr6118.py, junto com a Tabela 13.1 dos pilares (mesma
+# forma de formula). Reexportada aqui para nao quebrar quem importa
+# lajes_nbr6118.gama_n_laje_balanco.
+gama_n_laje_balanco = _limites.gama_n_laje_balanco
 
 
 def momentos_uma_direcao(

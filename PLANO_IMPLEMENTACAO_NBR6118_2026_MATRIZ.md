@@ -187,7 +187,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `11.6.2-valores-representativos` | 11.6.2 | 84 | Valores representativos das ações (característicos, convencionais excepcionais, reduzidos) | implementado | alta | P | P4 |
 | `11.6.3-valores-calculo` | 11.6.3 | 84 | Valores de cálculo das ações Fd = γf·Frep | implementado | alta | P | P4 |
 | `11.7-gamma_f-decomposicao` | 11.7 | 84 | Decomposição γf = γf1·γf2·γf3 | implementado | alta | P | P4 |
-| `11.7.1-gamma_n-esbeltos-remissao` | 11.7.1 | 84 | Remissão ao γn para elementos esbeltos críticos (pilares/pilares-parede/lajes em balanço < 19 cm) | parcial | alta | P | P10 |
+| `11.7.1-gamma_n-esbeltos-remissao` | 11.7.1 | 84 | Remissão ao γn para elementos esbeltos críticos (pilares/pilares-parede/lajes em balanço < 19 cm) | implementado | alta | P | P10 |
 | `11.7.1-tabela-11.1-gamma_f` | 11.7.1 | 85 | Tabela 11.1 - Coeficiente γf = γf1·γf3 por tipo de ação e combinação | implementado | alta | P | P4 |
 | `11.7.1-tabela-11.2-gamma_f2-psi` | 11.7.1 | 85 | Tabela 11.2 - Valores de γf2 (ψ0, ψ1, ψ2) por tipo de ação variável | implementado | alta | P | P4 |
 | `11.7.1-mesmo-gamma-carga-permanente` | 11.7.1 | 86 | Regra: mesmo γf para cargas permanentes de mesma origem em toda a estrutura | não computável | média | P |  |
@@ -226,19 +226,19 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 
 | Id | Item | Pág. | O que é | Situação | Prior. | Compl. | Pacote |
 |---|---|---|---|---|---|---|---|
-| `13.2.2-largura-min-viga` | 13.2.2 | 93 | Largura mínima de viga e viga-parede | ausente | alta | P | P10 |
-| `13.2.3-dim-min-pilar` | 13.2.3 | 93 | Dimensão mínima e área mínima de pilar/pilar-parede | ausente | alta | P | P10 |
-| `13.2.3-gama_n` | 13.2.3, Tabela 13.1 | 94 | Coeficiente adicional γn para pilares e pilares-parede (Tabela 13.1) | ausente | alta | P | P10 |
-| `13.2.4.1-espessura-min-laje` | 13.2.4.1 | 94 | Espessuras mínimas de lajes maciças (lista a-g) | ausente | alta | M | P10 |
+| `13.2.2-largura-min-viga` | 13.2.2 | 93 | Largura mínima de viga e viga-parede | implementado | alta | P | P10 |
+| `13.2.3-dim-min-pilar` | 13.2.3 | 93 | Dimensão mínima e área mínima de pilar/pilar-parede | implementado | alta | P | P10 |
+| `13.2.3-gama_n` | 13.2.3, Tabela 13.1 | 94 | Coeficiente adicional γn para pilares e pilares-parede (Tabela 13.1) | implementado | alta | P | P10 |
+| `13.2.4.1-espessura-min-laje` | 13.2.4.1 | 94 | Espessuras mínimas de lajes maciças (lista a-g) | implementado | alta | M | P10 |
 | `13.2.4.1-tab13.2-gama_n-laje-balanco` | 13.2.4.1, Tabela 13.2 | 94 | Tabela 13.2 - Coeficiente adicional γn para lajes em balanço (fórmula linear em função de h) | implementado | média | P | P10 |
-| `13.2.4.2-espessura-min-mesa-nervurada` | 13.2.4.2 | 95 | Espessura mínima da mesa de laje nervurada | ausente | alta | P | P10 |
-| `13.2.4.2-espessura-min-nervura` | 13.2.4.2 | 95 | Espessura mínima de nervura e restrição à armadura de compressão | ausente | alta | P | P10 |
-| `13.2.4.2-classificacao-espacamento-nervuras` | 13.2.4.2 a-c | 95 | Classificação do espaçamento entre nervuras e regra de verificação aplicável | ausente | alta | P | P10 |
+| `13.2.4.2-espessura-min-mesa-nervurada` | 13.2.4.2 | 95 | Espessura mínima da mesa de laje nervurada | implementado | alta | P | P10 |
+| `13.2.4.2-espessura-min-nervura` | 13.2.4.2 | 95 | Espessura mínima de nervura e restrição à armadura de compressão | implementado | alta | P | P10 |
+| `13.2.4.2-classificacao-espacamento-nervuras` | 13.2.4.2 a-c | 95 | Classificação do espaçamento entre nervuras e regra de verificação aplicável | implementado | alta | P | P10 |
 | `13.2.4.3-lajes-pre-moldadas` | 13.2.4.3 | 95 | Remissão a normas de lajes pré-moldadas e alveolares protendidas | não computável | média | P |  |
 | `13.2.5-furos-aberturas-intro` | 13.2.5 | 95 | Princípio geral de furos e aberturas em elementos estruturais | não computável | média | P |  |
-| `13.2.5.1-furo-viga-largura-dispensa` | 13.2.5.1 | 95 | Condições para dispensa de verificação de furo transversal em viga (direção da largura) | ausente | média | M | P10 |
-| `13.2.5.2-abertura-laje-dispensa` | 13.2.5.2, Figura 13.1 | 96 | Dimensões-limites para aberturas em lajes com dispensa de verificação | ausente | média | M | P10 |
-| `13.2.6-canalizacoes-embutidas-proibicoes` | 13.2.6 | 96 | Casos proibidos de canalização embutida | ausente | baixa | P | P10 |
+| `13.2.5.1-furo-viga-largura-dispensa` | 13.2.5.1 | 95 | Condições para dispensa de verificação de furo transversal em viga (direção da largura) | implementado | média | M | P10 |
+| `13.2.5.2-abertura-laje-dispensa` | 13.2.5.2, Figura 13.1 | 96 | Dimensões-limites para aberturas em lajes com dispensa de verificação | implementado | média | M | P10 |
+| `13.2.6-canalizacoes-embutidas-proibicoes` | 13.2.6 | 96 | Casos proibidos de canalização embutida | implementado | baixa | P | P10 |
 | `13.3-tab13.3-aceitabilidade-sensorial` | 13.3, Tabela 13.3 | 97 | Deslocamento-limite por aceitabilidade sensorial (visual e vibração) | implementado | alta | P | P8 |
 | `13.3-tab13.3-efeitos-estruturais-servico` | 13.3, Tabela 13.3 | 98 | Deslocamento-limite por efeitos estruturais em serviço (drenagem, planicidade, equipamentos sensíveis) | implementado | alta | P | P8 |
 | `13.3-tab13.3-elementos-nao-estruturais-paredes` | 13.3, Tabela 13.3, notas c-e | 98 | Deslocamento-limite para paredes, divisórias e movimento lateral do edifício | implementado | alta | P | P8 |
@@ -617,7 +617,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | Id | Item | Pág. | O que é | Situação | Prior. | Compl. | Pacote |
 |---|---|---|---|---|---|---|---|
 | `22.2-limite-regiao-bd` | 22.2 | 202 | Limite convencional entre regiões B e D | ausente | média | P | P48 |
-| `22.2-gamma-n-consolo-gerber` | 22.2 | 203 | Coeficiente adicional γn para consolos e dentes Gerber | ausente | alta | P | P10 |
+| `22.2-gamma-n-consolo-gerber` | 22.2 | 203 | Coeficiente adicional γn para consolos e dentes Gerber | implementado | alta | P | P10 |
 | `22.3.1-procedimento-bielas-tirantes` | 22.3.1 | 203 | Procedimento geral do método de bielas e tirantes | ausente | média | G | P48 |
 | `22.3.1-limite-inclinacao-biela` | 22.3.1 | 204 | Faixa de inclinação admissível das bielas inclinadas | ausente | média | P | P35 |
 | `22.3.2-fcd1` | 22.3.2 | 204 | Resistência de cálculo da biela/nó CCC (fcd1) | implementado | alta | P |  |

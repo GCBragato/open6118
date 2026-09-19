@@ -40,6 +40,11 @@ try:  # executado como script, ou com dimensionamento/ no sys.path
 except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
     from dimensionamento import nucleo_nbr6118 as nbr
 
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import limites_geometricos_nbr6118 as _limites
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import limites_geometricos_nbr6118 as _limites
+
 
 GAMA_C = nbr.GAMA_C
 GAMA_S = nbr.GAMA_S
@@ -450,6 +455,24 @@ def _demo() -> None:
           f"M2d = {M2d:.0f} kN.cm")
     print(f"  Md,tot,y = M1d,min,y + M2d = "
           f"{M1d_min_kncm(Nd, 20.0) + M2d:.0f} kN.cm")
+
+
+# === P10: gama_n de pilar esbelto critico com b < 19 cm (11.7.1, remissao a 13.2.3) ===
+def aplicar_gama_n(b_cm: float, esforco: float) -> tuple[float, float]:
+    """Aplica o coeficiente adicional gama_n ao esforco solicitante de
+    calculo quando a menor dimensao b < 19 cm (11.7.1, PDF p. 84: "Para
+    elementos estruturais esbeltos criticos para a seguranca de estrutura,
+    como pilares e pilares-paredes com espessura inferior a 19 cm [...] os
+    esforcos solicitantes de calculo devem ser multiplicados pelo
+    coeficiente de ajustamento gama_n").
+
+    Devolve (esforco majorado, gama_n usado). Para b >= 19 cm, gama_n = 1,0
+    e o esforco volta inalterado. Delega a
+    limites_geometricos_nbr6118.gama_n_pilar (13.2.3, Tabela 13.1); aquele
+    modulo tambem cobre a dimensao minima e a area minima de 13.2.3.
+    """
+    gn = _limites.gama_n_pilar(b_cm)
+    return esforco * gn, gn
 
 
 if __name__ == "__main__":

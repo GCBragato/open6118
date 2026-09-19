@@ -78,7 +78,8 @@
    "nome": "Limites geométricos e coeficiente γn",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/limites_geometricos_nbr6118.py"
+   "modulo": "dimensionamento/limites_geometricos_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P11",
@@ -3411,7 +3412,7 @@
    "pagina_pdf": 84,
    "titulo": "Remissão ao γn para elementos esbeltos críticos (pilares/pilares-parede/lajes em balanço < 19 cm)",
    "tipo": "verificacao",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P10",
@@ -3424,7 +3425,25 @@
     "13.2.3-tabela13.1-gama-n-pilar (fora do trecho)",
     "13.2.4.1-tabela13.2-gama-n-laje-balanco (fora do trecho)"
    ],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P10",
+    "data": "19/09/2026",
+    "funcoes": [
+     "limites_geometricos_nbr6118.gama_n_esbeltos",
+     "pilares_nbr6118.aplicar_gama_n"
+    ],
+    "testes": [
+     "test_gama_n_esbeltos_despacha_pilar",
+     "test_gama_n_esbeltos_despacha_pilar_parede",
+     "test_gama_n_esbeltos_despacha_laje_balanco",
+     "test_gama_n_esbeltos_tipo_desconhecido_levanta_erro",
+     "test_pilares_aplicar_gama_n_b_menor_que_19_majora_esforco",
+     "test_pilares_aplicar_gama_n_b19_nao_majora",
+     "test_pilares_aplicar_gama_n_em_bloco_p10_no_fim_do_arquivo"
+    ],
+    "observacao": "Corrigido nesta rodada: aplicar_gama_n movida para bloco '# === P10: ... ===' no fim de pilares_nbr6118.py (achado real de convenção, ver respostas)."
+   }
   },
   {
    "id": "11.7.1-tabela-11.1-gamma_f",
@@ -4127,7 +4146,7 @@
    "pagina_pdf": 93,
    "titulo": "Largura mínima de viga e viga-parede",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P10",
@@ -4137,7 +4156,21 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "bw=12 -> ok; bw=11.9 -> falha; bw=10 com excepcional=True -> ok; bw=9 -> falha mesmo excepcional.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P10",
+    "data": "19/09/2026",
+    "funcoes": [
+     "limites_geometricos_nbr6118.largura_minima_viga_cm"
+    ],
+    "testes": [
+     "test_largura_minima_viga_comum",
+     "test_largura_minima_viga_parede",
+     "test_largura_minima_excepcional_absoluta_10cm",
+     "test_largura_minima_viga_uso_tipico"
+    ],
+    "observacao": "Sem alteração nesta rodada; item já correto na verificação."
+   }
   },
   {
    "id": "13.2.3-dim-min-pilar",
@@ -4145,7 +4178,7 @@
    "pagina_pdf": 93,
    "titulo": "Dimensão mínima e área mínima de pilar/pilar-parede",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P10",
@@ -4157,7 +4190,23 @@
     "13.2.3-gama_n"
    ],
    "teste_sugerido": "b=20 ok; b=16 -> gama_n=1.15; b=13 reprovado; secao 19x18=342cm2 reprovada por area.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P10",
+    "data": "19/09/2026",
+    "funcoes": [
+     "limites_geometricos_nbr6118.verificar_dimensao_pilar"
+    ],
+    "testes": [
+     "test_verificar_dimensao_pilar_b19_ok_sem_majoracao",
+     "test_verificar_dimensao_pilar_b16_gama_n_1_15",
+     "test_verificar_dimensao_pilar_b13_reprovado",
+     "test_verificar_dimensao_pilar_area_360_exata_ok",
+     "test_verificar_dimensao_pilar_secao_19x18_reprovada_por_area",
+     "test_verificar_dimensao_pilar_area_abaixo_359_9_reprovada"
+    ],
+    "observacao": "Sem alteração nesta rodada."
+   }
   },
   {
    "id": "13.2.3-gama_n",
@@ -4165,7 +4214,7 @@
    "pagina_pdf": 94,
    "titulo": "Coeficiente adicional γn para pilares e pilares-parede (Tabela 13.1)",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P10",
@@ -4177,7 +4226,21 @@
     "13.2.3-dim-min-pilar"
    ],
    "teste_sugerido": "b=19->1,00; b=16->1,15; b=14.5->1,225 (formula continua); b=20->1,00.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P10",
+    "data": "19/09/2026",
+    "funcoes": [
+     "limites_geometricos_nbr6118.gama_n_pilar"
+    ],
+    "testes": [
+     "test_tabela_13_1_gama_n_pilar_celula_a_celula",
+     "test_gama_n_pilar_ponto_interior_14_5",
+     "test_gama_n_pilar_acima_de_19_fica_em_1",
+     "test_gama_n_pilar_abaixo_de_14_levanta_erro"
+    ],
+    "observacao": "Sem alteração nesta rodada."
+   }
   },
   {
    "id": "13.2.4.1-espessura-min-laje",
@@ -4185,7 +4248,7 @@
    "pagina_pdf": 94,
    "titulo": "Espessuras mínimas de lajes maciças (lista a-g)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P10",
@@ -4195,7 +4258,29 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "cobertura sem balanco->7; piso balanco->10; protendida biapoiada l=1000cm->max(15,23.8)=23.8; lisa->16; cogumelo fora capitel->14.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P10",
+    "data": "19/09/2026",
+    "funcoes": [
+     "limites_geometricos_nbr6118.espessura_minima_laje_cm"
+    ],
+    "testes": [
+     "test_espessura_minima_cobertura_sem_balanco_7cm",
+     "test_espessura_minima_piso_sem_balanco_8cm",
+     "test_espessura_minima_balanco_10cm",
+     "test_espessura_minima_piso_veiculo_leve_e_pesado_degrau_30kn",
+     "test_espessura_minima_piso_veiculo_sem_peso_levanta_erro",
+     "test_espessura_minima_protendida_biapoiada_vao_1000cm",
+     "test_espessura_minima_protendida_continua_usa_l_por_50",
+     "test_espessura_minima_protendida_vao_pequeno_usa_piso_absoluto_15cm",
+     "test_espessura_minima_lisa_16cm",
+     "test_espessura_minima_cogumelo_fora_capitel_14cm",
+     "test_espessura_minima_categoria_desconhecida_levanta_erro",
+     "test_espessura_minima_categoria_desconhecida_mensagem_com_cedilha"
+    ],
+    "observacao": "Corrigido nesta rodada: mensagem de erro sem cedilha em 'balanço' (achado real, ver respostas)."
+   }
   },
   {
    "id": "13.2.4.1-tab13.2-gama_n-laje-balanco",
@@ -4222,7 +4307,7 @@
    "pagina_pdf": 95,
    "titulo": "Espessura mínima da mesa de laje nervurada",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P10",
@@ -4232,7 +4317,23 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "l0=75, sem tubo -> hf_min=5; phi=8 -> 5; phi=15 sem cruzamento -> 5.5; phi=15 com cruzamento -> 7.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P10",
+    "data": "19/09/2026",
+    "funcoes": [
+     "limites_geometricos_nbr6118.espessura_minima_mesa_nervurada_cm"
+    ],
+    "testes": [
+     "test_mesa_nervurada_sem_tubo_l0_75_da_5cm",
+     "test_mesa_nervurada_sem_tubo_l0_pequeno_usa_minimo_absoluto_4cm",
+     "test_mesa_nervurada_com_tubo_phi_8_menor_que_10_usa_5cm",
+     "test_mesa_nervurada_com_tubo_phi_15_sem_cruzamento_5_5cm",
+     "test_mesa_nervurada_com_tubo_phi_15_com_cruzamento_7cm",
+     "test_mesa_nervurada_phi_10_exato_usa_regra_menor_igual"
+    ],
+    "observacao": "Sem alteração nesta rodada."
+   }
   },
   {
    "id": "13.2.4.2-espessura-min-nervura",
@@ -4240,7 +4341,7 @@
    "pagina_pdf": 95,
    "titulo": "Espessura mínima de nervura e restrição à armadura de compressão",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P10",
@@ -4250,7 +4351,24 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "b=4 reprovado; b=6 com As_comp>0 reprovado; b=9 com As_comp>0 ok.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P10",
+    "data": "19/09/2026",
+    "funcoes": [
+     "limites_geometricos_nbr6118.espessura_minima_nervura_cm",
+     "limites_geometricos_nbr6118.verificar_nervura"
+    ],
+    "testes": [
+     "test_espessura_minima_nervura_5cm",
+     "test_verificar_nervura_b4_reprovado_por_espessura",
+     "test_verificar_nervura_b6_com_armadura_compressao_reprovado",
+     "test_verificar_nervura_b9_com_armadura_compressao_ok",
+     "test_verificar_nervura_b6_sem_armadura_compressao_ok",
+     "test_verificar_nervura_b8_exato_permite_compressao"
+    ],
+    "observacao": "Sem alteração nesta rodada."
+   }
   },
   {
    "id": "13.2.4.2-classificacao-espacamento-nervuras",
@@ -4258,7 +4376,7 @@
    "pagina_pdf": 95,
    "titulo": "Classificação do espaçamento entre nervuras e regra de verificação aplicável",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P10",
@@ -4271,7 +4389,26 @@
     "13.2.4.2-espessura-min-nervura"
    ],
    "teste_sugerido": "esp=60->criterio_laje; esp=100,larg=10->flexao_mesa+cisalhamento_como_viga; esp=85,larg=13->excecao (cisalhamento como laje); esp=120->mesa como laje maciça.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P10",
+    "data": "19/09/2026",
+    "funcoes": [
+     "limites_geometricos_nbr6118.classificar_laje_nervurada"
+    ],
+    "testes": [
+     "test_classificar_espacamento_60_categoria_a_criterio_laje",
+     "test_classificar_espacamento_65_exato_ainda_categoria_a",
+     "test_classificar_espacamento_100_largura_10_categoria_b_sem_excecao",
+     "test_classificar_espacamento_85_largura_13_excecao_cisalhamento_como_laje",
+     "test_classificar_espacamento_85_largura_12_sem_excecao",
+     "test_classificar_espacamento_95_largura_13_sem_excecao_por_espacamento",
+     "test_classificar_espacamento_110_exato_ainda_categoria_b",
+     "test_classificar_espacamento_120_categoria_c_mesa_como_laje_macica",
+     "test_classificar_laje_nervurada_tem_ok_e_governante"
+    ],
+    "observacao": "Corrigido nesta rodada: ResultadoClassificacaoNervurada ganhou ok/governante (achado real, ver respostas)."
+   }
   },
   {
    "id": "13.2.4.3-lajes-pre-moldadas",
@@ -4305,7 +4442,7 @@
    "pagina_pdf": 95,
    "titulo": "Condições para dispensa de verificação de furo transversal em viga (direção da largura)",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P10",
@@ -4315,7 +4452,22 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "h=50, furo d=12 a 110cm do apoio, dist face=8cm -> dispensado; furo 13x13 -> nao dispensado; furo a 80cm do apoio -> nao dispensado.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P10",
+    "data": "19/09/2026",
+    "funcoes": [
+     "limites_geometricos_nbr6118.dispensa_verificacao_furo_viga"
+    ],
+    "testes": [
+     "test_furo_viga_dispensado_caso_tipico",
+     "test_furo_viga_13x13_nao_dispensado_por_dimensao",
+     "test_furo_viga_a_80cm_do_apoio_nao_dispensado_por_distancia",
+     "test_furo_viga_dist_face_abaixo_do_minimo_reprova_sempre",
+     "test_furo_viga_sem_dimensao_informada_levanta_erro"
+    ],
+    "observacao": "Sem alteração nesta rodada."
+   }
   },
   {
    "id": "13.2.5.2-abertura-laje-dispensa",
@@ -4323,7 +4475,7 @@
    "pagina_pdf": 96,
    "titulo": "Dimensões-limites para aberturas em lajes com dispensa de verificação",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P10",
@@ -4333,7 +4485,23 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "lx=500,ly=600,ax=ay=40,dist=130 -> dispensado; ax=60 -> nao dispensado; tipo=lisa -> sempre exige verificacao.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P10",
+    "data": "19/09/2026",
+    "funcoes": [
+     "limites_geometricos_nbr6118.dispensa_verificacao_abertura_laje"
+    ],
+    "testes": [
+     "test_abertura_laje_dispensada_caso_tipico",
+     "test_abertura_laje_ax_60_nao_dispensado_dimensao_maior_que_lx_10",
+     "test_abertura_laje_lisa_sempre_exige_verificacao",
+     "test_abertura_laje_cogumelo_sempre_exige_verificacao",
+     "test_abertura_laje_lx_maior_que_ly_levanta_erro",
+     "test_abertura_laje_distancia_entre_aberturas_menor_que_metade_menor_vao"
+    ],
+    "observacao": "Sem alteração nesta rodada."
+   }
   },
   {
    "id": "13.2.6-canalizacoes-embutidas-proibicoes",
@@ -4341,7 +4509,7 @@
    "pagina_pdf": 96,
    "titulo": "Casos proibidos de canalização embutida",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P10",
@@ -4351,7 +4519,25 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "deltaT=20 sem isolamento/verificacao -> proibido; com verificacao -> permitido; pressao=0.35MPa -> proibido; canalizacao em pilar sem dreno -> proibido.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P10",
+    "data": "19/09/2026",
+    "funcoes": [
+     "limites_geometricos_nbr6118.canalizacao_embutida_permitida"
+    ],
+    "testes": [
+     "test_canalizacao_delta_t_20_sem_isolamento_proibido",
+     "test_canalizacao_delta_t_20_com_verificacao_permitido",
+     "test_canalizacao_delta_t_15_exato_permitido",
+     "test_canalizacao_pressao_035_proibida",
+     "test_canalizacao_pressao_03_exata_permitida",
+     "test_canalizacao_em_pilar_sem_dreno_proibida",
+     "test_canalizacao_em_pilar_com_dreno_permitida",
+     "test_canalizacao_embutida_tem_ok_e_governante"
+    ],
+    "observacao": "Corrigido nesta rodada: ResultadoCanalizacaoEmbutida ganhou ok/governante (achado real, ver respostas)."
+   }
   },
   {
    "id": "13.3-tab13.3-aceitabilidade-sensorial",
@@ -10543,7 +10729,7 @@
    "pagina_pdf": 203,
    "titulo": "Coeficiente adicional γn para consolos e dentes Gerber",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P10",
@@ -10552,7 +10738,19 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Consolo isolado: comparar resultado com e sem gama_n=1,2 aplicado ao momento/forca de calculo.",
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P10",
+    "data": "19/09/2026",
+    "funcoes": [
+     "limites_geometricos_nbr6118.gama_n_consolo_gerber"
+    ],
+    "testes": [
+     "test_gama_n_consolo_gerber_e_1_2",
+     "test_gama_n_consolo_gerber_majora_momento_de_calculo"
+    ],
+    "observacao": "Sem alteração nesta rodada."
+   }
   },
   {
    "id": "22.3.1-procedimento-bielas-tirantes",
