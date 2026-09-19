@@ -569,16 +569,16 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `20.3.1-fig20.2-distribuicao-faixas` | 20.3.1 | 194 | Distribuição de armadura em lajes sem vigas por faixas (Figura 20.2) | implementado | alta | M | P18 |
 | `20.3.1-barras-continuas-apoio` | 20.3.1 | 194 | Mínimo de barras inferiores contínuas sobre os apoios | implementado | alta | P | P18 |
 | `20.3.1-capitel-penetracao-minima` | 20.3.1 | 194 | Penetração mínima de barras inferiores interrompidas em capitel | implementado | média | P | P18 |
-| `20.3.2.1-espacamento-max-cabos` | 20.3.2.1 | 194 | Espaçamento máximo entre cordoalhas/cabos para faixa protendida | ausente | média | P | P33 |
-| `20.3.2.1-tensao-compressao-media-minima` | 20.3.2.1 | 194 | Tensão de compressão média mínima na seção com cabo/feixe | ausente | média | P | P33 |
-| `20.3.2.2-largura-max-faixa-externa` | 20.3.2.2 | 195 | Largura máxima da porção de laje para cabos em faixa externa de apoio | ausente | média | P | P33 |
-| `20.3.2.3-espacamento-min-cabos` | 20.3.2.3 | 195 | Espaçamento mínimo entre cabos/feixes ou entre cabo e armadura passiva | ausente | média | P | P33 |
-| `20.3.2.4-cobrimento-min-cabo-abertura` | 20.3.2.4 | 195 | Cobrimento mínimo de cabos junto à face de abertura em laje | ausente | média | P | P33 |
-| `20.3.2.5-desvio-max-inclinacao` | 20.3.2.5 | 195 | Inclinação máxima do desvio em planta de cabo/feixe | ausente | média | P | P33 |
-| `20.3.2.5-distancia-min-cabos-curva` | 20.3.2.5 | 195 | Distância mínima entre cabos na região central da curva de desvio | ausente | média | P | P33 |
-| `20.3.2.6-cabos-atravessando-pilar` | 20.3.2.6 | 196 | Número mínimo de cabos atravessando a armadura do pilar por direção | ausente | média | P | P33 |
-| `20.3.2.6-barras-apoio-laje-lisa-protendida` | 20.3.2.6 | 196 | Armadura passiva mínima sobre apoios de laje lisa/cogumelo protendida | ausente | média | M | P33 |
-| `20.3.2.6-max-cabos-feixe-monocordoalha` | 20.3.2.6 | 196 | Número máximo de monocordoalhas não aderentes em feixe | ausente | média | P | P33 |
+| `20.3.2.1-espacamento-max-cabos` | 20.3.2.1 | 194 | Espaçamento máximo entre cordoalhas/cabos para faixa protendida | implementado | média | P | P33 |
+| `20.3.2.1-tensao-compressao-media-minima` | 20.3.2.1 | 194 | Tensão de compressão média mínima na seção com cabo/feixe | implementado | média | P | P33 |
+| `20.3.2.2-largura-max-faixa-externa` | 20.3.2.2 | 195 | Largura máxima da porção de laje para cabos em faixa externa de apoio | implementado | média | P | P33 |
+| `20.3.2.3-espacamento-min-cabos` | 20.3.2.3 | 195 | Espaçamento mínimo entre cabos/feixes ou entre cabo e armadura passiva | implementado | média | P | P33 |
+| `20.3.2.4-cobrimento-min-cabo-abertura` | 20.3.2.4 | 195 | Cobrimento mínimo de cabos junto à face de abertura em laje | implementado | média | P | P33 |
+| `20.3.2.5-desvio-max-inclinacao` | 20.3.2.5 | 195 | Inclinação máxima do desvio em planta de cabo/feixe | implementado | média | P | P33 |
+| `20.3.2.5-distancia-min-cabos-curva` | 20.3.2.5 | 195 | Distância mínima entre cabos na região central da curva de desvio | implementado | média | P | P33 |
+| `20.3.2.6-cabos-atravessando-pilar` | 20.3.2.6 | 196 | Número mínimo de cabos atravessando a armadura do pilar por direção | implementado | média | P | P33 |
+| `20.3.2.6-barras-apoio-laje-lisa-protendida` | 20.3.2.6 | 196 | Armadura passiva mínima sobre apoios de laje lisa/cogumelo protendida | implementado | média | M | P33 |
+| `20.3.2.6-max-cabos-feixe-monocordoalha` | 20.3.2.6 | 196 | Número máximo de monocordoalhas não aderentes em feixe | implementado | média | P | P33 |
 | `20.4-diametro-max-estribo-puncao` | 20.4 | 196 | Diâmetro máximo do estribo de armadura de punção | implementado | alta | P | P20 |
 | `20.4-contato-mecanico-canto-estribo` | 20.4 | 196 | Contato mecânico e diâmetro mínimo da barra longitudinal no canto do estribo de punção | implementado | média | P | P20 |
 | `20.4-studs-desempenho-ensaio` | 20.4 | 196 | Preferência por studs e exigência de desempenho comprovado por ensaio | não computável | média | P |  |

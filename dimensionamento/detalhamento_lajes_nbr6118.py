@@ -446,3 +446,310 @@ def As_inferior_balanco(
         g, vao_cm, Mg_kncm, d, h, fck_mpa, fyk_mpa, bw_cm,
         As_final, As_min, True, governante, memoria,
     )
+
+
+# === P33: lajes protendidas — detalhamento (20.3.2, PDF p. 194-196) ===
+#
+# Cobre 20.3.2.1 a 20.3.2.6: espaçamento máximo entre cabos para a faixa ser
+# tratada como região protendida e tensão de compressão média mínima
+# (20.3.2.1); largura máxima da porção de laje com cabos em faixa externa de
+# apoio, Figura 20.3 (20.3.2.2); espaçamento mínimo entre cabos/feixes ou
+# entre cabo e armadura passiva (20.3.2.3); cobrimento mínimo de cabo à face
+# de abertura (20.3.2.4); inclinação máxima do desvio em planta e distância
+# mínima entre cabos na região central da curva (20.3.2.5); e, sobre apoios
+# de laje lisa/cogumelo protendida: cabos mínimos atravessando a armadura do
+# pilar por direção, armadura passiva mínima na face tracionada e número
+# máximo de monocordoalhas não aderentes por feixe (20.3.2.6).
+#
+# Figura 20.3 (largura_max_faixa_externa_cm): a cota "a" no desenho vai da
+# borda da laje até a face do pilar coincidente com ela — um pilar de BORDA,
+# em que só um dos lados tem laje para receber o acréscimo de 3,5h. O texto
+# ("acrescida de 3,5 vezes a espessura da laje para cada um dos lados do
+# pilar") generaliza para os dois lados de um pilar interno; por isso o
+# parâmetro ``lados`` (padrão 2, o caso do teste sugerido do plano) permite
+# reproduzir também o caso de borda da própria figura (lados=1).
+#
+# Sem divergência entre o JSON do plano e a imagem da norma neste pacote.
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import cortante_nbr6118 as _cortante_p33
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import cortante_nbr6118 as _cortante_p33
+
+
+# ---------------------------------------------------------------------------
+# 20.3.2.1 — Espaçamento máximo entre cabos e tensão de compressão média
+# mínima (PDF p. 194)
+# ---------------------------------------------------------------------------
+def espacamento_max_cabos_cm(h_cm: float) -> float:
+    """Espaçamento máximo entre cordoalhas, cabos ou feixes de cabos, na direção considerada, para que a faixa de laje seja tratada como região protendida (20.3.2.1, PDF p. 194).
+
+    s_máx = mín(6h, 120 cm), com h a espessura da laje, em cm.
+    """
+    h = _positivo(h_cm, "h_cm")
+    return min(6.0 * h, 120.0)
+
+
+SIGMA_CP_MEDIA_MIN_MPA = 1.0
+
+
+@dataclass(frozen=True)
+class ResultadoCompressaoMediaLaje:
+    P_kn: float
+    Ac_cm2: float
+    sigma_cp_media_mpa: float
+    minimo_mpa: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_compressao_media(P_kn: float, Ac_cm2: float) -> ResultadoCompressaoMediaLaje:
+    """Verifica a tensão de compressão média, na seção da laje correspondente a um cabo ou feixe de cabos, considerando todas as perdas de protensão (20.3.2.1, PDF p. 194).
+
+    σcp,média = P/Ac (reaproveita ``cortante_nbr6118.sigma_cp_mpa``, a mesma
+    fórmula NSd/Ac × 10 de 19.4.1 — conversão kN/cm² para MPa), com P em kN
+    já líquido de todas as perdas (imediatas e progressivas; ver
+    ``protendido_nbr6118``, P30/P31) e Ac em cm² a área de concreto da seção
+    correspondente ao cabo ou feixe (largura tributária da faixa × h). Exige
+    σcp,média >= 1,0 MPa.
+    """
+    P = _nao_negativo(P_kn, "P_kn")
+    Ac = _positivo(Ac_cm2, "Ac_cm2")
+    sigma = _cortante_p33.sigma_cp_mpa(P, Ac)
+    ok = sigma + _TOL >= SIGMA_CP_MEDIA_MIN_MPA
+    governante = ("20.3.2.1 atendido" if ok
+                  else "20.3.2.1 tensão de compressão média insuficiente")
+    memoria = (
+        f"20.3.2.1: σcp,média = P/Ac = {_fmt(P)} kN / {_fmt(Ac)} cm² = "
+        f"{_fmt(sigma)} MPa (todas as perdas consideradas) >= "
+        f"{SIGMA_CP_MEDIA_MIN_MPA:g} MPa -> {'ok' if ok else 'reprovado'}.",
+    )
+    return ResultadoCompressaoMediaLaje(
+        P, Ac, sigma, SIGMA_CP_MEDIA_MIN_MPA, ok, governante, memoria,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 20.3.2.2 — Largura máxima da faixa externa de apoio, Figura 20.3
+# (PDF p. 195)
+# ---------------------------------------------------------------------------
+def largura_max_faixa_externa_cm(
+    dimensao_pilar_cm: float, h_cm: float, lados: int = 2,
+) -> float:
+    """Largura máxima, transversal à direção longitudinal da faixa, da porção de laje em que podem estar os cabos de uma faixa externa de apoio (20.3.2.2, PDF p. 195, Figura 20.3).
+
+    largura_máx = a + lados * 3,5h, com "a" a dimensão em planta do pilar de
+    apoio tomada transversalmente à direção da faixa (``dimensao_pilar_cm``)
+    e h a espessura da laje (``h_cm``). ``lados`` é o número de lados do
+    pilar com laje contígua a receber o acréscimo: 2 para pilar interno
+    (padrão desta função; teste sugerido do plano: pilar de 40 cm, h=20 cm
+    -> 40 + 2*3,5*20 = 180 cm) ou 1 para pilar de borda, como desenhado na
+    própria Figura 20.3 (a cota "a" ali coincide com a borda da laje de um
+    lado, e só o outro lado recebe os 3,5h).
+    """
+    a = _positivo(dimensao_pilar_cm, "dimensao_pilar_cm")
+    h = _positivo(h_cm, "h_cm")
+    if lados not in (1, 2):
+        raise FaixaNormativaError(
+            f"lados deve ser 1 (pilar de borda) ou 2 (pilar interno); recebido {lados!r}."
+        )
+    return a + lados * 3.5 * h
+
+
+# ---------------------------------------------------------------------------
+# 20.3.2.3 — Espaçamento mínimo entre cabos (PDF p. 195)
+# ---------------------------------------------------------------------------
+def espacamento_min_cabos_cm() -> float:
+    """Espaçamento mínimo entre cabos ou feixes de cabos, ou entre cabos e armaduras passivas, em laje protendida: 5 cm (20.3.2.3, PDF p. 195)."""
+    return 5.0
+
+
+# ---------------------------------------------------------------------------
+# 20.3.2.4 — Cobrimento mínimo de cabo à face de abertura (PDF p. 195)
+# ---------------------------------------------------------------------------
+def cobrimento_cabo_abertura_min_cm() -> float:
+    """Cobrimento mínimo dos cabos de protensão em relação à face de aberturas nas lajes: 7,5 cm (20.3.2.4, PDF p. 195).
+
+    Distinto do cobrimento nominal da Tabela 7.2
+    (``nucleo_nbr6118.cobrimento_nominal``, superfície externa da peça): esta
+    é a distância mínima até a face de uma abertura na laje.
+    """
+    return 7.5
+
+
+# ---------------------------------------------------------------------------
+# 20.3.2.5 — Desvio em planta: inclinação máxima e distância mínima entre
+# cabos na curva (PDF p. 195)
+# ---------------------------------------------------------------------------
+DESVIO_MAX_INCLINACAO = 0.10  # 1/10
+
+
+@dataclass(frozen=True)
+class ResultadoDesvioPlanta:
+    delta_x_cm: float
+    delta_y_cm: float
+    inclinacao: float
+    inclinacao_max: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def desvio_max_planta(delta_x_cm: float, delta_y_cm: float) -> ResultadoDesvioPlanta:
+    """Verifica a inclinação do desvio, em planta, de um cabo ou feixe de cabos de laje protendida (20.3.2.5, PDF p. 195).
+
+    A inclinação é tomada na corda imaginária que une o início e o fim do
+    trecho de desvio: delta_y_cm (deslocamento transversal do desvio) sobre
+    delta_x_cm (extensão do trecho na direção do cabo), mantendo o
+    desenvolvimento do cabo em curva parabólica em planta. O limite é 1/10
+    (``DESVIO_MAX_INCLINACAO``). Quando o desvio excede o limite, a norma não
+    o veda: exige que se preveja armadura capaz de resistir à força
+    provocada por ele (dimensionamento fora do escopo desta função) — por
+    isso, ao contrário de um "limite" no sentido estrito, esta verificação
+    não levanta ``FaixaNormativaError`` quando reprovada, apenas devolve
+    ``ok=False``.
+    """
+    dx = _positivo(delta_x_cm, "delta_x_cm")
+    dy = _nao_negativo(delta_y_cm, "delta_y_cm")
+    inclinacao = dy / dx
+    ok = inclinacao <= DESVIO_MAX_INCLINACAO + _TOL
+    governante = ("20.3.2.5 atendido" if ok else
+                  "20.3.2.5 desvio excede 1/10; prever armadura para a força de desvio")
+    memoria = (
+        f"20.3.2.5: inclinação = Δy/Δx = {_fmt(dy)}/{_fmt(dx)} = "
+        f"{_fmt(inclinacao)} (limite {DESVIO_MAX_INCLINACAO:g}) -> "
+        f"{'ok' if ok else 'excede o limite'}.",
+    )
+    return ResultadoDesvioPlanta(dx, dy, inclinacao, DESVIO_MAX_INCLINACAO, ok, governante, memoria)
+
+
+def distancia_min_cabos_curva_cm() -> float:
+    """Distância mínima entre cabos ou feixes de cabos na região central da curva de desvio em planta: 5 cm (20.3.2.5, PDF p. 195).
+
+    Vale ao longo de todo o desvio verificado em ``desvio_max_planta``, para
+    o conjunto de cabos ou feixes que descrevem a curva.
+    """
+    return 5.0
+
+
+# ---------------------------------------------------------------------------
+# 20.3.2.6 — Apoios de laje lisa/cogumelo protendida: cabos mínimos, armadura
+# passiva e feixe de monocordoalhas (PDF p. 196)
+# ---------------------------------------------------------------------------
+def cabos_min_sobre_pilar() -> int:
+    """Número mínimo de cabos de protensão, por direção ortogonal, que devem passar pelo interior da armadura longitudinal contida na seção transversal do pilar ou elemento de apoio, em laje lisa/cogumelo protendida: 2 (20.3.2.6, PDF p. 196).
+
+    A posição desses cabos deve estar claramente registrada no projeto
+    (exigência de registro, não coberta por esta função).
+    """
+    return 2
+
+
+N_BARRAS_APOIO_LAJE_PROTENDIDA_MIN = 4
+S_MAX_BARRAS_APOIO_LAJE_PROTENDIDA_CM = 30.0
+FATOR_LARGURA_FAIXA_APOIO_LAJE_PROTENDIDA = 1.5
+FATOR_EXTENSAO_MIN_VAO_LIVRE_APOIO_LAJE_PROTENDIDA = 1.0 / 6.0
+
+
+@dataclass(frozen=True)
+class ResultadoArmaduraApoioLajeProtendida:
+    n_barras: int
+    n_min: int
+    largura_apoio_cm: float
+    h_cm: float
+    largura_faixa_max_cm: float
+    largura_faixa_adotada_cm: float | None
+    s_max_cm: float
+    s_adotado_cm: float | None
+    vao_livre_cm: float
+    extensao_min_cm: float
+    extensao_adotada_cm: float | None
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def armadura_apoio_laje_protendida(
+    n_barras: int, largura_apoio_cm: float, h_cm: float, vao_livre_cm: float,
+    largura_faixa_adotada_cm: float | None = None,
+    s_adotado_cm: float | None = None,
+    extensao_adotada_cm: float | None = None,
+) -> ResultadoArmaduraApoioLajeProtendida:
+    """Armadura passiva mínima sobre os apoios de laje lisa/cogumelo protendida (20.3.2.6, PDF p. 196).
+
+    Sobre cada apoio, na face tracionada: no mínimo 4 barras
+    (``n_barras``), dispostas numa faixa que não exceda a largura do apoio
+    acrescida de 1,5 vez a altura total da laje para cada lado
+    (largura_faixa_máx = largura_apoio_cm + 2*1,5*h_cm); espaçadas no máximo
+    30 cm; e estendidas, a partir da face do apoio, até uma distância mínima
+    de 1/6 do vão livre na direção da armadura considerada (extensão_mín =
+    vão_livre_cm/6). Teste sugerido do plano: apoio de 40 cm, h=20 cm ->
+    largura_faixa_máx = 40+2*1,5*20 = 100 cm; vão_livre=500 cm ->
+    extensão_mín = 500/6 = 83,3 cm.
+
+    ``largura_faixa_adotada_cm``, ``s_adotado_cm`` e ``extensao_adotada_cm``
+    são opcionais: quando informados, são verificados contra o limite
+    correspondente; quando omitidos (``None``), aquele critério não reprova
+    o resultado (falta de informação, não folga automática).
+    """
+    n = int(n_barras)
+    largura_apoio = _positivo(largura_apoio_cm, "largura_apoio_cm")
+    h = _positivo(h_cm, "h_cm")
+    vao_livre = _positivo(vao_livre_cm, "vao_livre_cm")
+
+    largura_faixa_max = largura_apoio + 2.0 * FATOR_LARGURA_FAIXA_APOIO_LAJE_PROTENDIDA * h
+    extensao_min = vao_livre * FATOR_EXTENSAO_MIN_VAO_LIVRE_APOIO_LAJE_PROTENDIDA
+
+    ok_n = n >= N_BARRAS_APOIO_LAJE_PROTENDIDA_MIN
+    ok_largura = (largura_faixa_adotada_cm is None
+                  or largura_faixa_adotada_cm <= largura_faixa_max + _TOL)
+    ok_s = (s_adotado_cm is None
+            or s_adotado_cm <= S_MAX_BARRAS_APOIO_LAJE_PROTENDIDA_CM + _TOL)
+    ok_extensao = (extensao_adotada_cm is None
+                   or extensao_adotada_cm + _TOL >= extensao_min)
+    ok = ok_n and ok_largura and ok_s and ok_extensao
+
+    if ok:
+        governante = "20.3.2.6 atendido"
+    elif not ok_n:
+        governante = "20.3.2.6 número mínimo de barras não atendido"
+    elif not ok_largura:
+        governante = "20.3.2.6 largura da faixa excede o limite"
+    elif not ok_s:
+        governante = "20.3.2.6 espaçamento excede o máximo"
+    else:
+        governante = "20.3.2.6 extensão a partir da face do apoio insuficiente"
+
+    memoria = (
+        f"20.3.2.6: {n} barra(s) na face tracionada sobre o apoio (mínimo "
+        f"{N_BARRAS_APOIO_LAJE_PROTENDIDA_MIN}) -> {'ok' if ok_n else 'reprovado'}.",
+        f"20.3.2.6: largura da faixa <= {_fmt(largura_apoio)} + "
+        f"2*1,5*{_fmt(h)} = {_fmt(largura_faixa_max)} cm" + (
+            f"; adotada {_fmt(largura_faixa_adotada_cm)} cm -> "
+            f"{'ok' if ok_largura else 'reprovado'}."
+            if largura_faixa_adotada_cm is not None else " (não informada)."
+        ),
+        f"20.3.2.6: espaçamento <= {S_MAX_BARRAS_APOIO_LAJE_PROTENDIDA_CM:g} cm" + (
+            f"; adotado {_fmt(s_adotado_cm)} cm -> {'ok' if ok_s else 'reprovado'}."
+            if s_adotado_cm is not None else " (não informado)."
+        ),
+        f"20.3.2.6: extensão mínima a partir da face do apoio = "
+        f"{_fmt(vao_livre)}/6 = {_fmt(extensao_min)} cm" + (
+            f"; adotada {_fmt(extensao_adotada_cm)} cm -> "
+            f"{'ok' if ok_extensao else 'reprovado'}."
+            if extensao_adotada_cm is not None else " (não informada)."
+        ),
+    )
+
+    return ResultadoArmaduraApoioLajeProtendida(
+        n, N_BARRAS_APOIO_LAJE_PROTENDIDA_MIN, largura_apoio, h,
+        largura_faixa_max, largura_faixa_adotada_cm,
+        S_MAX_BARRAS_APOIO_LAJE_PROTENDIDA_CM, s_adotado_cm,
+        vao_livre, extensao_min, extensao_adotada_cm,
+        ok, governante, memoria,
+    )
+
+
+def max_monocordoalhas_feixe() -> int:
+    """Número máximo de cabos (monocordoalhas não aderentes) dispostos em um mesmo feixe, em laje protendida: 4 (20.3.2.6, PDF p. 196)."""
+    return 4

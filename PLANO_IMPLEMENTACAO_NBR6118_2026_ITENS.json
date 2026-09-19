@@ -262,7 +262,8 @@
    "nome": "Lajes protendidas: detalhamento",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/detalhamento_lajes_nbr6118.py"
+   "modulo": "dimensionamento/detalhamento_lajes_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P34",
@@ -13543,7 +13544,7 @@
    "pagina_pdf": 194,
    "titulo": "Espaçamento máximo entre cordoalhas/cabos para faixa protendida",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P33",
@@ -13553,7 +13554,22 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "h=25cm -> 6h=150cm>120cm, s_max=120cm; h=15cm -> 6h=90cm<120cm, s_max=90cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P33",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_lajes_nbr6118.espacamento_max_cabos_cm(h_cm)"
+    ],
+    "testes": [
+     "test_espacamento_max_cabos_h25_governa_120cm",
+     "test_espacamento_max_cabos_h15_governa_6h",
+     "test_espacamento_max_cabos_fronteira_120cm",
+     "test_espacamento_max_cabos_ponto_interior",
+     "test_espacamento_max_cabos_h_invalido"
+    ],
+    "observacao": "s_max = min(6h, 120 cm), conforme imagem da p.194 (20.3.2.1)."
+   }
   },
   {
    "id": "20.3.2.1-tensao-compressao-media-minima",
@@ -13561,7 +13577,7 @@
    "pagina_pdf": 194,
    "titulo": "Tensão de compressão média mínima na seção com cabo/feixe",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P33",
@@ -13571,7 +13587,22 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Caso limite: sigma_cp_media=1,0 MPa deve passar; 0,99 MPa deve reprovar.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P33",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_lajes_nbr6118.verificar_compressao_media(P_kn, Ac_cm2)"
+    ],
+    "testes": [
+     "test_compressao_media_no_limite_1mpa_ok",
+     "test_compressao_media_abaixo_0_99mpa_reprovado",
+     "test_compressao_media_ponto_interior_acima_do_minimo",
+     "test_compressao_media_Ac_invalido",
+     "test_compressao_media_P_negativo_invalido"
+    ],
+    "observacao": "sigma_cp,media = P/Ac >= 1,0 MPa apos todas as perdas; reusa cortante_nbr6118.sigma_cp_mpa (mesma formula NSd/Ac x10 de 19.4.1) em vez de reimplementar a conversao."
+   }
   },
   {
    "id": "20.3.2.2-largura-max-faixa-externa",
@@ -13579,7 +13610,7 @@
    "pagina_pdf": 195,
    "titulo": "Largura máxima da porção de laje para cabos em faixa externa de apoio",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P33",
@@ -13589,7 +13620,22 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "pilar 40cm, h=20cm -> largura_max=40+2*3,5*20=180cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P33",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_lajes_nbr6118.largura_max_faixa_externa_cm(dimensao_pilar_cm, h_cm, lados=2)"
+    ],
+    "testes": [
+     "test_largura_max_faixa_externa_pilar_interno_teste_do_plano",
+     "test_largura_max_faixa_externa_pilar_borda_um_lado",
+     "test_largura_max_faixa_externa_ponto_interior",
+     "test_largura_max_faixa_externa_lados_invalido",
+     "test_largura_max_faixa_externa_dimensoes_invalidas"
+    ],
+    "observacao": "Parametro 'lados' (1 ou 2) generaliza a Figura 20.3, que desenha apenas o caso de pilar de borda (um lado); o teste sugerido do plano (pilar interno, 40cm/h=20cm->180cm) usa o padrao lados=2. Ver divergencia registrada."
+   }
   },
   {
    "id": "20.3.2.3-espacamento-min-cabos",
@@ -13597,7 +13643,7 @@
    "pagina_pdf": 195,
    "titulo": "Espaçamento mínimo entre cabos/feixes ou entre cabo e armadura passiva",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P33",
@@ -13606,7 +13652,18 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Caso trivial: comparar espacamento adotado com 5 cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P33",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_lajes_nbr6118.espacamento_min_cabos_cm()"
+    ],
+    "testes": [
+     "test_espacamento_min_cabos_cm"
+    ],
+    "observacao": "Constante 5 cm, conforme 20.3.2.3 (p.195)."
+   }
   },
   {
    "id": "20.3.2.4-cobrimento-min-cabo-abertura",
@@ -13614,7 +13671,7 @@
    "pagina_pdf": 195,
    "titulo": "Cobrimento mínimo de cabos junto à face de abertura em laje",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P33",
@@ -13625,7 +13682,18 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Caso trivial: comparar distancia cabo-face de abertura com 7,5 cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P33",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_lajes_nbr6118.cobrimento_cabo_abertura_min_cm()"
+    ],
+    "testes": [
+     "test_cobrimento_cabo_abertura_min_cm"
+    ],
+    "observacao": "Constante 7,5 cm, conforme 20.3.2.4 (p.195); distinto do cobrimento nominal da Tabela 7.2."
+   }
   },
   {
    "id": "20.3.2.5-desvio-max-inclinacao",
@@ -13633,7 +13701,7 @@
    "pagina_pdf": 195,
    "titulo": "Inclinação máxima do desvio em planta de cabo/feixe",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P33",
@@ -13643,7 +13711,22 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Caso trivial: delta_y/delta_x <= 0,10.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P33",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_lajes_nbr6118.desvio_max_planta(delta_x_cm, delta_y_cm)"
+    ],
+    "testes": [
+     "test_desvio_max_planta_no_limite_ok",
+     "test_desvio_max_planta_acima_do_limite_reprovado",
+     "test_desvio_max_planta_abaixo_do_limite_ok",
+     "test_desvio_max_planta_nao_levanta_erro_quando_excede",
+     "test_desvio_max_planta_delta_x_invalido"
+    ],
+    "observacao": "inclinacao = delta_y/delta_x <= 1/10. Como a norma permite exceder o limite desde que se preveja armadura para a forca de desvio (nao quantificada), a funcao devolve ok=False em vez de levantar FaixaNormativaError quando reprovada."
+   }
   },
   {
    "id": "20.3.2.5-distancia-min-cabos-curva",
@@ -13651,7 +13734,7 @@
    "pagina_pdf": 195,
    "titulo": "Distância mínima entre cabos na região central da curva de desvio",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P33",
@@ -13662,7 +13745,18 @@
     "20.3.2.5-desvio-max-inclinacao"
    ],
    "teste_sugerido": "Caso trivial: comparar distancia na regiao central da curva com 5 cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P33",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_lajes_nbr6118.distancia_min_cabos_curva_cm()"
+    ],
+    "testes": [
+     "test_distancia_min_cabos_curva_cm"
+    ],
+    "observacao": "Constante 5 cm, conforme 20.3.2.5 (p.195), regiao central da curva de desvio."
+   }
   },
   {
    "id": "20.3.2.6-cabos-atravessando-pilar",
@@ -13670,7 +13764,7 @@
    "pagina_pdf": 196,
    "titulo": "Número mínimo de cabos atravessando a armadura do pilar por direção",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P33",
@@ -13679,7 +13773,18 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Caso trivial: contar cabos que cruzam a secao do pilar em cada direcao e comparar com 2.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P33",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_lajes_nbr6118.cabos_min_sobre_pilar()"
+    ],
+    "testes": [
+     "test_cabos_min_sobre_pilar"
+    ],
+    "observacao": "Constante 2 (por direcao ortogonal), conforme 20.3.2.6 (p.196)."
+   }
   },
   {
    "id": "20.3.2.6-barras-apoio-laje-lisa-protendida",
@@ -13687,7 +13792,7 @@
    "pagina_pdf": 196,
    "titulo": "Armadura passiva mínima sobre apoios de laje lisa/cogumelo protendida",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P33",
@@ -13696,7 +13801,27 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "apoio 40cm, h=20cm -> largura_faixa<=40+2*1,5*20=100cm; vao_livre=500cm -> extensao_min=83,3cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P33",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_lajes_nbr6118.armadura_apoio_laje_protendida(n_barras, largura_apoio_cm, h_cm, vao_livre_cm, largura_faixa_adotada_cm=None, s_adotado_cm=None, extensao_adotada_cm=None)"
+    ],
+    "testes": [
+     "test_armadura_apoio_teste_do_plano_apenas_n_barras",
+     "test_armadura_apoio_n_barras_abaixo_do_minimo_reprovado",
+     "test_armadura_apoio_n_barras_no_minimo_ok",
+     "test_armadura_apoio_largura_faixa_adotada_no_limite_ok",
+     "test_armadura_apoio_largura_faixa_adotada_acima_reprovado",
+     "test_armadura_apoio_espacamento_adotado_no_limite_ok",
+     "test_armadura_apoio_espacamento_adotado_acima_reprovado",
+     "test_armadura_apoio_extensao_adotada_no_limite_ok",
+     "test_armadura_apoio_extensao_adotada_abaixo_reprovado",
+     "test_armadura_apoio_dimensoes_invalidas"
+    ],
+    "observacao": "n_barras>=4; largura_faixa<=largura_apoio+2*1,5h; s_max=30cm; extensao_min=vao_livre/6 a partir da face do apoio, conforme 20.3.2.6 (p.196)."
+   }
   },
   {
    "id": "20.3.2.6-max-cabos-feixe-monocordoalha",
@@ -13704,7 +13829,7 @@
    "pagina_pdf": 196,
    "titulo": "Número máximo de monocordoalhas não aderentes em feixe",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P33",
@@ -13713,7 +13838,18 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Caso trivial: contar cabos no feixe e comparar com 4.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P33",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_lajes_nbr6118.max_monocordoalhas_feixe()"
+    ],
+    "testes": [
+     "test_max_monocordoalhas_feixe"
+    ],
+    "observacao": "Constante 4, conforme 20.3.2.6 (p.196), monocordoalhas nao aderentes em feixe."
+   }
   },
   {
    "id": "20.4-diametro-max-estribo-puncao",
