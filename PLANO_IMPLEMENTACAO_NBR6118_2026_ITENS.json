@@ -94,7 +94,8 @@
    "nome": "Vigas: armaduras mínima, máxima e de pele; instabilidade lateral",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/vigas_nbr6118.py (extensão)"
+   "modulo": "dimensionamento/vigas_nbr6118.py (extensão)",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P13",
@@ -7530,7 +7531,7 @@
    "pagina_pdf": 134,
    "titulo": "Verificação aproximada de instabilidade lateral (flambagem lateral) de vigas",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P12",
@@ -7540,7 +7541,18 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Caso limite b=ℓ0/50 exato (aceito); caso retangular com b=0,40*h exato (aceito); trocar tipologia para duplo T com o mesmo b/h deve reprovar (βfl cai para 0,20).",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P12",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_instabilidade_lateral"
+    ],
+    "testes": [
+     "testes do bloco 'Instabilidade lateral' em test_p12_vigas_limites.py, incluindo test_instabilidade_lateral_tipo_desconhecido (atualizado)"
+    ],
+    "observacao": "Corrigido nesta rodada: tipo fora da Tabela 15.1 agora levanta FaixaNormativaError (nao ValueError generico), e memoria de calculo trocou 'NAO OK' por 'não ok'."
+   }
   },
   {
    "id": "16.1-objetivo",
@@ -7674,7 +7686,7 @@
    "pagina_pdf": 140,
    "titulo": "Taxa mecânica mínima de armadura de flexão (wmin)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P12",
@@ -7688,7 +7700,20 @@
     "nucleo.fyd"
    ],
    "teste_sugerido": "Calcular wmin para o mesmo caso de As,min da Tabela 17.3 e conferir consistencia numerica (wmin*Ac*fcd/fyd deve reproduzir As,min).",
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P12",
+    "data": "19/09/2026",
+    "funcoes": [
+     "omega_min"
+    ],
+    "testes": [
+     "test_omega_min_reproduz_As_min_via_rho_min",
+     "test_omega_min_independe_de_geometria",
+     "test_omega_min_recusa_fyk_fora_do_padrao_da_tabela_17_3"
+    ],
+    "observacao": "Corrigido nesta rodada: agora recusa (FaixaNormativaError) fyk_mpa/gama_c/gama_s diferentes do que a Tabela 17.3 pressupoe, em vez de misturar bases incompativeis."
+   }
   },
   {
    "id": "17.2.1-introducao-envoltoria",
@@ -7832,7 +7857,7 @@
    "pagina_pdf": 142,
    "titulo": "Dutilidade em vigas: limite de x/d (remete a 14.6.4.3)",
    "tipo": "qualitativo",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P12",
@@ -7843,7 +7868,18 @@
    "depende_de": [
     "14.6.4.3-limite-x-d"
    ],
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P12",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_limites_armadura_viga"
+    ],
+    "testes": [
+     "tests do bloco '17.3.5.2.4 e 17.2.3' em test_p12_vigas_limites.py"
+    ],
+    "observacao": "x/d verificado contra nbr.xd_limite_dutilidade (14.6.4.3) dentro de verificar_limites_armadura_viga; sem mudanca nesta rodada."
+   }
   },
   {
    "id": "17.2.4.1-forcas-concentradas-10pct-h",
@@ -7851,7 +7887,7 @@
    "pagina_pdf": 143,
    "titulo": "Concentração das forças de armadura no centroide (critério 10% h)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P12",
@@ -7860,7 +7896,18 @@
    "formula_ou_regra": "distancia(centroide do grupo, barra mais afastada) < 0,10 * h",
    "conferido_na_imagem": false,
    "depende_de": [],
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P12",
+    "data": "19/09/2026",
+    "funcoes": [
+     "agrupamento_barras_permitido"
+    ],
+    "testes": [
+     "testes do bloco '17.2.4.1' em test_p12_vigas_limites.py"
+    ],
+    "observacao": "Sem mudanca nesta rodada; nenhum achado sobre este item."
+   }
   },
   {
    "id": "17.2.4.1-armaduras-laterais-vigas",
@@ -8359,7 +8406,7 @@
    "pagina_pdf": 153,
    "titulo": "Armadura de pele em vigas",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P12",
@@ -8369,7 +8416,18 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Viga bw=20 cm, h=80 cm: Ac,alma=1600 cm2 -> As,pele=1,6 cm2/face (nao passa do teto de 5 cm2/m); h=60 cm deve permitir dispensa.",
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P12",
+    "data": "19/09/2026",
+    "funcoes": [
+     "armadura_pele_cm2_por_face"
+    ],
+    "testes": [
+     "testes do bloco 'Armadura de pele' em test_p12_vigas_limites.py"
+    ],
+    "observacao": "Sem mudanca nesta rodada; nenhum achado sobre este item."
+   }
   },
   {
    "id": "17.3.5.2.4-as-max-tracao-compressao-vigas",
@@ -8377,7 +8435,7 @@
    "pagina_pdf": 153,
    "titulo": "Soma máxima das armaduras de tração e compressão em vigas",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P12",
@@ -8388,7 +8446,19 @@
    "depende_de": [
     "14.6.4.3-limite-x-d"
    ],
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P12",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_As_max_viga",
+     "verificar_limites_armadura_viga"
+    ],
+    "testes": [
+     "testes do bloco 'As max' em test_p12_vigas_limites.py"
+    ],
+    "observacao": "Corrigido nesta rodada: memoria de calculo trocou 'OK'/'NAO OK' por 'ok'/'não ok', alinhando com o padrao do resto do projeto (achados de execucao e diff, mesma raiz)."
+   }
   },
   {
    "id": "17.3.5.3.1-as-min-pilar",
@@ -9762,7 +9832,7 @@
    "pagina_pdf": 172,
    "titulo": "Espaçamento máximo da armadura de pele (afastamento ≤ d/3 e 20 cm)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P12",
@@ -9774,7 +9844,18 @@
     "nucleo.taxa_armadura_pele (17.3.5.2.3, fora deste trecho)"
    ],
    "teste_sugerido": "d=90cm -> afastamento_max=min(30cm;20cm)=20cm. d=45cm -> afastamento_max=min(15cm;20cm)=15cm.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P12",
+    "data": "19/09/2026",
+    "funcoes": [
+     "espacamento_max_pele_cm"
+    ],
+    "testes": [
+     "testes do bloco 'Armadura de pele' em test_p12_vigas_limites.py"
+    ],
+    "observacao": "Sem mudanca nesta rodada; nenhum achado sobre este item."
+   }
   },
   {
    "id": "18.3.6-armadura-suspensao-percentuais",
@@ -10630,7 +10711,7 @@
    "pagina_pdf": 181,
    "titulo": "Armadura máxima de flexão de laje remete a 17.3.5.2",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P12",
@@ -10641,7 +10722,18 @@
     "17.3.5.2-as-max-flexao (fora)"
    ],
    "teste_sugerido": "Conferir contra limite geral de As_max quando implementado.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P12",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_As_max_viga"
+    ],
+    "testes": [
+     "testes do bloco 'As max' em test_p12_vigas_limites.py"
+    ],
+    "observacao": "Reusa o mesmo limite de 17.3.5.2.4, como a norma remete; sem mudanca nesta rodada alem da correcao de texto ja listada no item 17.3.5.2.4."
+   }
   },
   {
    "id": "19.4.1-vrd1",

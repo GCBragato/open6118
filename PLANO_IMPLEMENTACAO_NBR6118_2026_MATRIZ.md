@@ -352,7 +352,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `15.9.2-esbeltez-lamina-pilar-parede` | 15.9.2 | 132 | Esbeltez λi de cada lâmina do pilar-parede e dispensa dos efeitos localizados | ausente | média | P | P29 |
 | `15.9.2-comprimento-equivalente-lamina` | 15.9.2 | 132 | Comprimento equivalente ℓe de lâmina de pilar-parede por vinculação (Figura 15.4) | ausente | média | M | P29 |
 | `15.9.3-faixas-verticais-pilar-parede` | 15.9.3 | 133 | Decomposição do pilar-parede em faixas verticais para efeito localizado de 2ª ordem | ausente | média | M | P29 |
-| `15.10-instabilidade-lateral-vigas` | 15.10 | 134 | Verificação aproximada de instabilidade lateral (flambagem lateral) de vigas | ausente | baixa | P | P12 |
+| `15.10-instabilidade-lateral-vigas` | 15.10 | 134 | Verificação aproximada de instabilidade lateral (flambagem lateral) de vigas | implementado | baixa | P | P12 |
 
 ## Seção 16
 
@@ -372,7 +372,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | Id | Item | Pág. | O que é | Situação | Prior. | Compl. | Pacote |
 |---|---|---|---|---|---|---|---|
 | `17.1-simbologia` | 17.1 | 137 | Simbologia específica da Seção 17 | não computável | baixa | P |  |
-| `17.1-omega-min` | 17.1 | 140 | Taxa mecânica mínima de armadura de flexão (wmin) | ausente | baixa | P | P12 |
+| `17.1-omega-min` | 17.1 | 140 | Taxa mecânica mínima de armadura de flexão (wmin) | implementado | baixa | P | P12 |
 | `17.2.1-introducao-envoltoria` | 17.2.1 | 140 | Envoltória de esforços resistentes (NRd,MRd) sobre (NSd,MSd) | não computável | alta | P |  |
 | `17.2.2ab-hipoteses-planas-aderencia` | 17.2.2 | 140 | Hipóteses de seções planas e aderência perfeita (a, b) | não computável | alta | P |  |
 | `17.2.2c-delta-sigma-p-nao-aderente` | 17.2.2 c) | 140 | Acréscimo de tensão em armadura ativa não aderente (Dsp) | ausente | média | P | P32 |
@@ -381,8 +381,8 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `17.2.2f-tensao-armaduras-diagramas` | 17.2.2 f) | 141 | Tensão nas armaduras pelos diagramas tensão-deformação (8.3.6/8.4.5) | não computável | alta | P |  |
 | `17.2.2g-limites-dominios` | 17.2.2 g) | 142 | Limites de linha neutra entre domínios e deformações da Figura 17.1 | implementado | alta | P |  |
 | `17.2.2g-classificacao-dominio` | 17.2.2 g) | 142 | Classificação explícita do domínio de deformação (reta a, 1 a 5, 4a, reta b) | parcial | média | M | P28 |
-| `17.2.3-dutilidade-vigas` | 17.2.3 | 142 | Dutilidade em vigas: limite de x/d (remete a 14.6.4.3) | parcial | alta | P | P12 |
-| `17.2.4.1-forcas-concentradas-10pct-h` | 17.2.4.1 | 143 | Concentração das forças de armadura no centroide (critério 10% h) | ausente | baixa | P | P12 |
+| `17.2.3-dutilidade-vigas` | 17.2.3 | 142 | Dutilidade em vigas: limite de x/d (remete a 14.6.4.3) | implementado | alta | P | P12 |
+| `17.2.4.1-forcas-concentradas-10pct-h` | 17.2.4.1 | 143 | Concentração das forças de armadura no centroide (critério 10% h) | implementado | baixa | P | P12 |
 | `17.2.4.1-armaduras-laterais-vigas` | 17.2.4.1 | 143 | Armaduras laterais de vigas podem entrar no cálculo dos esforços resistentes | não computável | média | P |  |
 | `17.2.4.2.1-protensao-hiperestatica-pre-alongamento` | 17.2.4.2.1 | 143 | Protensão no ELU: só hiperestáticos e pré-alongamento com perdas | ausente | média | P | P47 |
 | `17.2.4.3.1-fckj-especificado` | 17.2.4.3.1 | 143 | Especificação de fckj no projeto para o ato da protensão | não computável | baixa | P |  |
@@ -404,8 +404,8 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `17.3.5.1-principios-basicos-as-min-max` | 17.3.5.1 | 151 | Princípios básicos das armaduras mínimas e máximas | não computável | alta | P |  |
 | `17.3.5.2.1-md-min-as-min-vigas` | 17.3.5.2.1 | 151 | Momento mínimo e armadura mínima de tração em vigas | implementado | alta | P |  |
 | `17.3.5.2.2-as-min-deformacao-imposta` | 17.3.5.2.2 | 152 | Armadura mínima de tração sob deformações impostas (estanqueidade/estética) | implementado | baixa | M | P9 |
-| `17.3.5.2.3-armadura-pele` | 17.3.5.2.3 | 153 | Armadura de pele em vigas | ausente | alta | P | P12 |
-| `17.3.5.2.4-as-max-tracao-compressao-vigas` | 17.3.5.2.4 | 153 | Soma máxima das armaduras de tração e compressão em vigas | ausente | alta | P | P12 |
+| `17.3.5.2.3-armadura-pele` | 17.3.5.2.3 | 153 | Armadura de pele em vigas | implementado | alta | P | P12 |
+| `17.3.5.2.4-as-max-tracao-compressao-vigas` | 17.3.5.2.4 | 153 | Soma máxima das armaduras de tração e compressão em vigas | implementado | alta | P | P12 |
 | `17.3.5.3.1-as-min-pilar` | 17.3.5.3.1 | 153 | Armadura longitudinal mínima de pilares | implementado | alta | P |  |
 | `17.3.5.3.2-as-max-pilar` | 17.3.5.3.2 | 153 | Armadura longitudinal máxima de pilares | implementado | alta | P |  |
 | `17.4.1.1.1-asw-min` | 17.4.1.1.1 | 154 | Armadura transversal mínima (taxa geométrica) | implementado | alta | P |  |
@@ -484,7 +484,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `18.3.4-espacamento-longitudinal-barras-torcao` | 18.3.4 | 172 | Espaçamento máximo das barras longitudinais de torção ao longo do perímetro interno dos estribos (350mm) | ausente | média | P | P23 |
 | `18.3.4-relacao-deltaAsl-deltau` | 18.3.4 | 172 | Relação DeltaAsl/Deltau constante ao longo do perímetro | parcial | baixa | M | P23 |
 | `18.3.4-barra-cada-vertice-poligonal` | 18.3.4 | 172 | Pelo menos uma barra longitudinal em cada vértice de estribo poligonal de torção | ausente | baixa | P | P23 |
-| `18.3.5-armadura-pele` | 18.3.5 | 172 | Espaçamento máximo da armadura de pele (afastamento ≤ d/3 e 20 cm) | ausente | alta | P | P12 |
+| `18.3.5-armadura-pele` | 18.3.5 | 172 | Espaçamento máximo da armadura de pele (afastamento ≤ d/3 e 20 cm) | implementado | alta | P | P12 |
 | `18.3.6-armadura-suspensao-percentuais` | 18.3.6 | 172 | Armadura de suspensão em vigas não penduradas: percentuais e extensão na viga de apoio e na viga apoiada | ausente | média | M | P23 |
 | `18.3.6-fator-reducao-vigas-face-superior-coincidente` | 18.3.6 | 172 | Fator de redução da carga de suspensão para vigas não penduradas com faces superiores coincidentes | ausente | baixa | P | P23 |
 | `18.3.6-definicao-viga-pendurada` | 18.3.6 | 172 | Classificação viga pendurada x não pendurada | ausente | baixa | P | P23 |
@@ -529,7 +529,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `19.3.3.2-extensao-armadura-negativa-borda` | 19.3.3.2 | 179 | Extensão mínima da armadura negativa de borda sem continuidade | ausente | alta | P | P17 |
 | `19.3.3.2-tab19.1-as-min` | 19.3.3.2 / Tabela 19.1 | 180 | Tabela 19.1 - valores mínimos para armaduras passivas aderentes de laje | parcial | alta | M | P17 |
 | `19.3.3.2-as-min-laje-lisa-nao-aderente` | 19.3.3.2 | 180 | Armadura negativa mínima em laje lisa/cogumelo com armadura ativa não aderente | ausente | média | P | P17 |
-| `19.3.3.3-as-max` | 19.3.3.3 | 181 | Armadura máxima de flexão de laje remete a 17.3.5.2 | ausente | alta | P | P12 |
+| `19.3.3.3-as-max` | 19.3.3.3 | 181 | Armadura máxima de flexão de laje remete a 17.3.5.2 | implementado | alta | P | P12 |
 | `19.4.1-vrd1` | 19.4.1 | 181 | Força cortante resistente de laje sem armadura transversal (VRd1) | parcial | alta | M | P15 |
 | `19.4.1-decalagem-al-15d` | 19.4.1 | 182 | Deslocamento da lei de decalagem em lajes (al=1,5d) | ausente | média | P | P15 |
 | `19.4.2-modelo-cortante-laje` | 19.4.2 | 182 | Lajes com armadura para força cortante aplicam os critérios de 17.4.2 | implementado | alta | P |  |

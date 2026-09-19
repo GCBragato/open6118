@@ -623,6 +623,259 @@ def rodar_testes() -> bool:
     return all(resultados)
 
 
+# === P12: armaduras minima, maxima e de pele; instabilidade lateral (Onda 2) ===
+#
+# Completa os limites de armadura de viga que faltavam: taxa mecanica minima
+# de flexao (17.1), armadura de pele com seu espacamento maximo (17.3.5.2.3 e
+# 18.3.5), o teto de As + A's <= 4% Ac (17.3.5.2.4, valendo tambem para laje
+# por 19.3.3.3), o criterio de concentracao de forcas em grupos de barras
+# (17.2.4.1) e a verificacao aproximada de instabilidade lateral de vigas com
+# a Tabela 15.1 (15.10). Reusa nucleo_nbr6118 para fcd, fyd, rho_min_flexao e
+# xd_limite_dutilidade; nao reimplementa nenhuma formula de material.
+# ---------------------------------------------------------------------------
+
+# --- 17.1 — Taxa mecanica minima de armadura de flexao (PDF p. 140) --------
+def omega_min(fck_mpa: float, fyk_mpa: float = 500.0,
+             gama_c: float = GAMA_C, gama_s: float = GAMA_S) -> float:
+    """Taxa mecanica minima de armadura longitudinal de flexao para vigas
+    (17.1, PDF p. 140): wmin = (As,min * fyd) / (Ac * fcd).
+
+    Como As,min = rho_min(fck) * Ac (Tabela 17.3, nbr.rho_min_flexao), a
+    razao independe da geometria da secao e se reduz a
+    wmin = rho_min(fck) * fyd / fcd, com fyd e fcd em MPa (nbr.fyd, nbr.fcd) -
+    a razao e adimensional, entao a unidade de fyd/fcd nao importa desde que
+    seja a mesma nos dois. Grandeza usada so para checagem/relatorio: o
+    dimensionamento em si ja usa As,min diretamente (as_min).
+
+    A Tabela 17.3 (nbr.rho_min_flexao) pressupoe aco CA-50 (fyk = 500 MPa),
+    d/h = 0,8, gama_c = 1,4 e gama_s = 1,15 (docstring de rho_min_flexao); fora
+    desses valores, rho_min(fck) nao reproduz As,min/Ac quando o criterio do
+    momento minimo (nao o piso de 0,15%) e' quem governa, e o wmin calculado
+    aqui ficaria incorreto. Por isso a funcao so aceita esses valores; para
+    outro aco ou outro gama, calcule wmin a partir de
+    ``nbr.As_min_flexao_retangular`` (que exige a geometria) dividido por Ac.
+    """
+    if fyk_mpa != 500.0 or gama_c != GAMA_C or gama_s != GAMA_S:
+        raise nbr.FaixaNormativaError(
+            "omega_min so vale para os parametros que a Tabela 17.3 "
+            f"pressupoe (fyk = 500 MPa, gama_c = {GAMA_C:g}, gama_s = "
+            f"{GAMA_S:g}); recebido fyk_mpa={fyk_mpa!r}, gama_c={gama_c!r}, "
+            f"gama_s={gama_s!r}. Para outro aco ou outro gama, calcule wmin "
+            "a partir de nbr.As_min_flexao_retangular (que exige a "
+            "geometria) dividido por Ac."
+        )
+    fyd_mpa = nbr.fyd(fyk_mpa, gama_s)
+    fcd_mpa = nbr.fcd(fck_mpa, gama_c)
+    return nbr.rho_min_flexao(fck_mpa) * fyd_mpa / fcd_mpa
+
+
+# --- 17.3.5.2.3 e 18.3.5 — Armadura de pele (PDF p. 153 e 172) -------------
+TETO_PELE_CM2_POR_M = 5.0        # 17.3.5.2.3 — nao precisa exceder 5 cm2/m por face
+TAXA_PELE = 0.0010               # 17.3.5.2.3 — 0,10% de Ac,alma, por face
+H_DISPENSA_PELE_CM = 60.0        # 17.3.5.2.3 — dispensavel se h <= 60 cm
+
+
+def armadura_pele_cm2_por_face(bw_cm: float, h_cm: float) -> float:
+    """Armadura de pele minima por face da alma, em cm2/m (17.3.5.2.3, PDF
+    p. 153): 0,10% * Ac,alma por face, sem exceder 5 cm2/m por face.
+
+    Expressa como taxa por metro de altura da alma (Ac,alma de uma faixa de
+    1 m de altura = bw_cm * 100), que e a grandeza que o detalhista usa para
+    escolher bitola e espacamento (igual ao uso corrente em escritorio e nos
+    demais softwares de detalhamento); nao e a area total da alma inteira.
+    Dispensavel em vigas com h <= 60 cm (17.3.5.2.3): retorna 0,0.
+
+    AVISO: ``blocos_nbr6118.Asp_pele_face`` calcula outra grandeza (pele de
+    bloco sobre estacas, 1/8 de As,total) - nao confundir com esta funcao.
+    """
+    if h_cm <= H_DISPENSA_PELE_CM:
+        return 0.0
+    taxa = TAXA_PELE * bw_cm * 100.0
+    return min(taxa, TETO_PELE_CM2_POR_M)
+
+
+def espacamento_max_pele_cm(d_cm: float) -> float:
+    """Espacamento maximo entre barras de pele ao longo da altura da alma
+    (18.3.5, PDF p. 172): min(d/3, 20 cm). A area da armadura de pele em si
+    e calculada por ``armadura_pele_cm2_por_face`` (17.3.5.2.3)."""
+    return min(d_cm / 3.0, 20.0)
+
+
+# --- 17.3.5.2.4 e 19.3.3.3 — Soma maxima de As e A's (PDF p. 153 e 181) ----
+@dataclass(frozen=True)
+class ResultadoAsMaxViga:
+    As: float
+    As_linha: float
+    Ac: float
+    soma: float
+    limite: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+LIMITE_AS_MAIS_AS_LINHA = 0.04   # 17.3.5.2.4 — (As + A's) <= 4% Ac
+
+
+def verificar_As_max_viga(As_cm2: float, As_linha_cm2: float,
+                          Ac_cm2: float) -> ResultadoAsMaxViga:
+    """Verifica (As + A's) <= 4% Ac fora da zona de emendas (17.3.5.2.4,
+    PDF p. 153). Vale tambem para a armadura maxima de flexao de laje, que
+    19.3.3.3 (PDF p. 181) remete a este mesmo limite de 17.3.5.2.
+
+    Nao confere sozinha a dutilidade de 14.6.4.3 (que a norma tambem exige
+    junto deste teto) - use ``verificar_limites_armadura_viga`` para as duas
+    verificacoes combinadas a partir de um ``ResultadoFlexao``.
+    """
+    soma = As_cm2 + As_linha_cm2
+    limite = LIMITE_AS_MAIS_AS_LINHA * Ac_cm2
+    ok = soma <= limite
+    governante = "As + A's <= 4% Ac (17.3.5.2.4)" if not ok else "nenhum (dentro do limite)"
+    memoria = (
+        f"As = {As_cm2:.2f} cm2, A's = {As_linha_cm2:.2f} cm2, "
+        f"soma = {soma:.2f} cm2 (17.3.5.2.4).",
+        f"Limite = 4% * Ac = 4% * {Ac_cm2:.2f} = {limite:.2f} cm2.",
+        f"{'ok' if ok else 'não ok'}: soma {'<=' if ok else '>'} limite.",
+    )
+    return ResultadoAsMaxViga(
+        As=As_cm2, As_linha=As_linha_cm2, Ac=Ac_cm2, soma=soma,
+        limite=limite, ok=ok, governante=governante, memoria=memoria,
+    )
+
+
+@dataclass(frozen=True)
+class ResultadoLimitesViga:
+    as_max: ResultadoAsMaxViga
+    beta_x: float
+    limite_xd: float
+    ok_dutilidade: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_limites_armadura_viga(resultado: ResultadoFlexao,
+                                    Ac_cm2: float | None = None) -> ResultadoLimitesViga:
+    """Confere, a partir de um ``ResultadoFlexao`` ja dimensionado, o teto de
+    As + A's <= 4% Ac (17.3.5.2.4) e a dutilidade de x/d <= xd_limite_dutilidade
+    (17.2.3, que remete a 14.6.4.3), consolidando as duas verificacoes.
+
+    Ac_cm2: area da secao para o limite de 4%; por padrao bw * h do proprio
+    resultado (secao retangular). Passe explicitamente para secao T.
+    """
+    Ac = Ac_cm2 if Ac_cm2 is not None else resultado.bw * resultado.h
+    r_as_max = verificar_As_max_viga(resultado.As, resultado.As_linha, Ac)
+    limite_xd = nbr.xd_limite_dutilidade(resultado.fck)
+    ok_xd = resultado.beta_x <= limite_xd
+    ok = r_as_max.ok and ok_xd
+    if not ok:
+        motivos = []
+        if not r_as_max.ok:
+            motivos.append("As + A's > 4% Ac (17.3.5.2.4)")
+        if not ok_xd:
+            motivos.append("x/d acima do limite de dutilidade (17.2.3/14.6.4.3)")
+        governante = "; ".join(motivos)
+    else:
+        governante = "nenhum (dentro dos limites)"
+    memoria = r_as_max.memoria + (
+        f"x/d = {resultado.beta_x:.3f}, limite de dutilidade = {limite_xd:.2f} "
+        f"(17.2.3/14.6.4.3, fck = {resultado.fck:g} MPa).",
+        f"{'ok' if ok_xd else 'não ok'}: x/d {'<=' if ok_xd else '>'} limite.",
+    )
+    return ResultadoLimitesViga(
+        as_max=r_as_max, beta_x=resultado.beta_x, limite_xd=limite_xd,
+        ok_dutilidade=ok_xd, ok=ok, governante=governante, memoria=memoria,
+    )
+
+
+# --- 17.2.4.1 — Concentracao de forcas de barras no centroide (p. 143) ----
+FATOR_AGRUPAMENTO_H = 0.10   # 17.2.4.1 — distancia < 10% de h
+
+
+def agrupamento_barras_permitido(dist_cm: float, h_cm: float) -> bool:
+    """17.2.4.1 (PDF p. 143): as forcas de um grupo de barras podem ser
+    consideradas concentradas no centroide correspondente se a distancia
+    deste centroide a barra mais afastada do grupo (medida normal a linha
+    neutra) for menor que 10% de h. dist_cm e essa distancia; devolve True
+    quando o agrupamento e permitido."""
+    return dist_cm < FATOR_AGRUPAMENTO_H * h_cm
+
+
+# --- 15.10 — Instabilidade lateral de vigas e Tabela 15.1 (PDF p. 134) -----
+TABELA_15_1 = {   # beta_fl pela tipologia da secao (15.10, Tabela 15.1)
+    "retangular": 0.40,
+    "t": 0.40,
+    "i": 0.40,
+    "duplo_t": 0.20,
+    "caixao": 0.20,
+}
+
+
+@dataclass(frozen=True)
+class ResultadoInstabilidadeLateral:
+    b: float
+    h: float
+    l0: float
+    tipo: str
+    beta_fl: float
+    limite_vao: float
+    limite_altura: float
+    ok_vao: bool
+    ok_altura: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_instabilidade_lateral(b_cm: float, h_cm: float, l0_cm: float,
+                                    tipo: str) -> ResultadoInstabilidadeLateral:
+    """Verificacao aproximada de instabilidade lateral (flambagem lateral)
+    de vigas (15.10, PDF p. 134): b >= l0/50 e b >= beta_fl * h, com beta_fl
+    pela Tabela 15.1 (0,40 para secao retangular, T ou I isoladas; 0,20 para
+    duplo T ou secoes em caixao, quando a mesa comprimida e compartilhada
+    por duas almas).
+
+    b_cm: largura da zona comprimida. h_cm: altura total da viga. l0_cm:
+    comprimento do flange comprimido entre suportes que garantem o
+    contraventamento lateral. tipo: chave de TABELA_15_1 ('retangular',
+    't', 'i', 'duplo_t' ou 'caixao'), sem distincao de maiusculas.
+    """
+    chave = str(tipo).strip().lower().replace(" ", "_").replace("-", "_")
+    if chave not in TABELA_15_1:
+        raise nbr.FaixaNormativaError(
+            f"Tipologia de viga desconhecida na Tabela 15.1: {tipo!r}. "
+            f"Use uma de {sorted(TABELA_15_1)}."
+        )
+    beta_fl = TABELA_15_1[chave]
+    limite_vao = l0_cm / 50.0
+    limite_altura = beta_fl * h_cm
+    ok_vao = b_cm >= limite_vao
+    ok_altura = b_cm >= limite_altura
+    ok = ok_vao and ok_altura
+    if ok:
+        governante = "nenhum (dentro dos limites)"
+    else:
+        motivos = []
+        if not ok_vao:
+            motivos.append("b < l0/50")
+        if not ok_altura:
+            motivos.append("b < beta_fl * h")
+        governante = "; ".join(motivos)
+    memoria = (
+        f"Tipologia = {tipo} -> beta_fl = {beta_fl:.2f} (Tabela 15.1).",
+        f"b >= l0/50 = {l0_cm:.1f}/50 = {limite_vao:.2f} cm -> "
+        f"{'ok' if ok_vao else 'não ok'} (b = {b_cm:.2f} cm).",
+        f"b >= beta_fl*h = {beta_fl:.2f}*{h_cm:.1f} = {limite_altura:.2f} cm -> "
+        f"{'ok' if ok_altura else 'não ok'} (b = {b_cm:.2f} cm).",
+    )
+    return ResultadoInstabilidadeLateral(
+        b=b_cm, h=h_cm, l0=l0_cm, tipo=tipo, beta_fl=beta_fl,
+        limite_vao=limite_vao, limite_altura=limite_altura,
+        ok_vao=ok_vao, ok_altura=ok_altura, ok=ok,
+        governante=governante, memoria=memoria,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
