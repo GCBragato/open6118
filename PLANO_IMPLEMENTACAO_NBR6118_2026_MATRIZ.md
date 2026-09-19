@@ -97,9 +97,9 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `9.4.2.5-lb-necessario` | 9.4.2.5 | 57 | Comprimento de ancoragem necessário ℓb,nec | implementado | alta | P |  |
 | `9.4.2.6.1-armadura-transversal-ancoragem-phi-menor-32` | 9.4.2.6.1 | 57 | Armadura transversal na ancoragem — φ<32mm | implementado | média | P | P21 |
 | `9.4.2.6.2-armadura-transversal-ancoragem-phi-maior-igual-32` | 9.4.2.6.2 | 58 | Armadura transversal na ancoragem — φ≥32mm | implementado | baixa | P | P21 |
-| `9.4.3-feixe-diametro-equivalente` | 9.4.3 | 58 | Diâmetro equivalente de feixe de barras (φn) | ausente | média | P | P27 |
-| `9.4.3-feixe-regras-ancoragem` | 9.4.3 | 58 | Regras de ancoragem de feixes (φn≤25mm / >25mm / caso construtivo) | ausente | média | M | P27 |
-| `9.4.4-tela-soldada-ancoragem` | 9.4.4 | 58 | Ancoragem de telas soldadas por aderência (nº de fios transversais) | ausente | média | P | P27 |
+| `9.4.3-feixe-diametro-equivalente` | 9.4.3 | 58 | Diâmetro equivalente de feixe de barras (φn) | implementado | média | P | P27 |
+| `9.4.3-feixe-regras-ancoragem` | 9.4.3 | 58 | Regras de ancoragem de feixes (φn≤25mm / >25mm / caso construtivo) | implementado | média | M | P27 |
+| `9.4.4-tela-soldada-ancoragem` | 9.4.4 | 58 | Ancoragem de telas soldadas por aderência (nº de fios transversais) | implementado | média | P | P27 |
 | `9.4.5.1-lbp-basico` | 9.4.5.1 | 59 | Comprimento de ancoragem básico de armadura ativa (ℓbp) | parcial | média | P | P31 |
 | `9.4.5.2-lbpt-transferencia` | 9.4.5.2 | 59 | Comprimento de transferência ℓbpt | parcial | média | P | P31 |
 | `9.4.5.3-lbpd-necessario` | 9.4.5.3 | 59 | Comprimento de ancoragem necessário de armadura ativa (ℓbpd) | parcial | média | P | P31 |
@@ -108,21 +108,21 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `9.4.6.1-ganchos-estribos-tipos` | 9.4.6.1 | 60 | Tipos de gancho de estribo e comprimento mínimo da ponta reta | implementado | alta | P | P21 |
 | `9.4.6.1-tab9.2-pino-dobramento-estribo` | 9.4.6.1 (Tabela 9.2) | 60 | Tabela 9.2 — diâmetro do pino de dobramento para estribos | implementado | alta | P |  |
 | `9.4.6.2-estribo-barra-transversal-soldada` | 9.4.6.2 | 60 | Ancoragem de estribo por barras transversais soldadas | implementado | baixa | P | P21 |
-| `9.4.7-dispositivos-mecanicos-ancoragem` | 9.4.7 | 61 | Ancoragem por dispositivos mecânicos — limites de escorregamento e resistência de cálculo | ausente | baixa | P | P27 |
-| `9.4.7.1-barra-transversal-unica` | 9.4.7.1 | 61 | Barra transversal única como dispositivo de ancoragem integral | ausente | baixa | P | P27 |
-| `9.5.2-traspasse-limite-32mm-feixe-45mm` | 9.5.2 | 62 | Limite de bitola para emenda por traspasse (barra e feixe) | parcial | média | P | P27 |
-| `9.5.2.1-mesma-secao-transversal` | 9.5.2.1 | 62 | Critério de 'mesma seção transversal' para emendas e traspasse com diâmetros diferentes | ausente | média | P | P27 |
-| `9.5.2.1-tab9.3-proporcao-maxima-emendas` | 9.5.2.1 (Tabela 9.3) | 63 | Tabela 9.3 — proporção máxima de barras tracionadas emendadas por traspasse na mesma seção | ausente | alta | P | P27 |
+| `9.4.7-dispositivos-mecanicos-ancoragem` | 9.4.7 | 61 | Ancoragem por dispositivos mecânicos — limites de escorregamento e resistência de cálculo | implementado | baixa | P | P27 |
+| `9.4.7.1-barra-transversal-unica` | 9.4.7.1 | 61 | Barra transversal única como dispositivo de ancoragem integral | implementado | baixa | P | P27 |
+| `9.5.2-traspasse-limite-32mm-feixe-45mm` | 9.5.2 | 62 | Limite de bitola para emenda por traspasse (barra e feixe) | implementado | média | P | P27 |
+| `9.5.2.1-mesma-secao-transversal` | 9.5.2.1 | 62 | Critério de 'mesma seção transversal' para emendas e traspasse com diâmetros diferentes | implementado | média | P | P27 |
+| `9.5.2.1-tab9.3-proporcao-maxima-emendas` | 9.5.2.1 (Tabela 9.3) | 63 | Tabela 9.3 — proporção máxima de barras tracionadas emendadas por traspasse na mesma seção | implementado | alta | P | P27 |
 | `9.5.2.1-tab9.4-alpha0t` | 9.5.2.1 (Tabela 9.4) | 63 | Tabela 9.4 — coeficiente α0t por % de barras emendadas na mesma seção | implementado | alta | P |  |
 | `9.5.2.2-l0t-traspasse-tracionado` | 9.5.2.2.1 | 63 | Comprimento de traspasse de barras tracionadas isoladas (ℓ0t) | implementado | alta | P |  |
-| `9.5.2.2.2-l0t-distancia-maior-4phi` | 9.5.2.2.2 | 63 | Traspasse com distância livre entre barras >4φ | ausente | média | P | P27 |
+| `9.5.2.2.2-l0t-distancia-maior-4phi` | 9.5.2.2.2 | 63 | Traspasse com distância livre entre barras >4φ | implementado | média | P | P27 |
 | `9.5.2.3-l0c-traspasse-comprimido` | 9.5.2.3 | 63 | Comprimento de traspasse de barras comprimidas isoladas (ℓ0c) | implementado | alta | P |  |
-| `9.5.2.4.1-armadura-transversal-emendas-tracionadas` | 9.5.2.4.1 | 64 | Armadura transversal nas emendas por traspasse — barras tracionadas | ausente | média | M | P27 |
-| `9.5.2.4.2-armadura-transversal-emendas-comprimidas` | 9.5.2.4.2 | 64 | Armadura transversal nas emendas por traspasse — barras comprimidas | ausente | média | P | P27 |
-| `9.5.2.4.3-armadura-transversal-emendas-secundarias` | 9.5.2.4.3 | 64 | Armadura transversal nas emendas de armaduras secundárias | ausente | baixa | P | P27 |
-| `9.5.2.5-emenda-traspasse-feixe` | 9.5.2.5 | 64 | Emendas por traspasse em feixes de barras | ausente | baixa | M | P27 |
-| `9.5.3-emendas-luvas` | 9.5.3 | 65 | Emendas mecânicas por luvas | ausente | média | P | P27 |
-| `9.5.4-emendas-solda` | 9.5.4 | 65 | Emendas por solda — tipos, geometria e resistência | ausente | média | P | P27 |
+| `9.5.2.4.1-armadura-transversal-emendas-tracionadas` | 9.5.2.4.1 | 64 | Armadura transversal nas emendas por traspasse — barras tracionadas | implementado | média | M | P27 |
+| `9.5.2.4.2-armadura-transversal-emendas-comprimidas` | 9.5.2.4.2 | 64 | Armadura transversal nas emendas por traspasse — barras comprimidas | implementado | média | P | P27 |
+| `9.5.2.4.3-armadura-transversal-emendas-secundarias` | 9.5.2.4.3 | 64 | Armadura transversal nas emendas de armaduras secundárias | implementado | baixa | P | P27 |
+| `9.5.2.5-emenda-traspasse-feixe` | 9.5.2.5 | 64 | Emendas por traspasse em feixes de barras | implementado | baixa | M | P27 |
+| `9.5.3-emendas-luvas` | 9.5.3 | 65 | Emendas mecânicas por luvas | implementado | média | P | P27 |
+| `9.5.4-emendas-solda` | 9.5.4 | 65 | Emendas por solda — tipos, geometria e resistência | implementado | média | P | P27 |
 | `9.6.1.1-forca-media` | 9.6.1.1 | 67 | Força média na armadura de protensão Pt(x) | implementado | média | P | P30 |
 | `9.6.1.2.1-sigma-pi-limites` | 9.6.1.2.1 | 67 | Valores-limites de σpi na saída do aparelho de tração | implementado | média | P | P30 |
 | `9.6.1.2.2-sigma-p0-termino` | 9.6.1.2.2 | 67 | Verificação de σp0(x) ao término da protensão | implementado | média | P | P30 |

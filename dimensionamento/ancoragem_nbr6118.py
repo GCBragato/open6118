@@ -220,13 +220,31 @@ def transpasse_tracionado_cm(
     fyk_mpa: float = 500.0, tipo_aco: str = "CA-50",
     boa_aderencia: bool = True, com_gancho: bool = False,
     As_calc: float = 1.0, As_ef: float = 1.0,
+    diametros_diferentes: tuple[float, ...] | None = None,
+    distancia_livre_cm: float | None = None,
 ) -> dict:
     """l0t = alpha_0t * lb_nec >= l0t,min  (Eq. 6/7).
 
     l0t,min = max(0.3 * alpha_0t * lb, 15*phi, 20 cm)
 
     ANC-08: emenda por traspasse nao e permitida para phi > 32 mm (9.5.2).
+
+    P27 (9.5.2.1 e 9.5.2.2.2, PDF p. 62-63):
+    - ``diametros_diferentes``: diâmetros (mm) das duas barras emendadas
+      entre si, quando diferentes; o traspasse é calculado pela barra de
+      menor diâmetro (9.5.2.1). ``phi_mm`` tem de ser um deles. Mais de
+      duas barras levanta ``FaixaNormativaError``: a norma manda calcular
+      com o esforço de cálculo em cada barra (chame a função barra a barra,
+      com o As_calc/As_ef de cada uma).
+    - ``distancia_livre_cm``: distância livre entre as barras emendadas.
+      Se for maior que 4*phi, ela é somada ao l0t (9.5.2.2.2), e a armadura
+      transversal da emenda tem de ser justificada (9.5.2.4); a chave
+      ``justificar_armadura_transversal`` do retorno sai True.
+    Sem esses dois argumentos, o resultado é o de antes do P27 (o retorno
+    ganha só as chaves ``phi_calculo_mm``, ``acrescimo_distancia_livre_cm``
+    e ``justificar_armadura_transversal``).
     """
+    phi_mm = _phi_traspasse_p27(phi_mm, diametros_diferentes)
     if phi_mm > 32.0:
         raise ValueError(
             "Emenda por traspasse não é permitida para bitola > 32 mm (9.5.2)."
@@ -239,12 +257,16 @@ def transpasse_tracionado_cm(
     a0t = alpha_0t(percent_emendadas)
     l0t_min = max(0.3 * a0t * anc.lb_cm, 15.0 * phi_mm / 10.0, 20.0)
     l0t = max(a0t * anc.lb_nec_cm, l0t_min)
+    acrescimo = _acrescimo_distancia_livre_p27(phi_mm, distancia_livre_cm)
     return {
         "lb_cm": anc.lb_cm,
         "lb_nec_cm": anc.lb_nec_cm,
         "alpha_0t": a0t,
         "l0t_min_cm": l0t_min,
-        "l0t_cm": l0t,
+        "l0t_cm": l0t + acrescimo,
+        "phi_calculo_mm": phi_mm,
+        "acrescimo_distancia_livre_cm": acrescimo,
+        "justificar_armadura_transversal": acrescimo > 0.0,
     }
 
 
@@ -252,11 +274,22 @@ def transpasse_comprimido_cm(
     phi_mm: float, fck_mpa: float, fyk_mpa: float = 500.0,
     tipo_aco: str = "CA-50", boa_aderencia: bool = True,
     As_calc: float = 1.0, As_ef: float = 1.0,
+    diametros_diferentes: tuple[float, ...] | None = None,
+    distancia_livre_cm: float | None = None,
 ) -> dict:
     """l0c = lb_nec >= l0c,min = max(0.6*lb, 15*phi, 20 cm)  (Eq. 8/9).
 
     ANC-08: emenda por traspasse nao e permitida para phi > 32 mm (9.5.2).
+
+    P27: ``diametros_diferentes`` segue 9.5.2.1 (traspasse pela barra de
+    menor diâmetro; mais de duas barras levanta ``FaixaNormativaError``),
+    como em ``transpasse_tracionado_cm``. ``distancia_livre_cm``: a norma só
+    prescreve o acréscimo da distância livre maior que 4*phi para barras
+    tracionadas (9.5.2.2.2, PDF p. 63); aqui ele é aplicado também às
+    comprimidas, por analogia e a favor da segurança, com ``AvisoNBR6118``.
+    Sem esses dois argumentos, o resultado é o de antes do P27.
     """
+    phi_mm = _phi_traspasse_p27(phi_mm, diametros_diferentes)
     if phi_mm > 32.0:
         raise ValueError(
             "Emenda por traspasse não é permitida para bitola > 32 mm (9.5.2)."
@@ -268,11 +301,22 @@ def transpasse_comprimido_cm(
     )
     l0c_min = max(0.6 * anc.lb_cm, 15.0 * phi_mm / 10.0, 20.0)
     l0c = max(anc.lb_nec_cm, l0c_min)
+    acrescimo = _acrescimo_distancia_livre_p27(phi_mm, distancia_livre_cm)
+    if acrescimo > 0.0:
+        warnings.warn(
+            "9.5.2.2.2 trata só de barras tracionadas; o acréscimo da "
+            "distância livre maior que 4*phi foi aplicado ao traspasse "
+            "comprimido por analogia, a favor da segurança.",
+            nbr.AvisoNBR6118, stacklevel=2,
+        )
     return {
         "lb_cm": anc.lb_cm,
         "lb_nec_cm": anc.lb_nec_cm,
         "l0c_min_cm": l0c_min,
-        "l0c_cm": l0c,
+        "l0c_cm": l0c + acrescimo,
+        "phi_calculo_mm": phi_mm,
+        "acrescimo_distancia_livre_cm": acrescimo,
+        "justificar_armadura_transversal": acrescimo > 0.0,
     }
 
 
@@ -891,3 +935,53 @@ def ancoragem_estribo_barra_soldada(
     )
 
 
+# ---------------------------------------------------------------------------
+# === P27: Emendas por traspasse — diâmetros diferentes e distância livre ===
+#
+# Auxiliares de transpasse_tracionado_cm e transpasse_comprimido_cm
+# (9.5.2.1 e 9.5.2.2.2, PDF p. 62-63). O resto das emendas (Tabela 9.3,
+# armadura transversal, feixes, luvas, solda) está em emendas_nbr6118.py.
+# ---------------------------------------------------------------------------
+def _phi_traspasse_p27(phi_mm: float,
+                       diametros_diferentes: tuple[float, ...] | None) -> float:
+    """Diâmetro de cálculo do traspasse (9.5.2.1, PDF p. 62): com duas
+    barras de diâmetros diferentes emendadas entre si, o da menor."""
+    if diametros_diferentes is None:
+        return phi_mm
+    diams = tuple(float(d) for d in diametros_diferentes)
+    if len(diams) > 2:
+        raise nbr.FaixaNormativaError(
+            "Com mais de duas barras de diâmetros diferentes emendadas, a "
+            "norma manda calcular o traspasse com o esforço solicitante de "
+            "cálculo em cada barra (9.5.2.1): chame a função para cada barra, "
+            "com o As_calc/As_ef dela."
+        )
+    if len(diams) < 2 or min(diams) <= 0.0:
+        raise ValueError(
+            "diametros_diferentes deve trazer os dois diâmetros (mm), "
+            "positivos, das barras emendadas entre si (9.5.2.1)."
+        )
+    if not any(abs(phi_mm - d) <= 1e-9 for d in diams):
+        raise ValueError(
+            f"phi_mm = {phi_mm:g} mm não é nenhum dos diâmetros emendados "
+            f"{diams} (9.5.2.1)."
+        )
+    if max(diams) > 32.0:
+        raise ValueError(
+            "Emenda por traspasse não é permitida para bitola > 32 mm (9.5.2)."
+        )
+    return min(diams)
+
+
+def _acrescimo_distancia_livre_p27(phi_mm: float,
+                                   distancia_livre_cm: float | None) -> float:
+    """Acréscimo ao traspasse pela distância livre entre as barras emendadas,
+    cm (9.5.2.2.2, PDF p. 63): se a distância livre for maior que 4*phi,
+    soma-se a própria distância livre; entre 0 e 4*phi (9.5.2.2.1), nada."""
+    if distancia_livre_cm is None:
+        return 0.0
+    if distancia_livre_cm < 0.0:
+        raise ValueError("distancia_livre_cm não pode ser negativa (9.5.2.2).")
+    if distancia_livre_cm > 4.0 * phi_mm / 10.0:
+        return float(distancia_livre_cm)
+    return 0.0

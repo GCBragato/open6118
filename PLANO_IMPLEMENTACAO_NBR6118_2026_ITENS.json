@@ -209,7 +209,8 @@
    "nome": "Emendas, feixes, telas e dispositivos mecânicos",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/emendas_nbr6118.py"
+   "modulo": "dimensionamento/emendas_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P28",
@@ -1980,7 +1981,7 @@
    "pagina_pdf": 58,
    "titulo": "Diâmetro equivalente de feixe de barras (φn)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P27",
@@ -1990,7 +1991,18 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "n=4, φf=20mm -> φn=40mm.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P27",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emendas_nbr6118.phi_n_feixe_mm (delega a nucleo_nbr6118.phi_n_feixe)"
+    ],
+    "testes": [
+     "test_943_phi_n_formula"
+    ],
+    "observacao": "φn = φf·√n, conferido na p. 58."
+   }
   },
   {
    "id": "9.4.3-feixe-regras-ancoragem",
@@ -1998,7 +2010,7 @@
    "pagina_pdf": 58,
    "titulo": "Regras de ancoragem de feixes (φn≤25mm / >25mm / caso construtivo)",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P27",
@@ -2011,7 +2023,24 @@
     "9.4.2.6.1-armadura-transversal-ancoragem-phi-menor-32"
    ],
    "teste_sugerido": "φf=16mm, n=3 barras -> φn=27,7mm (>25mm) -> ancoragem por barra isolada com afastamento 1,2×ℓb.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P27",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emendas_nbr6118.ancoragem_feixe",
+     "ResultadoAncoragemFeixe"
+    ],
+    "testes": [
+     "test_943_a_fronteira_25mm_exato_barra_unica",
+     "test_943_b_acima_de_25mm_barra_isolada_afastamento_1_2_lb",
+     "test_943_b_logo_acima_de_25",
+     "test_943_c_construtivo_phi_n_menor_32",
+     "test_943_c_construtivo_phi_n_maior_32",
+     "test_943_afastamento_irrelevante_ate_25"
+    ],
+    "observacao": "Caso a (φn ≤ 25, com 25 exato testado), b (cada barra isolada, afastamento ≥ 1,2·lb,nec individual) e c (barra única φn com Ast_ancoragem de 9.4.2.6 aplicado a φn e à área do feixe inteiro). Ancoragem sempre reta, com α = 1,0."
+   }
   },
   {
    "id": "9.4.4-tela-soldada-ancoragem",
@@ -2019,7 +2048,7 @@
    "pagina_pdf": 58,
    "titulo": "Ancoragem de telas soldadas por aderência (nº de fios transversais)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P27",
@@ -2031,7 +2060,20 @@
     "9.4.2.5-lb-necessario"
    ],
    "teste_sugerido": "As_calc/As_ef=0,8 -> n>=3,2 -> arredondar para 4 fios.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P27",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emendas_nbr6118.n_fios_transversais_tela_min",
+     "emendas_nbr6118.n_fios_transversais_tela"
+    ],
+    "testes": [
+     "test_944_n_fios",
+     "test_944_fora_da_faixa"
+    ],
+    "observacao": "n ≥ 4·As,calc/As,ef, arredondado para cima; razão > 1 levanta FaixaNormativaError."
+   }
   },
   {
    "id": "9.4.5.1-lbp-basico",
@@ -2218,7 +2260,7 @@
    "pagina_pdf": 61,
    "titulo": "Ancoragem por dispositivos mecânicos — limites de escorregamento e resistência de cálculo",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P27",
@@ -2227,7 +2269,20 @@
    "formula_ou_regra": "escorregamento <= 0,1mm @ 70%Fu e <= 0,5mm @ 95%Fu; Rd <= 0,5*Fu (ou 0,7*Fu se ensaio de fadiga)",
    "conferido_na_imagem": false,
    "depende_de": [],
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P27",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emendas_nbr6118.verificar_dispositivo_mecanico"
+    ],
+    "testes": [
+     "test_947_limites_exatos_passam",
+     "test_947_acima_do_limite_reprova",
+     "test_947_fadiga_70pct"
+    ],
+    "observacao": "Limites de 0,1 mm a 70 % de Fu e de 0,5 mm a 95 %; Rd ≤ 0,5·Fu, ou ≤ 0,7·Fu com ensaio de fadiga, via verificar_seguranca. Os efeitos localizados (21.2) ficam com o projeto."
+   }
   },
   {
    "id": "9.4.7.1-barra-transversal-unica",
@@ -2235,7 +2290,7 @@
    "pagina_pdf": 61,
    "titulo": "Barra transversal única como dispositivo de ancoragem integral",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P27",
@@ -2246,7 +2301,20 @@
    "depende_de": [
     "9.5.4-emendas-solda"
    ],
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P27",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emendas_nbr6118.barra_transversal_unica"
+    ],
+    "testes": [
+     "test_9471_phi_limitado_por_dimensao",
+     "test_9471_phi_limitado_a_25mm",
+     "test_9471_phi_t_e_solda"
+    ],
+    "observacao": "O texto diz \"1/6 da menor dimensão ... ou 25 mm\". Lido como φ ≤ min(dimensão/6, 25 mm), a favor da segurança. As condições de solda entram como booleanos declarados pelo projetista."
+   }
   },
   {
    "id": "9.5.2-traspasse-limite-32mm-feixe-45mm",
@@ -2254,7 +2322,7 @@
    "pagina_pdf": 62,
    "titulo": "Limite de bitola para emenda por traspasse (barra e feixe)",
    "tipo": "limite",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P27",
@@ -2267,7 +2335,22 @@
     "9.4.3-feixe-diametro-equivalente"
    ],
    "teste_sugerido": "Feixe com diâmetro de área equivalente = 50mm deve reprovar (>45mm).",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P27",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emendas_nbr6118.diametro_circulo_mesma_area_mm",
+     "emendas_nbr6118.verificar_bitola_traspasse"
+    ],
+    "testes": [
+     "test_952_barra_32mm",
+     "test_952_feixe_45mm_exato",
+     "test_952_feixe_acima_de_45mm",
+     "test_952_feixe_com_barra_acima_de_32"
+    ],
+    "observacao": "d = √Σφi², que também aceita feixe de barras diferentes. O caso de 45 mm exato passa. Cada barra do feixe também tem de respeitar φ ≤ 32 mm."
+   }
   },
   {
    "id": "9.5.2.1-mesma-secao-transversal",
@@ -2275,7 +2358,7 @@
    "pagina_pdf": 62,
    "titulo": "Critério de 'mesma seção transversal' para emendas e traspasse com diâmetros diferentes",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P27",
@@ -2286,7 +2369,26 @@
    "depende_de": [
     "9.5.2.2-l0t-traspasse-tracionado"
    ],
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P27",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emendas_nbr6118.mesma_secao",
+     "emendas_nbr6118.phi_traspasse_diametros_diferentes",
+     "ancoragem_nbr6118.transpasse_tracionado_cm(diametros_diferentes)",
+     "ancoragem_nbr6118.transpasse_comprimido_cm(diametros_diferentes)",
+     "ancoragem_nbr6118._phi_traspasse_p27"
+    ],
+    "testes": [
+     "test_9521_mesma_secao_20pct",
+     "test_9521_mesma_secao_usa_maior_l0",
+     "test_9521_diametros_diferentes",
+     "test_transpasse_diametros_diferentes_usa_menor",
+     "test_transpasse_diametros_diferentes_erros"
+    ],
+    "observacao": "É mesma seção quando o afastamento é < 0,2·ℓ0, e 0,2·ℓ0 exato já não é. Com dois comprimentos diferentes, usa-se o maior (Figura 9.4). Com duas barras de diâmetros diferentes, vale o menor. Com mais de duas, levanta FaixaNormativaError: a norma manda calcular barra a barra, pelo esforço de cada uma."
+   }
   },
   {
    "id": "9.5.2.1-tab9.3-proporcao-maxima-emendas",
@@ -2294,7 +2396,7 @@
    "pagina_pdf": 63,
    "titulo": "Tabela 9.3 — proporção máxima de barras tracionadas emendadas por traspasse na mesma seção",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P27",
@@ -2304,7 +2406,23 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Alta aderência, 1 camada, estático -> 100%; lisa φ≥16mm, qualquer carregamento -> 25%.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P27",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emendas_nbr6118.TABELA_9_3",
+     "emendas_nbr6118.proporcao_maxima_emendas_pct",
+     "emendas_nbr6118.verificar_proporcao_emendas"
+    ],
+    "testes": [
+     "test_tabela_9_3_todas_as_celulas",
+     "test_tabela_9_3_dado",
+     "test_tabela_9_3_casos_nao_definidos",
+     "test_9521_verificar_proporcao"
+    ],
+    "observacao": "Testadas as oito células e o degrau em φ = 16 mm. Barra entalhada levanta FaixaNormativaError, porque a tabela não a define. Armadura comprimida ou de distribuição aceita 100 %. Proporção acima do limite resulta em ok=False, com a observação de que exige justificativa."
+   }
   },
   {
    "id": "9.5.2.1-tab9.4-alpha0t",
@@ -2349,7 +2467,7 @@
    "pagina_pdf": 63,
    "titulo": "Traspasse com distância livre entre barras >4φ",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P27",
@@ -2363,7 +2481,22 @@
     "9.5.2.4-armadura-transversal-emendas"
    ],
    "teste_sugerido": "distância livre = 5φ (>4φ) -> l0t_final = l0t_base + 5φ.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P27",
+    "data": "19/09/2026",
+    "funcoes": [
+     "ancoragem_nbr6118.transpasse_tracionado_cm(distancia_livre_cm)",
+     "ancoragem_nbr6118.transpasse_comprimido_cm(distancia_livre_cm)",
+     "ancoragem_nbr6118._acrescimo_distancia_livre_p27"
+    ],
+    "testes": [
+     "test_95222_distancia_livre_maior_que_4phi",
+     "test_95222_distancia_livre_comprimido_por_analogia_com_aviso",
+     "test_transpasse_sem_parametros_novos_nao_muda"
+    ],
+    "observacao": "Com distância livre > 4φ, a distância livre é somada ao l0t e a chave justificar_armadura_transversal sai True; 4φ exato não soma nada. No traspasse comprimido o acréscimo é aplicado por analogia, com AvisoNBR6118, porque a norma só o prescreve para barras tracionadas."
+   }
   },
   {
    "id": "9.5.2.3-l0c-traspasse-comprimido",
@@ -2390,7 +2523,7 @@
    "pagina_pdf": 64,
    "titulo": "Armadura transversal nas emendas por traspasse — barras tracionadas",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P27",
@@ -2402,7 +2535,22 @@
     "9.4.2.6.1-armadura-transversal-ancoragem-phi-menor-32"
    ],
    "teste_sugerido": "φ=20mm, 30% emendadas: Ast deve resistir a 1 barra emendada; distância entre barras mais próximas de duas emendas <10φ -> barra fechada obrigatória.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P27",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emendas_nbr6118.Ast_emenda"
+    ],
+    "testes": [
+     "test_95241_phi_menor_16_e_menos_25pct_usa_9426",
+     "test_95241_25pct_ou_phi_16_forca_de_uma_barra",
+     "test_95241_fyd_transversal_diferente",
+     "test_95241_barras_fechadas_10phi",
+     "test_9524_verificacao_e_erros"
+    ],
+    "observacao": "Com φ < 16 e menos de 25 % emendadas, vale 9.4.2.6 (Ast_ancoragem). No caso contrário, Ast·fyd,t ≥ As·fyd, com barras fechadas se a distância for < 10φ, ΣAst/2 em cada terço extremo e a primeira barra a no máximo 150 mm da extremidade (Figura 9.5). O ok só é calculado quando se informa Ast_adotada_cm2; sem ele, sai None."
+   }
   },
   {
    "id": "9.5.2.4.2-armadura-transversal-emendas-comprimidas",
@@ -2410,7 +2558,7 @@
    "pagina_pdf": 64,
    "titulo": "Armadura transversal nas emendas por traspasse — barras comprimidas",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P27",
@@ -2421,7 +2569,18 @@
    "depende_de": [
     "9.5.2.4.1-armadura-transversal-emendas-tracionadas"
    ],
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P27",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emendas_nbr6118.Ast_emenda(solicitacao='comprimida')"
+    ],
+    "testes": [
+     "test_95242_comprimida_barra_4phi_alem"
+    ],
+    "observacao": "Mesmos critérios do caso tracionado, com uma barra a 4φ além de cada extremidade."
+   }
   },
   {
    "id": "9.5.2.4.3-armadura-transversal-emendas-secundarias",
@@ -2429,7 +2588,7 @@
    "pagina_pdf": 64,
    "titulo": "Armadura transversal nas emendas de armaduras secundárias",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P27",
@@ -2439,7 +2598,18 @@
    "depende_de": [
     "9.4.2.6.1-armadura-transversal-ancoragem-phi-menor-32"
    ],
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P27",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emendas_nbr6118.Ast_emenda(solicitacao='secundaria')"
+    ],
+    "testes": [
+     "test_95243_secundaria_usa_9426"
+    ],
+    "observacao": "Remete a 9.4.2.6 (Ast_ancoragem do P21)."
+   }
   },
   {
    "id": "9.5.2.5-emenda-traspasse-feixe",
@@ -2447,7 +2617,7 @@
    "pagina_pdf": 64,
    "titulo": "Emendas por traspasse em feixes de barras",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "M",
    "pacote": "P27",
@@ -2460,7 +2630,20 @@
     "9.5.2.2-l0t-traspasse-tracionado",
     "9.5.2.3-l0c-traspasse-comprimido"
    ],
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P27",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emendas_nbr6118.escalonamento_emenda_feixe"
+    ],
+    "testes": [
+     "test_9525_feixe_3_barras",
+     "test_9525_feixe_4_barras_passa_de_4_na_secao",
+     "test_9525_separacao_adotada_e_45mm"
+    ],
+    "observacao": "n + 1 ≤ 4 barras na seção da emenda, separação ≥ 1,3·ℓ0 medida entre inícios de emendas consecutivas, e 9.5.2 (45 mm e 32 mm). A norma não tem figura; a interpretação está na docstring."
+   }
   },
   {
    "id": "9.5.3-emendas-luvas",
@@ -2468,7 +2651,7 @@
    "pagina_pdf": 65,
    "titulo": "Emendas mecânicas por luvas",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P27",
@@ -2478,7 +2661,18 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "fyk=500MPa -> resistência mínima da luva = 575MPa equivalente em força (1,15*As*fyk).",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P27",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emendas_nbr6118.verificar_luva"
+    ],
+    "testes": [
+     "test_953_luva_115_fy"
+    ],
+    "observacao": "F,ensaio ≥ 1,15·As·fy, com fy obtido em ensaio (ou fyk, se o usuário passar fyk)."
+   }
   },
   {
    "id": "9.5.4-emendas-solda",
@@ -2486,7 +2680,7 @@
    "pagina_pdf": 65,
    "titulo": "Emendas por solda — tipos, geometria e resistência",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P27",
@@ -2496,7 +2690,26 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Barra tracionada com carga variável preponderante -> resistência = 0,8*fy*As; afastamento entre emendas de 12φ (<15φ) -> mesma seção.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P27",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emendas_nbr6118.verificar_emenda_solda",
+     "emendas_nbr6118.mesma_secao_solda",
+     "emendas_nbr6118.fator_resistencia_emenda_solda",
+     "emendas_nbr6118.resistencia_emenda_solda_kn"
+    ],
+    "testes": [
+     "test_954_topo",
+     "test_954_traspasse_5phi",
+     "test_954_cobrejuntas",
+     "test_954_resistencia_115",
+     "test_954_mesma_secao_15phi",
+     "test_954_reducao_20pct"
+    ],
+    "observacao": "Topo por caldeamento com φ ≥ 10 e com eletrodo com φ ≥ 20; traspasse com ≥ 2 cordões ≥ 5φ afastados ≥ 5φ; cobrejuntas com cordão ≥ 5φ; espessura ≥ 0,3φ (Figura 9.6); mesma seção quando o afastamento é < 15φ; fator 0,8 em barra tracionada com variável preponderante; 1,15·As·fy."
+   }
   },
   {
    "id": "9.6.1.1-forca-media",
