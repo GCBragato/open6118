@@ -341,7 +341,8 @@
    "nome": "Lajes por grelha e pórtico equivalente",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/analise_lajes_nbr6118.py"
+   "modulo": "dimensionamento/analise_lajes_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P46",
@@ -6295,7 +6296,7 @@
    "pagina_pdf": 116,
    "titulo": "Rigidez do Estádio I para verificação de flecha em placas (momento fletor menor que o de fissuração)",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "Permite usar rigidez do Estadio I (Ecs, secao bruta) para verificar deformacao excessiva em placas, desde que os momentos fletores fiquem abaixo do momento de fissuracao; remete a Secao 17 para fissuracao/fluencia.",
@@ -6306,7 +6307,21 @@
    "trecho": "analise",
    "pacote": "P45",
    "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
-   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira a checagem M < Mr que autoriza a rigidez bruta na flecha de placa."
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira a checagem M < Mr que autoriza a rigidez bruta na flecha de placa.",
+   "implementacao": {
+    "pacote": "P45",
+    "data": "19/09/2026",
+    "funcoes": [
+     "analise_lajes_nbr6118.verificar_rigidez_estadio_I"
+    ],
+    "testes": [
+     "test_estadio_I_abaixo_de_Mr_autoriza_rigidez_bruta",
+     "test_estadio_I_igual_a_Mr_nao_autoriza",
+     "test_estadio_I_sequencia_usa_maior_modulo_e_Mr_do_P8",
+     "test_estadio_I_Mr_invalido"
+    ],
+    "observacao": "Desigualdade estrita (|M| < Mr), como no texto 'menores que'. Com ok=False, a memória aponta para a Seção 17 (P8: rigidez_equivalente_kncm2 e alpha_f). Aceita um número ou uma sequência de momentos. O Mr vem do P8 (momento_fissuracao_kncm)."
+   }
   },
   {
    "id": "14.7.3.2-redistribuicao-lajes",
@@ -6491,7 +6506,7 @@
    "pagina_pdf": 118,
    "titulo": "Cálculo da laje nervurada como grelha de vigas quando as hipóteses de laje maciça não se aplicam",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "G",
    "falta": "Nao ha modelagem de grelha de nervuras nesta biblioteca; lajes nervuradas hoje so aparecem via dimensionamento a flexao de secao T (vigas_nbr6118.secao_T_simples), nunca como sistema de analise em grelha.",
@@ -6503,7 +6518,27 @@
    "trecho": "analise",
    "pacote": "P45",
    "fora_do_escopo_ate_18_09": "Modelar a laje nervurada como grelha é análise estrutural, feita no TQS. Os limites que tornam isso obrigatório estão no P10.",
-   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras). Página corrigida de 117 para 118 na verificação de 19/09/2026."
+   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras). Página corrigida de 117 para 118 na verificação de 19/09/2026.",
+   "implementacao": {
+    "pacote": "P45",
+    "data": "19/09/2026",
+    "funcoes": [
+     "analise_lajes_nbr6118.grelha_nervurada",
+     "analise_lajes_nbr6118.secao_T_nervura",
+     "analise_lajes_nbr6118.largura_colaborante_nervura_cm",
+     "analise_lajes_nbr6118.ResultadoGrelhaLaje"
+    ],
+    "testes": [
+     "test_grelha_nervurada_duas_nervuras_cruzadas_solucao_fechada",
+     "test_grelha_nervurada_equilibrio_e_classificacao",
+     "test_grelha_nervurada_torcao_padrao_14_6_6_2",
+     "test_grelha_nervurada_bordas_engaste_e_livre",
+     "test_secao_T_nervura_propriedades",
+     "test_secao_T_nervura_faixa",
+     "test_largura_colaborante_nervura_usa_P14"
+    ],
+    "observacao": "Grelha de nervuras em seção T, com bf pela largura colaborante do P14 (b2 = e - bw; a = vão por padrão) e seção L na borda livre. GJ vale 0,15 do elástico por padrão (14.6.6.2). Bordas: apoio, engaste ou livre. A carga entra nos nós por área de influência. A classificação de 13.2.4.2 (P10) vai para a memória; na categoria c, a memória avisa que a capa é laje maciça apoiada na grelha. J da nervura = soma dos retângulos da alma e das abas, uma aproximação declarada, porque a norma não dá fórmula."
+   }
   },
   {
    "id": "14.7.7-lajes-nervuradas-unidirecionais",
@@ -6511,7 +6546,7 @@
    "pagina_pdf": 118,
    "titulo": "Lajes nervuradas unidirecionais: cálculo na direção das nervuras, com rigidez transversal e à torção desprezadas",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "Define que lajes nervuradas unidirecionais devem ser calculadas segundo a direcao das nervuras, desprezando a rigidez transversal e a rigidez a torcao.",
@@ -6519,7 +6554,22 @@
    "trecho": "analise",
    "pacote": "P45",
    "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
-   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira o modelo de nervurada unidirecional do P45."
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira o modelo de nervurada unidirecional do P45.",
+   "implementacao": {
+    "pacote": "P45",
+    "data": "19/09/2026",
+    "funcoes": [
+     "analise_lajes_nbr6118.nervurada_unidirecional",
+     "analise_lajes_nbr6118.ResultadoNervuradaUnidirecional"
+    ],
+    "testes": [
+     "test_unidirecional_dois_vaos_igual_viga_continua",
+     "test_unidirecional_tres_vaos_e_engastes",
+     "test_unidirecional_sem_ligacao_transversal_nem_torcao",
+     "test_unidirecional_faixa"
+    ],
+    "observacao": "Cada nervura é uma viga contínua independente (pórtico plano do P44, sem barras transversais nem grau de torção), com a carga q·e. A seção T de cada vão usa bf do P14, com a = 0,75·L nos vãos extremos e 0,60·L nos internos. Os resultados coincidem com a equação dos três momentos a 1e-9."
+   }
   },
   {
    "id": "14.7.8-analise-numerica-lajes-lisas",
@@ -6527,7 +6577,7 @@
    "pagina_pdf": 118,
    "titulo": "Exigência de procedimento numérico para análise de lajes lisas e lajes-cogumelo",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "Exige procedimento numerico adequado (diferencas finitas, elementos finitos, grelha equivalente ou elementos de contorno) para a analise estrutural de lajes lisas e cogumelo em geral.",
@@ -6535,7 +6585,25 @@
    "trecho": "analise",
    "pacote": "P45",
    "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
-   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. A grelha equivalente do P45 é um dos procedimentos que o item aceita."
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. A grelha equivalente do P45 é um dos procedimentos que o item aceita.",
+   "implementacao": {
+    "pacote": "P45",
+    "data": "19/09/2026",
+    "funcoes": [
+     "analise_lajes_nbr6118.grelha_equivalente_laje_lisa",
+     "analise_lajes_nbr6118.PilarLajeLisa",
+     "analise_lajes_nbr6118.rigidez_rotacao_pilar_kncm_rad"
+    ],
+    "testes": [
+     "test_navier_confere_coeficientes_de_timoshenko",
+     "test_grelha_equivalente_converge_para_timoshenko",
+     "test_grelha_equivalente_torcao_da_placa_mais_flexivel",
+     "test_grelha_equivalente_laje_lisa_sobre_pilares",
+     "test_grelha_equivalente_pilar_elastico_e_articulado",
+     "test_grelha_equivalente_faixa"
+    ],
+    "observacao": "Grelha equivalente com flexão D = Ecs·h³/[12(1-ν²)] por unidade de largura e ν = 0,2 (14.7.3). Pilares são apoios elásticos: apoio vertical rígido ou mola EA/h, e molas de rotação 4EI/h ou 3EI/h por lance. Torção: o padrão 'isotropica' dá D por unidade de largura, para a grelha reproduzir a equação da placa isótropa; a opção 'placa' dá D(1-ν), que deixa a grelha cerca de 12 % mais flexível. Os momentos nodais levam a correção de Poisson. Contra a placa de Timoshenko (série de Navier), o erro da flecha é 2,4 %, 1,5 % e 0,9 % com 8, 16 e 32 divisões, e o do momento no centro converge a menos de 1,5 %."
+   }
   },
   {
    "id": "14.7.8-portico-equivalente",
@@ -6543,7 +6611,7 @@
    "pagina_pdf": 118,
    "titulo": "Processo elástico aproximado (pórticos múltiplos com redistribuição) para lajes lisas/cogumelo com pilares em filas regulares",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "G",
    "falta": "Nenhuma implementacao do processo do portico equivalente (rigidez de laje/pilar equivalente, montagem e solucao do portico multiplano por direcao).",
@@ -6556,7 +6624,27 @@
    "trecho": "analise",
    "pacote": "P45",
    "fora_do_escopo_ate_18_09": "Montar e resolver o pórtico múltiplo é análise estrutural, feita no TQS. A repartição dos momentos entre faixas está no P17.",
-   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras)."
+   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras).",
+   "implementacao": {
+    "pacote": "P45",
+    "data": "19/09/2026",
+    "funcoes": [
+     "analise_lajes_nbr6118.portico_equivalente",
+     "analise_lajes_nbr6118.verificar_condicoes_portico_equivalente",
+     "analise_lajes_nbr6118._repartir",
+     "analise_lajes_nbr6118.ResultadoPorticoEquivalente",
+     "analise_lajes_nbr6118.FaixasVao",
+     "analise_lajes_nbr6118.PorticoLinha"
+    ],
+    "testes": [
+     "test_condicoes_portico_ok_e_falhas",
+     "test_portico_equivalente_painel_unico_solucao_fechada",
+     "test_portico_equivalente_faixas_somam_o_total_e_figura_14_9",
+     "test_portico_equivalente_carga_total_em_cada_direcao",
+     "test_portico_equivalente_faixa"
+    ],
+    "observacao": "Monta um pórtico plano por fila de pilares, em cada direção. A laje é uma viga de largura l2 = la + lb com a carga total q·l2, e os pilares têm lance inferior e/ou superior engastado no extremo oposto; os momentos de ligação laje-pilar saem no resultado. Antes de montar, confere as condições de uso: só concreto armado, filas ortogonais completas e vãos pouco diferentes. Para 'vãos pouco diferentes', que a norma não quantifica, o critério adotado é menor/maior >= 2/3 entre vãos sucessivos, configurável. A repartição usa P17.repartir_momentos_faixas lado a lado da fila, na proporção da largura: no pórtico interno com lados iguais dá exatamente 27,5/45 % e 37,5/25 %, e no pórtico de borda (um lado) a faixa externa recebe 55 % dos positivos e 75 % dos negativos. Os momentos são elásticos; a redistribuição fica com o P13 e o arredondamento com o P14."
+   }
   },
   {
    "id": "14.7.8-faixas-distribuicao-momento",

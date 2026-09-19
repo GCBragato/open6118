@@ -297,17 +297,17 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.7.1-hipoteses-placas` | 14.7.1 | 115 | Hipóteses básicas de estruturas de placas (seção plana em faixas estreitas, plano médio) | não computável | baixa | P |  |
 | `14.7.2.2-vao-efetivo-laje` | 14.7.2.2 | 116 | Vão efetivo de lajes/placas (mesma fórmula lef = l0+a1+a2 de 14.6.2.4) | implementado | alta | P |  |
 | `14.7.3-poisson-placas` | 14.7.3 | 116 | Coeficiente de Poisson para análise elástica de placas (ν = 0,2) | implementado | baixa | P | P2 |
-| `14.7.3.1-rigidez-estadio-I-placas` | 14.7.3.1 | 116 | Rigidez do Estádio I para verificação de flecha em placas (momento fletor menor que o de fissuração) | ausente | alta | P | P45 |
+| `14.7.3.1-rigidez-estadio-I-placas` | 14.7.3.1 | 116 | Rigidez do Estádio I para verificação de flecha em placas (momento fletor menor que o de fissuração) | implementado | alta | P | P45 |
 | `14.7.3.2-redistribuicao-lajes` | 14.7.3.2 | 116 | Limites de x/d para redistribuição de momentos em placas (mesmas fórmulas de 14.6.4.3) | implementado | alta | P | P13 |
 | `14.7.4-xd-limite-plastico-laje` | 14.7.4 | 116 | Limite de x/d para dispensa de verificação de rotação na análise plástica de lajes (charneiras) | implementado | média | P | P13 |
 | `14.7.4-razao-momentos-borda-vao` | 14.7.4 | 116 | Razão mínima entre momentos de borda e de vão na análise plástica de lajes retangulares (1,5:1) | implementado | média | P | P13 |
 | `14.7.5-analise-nao-linear-placas` | 14.7.5 | 117 | Análise não linear de placas - aplicabilidade a ELU e ELS | não computável | baixa | P |  |
 | `14.7.6.1-reacoes-apoio-charneiras` | 14.7.6.1 | 117 | Reações de apoio de lajes maciças retangulares pelo método das charneiras plásticas (triângulos/trapézios) | implementado | alta | G | P17 |
 | `14.7.6.2-compatibilizacao-momentos` | 14.7.6.2 | 117 | Compatibilização de momentos negativos entre lajes vizinhas | implementado | alta | P | P17 |
-| `14.7.7-lajes-nervuradas-grelha-vigas` | 14.7.7 | 118 | Cálculo da laje nervurada como grelha de vigas quando as hipóteses de laje maciça não se aplicam | ausente | alta | G | P45 |
-| `14.7.7-lajes-nervuradas-unidirecionais` | 14.7.7 | 118 | Lajes nervuradas unidirecionais: cálculo na direção das nervuras, com rigidez transversal e à torção desprezadas | ausente | alta | P | P45 |
-| `14.7.8-analise-numerica-lajes-lisas` | 14.7.8 | 118 | Exigência de procedimento numérico para análise de lajes lisas e lajes-cogumelo | ausente | alta | P | P45 |
-| `14.7.8-portico-equivalente` | 14.7.8 | 118 | Processo elástico aproximado (pórticos múltiplos com redistribuição) para lajes lisas/cogumelo com pilares em filas regulares | ausente | alta | G | P45 |
+| `14.7.7-lajes-nervuradas-grelha-vigas` | 14.7.7 | 118 | Cálculo da laje nervurada como grelha de vigas quando as hipóteses de laje maciça não se aplicam | implementado | alta | G | P45 |
+| `14.7.7-lajes-nervuradas-unidirecionais` | 14.7.7 | 118 | Lajes nervuradas unidirecionais: cálculo na direção das nervuras, com rigidez transversal e à torção desprezadas | implementado | alta | P | P45 |
+| `14.7.8-analise-numerica-lajes-lisas` | 14.7.8 | 118 | Exigência de procedimento numérico para análise de lajes lisas e lajes-cogumelo | implementado | alta | P | P45 |
+| `14.7.8-portico-equivalente` | 14.7.8 | 118 | Processo elástico aproximado (pórticos múltiplos com redistribuição) para lajes lisas/cogumelo com pilares em filas regulares | implementado | alta | G | P45 |
 | `14.7.8-faixas-distribuicao-momento` | 14.7.8 | 118 | Distribuição percentual dos momentos do pórtico equivalente entre faixas internas e externas (Figura 14.9) | implementado | alta | P | P17 |
 | `14.8.1-vigas-parede-pilares-parede-analise` | 14.8.1 | 119 | Método de análise de vigas-parede e pilares-parede (linear/não linear; representação como elemento linear equivalente) | implementado | alta | P | P44 |
 | `14.8.2-blocos-analise` | 14.8.2 | 119 | Método de análise de blocos de fundação (linear, plástica ou não linear) | não computável | média | P |  |
