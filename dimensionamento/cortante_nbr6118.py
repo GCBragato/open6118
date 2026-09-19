@@ -126,6 +126,8 @@ class ResultadoCortante:
     ok_bielas: bool = True  # True se VSd <= VRd2
     erro: str = ""
     regime_vc: str = "flexao_simples"  # P15: ramo de Vc (17.4.2.2 b / 17.4.2.3 b)
+    fadiga: bool = False    # P39 (23.5.3): Vc reduzido (Modelo I) / theta corrigido (Modelo II)
+    theta_cor_deg: float | None = None  # P39 (23.5.3): theta_cor do Modelo II com fadiga=True
 
 
 # ---------------------------------------------------------------------------
@@ -163,6 +165,7 @@ def modelo_calculo_I(
     MSd_max_kncm: float | None = None,
     linha_neutra_fora: bool = False,
     h_laje_cm: float | None = None,
+    fadiga: bool = False,
 ) -> ResultadoCortante:
     """Modelo de Calculo I (trelica classica, theta = 45 deg).
 
@@ -177,6 +180,16 @@ def modelo_calculo_I(
 
     CRT-03 (17.4.1.1.5): 45 deg <= alfa <= 90 deg, mesma faixa validada em
     modelo_calculo_II.
+
+    P39 (23.5.3, PDF p. 218): ``fadiga=True`` verifica a fadiga por
+    cortante em vez do ELU -- reduz o Vc do ramo escolhido por
+    ``vc_por_regime`` pelo fator 0,5 (Vc,fad = 0,5 * Vc) antes de montar
+    Vsw e Asw/s. A norma recomenda gama_f=1,0 (jah embutido em VSd_kn, que
+    deve vir de ``fadiga_nbr6118.combinacao_fadiga``), gama_c=1,4 (o
+    padrão deste parâmetro) e gama_s=1,0 para esta verificação; o padrão
+    de ``gama_s`` continua 1,15 (não muda o comportamento de quem já usa
+    esta função para ELU) -- passe ``gama_s=1.0`` explicitamente para
+    seguir a recomendação da norma à risca.
     """
     _validar_alfa_estribo(alfa_deg)
     fcd = fcd_kncm2(fck_mpa, gama_c)
@@ -190,6 +203,8 @@ def modelo_calculo_I(
     Vc = 0.6 * fctd * bw_cm * d_cm
     Vc, regime_vc = vc_por_regime(Vc, Nsd_kn, M0_kncm, MSd_max_kncm,
                                   linha_neutra_fora, modelo="I")  # P15
+    if fadiga:  # P39, 23.5.3 (PDF p. 218): Vc,fad = 0,5 * Vc no Modelo I
+        Vc = 0.5 * Vc
     Vsw = max(0.0, VSd_kn - Vc)
 
     alfa_rad = math.radians(alfa_deg)
@@ -221,6 +236,7 @@ def modelo_calculo_I(
         ok_bielas=VSd_kn <= VRd2,
         erro="" if VSd_kn <= VRd2 else f"VSd={VSd_kn:.1f} > VRd2={VRd2:.1f}",
         regime_vc=regime_vc,
+        fadiga=fadiga,
     )
 
 
@@ -243,6 +259,7 @@ def modelo_calculo_II(
     MSd_max_kncm: float | None = None,
     linha_neutra_fora: bool = False,
     h_laje_cm: float | None = None,
+    fadiga: bool = False,
 ) -> ResultadoCortante:
     """Modelo de Calculo II (trelica generalizada).
 
@@ -257,6 +274,16 @@ def modelo_calculo_II(
               Vc1 = Vc0 se VSd <= Vc0.
     Eq. 5.35: Asw/s = Vsw /
               [0.9 * d * fywd * (cot alfa + cot theta) * sin alfa]
+
+    P39 (23.5.3, PDF p. 218): ``fadiga=True`` verifica a fadiga por
+    cortante -- corrige o ângulo das bielas, tg(theta_cor) = sqrt(tg(theta))
+    <= 1 (`theta_corrigido_fadiga_deg`), e usa theta_cor (em vez de
+    ``theta_deg``) em VRd2 e em Asw/s; Vc0/Vc1 não mudam (a norma diz que
+    o Modelo II não precisa reduzir Vc, só corrigir o ângulo). O
+    ``theta_deg`` do resultado continua o ângulo de entrada; o ângulo
+    efetivamente usado fica em ``theta_cor_deg``. Mesma recomendação de
+    gama_f, gama_c, gama_s do Modelo I (ver a docstring de
+    ``modelo_calculo_I``).
     """
     if not (30.0 - 1e-6 <= theta_deg <= 45.0 + 1e-6):
         raise ValueError(f"theta deve estar entre 30 e 45 deg (recebido {theta_deg}).")
@@ -270,7 +297,13 @@ def modelo_calculo_II(
     if h_laje_cm is not None:  # P15, 19.4.2
         fywd = min(fywd, fywd_max_laje_mpa(h_laje_cm) / 10.0)
 
-    theta_rad = math.radians(theta_deg)
+    theta_cor_deg = None
+    theta_usado_deg = theta_deg
+    if fadiga:  # P39, 23.5.3 (PDF p. 218)
+        theta_cor_deg = theta_corrigido_fadiga_deg(theta_deg)
+        theta_usado_deg = theta_cor_deg
+
+    theta_rad = math.radians(theta_usado_deg)
     alfa_rad = math.radians(alfa_deg)
     sin_t = math.sin(theta_rad)
     cot_t = 1.0 / math.tan(theta_rad)
@@ -314,6 +347,8 @@ def modelo_calculo_II(
         ok_bielas=VSd_kn <= VRd2,
         erro="" if VSd_kn <= VRd2 else f"VSd={VSd_kn:.1f} > VRd2={VRd2:.1f}",
         regime_vc=regime_vc,
+        fadiga=fadiga,
+        theta_cor_deg=theta_cor_deg,
     )
 
 
@@ -1275,6 +1310,34 @@ def verificar_cortante(Asw_cm2_por_m: float, VSd_kn: float, bw_cm: float,
         mod, th, alfa_deg, VSd_kn, r.VRd2, r.Vc, Vsw, VRd3, Asw_cm2_por_m,
         r.Asw_min_m, fywd, r.regime_vc, s2.ok, s3.ok, ok_min, ok_s, ok,
         governante, tuple(mem))
+
+
+# === P39: fadiga -- cortante (23.5.3, PDF p. 218) ===
+def theta_corrigido_fadiga_deg(theta_deg: float) -> float:
+    """Ângulo corrigido das bielas para a fadiga por cortante no Modelo de
+    Cálculo II (23.5.3, PDF p. 218):
+
+        tg(theta_cor) = sqrt(tg(theta)) <= 1
+
+    theta_deg: ângulo de inclinação das bielas adotado no Modelo II
+    (17.4.2.3), 30 a 45 graus. Devolve theta_cor em graus; o teto
+    tg(theta_cor) <= 1 (theta_cor <= 45 graus) é aplicado no cálculo, mas
+    não é atingido dentro da faixa normativa de theta (30 a 45 graus dá
+    tg(theta_cor) entre raiz(0,577) = 0,760 e 1,0) -- só entraria em jogo
+    para um theta fora da faixa. Em theta = 30°, theta_cor = 37,3° (mais
+    conservador: bielas mais inclinadas, Asw maior); em theta = 45°,
+    theta_cor = 45° (tg = 1, o caso-limite reproduz o próprio theta).
+    """
+    theta = float(theta_deg)
+    theta_rad = math.radians(theta)
+    tg_theta = math.tan(theta_rad)
+    if tg_theta <= 0.0:
+        raise ValueError(
+            f"theta_deg deve estar entre 0 e 90 graus (tg(theta) > 0); "
+            f"recebido {theta:g}."
+        )
+    tg_theta_cor = min(math.sqrt(tg_theta), 1.0)
+    return math.degrees(math.atan(tg_theta_cor))
 
 
 if __name__ == "__main__":

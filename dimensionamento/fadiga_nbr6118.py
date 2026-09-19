@@ -571,3 +571,345 @@ def deformacao_progressiva(a1: float, n: float) -> float:
         raise ValueError("n (número de ciclos) deve ser >= 1.")
     fator = 1.5 - 0.5 * math.exp(-0.05 * num ** 0.25)
     return a_1 * fator
+
+
+# === P39: fadiga -- combinação, cortante, concreto e protensão ===
+# Fecha a Seção 23 que P38 deixou de fora (ver docstring do módulo, "Fora do
+# escopo"): 23.5.2 (combinação própria de fadiga, com o psi1 da Seção 23,
+# diferente do psi1 da Tabela 11.2), 23.5.3 (eta_s, phi_eq de feixe e a
+# tabela de xi da aderência aço-protensão x aço passivo) e 23.5.4 (fadiga do
+# concreto em compressão e em tração). A redução de Vc e a correção do
+# ângulo das bielas por cortante cíclico (23.5.3, PDF p. 218) ficam em
+# cortante_nbr6118.py (modelo_calculo_I/II com fadiga=True), por já usarem
+# o núcleo desse módulo (fcd, fctd, VRd2). O item 23.5.5 sobre "número de
+# ciclos significativamente menor que 2x10^6" (PDF p. 217) é uma remissão
+# da própria norma à curva S-N (`curva_SN`, P38, acima): não tem fórmula
+# própria, e a curva já cobre o efeito (N menor dá Delta_fsd,fad maior).
+from dataclasses import replace as _replace_p39
+
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import acoes_nbr6118 as _ac_p39
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import acoes_nbr6118 as _ac_p39
+
+
+# ---------------------------------------------------------------------------
+# 23.5.2 -- psi1 próprio da fadiga (PDF p. 217) e a combinação de fadiga
+# ---------------------------------------------------------------------------
+TABELA_PSI1_FADIGA = {
+    "ponte_rodoviaria_viga": 0.5,
+    "ponte_rodoviaria_transversina": 0.7,
+    "ponte_rodoviaria_laje_tabuleiro": 0.8,
+    "ponte_ferroviaria": 1.0,
+    "viga_rolamento_ponte_rolante": 1.0,
+}
+"""psi1 para a verificação da fadiga, por tipo de obra e peça estrutural
+(23.5.2, PDF p. 217) -- distinto do psi1 da Tabela 11.2 (`acoes_nbr6118`),
+que é por tipo de uso de edificação e não cobre pontes nem pontes
+rolantes."""
+
+_ALIASES_PSI1_FADIGA = {nbr._chave(k): k for k in TABELA_PSI1_FADIGA}
+
+
+def psi1_fadiga(tipo_obra: str) -> float:
+    """psi1 da tabela de fadiga (23.5.2, PDF p. 217), pelo tipo de obra e peça.
+
+    tipo_obra: 'ponte_rodoviaria_viga' (0,5), 'ponte_rodoviaria_transversina'
+    (0,7), 'ponte_rodoviaria_laje_tabuleiro' (0,8), 'ponte_ferroviaria'
+    (1,0) ou 'viga_rolamento_ponte_rolante' (1,0). "Em casos especiais de
+    pontes rolantes de operação menos frequente" com número de ciclos
+    muito menor que 2x10^6, a resistência à fadiga pode ser aumentada
+    conforme 23.5.5 (`curva_SN`) em vez de se mexer neste psi1.
+    """
+    chave = nbr._chave(tipo_obra)
+    if chave not in _ALIASES_PSI1_FADIGA:
+        raise ValueError(
+            f"Tipo de obra desconhecido para a tabela de fadiga (23.5.2): "
+            f"{tipo_obra!r}. Use um destes: {', '.join(TABELA_PSI1_FADIGA)}."
+        )
+    return TABELA_PSI1_FADIGA[_ALIASES_PSI1_FADIGA[chave]]
+
+
+def combinacao_fadiga(acoes, tipo_obra: str, principal=None,
+                      sentido: str = "max"):
+    """Fd,ser para a verificação da fadiga, 23.5.2 (PDF p. 217).
+
+        Fd,ser = soma(Fgik) + psi1 x Fq1k + soma(psi2j x Fqjk)
+
+    A mesma combinação frequente de ações da Seção 11 (23.5.2 autoriza
+    simplificar o espectro de fadiga para essa única intensidade) --
+    delega a `acoes_nbr6118.combinacao_servico` (tipo='frequente') --, só
+    que aqui o fator psi1 vem da tabela própria da fadiga (`psi1_fadiga`,
+    por `tipo_obra`), não da Tabela 11.2 de cada ação (que é por uso de
+    edificação e não tem categoria de ponte ou de ponte rolante). Troca
+    psi1 (mantendo psi0 e psi2 de cada ação) antes de delegar; só o psi1
+    da ação que acabar escolhida como principal (Fq1k) entra de fato na
+    soma -- as demais (Fqjk) continuam com psi2 normalmente, como em
+    qualquer combinação frequente. `principal` e `sentido`: repassados a
+    `combinacao_servico` (mesmo significado).
+    """
+    psi1_fad = psi1_fadiga(tipo_obra)
+    ajustadas = []
+    for a in acoes:
+        if a.variavel:
+            p0, _, p2 = a.psi
+            a = _replace_p39(a, categoria_psi=(p0, psi1_fad, p2))
+        ajustadas.append(a)
+    resultado = _ac_p39.combinacao_servico(ajustadas, tipo="frequente",
+                                           principal=principal, sentido=sentido)
+    memoria = resultado.memoria + (
+        f"23.5.2: psi1 = {psi1_fad:g} (tabela de fadiga, tipo de obra = "
+        f"{tipo_obra!r}), no lugar do psi1 da Tabela 11.2.",
+    )
+    return _replace_p39(resultado, memoria=memoria)
+
+
+# ---------------------------------------------------------------------------
+# 23.5.3 -- xi (Tabela, PDF p. 219), diâmetro equivalente de feixe e eta_s
+# (PDF p. 218-219)
+# ---------------------------------------------------------------------------
+TABELA_XI_ADERENCIA = {
+    "pos_tracao": {
+        "liso": 0.2,
+        "cordoalhas": 0.4,
+        "fios_entalhados": 0.6,
+        "barras_nervuradas": 1.0,
+    },
+    "pre_tracao": {
+        "cordoalhas": 0.6,
+        "acos_entalhados": 0.8,
+    },
+}
+"""xi -- relação entre as resistências de aderência do aço de protensão e
+do aço da armadura passiva de alta aderência, por processo de protensão
+e tipo de aço (23.5.3, PDF p. 219)."""
+
+_ALIASES_PROCESSO_XI = {nbr._chave(k): k for k in TABELA_XI_ADERENCIA}
+
+
+def xi_aderencia(processo: str, tipo_aco: str) -> float:
+    """xi da tabela de aderência (23.5.3, PDF p. 219), por processo e tipo de aço.
+
+    processo: 'pos_tracao' (tipo_aco: 'liso' 0,2; 'cordoalhas' 0,4;
+    'fios_entalhados' 0,6; 'barras_nervuradas' 1,0) ou 'pre_tracao'
+    (tipo_aco: 'cordoalhas' 0,6; 'acos_entalhados' 0,8). Uma combinação
+    que a tabela não lista (ex.: pré-tração com aço liso) levanta
+    FaixaNormativaError -- a norma não define esse caso.
+    """
+    chave_proc = nbr._chave(processo)
+    if chave_proc not in _ALIASES_PROCESSO_XI:
+        raise ValueError(
+            f"Processo de protensão desconhecido: {processo!r}. "
+            "Use 'pos_tracao' ou 'pre_tracao'."
+        )
+    proc = _ALIASES_PROCESSO_XI[chave_proc]
+    tabela_proc = TABELA_XI_ADERENCIA[proc]
+    chave_tipo = nbr._chave(tipo_aco)
+    aliases_tipo = {nbr._chave(k): k for k in tabela_proc}
+    if chave_tipo not in aliases_tipo:
+        raise FaixaNormativaError(
+            f"A tabela de xi (23.5.3) não define {tipo_aco!r} para "
+            f"processo {proc!r}; use um destes: {', '.join(tabela_proc)}."
+        )
+    return tabela_proc[aliases_tipo[chave_tipo]]
+
+
+def phi_eq_feixe(Ap_cm2: float) -> float:
+    """Diâmetro equivalente de um feixe de armadura de protensão, mm
+    (23.5.3, PDF p. 218):
+
+        phi_eq = 1,6 x sqrt(Ap), com Ap em mm²
+
+    Ap_cm2: área da seção transversal do feixe, em cm² (convenção de área
+    de protensão deste pacote, como em `protendido_nbr6118`); convertida
+    internamente para mm² (Ap_mm2 = Ap_cm2 x 100) antes de aplicar a
+    fórmula, que a norma dá com Ap em mm². Uso: entra como `phi_p_mm` de
+    `eta_s` quando a armadura ativa é um feixe de cordoalhas ou fios, e
+    não uma barra isolada.
+    """
+    Ap = float(Ap_cm2)
+    if Ap <= 0.0:
+        raise ValueError(f"Ap_cm2 deve ser positivo (recebido {Ap:g}).")
+    Ap_mm2 = Ap * 100.0
+    return 1.6 * math.sqrt(Ap_mm2)
+
+
+def eta_s(As_cm2: float, Ap_cm2: float, phi_s_mm: float, phi_p_mm: float,
+         xi: float) -> float:
+    """Fator eta_s de correção da tensão no aço por diferença de
+    aderência entre a armadura ativa e a passiva (23.5.3, PDF p. 218-219):
+
+        eta_s = (1 + Ap/As) / [1 + (Ap/As) x sqrt(xi x phi_s/phi_p)] >= 1
+
+    As_cm2, Ap_cm2: área de armadura passiva e de armadura ativa (mesma
+    unidade nas duas -- a razão Ap/As cancela a unidade). phi_s_mm: menor
+    diâmetro do aço da armadura passiva na seção considerada; phi_p_mm:
+    diâmetro do aço de protensão (para feixes, `phi_eq_feixe`). xi:
+    `xi_aderencia`. Ap_cm2 = 0 (peça sem armadura ativa) devolve 1,0 (a
+    razão Ap/As some da fórmula, não há o que corrigir). O piso >= 1 da
+    norma é aplicado no retorno: com phi_p muito menor que phi_s, a
+    fórmula bruta pode cair abaixo de 1.
+    """
+    As = float(As_cm2)
+    Ap = float(Ap_cm2)
+    if As <= 0.0:
+        raise ValueError(f"As_cm2 deve ser positivo (recebido {As:g}).")
+    if Ap < 0.0:
+        raise ValueError(f"Ap_cm2 não pode ser negativo (recebido {Ap:g}).")
+    if Ap == 0.0:
+        return 1.0
+    phi_s = float(phi_s_mm)
+    phi_p = float(phi_p_mm)
+    if phi_s <= 0.0 or phi_p <= 0.0:
+        raise ValueError("phi_s_mm e phi_p_mm devem ser positivos.")
+    xi_f = float(xi)
+    if xi_f <= 0.0:
+        raise ValueError(f"xi deve ser positivo (recebido {xi_f:g}).")
+    razao = Ap / As
+    numerador = 1.0 + razao
+    denominador = 1.0 + razao * math.sqrt(xi_f * phi_s / phi_p)
+    return max(numerador / denominador, 1.0)
+
+
+# ---------------------------------------------------------------------------
+# 23.5.4.1 -- fator de gradiente eta_c,grad e fadiga do concreto em
+# compressão (PDF p. 219)
+# ---------------------------------------------------------------------------
+def eta_c_grad(sigma_c1_mpa: float, sigma_c2_mpa: float) -> float:
+    """Fator de gradiente de tensões de compressão eta_c,grad (23.5.4.1,
+    PDF p. 219):
+
+        eta_c,grad = 1 / [1,5 - 0,5 x (|sigma_c1|/|sigma_c2|)]
+
+    sigma_c1_mpa: tensão de compressão a distância <= 300 mm da face
+    (menor valor em módulo); sigma_c2_mpa: tensão de compressão na mesma
+    combinação de carga (maior valor em módulo), ambas conforme a
+    Figura 23.1 (PDF p. 220). Usa o módulo dos dois valores. Levanta
+    FaixaNormativaError se sigma_c2 = 0 (referência nula) ou se
+    |sigma_c1| > |sigma_c2| (contraria a definição de qual é o menor e
+    qual é o maior valor). eta_c,grad = 1,0 quando as duas tensões são
+    iguais (compressão uniforme, o caso menos favorável); 0,667 (= 1/1,5)
+    quando sigma_c1 = 0 (gradiente máximo, flexão pura).
+    """
+    c1 = abs(float(sigma_c1_mpa))
+    c2 = abs(float(sigma_c2_mpa))
+    if c2 <= 0.0:
+        raise FaixaNormativaError(
+            "eta_c,grad (23.5.4.1) exige sigma_c2 != 0 (tensão de compressão "
+            "de referência, Figura 23.1)."
+        )
+    if c1 > c2 * (1.0 + 1e-9):
+        raise FaixaNormativaError(
+            f"|sigma_c1| = {c1:g} MPa não pode ser maior que |sigma_c2| = "
+            f"{c2:g} MPa (sigma_c1 é o menor valor em módulo, sigma_c2 o "
+            "maior, Figura 23.1)."
+        )
+    return 1.0 / (1.5 - 0.5 * (c1 / c2))
+
+
+FCD_FAD_FATOR = 0.45
+"""fcd,fad = 0,45 x fcd (23.5.4.1, PDF p. 219)."""
+
+
+@dataclass(frozen=True)
+class ResultadoFadigaConcretoCompressao:
+    """Verificação da fadiga do concreto em compressão (23.5.4.1, PDF p. 219)."""
+    sigma_c_max_mpa: float
+    eta_c_grad: float
+    gama_f: float
+    solicitante_mpa: float
+    fcd_fad_mpa: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_fadiga_concreto_compressao(
+    sigma_c_max_mpa: float, sigma_c1_mpa: float, sigma_c2_mpa: float,
+    fck_mpa: float, gama_f: float = 1.0, gama_c: float = nbr.GAMA_C,
+) -> ResultadoFadigaConcretoCompressao:
+    """Verifica eta_c,grad x gama_f x sigma_c,máx <= fcd,fad (23.5.4.1,
+    PDF p. 219).
+
+    sigma_c_max_mpa: tensão de compressão máxima de cálculo no ponto
+    verificado, sob a combinação relevante de cargas. sigma_c1_mpa,
+    sigma_c2_mpa: repassados a `eta_c_grad` (Figura 23.1). gama_f: 1,0
+    por padrão (23.5.3, PDF p. 218). fcd,fad = 0,45 x fcd, com fcd de
+    `nucleo_nbr6118.fcd` (12.3.3, aos 28 dias por padrão -- passe
+    `t_dias`/`cimento` chamando `nucleo_nbr6118.fcd` à parte se a
+    verificação for em idade diferente).
+    """
+    eta = eta_c_grad(sigma_c1_mpa, sigma_c2_mpa)
+    sigma_max = float(sigma_c_max_mpa)
+    gf = float(gama_f)
+    solicitante = eta * gf * sigma_max
+    fcd = nbr.fcd(fck_mpa, gama_c)
+    fcd_fad = FCD_FAD_FATOR * fcd
+    resultado_seg = seg.verificar_seguranca(
+        Rd=fcd_fad, Sd=solicitante, rotulo="fadiga do concreto em compressão",
+        item="23.5.4.1",
+    )
+    memoria = (
+        f"23.5.4.1: fcd,fad = 0,45 x fcd = 0,45 x {fcd:.6g} = {fcd_fad:.6g} MPa.",
+        f"eta_c,grad = {eta:.6g} (sigma_c1 = {float(sigma_c1_mpa):g} MPa, "
+        f"sigma_c2 = {float(sigma_c2_mpa):g} MPa).",
+        f"eta_c,grad x gama_f x sigma_c,máx = {eta:.6g} x {gf:g} x "
+        f"{sigma_max:g} = {solicitante:.6g} MPa.",
+        f"<= fcd,fad: {solicitante:.6g} <= {fcd_fad:.6g} -> "
+        f"{'ok' if resultado_seg.ok else 'não ok'}.",
+    )
+    return ResultadoFadigaConcretoCompressao(
+        sigma_max, eta, gf, solicitante, fcd_fad, resultado_seg.ok,
+        resultado_seg.governante, memoria,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 23.5.4.2 -- fadiga do concreto em tração (PDF p. 220)
+# ---------------------------------------------------------------------------
+FCTD_FAD_FATOR = 0.3
+"""fctd,fad = 0,3 x fctd,inf (23.5.4.2, PDF p. 220)."""
+
+
+@dataclass(frozen=True)
+class ResultadoFadigaConcretoTracao:
+    """Verificação da fadiga do concreto em tração (23.5.4.2, PDF p. 220)."""
+    sigma_ct_max_mpa: float
+    gama_f: float
+    solicitante_mpa: float
+    fctd_fad_mpa: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_fadiga_concreto_tracao(
+    sigma_ct_max_mpa: float, fck_mpa: float, gama_f: float = 1.0,
+    gama_c: float = nbr.GAMA_C,
+) -> ResultadoFadigaConcretoTracao:
+    """Verifica gama_f x sigma_ct,máx <= fctd,fad (23.5.4.2, PDF p. 220).
+
+    fctd,fad = 0,3 x fctd,inf. `nucleo_nbr6118.fctd` já é fctk,inf/gama_c
+    (9.3.2.1, 19.4.1), exatamente a definição de fctd,inf usada aqui --
+    reaproveitado direto, sem recalcular fctk,inf.
+    """
+    sigma_max = float(sigma_ct_max_mpa)
+    gf = float(gama_f)
+    solicitante = gf * sigma_max
+    fctd_inf = nbr.fctd(fck_mpa, gama_c)
+    fctd_fad = FCTD_FAD_FATOR * fctd_inf
+    resultado_seg = seg.verificar_seguranca(
+        Rd=fctd_fad, Sd=solicitante, rotulo="fadiga do concreto em tração",
+        item="23.5.4.2",
+    )
+    memoria = (
+        f"23.5.4.2: fctd,inf = fctk,inf/gama_c = {fctd_inf:.6g} MPa; "
+        f"fctd,fad = 0,3 x fctd,inf = {fctd_fad:.6g} MPa.",
+        f"gama_f x sigma_ct,máx = {gf:g} x {sigma_max:g} = {solicitante:.6g} MPa.",
+        f"<= fctd,fad: {solicitante:.6g} <= {fctd_fad:.6g} -> "
+        f"{'ok' if resultado_seg.ok else 'não ok'}.",
+    )
+    return ResultadoFadigaConcretoTracao(
+        sigma_max, gf, solicitante, fctd_fad, resultado_seg.ok,
+        resultado_seg.governante, memoria,
+    )

@@ -297,7 +297,8 @@
    "nome": "Fadiga: combinação, cortante, concreto e protensão",
    "onda": 4,
    "prioridade": "baixa",
-   "modulo": "dimensionamento/fadiga_nbr6118.py + cortante_nbr6118.py"
+   "modulo": "dimensionamento/fadiga_nbr6118.py + cortante_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P40",
@@ -14054,7 +14055,7 @@
    "pagina_pdf": 217,
    "titulo": "Combinação frequente de ações para verificação de fadiga",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P39",
@@ -14066,7 +14067,21 @@
     "11.8.3.1-combinacao-frequente"
    ],
    "teste_sugerido": "Comparar com a funcao de combinacao frequente ja usada para ELS de fissuracao/flecha, se existir",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P39",
+    "data": "19/09/2026",
+    "funcoes": [
+     "fadiga_nbr6118.combinacao_fadiga"
+    ],
+    "testes": [
+     "test_2352_combinacao_fadiga_usa_psi1_da_tabela_de_fadiga_nao_da_11_2",
+     "test_2352_combinacao_fadiga_ponte_ferroviaria_psi1_igual_a_1",
+     "test_2352_combinacao_fadiga_reproduz_combinacao_frequente_com_psi1_trocado",
+     "test_2352_combinacao_fadiga_tipo_obra_invalido_leva_a_valueerror"
+    ],
+    "observacao": "Delega a acoes_nbr6118.combinacao_servico(tipo='frequente') (P4/Secao 11), trocando so o psi1 de cada acao variavel pelo da tabela de fadiga antes de chamar; psi0 e psi2 continuam os da Tabela 11.2 de cada acao (so o psi1 da acao que acabar escolhida como principal entra na formula, o resto usa psi2 normalmente)."
+   }
   },
   {
    "id": "23.5.2-psi1-fadiga-tabela",
@@ -14074,7 +14089,7 @@
    "pagina_pdf": 217,
    "titulo": "Fator de redução ψ1 para verificação de fadiga por tipo de obra/peça",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P39",
@@ -14084,7 +14099,20 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Conferir os 5 valores contra a imagem da pagina 217",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P39",
+    "data": "19/09/2026",
+    "funcoes": [
+     "fadiga_nbr6118.TABELA_PSI1_FADIGA",
+     "fadiga_nbr6118.psi1_fadiga"
+    ],
+    "testes": [
+     "test_2352_psi1_fadiga_todos_os_5_valores",
+     "test_2352_tipo_obra_desconhecido_leva_a_valueerror"
+    ],
+    "observacao": "5 celulas conferidas contra a imagem de p.217: ponte rodoviaria viga 0,5, transversina 0,7, laje de tabuleiro 0,8; ponte ferroviaria 1,0; viga de rolamento de ponte rolante 1,0."
+   }
   },
   {
    "id": "23.5.5-fator-reducao-ciclos-menor",
@@ -14092,7 +14120,7 @@
    "pagina_pdf": 217,
    "titulo": "Aumento da resistência à fadiga para pontes rolantes de operação pouco frequente (número de ciclos << 2e6)",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "M",
    "pacote": "P39",
@@ -14103,7 +14131,18 @@
    "depende_de": [
     "23.5.5-curva-SN-armadura"
    ],
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P39",
+    "data": "19/09/2026",
+    "funcoes": [
+     "fadiga_nbr6118.curva_SN (reaproveitada de P38)"
+    ],
+    "testes": [
+     "test_2355_ciclos_bem_menores_que_2e6_aumenta_a_resistencia_a_fadiga"
+    ],
+    "observacao": "Confirmado na imagem (p.217): o proprio texto da norma e uma remissao a 23.5.5, sem formula fechada propria. O item computavel real ja existe em P38 (curva_SN, com N* e k1/k2 da Tabela 23.3): para N << 2x10^6 ela ja devolve Delta_fsd,fad maior que o tabelado a 2x10^6, que e exatamente o efeito descrito. Nao foi criada funcao nova para nao duplicar o que P38 ja cobre."
+   }
   },
   {
    "id": "23.5.3-modelo-I-vc-reduzido-fadiga",
@@ -14111,7 +14150,7 @@
    "pagina_pdf": 218,
    "titulo": "Redução da contribuição do concreto Vc no Modelo de Cálculo I para verificação de fadiga por cortante",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P39",
@@ -14123,7 +14162,19 @@
     "cortante_nbr6118.modelo_calculo_I"
    ],
    "teste_sugerido": "Rodar modelo_calculo_I com um caso de teste existente do modulo e conferir se Vc_fad = 0,5*Vc do resultado padrao",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P39",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_nbr6118.modelo_calculo_I (parametro fadiga=True)"
+    ],
+    "testes": [
+     "test_2353_modelo_I_vc_fadiga_e_metade_do_vc_padrao",
+     "test_2353_modelo_I_vc_fadiga_muda_vsw_e_asw"
+    ],
+    "observacao": "Vc,fad = 0,5 x Vc aplicado depois de vc_por_regime (P15), ou seja, sobre o Vc do regime escolhido (flexao simples, composta etc.), nao apenas sobre Vc0. Parametro novo no fim da assinatura, default False preserva o comportamento anterior."
+   }
   },
   {
    "id": "23.5.3-modelo-II-theta-corrigido-fadiga",
@@ -14131,7 +14182,7 @@
    "pagina_pdf": 218,
    "titulo": "Correção do ângulo das bielas (θcor) no Modelo de Cálculo II para verificação de fadiga por cortante",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P39",
@@ -14143,7 +14194,24 @@
     "cortante_nbr6118.modelo_calculo_II"
    ],
    "teste_sugerido": "theta=45 graus -> tg(theta)=1 -> tg(theta_cor)=1 (caso limite); theta=30 graus -> tg(theta)=0,577 -> tg(theta_cor)=raiz(0,577)=0,760 -> theta_cor~=37,3 graus (mais conservador que 30)",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P39",
+    "data": "19/09/2026",
+    "funcoes": [
+     "cortante_nbr6118.modelo_calculo_II (parametro fadiga=True)",
+     "cortante_nbr6118.theta_corrigido_fadiga_deg"
+    ],
+    "testes": [
+     "test_2353_theta_corrigido_fadiga_theta_45_e_caso_limite",
+     "test_2353_theta_corrigido_fadiga_theta_30",
+     "test_2353_modelo_II_fadiga_usa_theta_corrigido_e_preserva_theta_de_entrada",
+     "test_2353_modelo_II_sem_fadiga_nao_tem_theta_cor",
+     "test_2353_modelo_II_fadiga_nao_reduz_vc0",
+     "test_2353_theta_corrigido_fadiga_theta_nao_positivo_leva_a_valueerror"
+    ],
+    "observacao": "tg(theta_cor)=raiz(tg(theta))<=1 conferido nos dois extremos da faixa normativa (30 e 45 graus). O campo theta_deg do resultado continua sendo o angulo de entrada (compatibilidade); o angulo efetivamente usado no calculo (VRd2, Asw/s) fica em theta_cor_deg, novo campo do dataclass ResultadoCortante. Vc0/Vc1 nao mudam com fadiga=True, conforme a norma ('para o Modelo II nao ha necessidade dessa reducao')."
+   }
   },
   {
    "id": "23.5.3-alfa-e-relacao-modulos",
@@ -14186,7 +14254,7 @@
    "pagina_pdf": 218,
    "titulo": "Fator ηs de correção de tensão no aço por diferença de aderência entre armadura ativa e passiva",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P39",
@@ -14198,7 +14266,22 @@
     "23.5.3-xi-relacao-aderencia"
    ],
    "teste_sugerido": "Ap=0 (sem protensao) -> eta_s=1; Ap=As, phi_s=phi_p, xi=1 -> eta_s=2/2=1",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P39",
+    "data": "19/09/2026",
+    "funcoes": [
+     "fadiga_nbr6118.eta_s"
+    ],
+    "testes": [
+     "test_2353_eta_s_sem_protensao_e_1",
+     "test_2353_eta_s_ap_igual_as_mesmo_phi_e_xi_1_da_1",
+     "test_2353_eta_s_maior_que_1_quando_phi_p_menor_que_phi_s",
+     "test_2353_eta_s_piso_1_quando_formula_bruta_cai_abaixo",
+     "test_2353_eta_s_as_nao_positivo_leva_a_valueerror"
+    ],
+    "observacao": "Piso >= 1 da propria formula da norma aplicado com max(...,1.0), pois a formula bruta pode cair abaixo de 1 quando phi_p e bem menor que phi_s."
+   }
   },
   {
    "id": "23.5.3-phi-eq-feixe",
@@ -14206,7 +14289,7 @@
    "pagina_pdf": 218,
    "titulo": "Diâmetro equivalente de feixe de cordoalhas/fios de protensão (φeq)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P39",
@@ -14216,7 +14299,19 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Ap = area de uma cordoalha 12,7mm (98,7 mm2) tratada como feixe unico -> conferir ordem de grandeza de phi_eq",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P39",
+    "data": "19/09/2026",
+    "funcoes": [
+     "fadiga_nbr6118.phi_eq_feixe"
+    ],
+    "testes": [
+     "test_2353_phi_eq_feixe_cordoalha_12_7mm",
+     "test_2353_phi_eq_feixe_area_nao_positiva_leva_a_valueerror"
+    ],
+    "observacao": "phi_eq = 1,6 x raiz(Ap), com Ap em mm2 na formula da norma; a funcao recebe Ap em cm2 (convencao de area de protensao do pacote, como em protendido_nbr6118) e converte internamente (x100)."
+   }
   },
   {
    "id": "23.5.3-xi-relacao-aderencia",
@@ -14224,7 +14319,7 @@
    "pagina_pdf": 219,
    "titulo": "Valores de ξ (relação de aderência aço de protensão / aço passivo) por tipo de aço e processo de protensão",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P39",
@@ -14234,7 +14329,22 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Conferir os 6 valores contra a imagem da pagina 219",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P39",
+    "data": "19/09/2026",
+    "funcoes": [
+     "fadiga_nbr6118.TABELA_XI_ADERENCIA",
+     "fadiga_nbr6118.xi_aderencia"
+    ],
+    "testes": [
+     "test_2353_tabela_xi_pos_tracao_4_valores",
+     "test_2353_tabela_xi_pre_tracao_2_valores",
+     "test_2353_tabela_xi_combinacao_nao_definida_leva_a_faixanormativaerror",
+     "test_2353_tabela_xi_processo_desconhecido_leva_a_valueerror"
+    ],
+    "observacao": "6 celulas conferidas contra a imagem de p.219: pos-tracao (liso 0,2; cordoalhas 0,4; fios entalhados 0,6; barras nervuradas 1,0) e pre-tracao (cordoalhas 0,6; acos entalhados 0,8). Combinacao processo x tipo que a tabela nao lista levanta FaixaNormativaError."
+   }
   },
   {
    "id": "23.5.3-reducao-vc-fundamentacao",
@@ -14256,7 +14366,7 @@
    "pagina_pdf": 219,
    "titulo": "Verificação da fadiga do concreto em compressão",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P39",
@@ -14269,7 +14379,20 @@
     "23.5.3-alfa-e-relacao-modulos"
    ],
    "teste_sugerido": "Caso limite sigma_c1=sigma_c2 -> eta_c,grad=1/(1,5-0,5)=1,0; sigma_c1=0 -> eta_c,grad=1/1,5=0,667",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P39",
+    "data": "19/09/2026",
+    "funcoes": [
+     "fadiga_nbr6118.verificar_fadiga_concreto_compressao",
+     "fadiga_nbr6118.eta_c_grad"
+    ],
+    "testes": [
+     "test_23541_verificar_fadiga_concreto_compressao_fcd_fad_e_045_fcd",
+     "test_23541_verificar_fadiga_concreto_compressao_reprova_acima_do_limite"
+    ],
+    "observacao": "Recebe sigma_c_max, sigma_c1 e sigma_c2 como entrada (parametros): o calculo de tensao por flexao composta no Estadio II, citado no proprio JSON como fora do escopo deste pacote, nao foi implementado -- fica para quem chamar esta verificacao a partir de um modulo de tensoes de secao. fcd,fad = 0,45 x nucleo_nbr6118.fcd."
+   }
   },
   {
    "id": "23.5.4.1-eta-c-grad",
@@ -14277,7 +14400,7 @@
    "pagina_pdf": 219,
    "titulo": "Fator de gradiente de tensões de compressão ηc,grad",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P39",
@@ -14287,7 +14410,22 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "sigma_c1=sigma_c2 -> eta=1,0; sigma_c1=0,5*sigma_c2 -> eta=1/(1,5-0,25)=0,8",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P39",
+    "data": "19/09/2026",
+    "funcoes": [
+     "fadiga_nbr6118.eta_c_grad"
+    ],
+    "testes": [
+     "test_23541_eta_c_grad_tensoes_iguais_da_1",
+     "test_23541_eta_c_grad_sigma_c1_zero_da_0_667",
+     "test_23541_eta_c_grad_meio_termo",
+     "test_23541_eta_c_grad_sigma_c2_zero_leva_a_faixanormativaerror",
+     "test_23541_eta_c_grad_c1_maior_que_c2_leva_a_faixanormativaerror"
+    ],
+    "observacao": "Conferidos os dois casos-limite da propria norma (c1=c2 -> 1,0; c1=0 -> 0,667) mais um ponto interno (c1=0,5*c2 -> 0,8) e as duas violacoes de faixa (c2=0 e c1>c2)."
+   }
   },
   {
    "id": "23.5.4.2-fadiga-concreto-tracao",
@@ -14295,7 +14433,7 @@
    "pagina_pdf": 220,
    "titulo": "Verificação da fadiga do concreto em tração",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P39",
@@ -14307,7 +14445,19 @@
     "nucleo.fctk_inf"
    ],
    "teste_sugerido": "fctk_inf de um C30 / gama_c=1,4 -> 0,3x esse valor deve bater com a leitura literal da formula",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P39",
+    "data": "19/09/2026",
+    "funcoes": [
+     "fadiga_nbr6118.verificar_fadiga_concreto_tracao"
+    ],
+    "testes": [
+     "test_23542_fctd_fad_e_03_fctd_inf_c30",
+     "test_23542_verificar_fadiga_concreto_tracao_passa_e_reprova"
+    ],
+    "observacao": "fctd,fad = 0,3 x fctd,inf; nucleo_nbr6118.fctd ja e fctk,inf/gama_c (9.3.2.1), exatamente a definicao de fctd,inf usada pela Secao 23 -- reaproveitado direto, resolvendo a duvida de compatibilidade que o proprio JSON levantava, sem recalcular fctk_inf."
+   }
   },
   {
    "id": "23.5.5-verificacao-fadiga-armadura",
