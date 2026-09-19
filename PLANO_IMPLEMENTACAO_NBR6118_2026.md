@@ -2,24 +2,30 @@
 
 *18/09/2026 — plano, não implementação. Nada no código foi alterado para escrevê-lo; os arquivos novos são só este plano e os dois anexos.*
 
+*Revisto em 19/09/2026 com as seis decisões do Gustavo (seção 6). A principal: a análise estrutural que a 6118 prescreve entrou no plano, com cálculo próprio de barras (pacotes P44 a P48).*
+
 ## 1. Resposta curta
 
-1. **O que o plano cobre.** A norma inteira, das seções 5 a 25 mais o Anexo A, mapeada em 661 itens. Desses, 156 não são computáveis (texto de princípio, remissão a outra norma, recomendação de projeto) e ficam fora por natureza. Sobram **505 itens computáveis**:
+1. **O que o plano cobre.** A norma inteira, das seções 5 a 25 mais o Anexo A, mapeada em 662 itens. Desses, 143 não são computáveis (texto de princípio, remissão a outra norma, recomendação de projeto) e ficam fora por natureza. Sobram **519 itens computáveis**:
    - **75 implementados** (o código de hoje, já auditado e corrigido);
    - **58 parciais** (a função existe, mas falta um ramo, uma tabela inteira ou a validação);
-   - **372 ausentes**.
-2. **Como está dividido.** Os 430 itens parciais ou ausentes estão distribuídos assim:
-   - **422 em 43 pacotes**, cada um coeso (um módulo ou um tema) e do tamanho de uma rodada de agente, de 2 a 18 itens;
-   - **8 fora do escopo**, por serem análise estrutural que o TQS já faz (pórtico equivalente, grelha de nervuras, modelos 3D de bloco e sapata) ou por dependerem de outra norma (vento).
-3. **Quatro ondas.**
+   - **386 ausentes**.
+2. **Como está dividido.** Os 444 itens parciais ou ausentes estão distribuídos assim:
+   - **443 em 48 pacotes**, cada um coeso (um módulo ou um tema) e do tamanho de uma rodada de agente, de 2 a 18 itens;
+   - **1 fora do escopo:** o vento, que é da NBR 6123. A biblioteca recebe os esforços de vento prontos e os combina.
+3. **Uma preparação e quatro ondas.**
+   - **Preparação:** renomear os módulos `*_bastos.py` para `*_nbr6118.py` (decisão 4). Neste plano, os nomes de módulo já estão na forma nova.
    - **Onda 1, fundação (P1 a P9):** durabilidade, materiais, ações e combinações, fluência e retração, ELS base. Quase tudo o que vem depois consome isso.
-   - **Onda 2, uso corrente em edifícios (P10 a P26):** limites geométricos, cortante e torção completos, lajes, **punção** (a maior lacuna: não existe punção de laje; só a de sapata rígida), detalhamento de vigas e pilares, 2ª ordem de pilares e estabilidade global.
-   - **Onda 3, prioridade média (P27 a P37):** emendas, protensão completa, bielas e tirantes, consolos, fundações, regiões especiais, pilar-parede e o crescimento do kernel.
+   - **Onda 2, uso corrente em edifícios (P10 a P26, P44 e P45):** limites geométricos, cortante e torção completos, lajes, **punção** (a maior lacuna: não existe punção de laje; só a de sapata rígida), detalhamento de vigas e pilares, 2ª ordem de pilares, estabilidade global e o **cálculo próprio de estruturas de barras** (pórtico, grelha e treliça), com as lajes nervuradas e lisas por grelha e por pórtico equivalente.
+   - **Onda 3, prioridade média (P27 a P37 e P46 a P48):** emendas, protensão completa, bielas e tirantes, consolos, fundações, regiões especiais, pilar-parede, o crescimento do kernel, a 2ª ordem global por análise não linear, os esforços hiperestáticos de protensão e os modelos de bielas e tirantes de viga-parede, sapata e bloco.
    - **Onda 4, prioridade baixa (P38 a P43):** fadiga, concreto simples, perfis abertos e o método geral de perdas.
-4. **Por que essa ordem.** Punção, flecha e detalhamento são o que o escritório mais usa, mas dependem de ações combinadas (P4), de fluência (P6), do estádio II (P9) e do wk,máx pela classe de agressividade (P1). Fazer a base primeiro evita que cada pacote de uso corrente reimplemente um pedaço dela, que foi exatamente o problema que a auditoria encontrou (11 cópias de fct,m).
-5. **Tamanho.** São cerca de 350 a 400 funções novas ou estendidas e, numa estimativa, uns 1 200 a 1 500 testes novos. Na execução: 43 rodadas de implementação, cada uma seguida de 3 verificações independentes. Com as ondas 1 e 2 em paralelo onde não há dependência, o grosso (ondas 1 e 2, 26 pacotes) cabe em 7 levas de agentes (seção 5).
+4. **Por que essa ordem.** Punção, flecha e detalhamento são o que o escritório mais usa, mas dependem de ações combinadas (P4), de fluência (P6), do estádio II (P9) e do wk,máx pela classe de agressividade (P1). Fazer a base primeiro evita que cada pacote de uso corrente reimplemente um pedaço dela, que foi exatamente o problema que a auditoria encontrou (11 cópias de fct,m). O cálculo de barras (P44) vem logo depois das combinações, porque é delas que saem os casos de carga.
+5. **Tamanho.** São cerca de 410 a 460 funções novas ou estendidas e, numa estimativa, uns 1 400 a 1 700 testes novos. Na execução: 48 rodadas de implementação, cada uma seguida de 3 verificações independentes. Com as ondas 1 e 2 em paralelo onde não há dependência, o grosso (ondas 1 e 2, 28 pacotes) cabe em 7 levas de agentes (seção 5).
+6. **O que mudou em 19/09/2026.** Com a análise estrutural no escopo, 21 itens entraram em pacotes: os 7 que estavam fora por serem análise, 13 que estavam como não computáveis só porque a biblioteca não calculava estrutura, e 1 item que o mapa não tinha (15.7.1). Eles formam os pacotes P44 a P48.
 
 ## 2. Onde o código está hoje
+
+A tabela já reflete a revisão de 19/09/2026: os 13 itens de análise que eram não computáveis aparecem como ausentes.
 
 | Seção | Impl. | Parcial | Ausente | Não comp. |
 |---|---|---|---|---|
@@ -29,18 +35,18 @@
 | 8 Materiais | 10 | 3 | 10 | 4 |
 | 9 Aderência, ancoragem, protensão | 16 | 9 | 37 | 9 |
 | 10 Estados-limites | 0 | 1 | 0 | 3 |
-| 11 Ações | 3 | 6 | 19 | 12 |
+| 11 Ações | 3 | 6 | 21 | 10 |
 | 12 Resistências | 6 | 1 | 3 | 5 |
 | 13 Limites | 1 | 2 | 15 | 6 |
-| 14 Análise estrutural | 4 | 3 | 26 | 23 |
-| 15 Instabilidade e 2ª ordem | 5 | 4 | 20 | 7 |
+| 14 Análise estrutural | 4 | 3 | 34 | 15 |
+| 15 Instabilidade e 2ª ordem | 5 | 4 | 21 | 7 |
 | 16 Princípios de projeto | 0 | 0 | 0 | 8 |
-| 17 Dimensionamento (lineares) | 20 | 10 | 34 | 14 |
+| 17 Dimensionamento (lineares) | 20 | 10 | 35 | 13 |
 | 18 Detalhamento (lineares) | 3 | 3 | 38 | 18 |
 | 19 Lajes | 2 | 5 | 25 | 2 |
 | 20 Detalhamento de lajes | 0 | 0 | 23 | 3 |
-| 21 Regiões especiais | 0 | 0 | 10 | 10 |
-| 22 Elementos especiais | 4 | 4 | 31 | 12 |
+| 21 Regiões especiais | 0 | 0 | 11 | 9 |
+| 22 Elementos especiais | 4 | 4 | 32 | 11 |
 | 23 Fadiga e vibração | 0 | 1 | 23 | 3 |
 | 24 Concreto simples | 0 | 2 | 29 | 6 |
 | 25 Interfaces | 0 | 0 | 0 | 3 |
@@ -50,37 +56,53 @@
 **Leitura.**
 
 1. O que existe é o **cálculo de esforço resistente de seção**: flexão (inclusive oblíqua, com backend C++), cortante, torção, ancoragem passiva, pilar-padrão até λ = 90, perdas de protensão e fundações pelos métodos de apostila. Essa parte foi auditada hoje e está correta.
-2. O que falta é quase tudo **em volta** da seção: de onde vêm os esforços de cálculo (seção 11 inteira, sem nenhum objeto "ação"), o que se faz depois (detalhamento das seções 18 e 20, 100 % ausente) e os estados-limites de serviço além do wk (flecha de viga, limites da Tabela 13.3, estádio II genérico).
+2. O que falta é quase tudo **em volta** da seção: de onde vêm os esforços de cálculo (a seção 11 inteira, sem nenhum objeto "ação", e a própria análise que produz os esforços), o que se faz depois (detalhamento: a seção 20 inteira e 38 dos 44 itens da 18) e os estados-limites de serviço além do wk (flecha de viga, limites da Tabela 13.3, estádio II genérico).
 3. Há **três buracos grandes de elemento**: punção em laje (19.5, nenhuma linha), consolos, dentes Gerber e vigas-parede (22.4 e 22.5, nenhuma linha) e concreto simples (seção 24 inteira).
-4. A seção 14 é a que mais tem itens não computáveis (23). São escolhas de método de análise, e o TQS já as resolve. O valor da biblioteca ali está no pré e no pós-processamento dos resultados do TQS.
+4. A seção 14 é a da análise estrutural. Até 18/09 ela ficava com o TQS; com a decisão 1, a biblioteca ganha um cálculo próprio de barras (P44 a P48), e 8 itens dela que eram não computáveis passaram a ter o que calcular. Os 15 que continuam não computáveis são princípios e hipóteses gerais.
 5. Várias fórmulas já prontas moram no lugar errado e precisam **mudar de casa antes de ganhar consumidores**:
-   - a Tabela 8.1 (φ e εcs) está em `protendido_bastos.py`, mas serve a flecha e a pilar;
-   - `alpha_f` e `momento_fissuracao` estão em `lajes_bastos.py`, mas servem a vigas;
-   - `vao_efetivo` também está em `lajes_bastos.py`, e serve a vigas;
+   - a Tabela 8.1 (φ e εcs) está em `protendido_nbr6118.py`, mas serve a flecha e a pilar;
+   - `alpha_f` e `momento_fissuracao` estão em `lajes_nbr6118.py`, mas servem a vigas;
+   - `vao_efetivo` também está em `lajes_nbr6118.py`, e serve a vigas;
    - a ancoragem de armadura ativa só existe no legado `secoes_norma/sec9.py`;
    - `GAMA_F = 1,4` está redefinido em 5 arquivos (vigas, lajes, cortante, sapatas e blocos).
 
 ## 3. Arquitetura e convenções para o código novo
 
-### 3.1 Fronteira do escopo: a biblioteca verifica, o TQS analisa
+### 3.1 Fronteira do escopo: a biblioteca calcula estruturas de barras
 
-**Recomendação:** o open6118 calcula e verifica **elementos e seções a partir de esforços e deslocamentos dados**. Não monta nem resolve pórtico, grelha, placa ou P-Δ.
+**Decidido em 19/09/2026 (decisão 1):** o que a 6118 prescreve como análise estrutural entra no plano, com cálculo próprio em Python e só com barras.
 
-- **Entram**, como funções que recebem o resultado da análise:
-  - γz e α (recebem os momentos de 1ª ordem e os acréscimos de uma análise já feita);
-  - a verificação de redistribuição (recebe δ e x/d);
-  - o arredondamento do diagrama sobre apoios e os mínimos de viga contínua;
-  - a repartição do pórtico equivalente entre faixas;
-  - o desaprumo global contra o vento (recebe os dois momentos na base).
-- **Fica de fora** montar o modelo e resolver o sistema.
-- **Por quê:** o TQS já faz a análise global com os critérios da norma, e reproduzir um solver de pórtico em Python seria caro e não seria conferível contra a norma, só contra outro software. Na fronteira, a biblioteca é conferível item a item.
-- **Uma exceção:** a análise não linear de **uma barra** (método geral de pilar, 15.8.3.2) é local, não global. Entra no P28.
-- Em cada módulo que recebe resultado de análise, a docstring diz de onde o número vem, por exemplo: "ΔMtot,d: da análise linear do pórtico com as rigidezes de 15.7.3 — TQS, relatório de γz".
+- **Entra:**
+  - pórtico plano e espacial, grelha e treliça 2D e 3D, pelo método dos deslocamentos (P44);
+  - laje nervurada e laje lisa por grelha e por pórtico equivalente (P45);
+  - redistribuição com reequilíbrio e 2ª ordem global por análise não linear, com as rigidezes de 15.7.3 (P46);
+  - esforços hiperestáticos de protensão (P47);
+  - bielas e tirantes: as treliças de regiões D, viga-parede, sapata e bloco (P48).
+  - e, como já estava, a análise não linear de uma barra isolada (método geral de pilar, 15.8.3.2), no P28.
+- **Continua valendo** tudo o que recebe o resultado de uma análise: γz e α (P26), a verificação de redistribuição (P13), o arredondamento do diagrama sobre apoios e os mínimos de viga contínua (P14), a repartição do pórtico equivalente entre faixas (P17) e o desaprumo global contra o vento (P26). Cada uma dessas funções aceita tanto o número vindo de um programa externo, como o TQS, quanto o modelo da própria biblioteca.
+- **Fica de fora:**
+  - elementos finitos de placa e de sólido. A laje lisa entra como grelha equivalente, que a 14.7.8 aceita, e o bloco e a sapata como treliça 3D de bielas e tirantes, que a 22.6.3 e a 22.7.3 aceitam;
+  - o vento (NBR 6123). A biblioteca recebe os esforços de vento, combina-os (P4) e os compara com o desaprumo (P26).
+- **Como se confere o que a norma não tabela:** a análise não tem valor esperado na norma. Os testes usam solução fechada (viga contínua, pórtico simples, treliça isostática, placa de Timoshenko para a grelha) e conferem o equilíbrio em todo resultado. O verificador de execução refaz cada caso com solução analítica própria. A comparação com o TQS serve de conferência cruzada, não de referência.
+- Em cada função que recebe resultado de análise, a docstring diz de onde o número pode vir: do modelo da biblioteca ou de um programa externo, por exemplo "ΔMtot,d: da análise linear do pórtico com as rigidezes de 15.7.3 (P46, ou o relatório de γz do TQS)".
 
 ### 3.2 Organização dos módulos
 
 1. **Nome por tema da norma, com sufixo `_nbr6118`:** `acoes_nbr6118.py`, `puncao_nbr6118.py`, `detalhamento_vigas_nbr6118.py` e assim por diante. Nada de apostila no nome de módulo novo.
-2. **Os `*_bastos.py` que já existem são estendidos no lugar**, não renomeados agora. Renomear quebra quem importa, e a auditoria acabou de estabilizar as assinaturas (437 comparadas, nenhuma quebrada). A troca de nome, se ele quiser, vira um pacote de fachada no fim (decisão 4).
+2. **Os `*_bastos.py` são renomeados para `*_nbr6118.py` antes da onda 1** (decisão 4), sem fachada no nome antigo: quem importa o nome antigo troca o import. As assinaturas das funções não mudam, só o nome do módulo. O crédito às apostilas do Prof. Paulo Sérgio Bastos passa para a docstring de cada módulo e para o README. Daqui em diante, este plano usa os nomes novos:
+
+   | Hoje | Depois da preparação |
+   |---|---|
+   | `vigas_bastos.py` | `vigas_nbr6118.py` |
+   | `lajes_bastos.py` | `lajes_nbr6118.py` |
+   | `pilares_bastos.py` | `pilares_nbr6118.py` |
+   | `cortante_bastos.py` | `cortante_nbr6118.py` |
+   | `torcao_bastos.py` | `torcao_nbr6118.py` |
+   | `ancoragem_bastos.py` | `ancoragem_nbr6118.py` |
+   | `protendido_bastos.py` | `protendido_nbr6118.py` |
+   | `sapatas_bastos.py` | `sapatas_nbr6118.py` |
+   | `blocos_bastos.py` | `blocos_nbr6118.py` |
+   | `viga_servico_bastos.py` | `viga_servico_nbr6118.py` |
 3. **Núcleo único.** O que for grandeza de material ou parâmetro geral vai para `nucleo_nbr6118.py`:
    - o que entra: massa específica, ν, dilatação, a Tabela 8.1 (promovida de `protendido_bastos`), `GAMA_F`, a Tabela 13.4 e a normalização única de CAA;
    - o arquivo tem ~620 linhas; se passar de ~1 200, divide-se em `nucleo_nbr6118/` (pacote) com reexportação, sem mudar import.
@@ -105,7 +127,8 @@
 5. **Mensagens ao usuário em português acentuado:** erro, aviso e memória. Identificador em ASCII. Aviso via `AvisoNBR6118` (já existe no kernel), movido para o núcleo.
 6. **Tolerância de comparação:** `Rd >= Sd` com tolerância relativa de 1e-9, numa função única `verificar_seguranca` (P5), no lugar de cada módulo decidir entre `>` e `>=`.
 7. **Tabelas como dado:** `dict` ou tupla no topo do módulo, com o nome da tabela (`TABELA_11_2_PSI`). A interpolação é explícita (`interp=True/False`) e segue o texto da norma; a função de consulta cita se interpola.
-8. **Assinaturas públicas existentes não quebram.** Parâmetro novo entra no fim, com padrão que reproduz o comportamento atual.
+8. **Assinaturas públicas existentes não quebram.** Parâmetro novo entra no fim, com padrão que reproduz o comportamento atual. A exceção é a troca de nome dos módulos (decisão 4) e a Figura 8.6 como padrão (decisão 2), que mudam de propósito.
+9. **Parâmetros configuráveis no começo do script.** Coeficiente que o engenheiro pode ter de mudar por projeto fica num bloco "Parâmetros configuráveis" no topo do núcleo, com o valor padrão da norma. O primeiro é o γg (decisão 3): `GAMA_G = 1.4`, e 1,3 quando a obra se enquadrar na nota a da Tabela 11.1. As funções leem o valor na hora da chamada, não no import, e aceitam também o valor explícito por argumento. O script do usuário muda no começo (`nucleo.GAMA_G = 1.3`), e a memória de cálculo registra o valor usado.
 
 ### 3.4 Kernel de flexão oblíqua: onde cresce e em qual linguagem
 
@@ -118,6 +141,7 @@
 | Diagrama M-N-1/r e método geral de pilar | Python, P28 | Chamado dezenas de vezes por pilar, não milhares; `ei_secante` já faz o essencial |
 | Figura 8.6 com ramo inclinado | Python, P3 | O C++ não modela armadura ativa; o dispatcher já cai para o Python com cabos |
 | Domínio 1 e flexo-tração no ELU | Já coberto pelo solver de planos de deformação | Só falta o rótulo e o teste de tração pura |
+| Cálculo de barras (P44 a P48) | Python, com numpy e scipy.sparse | Roda uma vez por modelo e por caso; o custo está na solução do sistema esparso, que o scipy já faz em código compilado |
 
 - **Quando portar para C++:** só se um uso medido ficar lento. O caso provável é a envoltória de pilar-parede com muitas faixas (P29).
 - **Regra para o dispatcher:** caso sem paridade medida vai para o Python com `AvisoNBR6118`, como hoje.
@@ -131,7 +155,7 @@
 
 ## 4. Pacotes
 
-Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que criar; depende de; testes e aceite; tamanho e onda. Tamanho P é até 8 funções, M de 9 a 16, G acima de 16 ou com algoritmo iterativo.
+Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que criar; depende de; testes e aceite; tamanho e onda. Os pacotes P44 a P48, da análise estrutural, vêm depois do P43 porque entraram na revisão de 19/09/2026; a onda de cada um está na seção 5. Tamanho P é até 8 funções, M de 9 a 16, G acima de 16 ou com algoritmo iterativo.
 
 ### P1 — Durabilidade, cobrimento e abertura de fissura admissível
 
@@ -153,7 +177,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `relacao_ac_maxima(caa, protendido) -> float` e `classe_concreto_minima(caa, protendido) -> int` (Tabela 7.1), substituindo `sec7.CAAPropriedades` por fachada.
   - No núcleo: `normalizar_caa(caa) -> str` único (usado por `cobrimento_nominal`); `cobrimento_minimo_mm(...)` e `cobrimento_nominal(..., delta_c_mm=10, reducao_classe_superior=False, face_revestida=False)` expondo cmín e Δc (7.4.7.1-7.4.7.4, Tabela 7.2 com notas).
   - `verificar_cobrimento(cnom_mm, phi_mm, phi_feixe_mm=None, phi_bainha_mm=None) -> ResultadoCobrimento` (7.4.7.5) e `dmax_agregado_mm(cnom_mm)` (7.4.7.6).
-  - No núcleo: `wk_max_mm(tipo_concreto, caa, nivel_protensao=None) -> tuple[float|None, str]` (Tabela 13.4: wk e combinação a usar). `viga_servico_bastos.abertura_fissura_wk` passa a aceitar `caa=` e busca o limite ali, mantendo `wk_max_mm` explícito como alternativa.
+  - No núcleo: `wk_max_mm(tipo_concreto, caa, nivel_protensao=None) -> tuple[float|None, str]` (Tabela 13.4: wk e combinação a usar). `viga_servico_nbr6118.abertura_fissura_wk` passa a aceitar `caa=` e busca o limite ali, mantendo `wk_max_mm` explícito como alternativa.
 - **Depende de:** Nenhum.
 - **Testes e aceite:** Todas as células das Tabelas 6.1, 7.1, 7.2 e 13.4 (p. 36, 38, 39 e 100); cnom com Δc = 5 mm; φ de feixe maior que cnom levanta aviso. Aceite: `cobrimento_nominal` antigo dá os mesmos números com os padrões.
 - **Tamanho:** M (12 a 14 funções).
@@ -186,18 +210,18 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 
 ### P3 — Aço de protensão: catálogo e diagrama da Figura 8.6
 
-- **Objetivo:** Dar ao aço de protensão o catálogo completo (fios e cordoalhas, RN e RB) e o diagrama da Figura 8.6 com o segundo trecho ascendente até fptd em εpu, como opção.
-- **Onda 1**, prioridade alta. Módulo: dimensionamento/nucleo_nbr6118.py + rotinas/flexao_composta_obliqua.py + protendido_bastos.py.
+- **Objetivo:** Dar ao aço de protensão o catálogo completo (fios e cordoalhas, RN e RB) e o diagrama da Figura 8.6 com o segundo trecho ascendente até fptd em εpu, como padrão (decisão 2).
+- **Onda 1**, prioridade alta. Módulo: dimensionamento/nucleo_nbr6118.py + rotinas/flexao_composta_obliqua.py + protendido_nbr6118.py.
 - **Itens (3):**
   - `8.4.1-classificacao-aco-ativo` · 8.4.1 · p. 49
   - `8.4.5-fig8.6-diagrama-aco-ativo` · 8.4.5 (Figura 8.6) · p. 50
   - `8.4.6-dutilidade-aco-ativo` · 8.4.6 · p. 50
 - **O que criar:**
-  - No núcleo: `sigma_p(eps_p_pmil, fpyk_mpa, fptk_mpa, Ep_mpa=EP_MPA, eps_pu_pmil=35.0, gama_s=GAMA_S, diagrama='patamar'|'nbr_fig_8_6') -> float`.
-  - No kernel: `CurvaApBilinear(..., ramo_inclinado=False)`; com `True`, reta de (εpyd, fpyd) a (εpu, fptd). O padrão continua o patamar (decisão 2).
-  - `protendido_bastos`: `TABELA_ACOS_ATIVOS` (fios e cordoalhas, RN/RB, NBR 7482/7483) e `dutilidade_aco_ativo(eps_uk, minimo)` (8.4.6).
+  - No núcleo: `sigma_p(eps_p_pmil, fpyk_mpa, fptk_mpa, Ep_mpa=EP_MPA, eps_pu_pmil=35.0, gama_s=GAMA_S, diagrama='nbr_fig_8_6'|'patamar') -> float`, com a Figura 8.6 como padrão.
+  - No kernel: `CurvaApBilinear(..., ramo_inclinado=True)`: reta de (εpyd, fpyd) a (εpu, fptd); com `False`, o patamar de hoje. O padrão passa a ser a Figura 8.6 (decisão 2), e o achado FCO-17 da auditoria deixa de ser escolha documentada.
+  - `protendido_nbr6118`: `TABELA_ACOS_ATIVOS` (fios e cordoalhas, RN/RB, NBR 7482/7483) e `dutilidade_aco_ativo(eps_uk, minimo)` (8.4.6).
 - **Depende de:** Nenhum. O dispatcher já manda casos com cabos para o Python; confirmar.
-- **Testes e aceite:** Pontos (εpyd, fpyd) e (εpu, fptd) exatos para CP-190 RB; monotonia; MRd de seção protendida com ramo inclinado ≥ MRd com patamar. Aceite: com o padrão, os 613 testes atuais não mudam.
+- **Testes e aceite:** Pontos (εpyd, fpyd) e (εpu, fptd) exatos para CP-190 RB; monotonia; MRd de seção protendida com ramo inclinado ≥ MRd com patamar. Aceite: só mudam os testes de seção protendida no ELU, e o parecer lista cada um com o valor antes e depois (a expectativa é de 2 % a 3 % a mais no MRd); com `diagrama='patamar'`, eles voltam aos números de hoje.
 - **Tamanho:** P (5 a 6 funções).
 
 ### P4 — Ações e combinações
@@ -225,14 +249,14 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `15.3-combinacao-sdtot` · 15.3 · p. 121
 - **O que criar:**
   - `acoes_nbr6118.py`: `@dataclass Acao(nome, natureza, tipo, Fk, Fk_inf=None, categoria_psi=None)`, com natureza permanente direta/indireta, variável direta/indireta ou excepcional (11.2.2).
-  - `TABELA_11_1` (combinação × ação × D/F, com a nota a como `pequena_variabilidade`) e `gama_f(acao, combinacao, favoravel)`; `GAMA_F1/F2/F3` nomeados (11.7).
+  - `TABELA_11_1` (combinação × ação × D/F) e `gama_f(acao, combinacao, favoravel, gama_g=None)`; o γg das permanentes vem de `nucleo.GAMA_G`, padrão 1,4, configurável no começo do script quando a obra se enquadrar na nota a (γg = 1,3; o critério é da NBR 8681) (decisão 3); `GAMA_F1/F2/F3` nomeados (11.7).
   - `TABELA_11_2_PSI` e `psi(categoria) -> (psi0, psi1, psi2)`; `valor_representativo(acao, tipo)` (11.6.2); `valor_calculo(F, gama)` (11.6.3).
   - `combinacao_ultima(acoes, tipo='normal'|'especial'|'construcao'|'excepcional', principal=None) -> ResultadoCombinacao` (11.8.2.1 a 11.8.2.3, Tabela 11.3), com varredura automática da variável principal quando `principal=None`.
   - `combinacao_servico(acoes, tipo='quase_permanente'|'frequente'|'rara')` (11.8.3.2, Tabela 11.4); `gama_f_els(tipo)` (11.7.2).
   - `combinacao_2a_ordem_sdtot(...)` com γf3 (15.3); `acao_agua(...)` com γf = 1,2 (11.4.1.3); `variacao_temperatura_uniforme(menor_dim_cm)` e `GRADIENTE_TERMICO_MIN_C = 5` (11.4.2).
-  - No núcleo: `GAMA_F = 1.4`; os 5 módulos que o redefinem passam a importá-lo.
+  - No núcleo, no bloco de parâmetros configuráveis (3.3, item 9): `GAMA_F = 1.4` e `GAMA_G = 1.4`; os 5 módulos que redefinem `GAMA_F` passam a lê-lo de lá.
 - **Depende de:** Nenhum.
-- **Testes e aceite:** Todas as células das Tabelas 11.1 e 11.2 (p. 85); combinação normal de um caso com 2 variáveis montada à mão; as três de serviço; a interpolação de temperatura entre 50 e 70 cm.
+- **Testes e aceite:** Todas as células das Tabelas 11.1 e 11.2 (p. 85); combinação normal de um caso com 2 variáveis montada à mão; as três de serviço; a interpolação de temperatura entre 50 e 70 cm; `nucleo.GAMA_G = 1.3` no começo do script muda a combinação, e a memória registra o valor usado.
 - **Tamanho:** G (18 a 20 funções), o maior da onda 1.
 
 ### P5 — Verificação de segurança e coeficientes de resistência
@@ -282,7 +306,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `espessura_ficticia_ponderada_cm(Ac_cm2, uar_cm, U)` (A.2.4.2, promovendo `h_ficticia_cm`).
   - `phi_a(fck, t0)`, `phi2c(h_cm)`, `phi_f_inf(...)` (0,45 no C50 a C90), `beta_f(t, h_cm)` (converte para m dentro), `beta_d(t, t0)`, `phi(t, t0, ...)` (A.2.2.3).
   - `eps2s(h_cm)`, `eps_cs_inf(...)`, `beta_s(t, h_cm)`, `eps_cs(t, t0, ...)` (A.2.3.2).
-  - Promover `phi_eps_cs_NBR` e a Tabela 8.1 de `protendido_bastos` para o núcleo, com reexportação.
+  - Promover `phi_eps_cs_NBR` e a Tabela 8.1 de `protendido_nbr6118` para o núcleo, com reexportação.
 - **Depende de:** Nenhum (usa `nucleo.fckj`).
 - **Testes e aceite:** Células da Tabela A.1 (p. 237) e da Tabela A.2 (p. 239); continuidade das fórmulas da nota a/b com a tabela em U = 40, 70 e 90 %; um caso completo φ(∞, t0) comparado com a Tabela 8.1 (a ordem de grandeza deve bater); teste cruzado que falha se h entrar em m onde é cm.
 - **Tamanho:** G (17 a 19 funções).
@@ -325,8 +349,8 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `13.3-notas-vao-equivalente-balanco` · 13.3, NOTA 1 e NOTA 2 da Tabela 13.3 · p. 99
   - `13.3-nota3-combinacao-deslocamento` · 13.3, NOTA 3, NOTA 5, NOTA 6 · p. 99
 - **O que criar:**
-  - `els_deformacao_nbr6118.py`: `momento_fissuracao_kncm(Ic_cm4, yt_cm, fck_mpa, forma='retangular'|'T'|'I', resistencia='fctm'|'fctk_inf')` (17.3.1), promovendo a de `lajes_bastos`.
-  - `rigidez_equivalente(Ecs, Ic, III, Mr, Ma) -> kN·cm²` (17.3.2.1.1); `alpha_f(t_meses, t0_meses, rho_linha)` com t0 ponderado por várias cargas (17.3.2.1.2), promovendo a de `lajes_bastos`.
+  - `els_deformacao_nbr6118.py`: `momento_fissuracao_kncm(Ic_cm4, yt_cm, fck_mpa, forma='retangular'|'T'|'I', resistencia='fctm'|'fctk_inf')` (17.3.1), promovendo a de `lajes_nbr6118`.
+  - `rigidez_equivalente(Ecs, Ic, III, Mr, Ma) -> kN·cm²` (17.3.2.1.1); `alpha_f(t_meses, t0_meses, rho_linha)` com t0 ponderado por várias cargas (17.3.2.1.2), promovendo a de `lajes_nbr6118`.
   - `flecha_total(f_imediata_qp, alpha_f)` usando a combinação quase permanente do P4 (13.3 notas 3, 5 e 6).
   - `TABELA_13_3` e `deslocamento_limite(categoria, vao_cm=None, H_cm=None, Hi_cm=None) -> (limite_cm, descricao)`, devolvendo None e o texto na linha de equipamentos sensíveis; `vao_equivalente(elemento, l_cm)` (notas 1 e 2).
   - `verificar_flecha(...) -> ResultadoFlecha`, usado por vigas e por lajes (19.3.1).
@@ -351,7 +375,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `wk_verificacao(...)` que junta σs, Acri e `wk_max_mm` (P1), valendo para laje (19.3.2).
   - `As_min_deformacao_imposta(...)` (17.3.5.2.2).
 - **Depende de:** P1 (wk,máx), P4 (combinação frequente).
-- **Testes e aceite:** Estádio II de seção retangular contra fórmula fechada (x da equação do 2º grau); seção T contra `viga_servico_bastos.I_II_secao_T`; todas as células da Tabela 17.2 (p. 150).
+- **Testes e aceite:** Estádio II de seção retangular contra fórmula fechada (x da equação do 2º grau); seção T contra `viga_servico_nbr6118.I_II_secao_T`; todas as células da Tabela 17.2 (p. 150).
 - **Tamanho:** M (9 a 11 funções).
 
 ### P10 — Limites geométricos e coeficiente γn
@@ -372,10 +396,10 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `11.7.1-gamma_n-esbeltos-remissao` · 11.7.1 · p. 84
   - `22.2-gamma-n-consolo-gerber` · 22.2 · p. 203
 - **O que criar:**
-  - `limites_geometricos_nbr6118.py`: `largura_minima_viga_cm(viga_parede=False, excepcional=False)` (13.2.2); `verificar_dimensao_pilar(b_cm, Ac_cm2)` e `gama_n_pilar(b_cm)` (13.2.3, Tabela 13.1); `gama_n_laje_balanco` movida de `lajes_bastos.py` para cá, com reexportação. A Tabela 13.2 (13.2.4.1) já está implementada e testada; só muda de casa. A expressão γn = 1,95 − 0,05·h tem a mesma forma da Tabela 13.1 dos pilares (com b), então as duas usam uma função interna só.
+  - `limites_geometricos_nbr6118.py`: `largura_minima_viga_cm(viga_parede=False, excepcional=False)` (13.2.2); `verificar_dimensao_pilar(b_cm, Ac_cm2)` e `gama_n_pilar(b_cm)` (13.2.3, Tabela 13.1); `gama_n_laje_balanco` movida de `lajes_nbr6118.py` para cá, com reexportação. A Tabela 13.2 (13.2.4.1) já está implementada e testada; só muda de casa. A expressão γn = 1,95 − 0,05·h tem a mesma forma da Tabela 13.1 dos pilares (com b), então as duas usam uma função interna só.
   - `espessura_minima_laje_cm(categoria)` (13.2.4.1, a a g, com `peso_veiculo_kn` explícito); `espessura_minima_mesa_nervurada_cm(...)`, `espessura_minima_nervura_cm(...)`, `classificar_laje_nervurada(espacamento_cm, ...)` (13.2.4.2).
   - `dispensa_verificacao_furo_viga(...)` (13.2.5.1); `dispensa_verificacao_abertura_laje(...)` (13.2.5.2); `canalizacao_embutida_permitida(...)` (13.2.6).
-  - `gama_n_consolo_gerber()` (22.2) e a aplicação de γn em `pilares_bastos` quando b < 19 cm (11.7.1).
+  - `gama_n_consolo_gerber()` (22.2) e a aplicação de γn em `pilares_nbr6118` quando b < 19 cm (11.7.1).
 - **Depende de:** Nenhum.
 - **Testes e aceite:** Tabela 13.1 célula a célula (p. 94); b = 19 dá γn = 1,0 e b = 14 dá 1,25; espessuras a a g de 13.2.4.1; área de 360 cm² exata.
 - **Tamanho:** M (12 a 14 funções).
@@ -404,7 +428,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 ### P12 — Vigas: armaduras mínima, máxima e de pele; instabilidade lateral
 
 - **Objetivo:** Completar os limites de armadura de viga que faltam (pele, As + A′s ≤ 4 %, ωmín, x/d) e a instabilidade lateral.
-- **Onda 2**, prioridade alta. Módulo: dimensionamento/vigas_bastos.py (extensão).
+- **Onda 2**, prioridade alta. Módulo: dimensionamento/vigas_nbr6118.py (extensão).
 - **Itens (8):**
   - `17.1-omega-min` · 17.1 · p. 140
   - `17.2.3-dutilidade-vigas` · 17.2.3 · p. 142
@@ -416,8 +440,8 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `15.10-instabilidade-lateral-vigas` · 15.10 · p. 134
 - **O que criar:**
   - `omega_min(fck_mpa, fyk_mpa)` (17.1).
-  - `armadura_pele_cm2_por_face(bw_cm, h_cm)` e `espacamento_max_pele_cm(d_cm)` (17.3.5.2.3 e 18.3.5); aviso de que `blocos_bastos.Asp_pele_face` é outra regra.
-  - `verificar_As_max_viga(As, As_linha, Ac)` (17.3.5.2.4), valendo também para laje (19.3.3.3); `vigas_bastos` passa a chamar os dois e a verificar x/d contra `xd_limite_dutilidade` (17.2.3).
+  - `armadura_pele_cm2_por_face(bw_cm, h_cm)` e `espacamento_max_pele_cm(d_cm)` (17.3.5.2.3 e 18.3.5); aviso de que `blocos_nbr6118.Asp_pele_face` é outra regra.
+  - `verificar_As_max_viga(As, As_linha, Ac)` (17.3.5.2.4), valendo também para laje (19.3.3.3); `vigas_nbr6118` passa a chamar os dois e a verificar x/d contra `xd_limite_dutilidade` (17.2.3).
   - `agrupamento_barras_permitido(dist_cm, h_cm)` (17.2.4.1, 10 % de h).
   - `TABELA_15_1` e `verificar_instabilidade_lateral(b_cm, h_cm, l0_cm, tipo)` (15.10).
 - **Depende de:** Nenhum.
@@ -446,7 +470,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 
 ### P14 — Pré e pós-processamento da análise linear
 
-- **Objetivo:** Pós-processar os resultados da análise linear (TQS) antes do dimensionamento e dar um lugar único à geometria efetiva.
+- **Objetivo:** Pós-processar os resultados da análise linear (do P44 ou de programa externo) antes do dimensionamento e dar um lugar único à geometria efetiva. O trecho rígido, a largura colaborante e a rigidez à torção daqui entram no modelo do P44.
 - **Onda 2**, prioridade alta. Módulo: dimensionamento/analise_linear_nbr6118.py.
 - **Itens (11):**
   - `14.3.3-tensao-max-ciclica` · 14.3.3 · p. 104
@@ -461,8 +485,8 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `14.6.6.3-dispensa-alternancia-cargas` · 14.6.6.3 · p. 115
   - `14.6.6.4-diafragma-rigido` · 14.6.6.4 · p. 115
 - **O que criar:**
-  - `analise_linear_nbr6118.py`: `trecho_rigido_cm(h_ortogonal_cm)` (14.6.2.1); `largura_colaborante_cm(bw, b2_esq, b2_dir, a, borda=False, b4=None)` com o caso de borda (14.6.2.2), promovendo `viga_servico_bastos.largura_efetiva_mesa` (com reexportação); `largura_efetiva_com_abertura(...)` (Figura 14.3); `secao_efetiva_misula(...)` (14.6.2.3).
-  - `vao_efetivo` movida de `lajes_bastos`, com reexportação.
+  - `analise_linear_nbr6118.py`: `trecho_rigido_cm(h_ortogonal_cm)` (14.6.2.1); `largura_colaborante_cm(bw, b2_esq, b2_dir, a, borda=False, b4=None)` com o caso de borda (14.6.2.2), promovendo `viga_servico_nbr6118.largura_efetiva_mesa` (com reexportação); `largura_efetiva_com_abertura(...)` (Figura 14.3); `secao_efetiva_misula(...)` (14.6.2.3).
+  - `vao_efetivo` movida de `lajes_nbr6118`, com reexportação.
   - `arredondar_momento_apoio(M, R1, R2, t_cm)` (14.6.3, Figura 14.6).
   - `momentos_minimos_viga_continua(...)` e `coeficientes_engastamento_extremo(r_inf, r_sup, r_viga)` (14.6.6.1).
   - `FATOR_RIGIDEZ_TORCAO_GRELHA = 0.15` e `rigidez_torcao_reduzida(...)` (14.6.6.2).
@@ -474,7 +498,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 ### P15 — Força cortante completa (vigas e lajes)
 
 - **Objetivo:** Fechar a cortante: os três ramos de Vc (tração, flexão, flexo-compressão com M0), o modo verificação, a redução junto ao apoio e as regras de laje.
-- **Onda 2**, prioridade alta. Módulo: dimensionamento/cortante_bastos.py (extensão).
+- **Onda 2**, prioridade alta. Módulo: dimensionamento/cortante_nbr6118.py (extensão).
 - **Itens (14):**
   - `17.4.1.1.2-excecoes-asw-min` · 17.4.1.1.2 · p. 154
   - `17.4.1.1.3-limite-barras-dobradas` · 17.4.1.1.3 · p. 155
@@ -491,12 +515,12 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `19.4.1-decalagem-al-15d` · 19.4.1 · p. 182
   - `19.4.2-fywd-max-laje` · 19.4.2 · p. 182
 - **O que criar:**
-  - `cortante_bastos`: `M0_kncm(Pd_kn, ep_cm, Nsd_kn, W1_cm3, Ac_cm2)` com γf = 1,0 e γp = 0,9 locais (17.4.2.2 b).
+  - `cortante_nbr6118`: `M0_kncm(Pd_kn, ep_cm, Nsd_kn, W1_cm3, Ac_cm2)` com γf = 1,0 e γp = 0,9 locais (17.4.2.2 b).
   - `modelo_calculo_I/II(..., Nsd_kn=0, M0_kncm=None, MSd_max_kncm=None)`: Vc = 0 com linha neutra fora da seção, Vc0 (ou Vc1) em flexão simples, e Vc0·(1 + M0/MSd,máx) ≤ 2·Vc0 em flexo-compressão.
   - `verificar_cortante(Asw_cm2_por_m, ...) -> ResultadoCortante`, com VRd2 e VRd3 no modo verificação (17.4.2.1).
   - `VSd_reduzido_apoio(...)` (17.4.1.2.1); `verificar_protensao_tangencial(...)` (17.4.1.2.2); `VSd_red_altura_variavel(...)` (17.4.1.2.3).
   - `regime_asw_minima(bw, d, ...)` (17.4.1.1.2); `verificar_limite_barras_dobradas(Vsw_dobradas, Vsw_total)` (17.4.1.1.3); `FSd_cor(...)` (17.4.2.2 c, alternativa); `S_MAX_FISSURACAO_ALMA_CM = 15` (17.6).
-  - Lajes: `fywd_max_laje_mpa(h_cm)` interpolando de 250 a 435 MPa (19.4.2); `AL_LAJE = 1.5·d` (19.4.1); `lajes_bastos.cortante_resistente_laje` delega a `laje_sem_armadura` (decisão 6).
+  - Lajes: `fywd_max_laje_mpa(h_cm)` interpolando de 250 a 435 MPa (19.4.2); `AL_LAJE = 1.5·d` (19.4.1); `lajes_nbr6118.cortante_resistente_laje` delega a `laje_sem_armadura` (decisão 6).
 - **Depende de:** P4 (γ), P30 é opcional (Pd e ep chegam como número).
 - **Testes e aceite:** Os três ramos de Vc nas fronteiras; Vc limitado a 2·Vc0; fywd em h = 15 e 35 cm e no meio; laje com σcp de tração dá VRd1 menor que antes.
 - **Tamanho:** G (16 a 18 funções).
@@ -504,7 +528,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 ### P16 — Torção completa e combinação com flexão e cortante
 
 - **Objetivo:** Completar a torção (seção composta, vazada real, modo verificação) e juntar flexão, cortante e torção como a viga real pede.
-- **Onda 2**, prioridade alta. Módulo: dimensionamento/torcao_bastos.py (extensão) + combinacao_esforcos_nbr6118.py.
+- **Onda 2**, prioridade alta. Módulo: dimensionamento/torcao_nbr6118.py (extensão) + combinacao_esforcos_nbr6118.py.
 - **Itens (9):**
   - `17.5.1.2-dispensa-torcao-compatibilidade` · 17.5.1.2 · p. 160
   - `17.5.1.2-limite-Vsd-adaptacao-plastica` · 17.5.1.2 · p. 160
@@ -516,7 +540,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `17.7.1.4-tensao-principal-banzo-comprimido` · 17.7.1.4 · p. 164
   - `17.7.2.3-soma-armaduras-transversais-VT` · 17.7.2.3 · p. 165
 - **O que criar:**
-  - `torcao_bastos`: `repartir_torcao_secao_composta(retangulos, TSd)` por a³·b (17.5.1.4.2); `espessura_parede_vazada_real(...)` (17.5.1.4.3); `verificar_torcao(Asw, Asl, ...)` com TRd2, TRd3 e TRd4 (17.5.1.3).
+  - `torcao_nbr6118`: `repartir_torcao_secao_composta(retangulos, TSd)` por a³·b (17.5.1.4.2); `espessura_parede_vazada_real(...)` (17.5.1.4.3); `verificar_torcao(Asw, Asl, ...)` com TRd2, TRd3 e TRd4 (17.5.1.3).
   - `torcao_compatibilidade_dispensavel(...)` e `verificar_trecho_curto(l_cm, h_cm, VSd, VRd2)` (17.5.1.2); `distribuir_armadura_longitudinal_torcao(...)` (17.5.1.6).
   - `combinacao_esforcos_nbr6118.py`: `As_longitudinal_total(As_flexao_por_face, Asl_torcao_por_face)` (17.7.1.2); `Asw_total(Asw_V, Asw_T)` (17.7.2.3); `tensao_principal_banzo_comprimido(...)` com τTd = Td/(2·Ae·he) (17.7.1.4).
 - **Depende de:** P15 (modo verificação e VRd2).
@@ -526,7 +550,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 ### P17 — Lajes: flexão, armaduras mínimas e momentos
 
 - **Objetivo:** Completar a flexão de lajes: Tabela 19.1 inteira, reações por charneiras em qualquer vinculação, compatibilização com as duas regras e a repartição em faixas de laje lisa.
-- **Onda 2**, prioridade alta. Módulo: dimensionamento/lajes_bastos.py (extensão).
+- **Onda 2**, prioridade alta. Módulo: dimensionamento/lajes_nbr6118.py (extensão).
 - **Itens (7):**
   - `19.2-principios-elu` · 19.2 · p. 179
   - `19.3.3.2-tab19.1-as-min` · 19.3.3.2 / Tabela 19.1 · p. 180
@@ -536,7 +560,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `14.7.6.2-compatibilizacao-momentos` · 14.7.6.2 · p. 117
   - `14.7.8-faixas-distribuicao-momento` · 14.7.8 · p. 118
 - **O que criar:**
-  - `lajes_bastos`: `TABELA_19_1` e `rho_min_laje(tipo_armadura, situacao_ativa)` (5 × 3 células); `As_min_laje_lisa_nao_aderente(h, l)` (19.3.3.2); `extensao_negativa_borda_cm(l_menor)`.
+  - `lajes_nbr6118`: `TABELA_19_1` e `rho_min_laje(tipo_armadura, situacao_ativa)` (5 × 3 células); `As_min_laje_lisa_nao_aderente(h, l)` (19.3.3.2); `extensao_negativa_borda_cm(l_menor)`.
   - `reacoes_charneiras(lx, ly, vinculos)` com ângulos de 45°, 60° e 90° (14.7.6.1), cobrindo o que a tabela de Bares não cobre.
   - `compat_momento_negativo(..., regra='maior'|'media_08')` (14.7.6.2).
   - `repartir_momentos_faixas(M_portico, tipo)` com os percentuais da Figura 14.9 (14.7.8).
@@ -618,7 +642,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `Wp_generico(poligono, d)` por integração (19.5.2.2); `contornos_capitel(...)` (19.5.2.5); `perimetro_com_reentrancia(...)` e `perimetro_com_abertura(...)` (19.5.2.6, 8d).
   - `disposicao_armadura_puncao(...)` até C″ (19.5.3.4); `armadura_puncao_obrigatoria(...)` (19.5.3.5); `As_colapso_progressivo(FSd, fyd)` (19.5.4); `tau_Sd_efetivo_protendido(...)` (19.5.5).
   - `phi_max_estribo_puncao_mm(h)` e `verificar_contato_canto(...)` (20.4); `puncao_abertura_proxima_pilar(...)` (21.3.4 c).
-  - `sapatas_bastos`: verificação de punção de sapata flexível, com a redução pela reação do solo, chamando este módulo (22.6.2.3).
+  - `sapatas_nbr6118`: verificação de punção de sapata flexível, com a redução pela reação do solo, chamando este módulo (22.6.2.3).
 - **Depende de:** P19.
 - **Testes e aceite:** Wp genérico reproduz os fechados de P19 para retângulo e círculo; abertura a 8d exatos; sapata flexível contra caso montado à mão.
 - **Tamanho:** G (13 a 14 funções).
@@ -626,7 +650,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 ### P21 — Ancoragem passiva, ganchos e estribos
 
 - **Objetivo:** Completar a ancoragem passiva: classificação de aderência, ganchos (comprimento, pino, validação), armadura transversal na ancoragem e estribos.
-- **Onda 2**, prioridade alta. Módulo: dimensionamento/ancoragem_bastos.py (extensão).
+- **Onda 2**, prioridade alta. Módulo: dimensionamento/ancoragem_nbr6118.py (extensão).
 - **Itens (11):**
   - `9.3.1-posicao-barra-classificacao` · 9.3.1 · p. 53
   - `9.3.2.3-fator-escorregamento` · 9.3.2.3 · p. 54
@@ -640,7 +664,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `9.4.6.1-ganchos-estribos-tipos` · 9.4.6.1 · p. 60
   - `9.4.6.2-estribo-barra-transversal-soldada` · 9.4.6.2 · p. 60
 - **O que criar:**
-  - `ancoragem_bastos`: `situacao_aderencia(inclinacao_graus, h_cm, y_cm)` (9.3.1); `FATOR_ESCORREGAMENTO = 1.75` e `fbd_escorregamento(...)` (9.3.2.3).
+  - `ancoragem_nbr6118`: `situacao_aderencia(inclinacao_graus, h_cm, y_cm)` (9.3.1); `FATOR_ESCORREGAMENTO = 1.75` e `fbd_escorregamento(...)` (9.3.2.3).
   - `dispensa_confinamento(cobrimento, espacamento, phi)` (9.4.1.1); `validar_uso_gancho(tipo_barra, solicitacao, phi)` (9.4.2.1); `verificar_barra_transversal_soldada(...)` (9.4.2.2).
   - `diametro_pino_gancho(phi, aco)` trazida do legado, e `comprimento_gancho(phi, tipo)` com ponta reta de 2φ, 4φ ou 8φ (9.4.2.3); `pino_com_solda_transversal(...)`.
   - `Ast_ancoragem(...)` para φ < 32 e φ ≥ 32 mm (9.4.2.6).
@@ -726,7 +750,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 ### P25 — Pilares: 2ª ordem local pelo pilar-padrão
 
 - **Objetivo:** Fechar o pilar isolado: ℓe, λ genérico, limite de 200, γn1 ligado, fluência, as duas direções juntas e a envoltória mínima com 2ª ordem.
-- **Onda 2**, prioridade alta. Módulo: dimensionamento/pilares_bastos.py (extensão) + rotinas/verificacao_pilar.py.
+- **Onda 2**, prioridade alta. Módulo: dimensionamento/pilares_nbr6118.py (extensão) + rotinas/verificacao_pilar.py.
 - **Itens (9):**
   - `15.3.1-kappa-sec-adimensional` · 15.3.1 · p. 122
   - `15.3.2-envoltoria-minima-2a-ordem` · 15.3.2 · p. 122
@@ -738,7 +762,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `15.8.4-fluencia-ecc` · 15.8.4 · p. 131
   - `15.7.4-efeitos-locais-em-nos-moveis` · 15.7.4 · p. 127
 - **O que criar:**
-  - `pilares_bastos`: `comprimento_equivalente_cm(l0, h, l)` (15.6); `esbeltez(le_cm, I_cm4, A_cm2)` genérico (15.8.2); `verificar_esbeltez_limite(lam, Nd, fcd, Ac)` (15.8.1).
+  - `pilares_nbr6118`: `comprimento_equivalente_cm(l0, h, l)` (15.6); `esbeltez(le_cm, I_cm4, A_cm2)` genérico (15.8.2); `verificar_esbeltez_limite(lam, Nd, fcd, Ac)` (15.8.1).
   - γn1 aplicado ao Md,tot quando 140 < λ ≤ 200 (15.8.1); hoje `n1_majoracao` não é chamada.
   - `ecc_fluencia_cm(Msg, Nsg, ea, phi, Eci, Ic, le)` com Ne = 10·Eci·Ic/le² (15.8.4), usando a Tabela 8.1 do núcleo ou o φ do P6.
   - `kappa_sec(EI_sec, Ac, h, fcd)` (15.3.1).
@@ -750,7 +774,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 
 ### P26 — Estabilidade global e imperfeições globais
 
-- **Objetivo:** Estabilidade global a partir do que o TQS devolve: α, γz, classificação, rigidezes aproximadas e desaprumo contra vento.
+- **Objetivo:** Estabilidade global a partir do resultado da análise (do P46 ou de programa externo): α, γz, classificação, rigidezes aproximadas e desaprumo contra vento.
 - **Onda 2**, prioridade alta. Módulo: dimensionamento/estabilidade_global_nbr6118.py.
 - **Itens (10):**
   - `15.4.2-classificacao-nos-fixos-moveis` · 15.4.2 · p. 123
@@ -769,7 +793,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `FATOR_ECS_ESTABILIDADE = 1.1` (15.5.1); `rigidezes_aproximadas(elemento, As_iguais=...)` (15.7.3); `majoracao_horizontal(gama_z)` = 0,95·γz com o limite de 1,3 (15.7.2).
   - `desaprumo_global(H_m, n_pilares)` com θ1 e os limites de 1/300 e 1/200 (11.3.3.4.1); `combinar_vento_desaprumo(M_vento, M_desaprumo)` com os casos a, b e c.
 - **Depende de:** P4.
-- **Testes e aceite:** γz = 1,1 na fronteira; α1 nos dois tipos de contraventamento; os três casos de vento contra desaprumo na fronteira de 30 %. A docstring diz de onde cada entrada vem no TQS.
+- **Testes e aceite:** γz = 1,1 na fronteira; α1 nos dois tipos de contraventamento; os três casos de vento contra desaprumo na fronteira de 30 %. A docstring diz de onde cada entrada pode vir: do modelo da biblioteca (P46) ou do TQS.
 - **Tamanho:** M (10 funções).
 
 ### P27 — Emendas, feixes, telas e dispositivos mecânicos
@@ -831,7 +855,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `18.5-armadura-transversal-pilar-parede-25pct` · 18.5 · p. 174
 - **O que criar:**
   - `pilares_parede_nbr6118.py`: `le_lamina(l, b, vinculacao)` com os 4 casos (Figura 15.4); `esbeltez_lamina(...)` e `dispensa_efeito_localizado(...)` (15.9.2).
-  - `decompor_em_faixas(lamina, Nd, M1xd) -> list[Faixa]` com nd(x), Ni e Myid, chamando `pilares_bastos` por faixa (15.9.3).
+  - `decompor_em_faixas(lamina, Nd, M1xd) -> list[Faixa]` com nd(x), Ni e Myid, chamando `pilares_nbr6118` por faixa (15.9.3).
   - `As_transversal_pilar_parede(As_long_por_m)` = 25 % (18.5).
 - **Depende de:** P11, P25, P28.
 - **Testes e aceite:** Os 4 casos da Figura 15.4 (p. 132) em β = 1; soma das Ni = Nd.
@@ -840,7 +864,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 ### P30 — Protensão: força, limites e perdas
 
 - **Objetivo:** Aplicar os limites de σpi e σp0, compor Pt(x), Pk e Pd, e completar as perdas (tabela de μ e k, processo aproximado RN e RB, αp(t) entre grupos).
-- **Onda 3**, prioridade média. Módulo: dimensionamento/protendido_bastos.py (extensão).
+- **Onda 3**, prioridade média. Módulo: dimensionamento/protendido_nbr6118.py (extensão).
 - **Itens (12):**
   - `9.6.1.1-forca-media` · 9.6.1.1 · p. 67
   - `9.6.1.2.1-sigma-pi-limites` · 9.6.1.2.1 · p. 67
@@ -855,7 +879,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `9.6.3.4.3-processo-aproximado-RB` · 9.6.3.4.3 · p. 73
   - `9.6.3.4.5-psi-limite-tensao-minima` · 9.6.3.4.5 · p. 74
 - **O que criar:**
-  - `protendido_bastos`: `sigma_pi_limite(fptk, fpyk, sistema, aco)` (9.6.1.2.1); `verificar_sigma_p0(...)` (9.6.1.2.2); `tolerancia_execucao(...)` (9.6.1.2.3).
+  - `protendido_nbr6118`: `sigma_pi_limite(fptk, fpyk, sistema, aco)` (9.6.1.2.1); `verificar_sigma_p0(...)` (9.6.1.2.2); `tolerancia_execucao(...)` (9.6.1.2.3).
   - `forca_media(Pi, perdas_imediatas, perdas_progressivas) -> Pt` (9.6.1.1); `Pk_sup_inf(Pt, perda_max, Pi)` (9.6.1.3); `Pd(Pt, gama_p)` (9.6.1.4, γp do P4).
   - `TABELA_MU_K` com o caso de μ = 0,07 separado (9.6.3.3.2.2).
   - `perda_encurtamento_cabos_restantes_kncm2(..., Eci_t0_mpa=None)` com αp(t) (9.6.3.3.2.1).
@@ -868,7 +892,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 ### P31 — Protensão: ancoragem ativa, introdução da força e cabos
 
 - **Objetivo:** Tirar a ancoragem de armadura ativa do legado e juntar introdução da força e detalhamento de cabos.
-- **Onda 3**, prioridade média. Módulo: dimensionamento/protensao_detalhamento_nbr6118.py + ancoragem_bastos.py.
+- **Onda 3**, prioridade média. Módulo: dimensionamento/protensao_detalhamento_nbr6118.py + ancoragem_nbr6118.py.
 - **Itens (12):**
   - `9.3.2.2-fbpd` · 9.3.2.2 · p. 54
   - `9.3.2.2-etap2` · 9.3.2.2 · p. 54
@@ -883,7 +907,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `18.6.2.3-tabela18.1-espacamento-postracao` · 18.6.2.3 · p. 177
   - `18.6.2.3-tabela18.2-espacamento-pretracao` · 18.6.2.3 · p. 177
 - **O que criar:**
-  - `ancoragem_bastos`: `fbpd_mpa(...)` e `eta_p2(...)` delegando ao núcleo; `lbp_cm`, `lbpt_cm(..., liberacao_gradual)`, `lbpd_cm(...)` (9.4.5), com `sec9.py` virando fachada.
+  - `ancoragem_nbr6118`: `fbpd_mpa(...)` e `eta_p2(...)` delegando ao núcleo; `lbp_cm`, `lbpt_cm(..., liberacao_gradual)`, `lbpd_cm(...)` (9.4.5), com `sec9.py` virando fachada.
   - `protensao_detalhamento_nbr6118.py`: `angulo_difusao_beta()` (9.6.2.2); `lp_regularizacao(h, lbpt)` (9.6.2.3).
   - `raio_minimo_curvatura(tipo)` (18.6.1.2); `trecho_reto_extremidade_min(...)` (18.6.1.5); `verificar_agrupamento_cabos(...)` (18.6.2.2); `TABELA_18_1`, `TABELA_18_2` e `espacamento_min_bainhas(...)`, `espacamento_min_fios(...)` (18.6.2.3).
 - **Depende de:** P3, P22 (a fórmula de FSd de apoio intermediário já sai lá).
@@ -893,7 +917,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 ### P32 — Protensão: ato da protensão e ELS de tensões
 
 - **Objetivo:** Verificar a protensão no ato e em serviço: γ do ato, tensões-limite, armadura no estádio II, descompressão e formação de fissuras, Δσp não aderente e flecha com armadura ativa.
-- **Onda 3**, prioridade média. Módulo: dimensionamento/protendido_bastos.py (extensão).
+- **Onda 3**, prioridade média. Módulo: dimensionamento/protendido_nbr6118.py (extensão).
 - **Itens (9):**
   - `17.2.4.3.1-coeficientes-ato-protensao` · 17.2.4.3.1-b · p. 143
   - `17.2.4.3.2-tensao-max-compressao` · 17.2.4.3.2-a · p. 144
@@ -905,7 +929,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `17.2.2c-delta-sigma-p-nao-aderente` · 17.2.2 c) · p. 140
   - `17.3.2.1.3-flecha-armaduras-ativas` · 17.3.2.1.3 · p. 148
 - **O que criar:**
-  - `protendido_bastos`: `GAMAS_ATO_PROTENSAO` (17.2.4.3.1 b); `verificar_ato_protensao(secao, P, M, fckj, ...) -> Resultado` com compressão, tração e armadura de tração no estádio II com limite de 150 ou 250 MPa (17.2.4.3.2).
+  - `protendido_nbr6118`: `GAMAS_ATO_PROTENSAO` (17.2.4.3.1 b); `verificar_ato_protensao(secao, P, M, fckj, ...) -> Resultado` com compressão, tração e armadura de tração no estádio II com limite de 150 ou 250 MPa (17.2.4.3.2).
   - `limites_tensao_servico(nivel, combinacao)` (17.2.4.4.1 e 17.2.4.4.2), conferindo `fct_admissivel_traçao_kncm2` (o fator 1,2 suspeito).
   - `verificar_descompressao_fissuracao(secao, P, e, M, nivel) -> Resultado` (17.3.4), sobre o estádio I e o P9.
   - `delta_sigma_p_nao_aderente(fck, rho_p, l_h)` (17.2.2 c); `flecha_protendido(...)` (17.3.2.1.3).
@@ -969,10 +993,10 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `22.4.4.3-armadura-vertical-minima-viga-parede` · 22.4.4.3 · p. 206
   - `22.4.4.3-verificacao-suspensao-carga-inferior` · 22.4.4.3 · p. 206
 - **O que criar:**
-  - `bielas_tirantes_nbr6118.py`: `fcd1`, `fcd2`, `fcd3` (22.3.2; fcd1 e fcd3 movidas de `blocos_bastos`, com reexportação); `As_tirante(FSd, fyd)` (22.3.3); `verificar_inclinacao_biela(tan)` entre 0,57 e 2 (22.3.1); `verificar_no(tipo, sigma)`.
+  - `bielas_tirantes_nbr6118.py`: `fcd1`, `fcd2`, `fcd3` (22.3.2; fcd1 e fcd3 movidas de `blocos_nbr6118`, com reexportação); `As_tirante(FSd, fyd)` (22.3.3); `verificar_inclinacao_biela(tan)` entre 0,57 e 2 (22.3.1); `verificar_no(tipo, sigma)`.
   - `vigas_parede_nbr6118.py`: `repartir_As_negativa(As, l_h)` em 3 faixas (22.4.4.1); `As_horizontal_min(b)` e `As_vertical_min(b)` = 0,075 % (22.4.4.1 e 22.4.4.3); `suspensao_carga_inferior(F, fyd)` (22.4.4.3).
 - **Depende de:** P11.
-- **Testes e aceite:** Repartição em l/h = 1 e 3 (fronteiras); fcd2 contra a expressão da p. 204; fcd1 e fcd3 dão os mesmos números que `blocos_bastos`.
+- **Testes e aceite:** Repartição em l/h = 1 e 3 (fronteiras); fcd2 contra a expressão da p. 204; fcd1 e fcd3 dão os mesmos números que `blocos_nbr6118`.
 - **Tamanho:** M (9 funções).
 
 ### P36 — Consolos e dentes Gerber
@@ -1001,7 +1025,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 ### P37 — Fundações: sapatas e blocos
 
 - **Objetivo:** Completar sapatas e blocos: pré-condição de rigidez para tensão linear, detalhamento, fendilhamento, arranque, classificação e as regras de armadura do bloco.
-- **Onda 3**, prioridade média. Módulo: dimensionamento/sapatas_bastos.py + blocos_bastos.py (extensão).
+- **Onda 3**, prioridade média. Módulo: dimensionamento/sapatas_nbr6118.py + blocos_nbr6118.py (extensão).
 - **Itens (12):**
   - `22.6.1-hipotese-distribuicao-plana` · 22.6.1 · p. 211
   - `22.6.4.1.1-armadura-flexao-sapata-detalhamento` · 22.6.4.1.1 · p. 212
@@ -1016,8 +1040,8 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `22.7.4.1.4-armadura-arranque-pilar-bloco` · 22.7.4.1.4 · p. 215
   - `22.7.4.1.5-armadura-lateral-superior-obrigatoria` · 22.7.4.1.5 · p. 215
 - **O que criar:**
-  - `sapatas_bastos`: `tensoes_sapata_excentrica_*` avisam quando `eh_rigida_nbr` é falso (22.6.1); `detalhamento_flexao_sapata(...)` (22.6.4.1.1); `verificar_fendilhamento_horizontal(phi)` para φ ≥ 25 mm; `altura_arranque_suficiente(h, lb_nec, c)` (22.6.4.1.2).
-  - `blocos_bastos`: `eh_rigido_bloco(...)` (22.7.1); `faixa_armadura_estaca(phi_estaca)` = 1,2·φ (22.7.2.1); `verificar_85pct_nas_faixas(...)` com desigualdade estrita (mais de 85 %, não ≥ 85 %) (22.7.4.1.1); `ancoragem_estaca_tracionada(...)`.
+  - `sapatas_nbr6118`: `tensoes_sapata_excentrica_*` avisam quando `eh_rigida_nbr` é falso (22.6.1); `detalhamento_flexao_sapata(...)` (22.6.4.1.1); `verificar_fendilhamento_horizontal(phi)` para φ ≥ 25 mm; `altura_arranque_suficiente(h, lb_nec, c)` (22.6.4.1.2).
+  - `blocos_nbr6118`: `eh_rigido_bloco(...)` (22.7.1); `faixa_armadura_estaca(phi_estaca)` = 1,2·φ (22.7.2.1); `verificar_85pct_nas_faixas(...)` com desigualdade estrita (mais de 85 %, não ≥ 85 %) (22.7.4.1.1); `ancoragem_estaca_tracionada(...)`.
   - Ligar `As_superior_dir` (20 % das forças, conferindo a base) e `Asp_pele_face` a `projetar_bloco`; suspensão só quando a distribuição passa de 25 % ou o espaçamento passa de 3·φ (22.7.4.1.2 a 22.7.4.1.5); altura para o arranque (22.7.4.1.4).
 - **Depende de:** P20 (punção de sapata flexível), P21.
 - **Testes e aceite:** Rigidez na fronteira; mais de 85 % (desigualdade estrita, não 85 % exato); as duas condições de disparo da suspensão; bloco em linha única exige armadura lateral.
@@ -1052,7 +1076,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 ### P39 — Fadiga: combinação, cortante, concreto e protensão
 
 - **Objetivo:** Fadiga do concreto e da cortante e a combinação própria de fadiga.
-- **Onda 4**, prioridade baixa. Módulo: dimensionamento/fadiga_nbr6118.py + cortante_bastos.py.
+- **Onda 4**, prioridade baixa. Módulo: dimensionamento/fadiga_nbr6118.py + cortante_nbr6118.py.
 - **Itens (11):**
   - `23.5.2-combinacao-frequente-fadiga` · 23.5.2 · p. 217
   - `23.5.2-psi1-fadiga-tabela` · 23.5.2 · p. 217
@@ -1067,7 +1091,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
   - `23.5.4.2-fadiga-concreto-tracao` · 23.5.4.2 · p. 220
 - **O que criar:**
   - `combinacao_fadiga(acoes, tipo_obra)` com `TABELA_PSI1_FADIGA` (23.5.2), sobre o P4.
-  - `cortante_bastos.modelo_calculo_I/II(..., fadiga=True)`: Vc × 0,5 e tg θcor = √tg θ ≤ 1 (23.5.3).
+  - `cortante_nbr6118.modelo_calculo_I/II(..., fadiga=True)`: Vc × 0,5 e tg θcor = √tg θ ≤ 1 (23.5.3).
   - `eta_s(...)`, `TABELA_XI_ADERENCIA` e `phi_eq_feixe(Ap)` (23.5.3).
   - `eta_c_grad(sigma_c1, sigma_c2)` e `verificar_fadiga_concreto_compressao(...)` (23.5.4.1); `verificar_fadiga_concreto_tracao(...)` com 0,3·fctd,inf (23.5.4.2); ciclos muito menores que 2·10⁶ (23.5.5).
 - **Depende de:** P4, P9, P15, P38.
@@ -1127,7 +1151,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 - **O que criar:**
   - `secao_comprimida_excentrica(Nd, ex, ey, hx, hy) -> (G1, Ae, ok)` (24.5.7.2) e `com_cortante(...)` (24.5.7.3).
   - `NRd_pilar_parede(...)`, `comprimento_horizontal_carga(...)`, `espessura_minima_pilar_parede(...)` e `armadura_aberturas(...)` (24.6.1); pilar comum pelo mesmo método, com núcleo central e dimensão mínima (24.6.3).
-  - Blocos: proibição sobre estacas, área da base reusando `sapatas_bastos.area_base_cm2`, espessura mínima de 20 cm, momento e cortante na seção crítica (24.6.2).
+  - Blocos: proibição sobre estacas, área da base reusando `sapatas_nbr6118.area_base_cm2`, espessura mínima de 20 cm, momento e cortante na seção crítica (24.6.2).
   - Arcos: `verificar_sem_tracao(...)` e o teto de 10 % de 2ª ordem (24.6.4).
 - **Depende de:** P40.
 - **Testes e aceite:** G1 e Ae contra a figura da p. 228 com números à mão; e = h/6 no limite do núcleo; NRd na esbeltez de fronteira.
@@ -1150,24 +1174,116 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 ### P43 — Método geral de perdas e fluência com tensão variável
 
 - **Objetivo:** O caso geral: fluência com tensão variável (forma integral) e perdas progressivas em fases diferentes.
-- **Onda 4**, prioridade baixa. Módulo: dimensionamento/tempo_concreto_nbr6118.py + protendido_bastos.py.
+- **Onda 4**, prioridade baixa. Módulo: dimensionamento/tempo_concreto_nbr6118.py + protendido_nbr6118.py.
 - **Itens (2):**
   - `9.6.3.4.4-metodo-geral` · 9.6.3.4.4 · p. 73
   - `A.2.5-formula-integral` · A.2.5 · p. 240
 - **O que criar:**
   - `tempo_concreto_nbr6118.eps_c_integral(historico_sigma, ...)` por passos (A.2.5).
-  - `protendido_bastos.perdas_metodo_geral(fases, camadas, cabos, ...)` (9.6.3.4.4).
+  - `protendido_nbr6118.perdas_metodo_geral(fases, camadas, cabos, ...)` (9.6.3.4.4).
 - **Depende de:** P6, P7, P30.
 - **Testes e aceite:** Com uma fase só, reproduz o processo simplificado (9.6.3.4.2); com tensão constante, reproduz a forma simplificada de A.2.5.
 - **Tamanho:** G (2 funções, ambas iterativas).
+
+### P44 — Análise de barras: pórtico plano, pórtico espacial, grelha e treliça
+
+- **Objetivo:** Dar à biblioteca um cálculo próprio de estruturas de barras, pelo método dos deslocamentos e com as hipóteses da análise linear da 6118, para que ela produza os esforços em vez de só recebê-los.
+- **Onda 2**, prioridade alta. Módulo: dimensionamento/analise_barras_nbr6118.py.
+- **Itens (5):**
+  - `11.3.3.3-deslocamentos-apoio` · 11.3.3.3 · p. 78
+  - `11.4.1.1-cargas-utilizacao` · 11.4.1.1 · p. 81
+  - `14.5.2-analise-linear` · 14.5.2 · p. 105
+  - `14.6.4.1-rigidez-vigas-pilares` · 14.6.4.1 · p. 111
+  - `14.8.1-vigas-parede-pilares-parede-analise` · 14.8.1 · p. 119
+- **O que criar:**
+  - `Modelo`, com nós, barras, apoios (inclusive mola), liberações de extremidade, trechos rígidos e casos de carga; `Barra`, com a seção (A, I, J e área de cisalhamento) e o material pelo núcleo (Ecs de 8.2.8, Gc de 8.2.9).
+  - Elementos: pórtico plano (3 graus de liberdade por nó), grelha (3), pórtico espacial (6) e treliça 2D e 3D (só força normal). Opção de deformação por cisalhamento (Timoshenko), exigida para representar viga-parede e pilar-parede como elemento linear equivalente (14.8.1).
+  - `resolver(modelo, caso) -> ResultadoAnalise`: montagem esparsa, deslocamentos, reações e esforços nas extremidades e ao longo de cada barra. Todo resultado confere o equilíbrio (soma das reações igual à soma das cargas) e levanta erro se não fechar.
+  - Cargas: nodal, distribuída uniforme e trapezoidal, concentrada na barra, temperatura uniforme e gradiente (os valores vêm do P4) e deslocamento imposto de apoio (11.3.3.3), com dk,sup pessimista e dk,inf nulo.
+  - `alternancia_cargas(modelo, caso_q)`: as variáveis nas posições mais desfavoráveis, vão a vão, com a envoltória (11.4.1.1); respeita a dispensa de 14.6.6.3 (P14).
+  - Rigidez padrão pela seção bruta, com Ecs (14.5.2 e 14.6.4.1). A rigidez à torção reduzida de 14.6.6.2 e as rigidezes aproximadas de 15.7.3 entram como opção.
+- **Depende de:** P2 (ν e Gc), P4 (casos de carga e combinações), P14 (trecho rígido, largura colaborante e rigidez à torção).
+- **Testes e aceite:** Soluções fechadas: viga biapoiada, engastada e contínua de dois vãos (equação dos três momentos), pórtico simples, grelha de duas vigas cruzadas e treliça isostática pelo método dos nós; recalque de apoio em viga contínua; equilíbrio em todos os casos, nas duas direções e nos dois sentidos de carga. Como a norma não tabela esses números, o verificador de execução refaz cada caso com solução analítica própria.
+- **Tamanho:** G (algoritmo matricial, 18 a 22 funções e classes).
+
+### P45 — Lajes por grelha e pórtico equivalente
+
+- **Objetivo:** Calcular laje nervurada e laje lisa pelos processos que a 6118 prescreve: grelha de nervuras, grelha equivalente e pórtico equivalente.
+- **Onda 2**, prioridade alta. Módulo: dimensionamento/analise_lajes_nbr6118.py.
+- **Itens (5):**
+  - `14.7.3.1-rigidez-estadio-I-placas` · 14.7.3.1 · p. 116
+  - `14.7.7-lajes-nervuradas-grelha-vigas` · 14.7.7 · p. 117
+  - `14.7.7-lajes-nervuradas-unidirecionais` · 14.7.7 · p. 118
+  - `14.7.8-analise-numerica-lajes-lisas` · 14.7.8 · p. 118
+  - `14.7.8-portico-equivalente` · 14.7.8 · p. 118
+- **O que criar:**
+  - `grelha_nervurada(...)`: gera a grelha das nervuras, cada uma com a seção T da largura colaborante do P14, e a resolve no P44 (14.7.7); `nervurada_unidirecional(...)`: vigas na direção das nervuras, sem rigidez transversal e sem rigidez à torção.
+  - `grelha_equivalente_laje_lisa(...)`: malha de barras com a rigidez à flexão da faixa e a rigidez à torção da placa, com os pilares como apoios elásticos (14.7.8, procedimento numérico por grelha equivalente).
+  - `portico_equivalente(...)`: monta os pórticos múltiplos de cada direção, com a carga total, resolve no P44 e reparte os momentos entre as faixas pela Figura 14.9 (P17). Confere antes as condições de uso do processo: pilares em filas ortogonais e vãos pouco diferentes (14.7.8).
+  - `verificar_rigidez_estadio_I(Md_max, Mr)`: autoriza a rigidez bruta na flecha de placa só se o momento ficar abaixo do de fissuração (14.7.3.1); se não ficar, manda para o P8.
+- **Depende de:** P44, P14 (largura colaborante e rigidez à torção), P17 (faixas da Figura 14.9), P10 (limites de nervurada de 13.2.4.2).
+- **Testes e aceite:** Grelha de uma laje quadrada simplesmente apoiada contra a solução de placa de Timoshenko, com tolerância declarada e convergência com o refinamento da malha; pórtico equivalente de um painel regular com os momentos das faixas somando o total do pórtico; nervurada unidirecional igual à viga contínua equivalente.
+- **Tamanho:** G (12 a 15 funções, com a geração de malha).
+
+### P46 — Redistribuição com reequilíbrio e 2ª ordem global por análise não linear
+
+- **Objetivo:** Fechar os procedimentos que a 6118 prevê em cima da análise: redistribuir e reequilibrar e, em estrutura de nós móveis, calcular a 2ª ordem global com não linearidade geométrica e física, em vez de só receber o γz pronto.
+- **Onda 3**, prioridade média. Módulo: dimensionamento/analise_barras_nbr6118.py + estabilidade_global_nbr6118.py.
+- **Itens (3):**
+  - `14.5.3-analise-redistrib-geral` · 14.5.3 · p. 106
+  - `14.6.4.2-restricoes-redistribuicao` · 14.6.4.2 · p. 111
+  - `15.7.1-nao-linearidade-nos-moveis` · 15.7.1 · p. 126
+- **O que criar:**
+  - `redistribuir(resultado, apoios, delta)`: reduz os momentos de apoio por δ, refaz o equilíbrio de cada vão e devolve os esforços redistribuídos, com os limites do P13 (x/d e δ mínimo) (14.5.3). Recusa redistribuir em pilar e consolo fora do caso que a norma permite (14.6.4.2).
+  - `analise_p_delta(modelo, caso, rigidez='nlf_aproximada')`: 2ª ordem geométrica iterativa com as rigidezes de 15.7.3 como não linearidade física aproximada, até convergir, com o número de iterações e o critério na memória (15.7.1).
+  - `gama_z_do_modelo(modelo, combinacao)`: calcula M1tot,d e ΔMtot,d no próprio modelo e chama o `gama_z` do P26; `classificar_nos` passa a aceitar o modelo.
+- **Depende de:** P44, P13, P26, P4.
+- **Testes e aceite:** Viga contínua redistribuída que continua em equilíbrio; pilar em balanço com carga vertical e horizontal contra o fator de amplificação 1/(1 − P/Pcr); γz do modelo igual ao γz do P26 com as mesmas entradas; P-Δ e 0,95·γz próximos quando γz ≤ 1,3.
+- **Tamanho:** G (iterativo, 8 a 10 funções).
+
+### P47 — Esforços hiperestáticos de protensão
+
+- **Objetivo:** Calcular os esforços hiperestáticos da protensão em viga contínua e pórtico e levá-los ao ELU como a 6118 pede.
+- **Onda 3**, prioridade média. Módulo: dimensionamento/protendido_nbr6118.py + analise_barras_nbr6118.py.
+- **Itens (2):**
+  - `11.3.3.5-protensao-acao` · 11.3.3.5 · p. 81
+  - `17.2.4.2.1-protensao-hiperestatica-pre-alongamento` · 17.2.4.2.1 · p. 143
+- **O que criar:**
+  - `cargas_equivalentes_cabo(perfil, P)`: as forças que o cabo aplica ao concreto (carga distribuída da curvatura e forças concentradas nas ancoragens e nas mudanças de traçado), com a força P ao longo do cabo vinda do P30.
+  - `esforcos_hiperestaticos_protensao(modelo, cabo) -> Resultado`: resolve as cargas equivalentes no P44 e separa o esforço total, o isostático (P·e) e o hiperestático (11.3.3.5).
+  - `combinar_protensao_elu(...)`: no ELU entra só o hiperestático, e a armadura ativa entra pelo pré-alongamento (17.2.4.2.1), com o γp do P30.
+- **Depende de:** P44, P30, P3.
+- **Testes e aceite:** Viga contínua de dois vãos iguais com cabo parabólico: momento hiperestático contra a solução fechada; em viga biapoiada, o hiperestático é zero.
+- **Tamanho:** M (6 a 8 funções).
+
+### P48 — Bielas e tirantes: treliças e modelos de cálculo
+
+- **Objetivo:** Montar e resolver as treliças de bielas e tirantes que a 6118 pede para regiões D, vigas-parede, sapatas e blocos, e entregar as forças às verificações do P35.
+- **Onda 3**, prioridade média. Módulo: dimensionamento/bielas_tirantes_nbr6118.py.
+- **Itens (6):**
+  - `21.2.3-intro-protensao-modelo-3d` · 21.2.3 · p. 199
+  - `22.2-limite-regiao-bd` · 22.2 · p. 202
+  - `22.3.1-procedimento-bielas-tirantes` · 22.3.1 · p. 203
+  - `22.4.3-modelo-calculo-viga-parede` · 22.4.3 · p. 205
+  - `22.6.3-modelo-calculo-sapata` · 22.6.3 · p. 212
+  - `22.7.3-modelo-calculo-bloco` · 22.7.3 · p. 213
+- **O que criar:**
+  - `extensao_regiao_d(h_cm, ...)`: a região D vai até a distância h da descontinuidade (22.2).
+  - `TrelicaBT`: nós, bielas e tirantes, resolvida na treliça do P44. Confere que a treliça é isostática e autoequilibrada e devolve a força em cada barra, já classificada em biela ou tirante (22.3.1).
+  - Modelos-padrão, cada um com a geometria da literatura declarada na docstring: viga-parede biapoiada e contínua (22.4.3); sapata sob pilar com carga centrada e excêntrica, em 3D (22.6.3); bloco de 2 a 6 estacas, em 3D, com a reação de cada estaca (22.7.3); e a zona de ancoragem da protensão, com a força de fendilhamento (21.2.3).
+  - Cada modelo entrega as forças a `verificar_biela`, `verificar_no` e `As_tirante` do P35.
+- **Depende de:** P44 (treliça), P35 (verificações), P31 (ancoragem ativa).
+- **Testes e aceite:** Bloco de 2 estacas contra o método das bielas que já existe (mesma força no tirante); viga-parede biapoiada com o braço z da literatura; treliça hipostática recusada com mensagem clara; zona de ancoragem concêntrica contra a expressão fechada do fendilhamento, com a fonte declarada.
+- **Tamanho:** G (12 a 14 funções).
 
 ## 5. Ordem de execução
 
 | Onda | Pacotes | Leva paralela possível |
 |---|---|---|
+| Preparação | Renomear os módulos (decisão 4) | Sozinha, antes de tudo, com commit próprio |
 | 1 | P1 a P9 | {P1, P2, P3, P4, P6} → {P5, P7, P8} → {P9} |
-| 2 | P10 a P26 | {P10, P11, P13, P14, P21} → {P12, P15, P17, P24, P26} → {P16, P19, P25} → {P18, P20, P22, P23} |
-| 3 | P27 a P37 | {P27, P28, P30, P34, P35} → {P29, P31, P32, P36} → {P33, P37} |
+| 2 | P10 a P26, P44 e P45 | {P10, P11, P13, P14, P21} → {P12, P15, P17, P24, P26, P44} → {P16, P19, P25, P45} → {P18, P20, P22, P23} |
+| 3 | P27 a P37, P46 a P48 | {P27, P28, P30, P34, P35, P46} → {P29, P31, P32, P36, P47} → {P33, P37, P48} |
 | 4 | P38 a P43 | {P38, P40, P42} → {P39, P41, P43} |
 
 **Dependências que forçam a ordem:**
@@ -1182,28 +1298,22 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 8. **P11 (classificação)** vem antes de P29 (pilar-parede), P35 (viga-parede) e P36.
 9. **P3 (Figura 8.6)** vem antes de P32 (tensão na armadura ativa).
 10. **P28 (M-N-1/r)** vem antes de P29.
+11. **P44 (cálculo de barras)** vem depois de P2, P4 e P14, e alimenta P45, P46, P47 e P48. **P46** precisa ainda de P13 e P26; **P47**, de P30; **P48**, de P35 e P31.
 
-## 6. Decisões que são suas
+## 6. Decisões tomadas em 19/09/2026
 
-1. **Fronteira do escopo.** A biblioteca verifica a partir de esforços e deslocamentos dados; não resolve pórtico, grelha nem placa. *Recomendo* assim (seção 3.1). Se quiser um solver próprio, ele vira um projeto à parte, não um pacote.
-2. **Figura 8.6.** Hoje o aço de protensão usa patamar, o que a auditoria registrou como escolha documentada e a favor da segurança (FCO-17). *Recomendo* implementar o ramo inclinado até fptd em εpu como opção `diagrama="nbr_fig_8_6"`, mantendo o patamar como padrão até a comparação com o TQS mostrar qual ele usa.
-3. **Tabela 11.1, nota a (γg = 1,3 para "pequena variabilidade").** A 6118 remete o critério à NBR 8681. *Recomendo* expor como parâmetro booleano `pequena_variabilidade=False`, sem tentar decidir por ele.
-4. **Nome dos módulos existentes.** *Recomendo* manter os `*_bastos.py` e estendê-los. O renome para `*_nbr6118.py`, com fachada no nome antigo, entra no fim, se ele quiser.
-5. **Versionamento da execução.** *Recomendo* uma branch `nbr6118-2026-restante`, com um commit por pacote aprovado pelas três lentes, e merge por onda depois que ele revisar. Nada é commitado sem a autorização dele, e a linha de base da auditoria (os `*_bastos.py` ainda fora do git) precisa estar commitada antes da primeira onda.
-6. **Duplicata divergente de VRd1 em laje.** `lajes_bastos.cortante_resistente_laje` omite o termo 0,15·σcp, e com tração isso fica contra a segurança. *Recomendo* que ela passe a delegar a `cortante_bastos.laje_sem_armadura` (P15). O resultado muda só quando há força normal.
+1. **Análise estrutural.** Entra a análise que a 6118 prescreve, com cálculo próprio em Python e só com barras: pórtico plano e espacial, grelha, treliça 2D e 3D e 2ª ordem global. Ficam de fora os elementos finitos de placa e de sólido e o vento (NBR 6123). Ver 3.1 e os pacotes P44 a P48.
+2. **Figura 8.6.** O ramo inclinado até fptd em εpu vira o **padrão**, e o patamar de hoje fica como opção (`diagrama="patamar"`). Muda o resultado de seção protendida no ELU (a estimativa, com o cabo a uns 15 ‰, é de 2 % a 3 % a mais no momento resistente), e o P3 lista o antes e o depois.
+3. **γg da nota a da Tabela 11.1.** O padrão é 1,4, num parâmetro configurável no começo do script (`nucleo.GAMA_G`), lido na hora da chamada e registrado na memória de cálculo. A biblioteca não decide se a obra é de pequena variabilidade (3.3, item 9).
+4. **Nomes dos módulos.** Os `*_bastos.py` são renomeados para `*_nbr6118.py` já, antes da onda 1, sem fachada no nome antigo. Quem importa o nome antigo troca o import. O crédito ao Prof. Bastos passa para a docstring de cada módulo e para o README (3.2).
+5. **Versionamento.** Direto no main, com um commit por pacote aprovado nas três verificações. Push só quando o Gustavo mandar.
+6. **VRd1 de laje.** `lajes_nbr6118.cortante_resistente_laje` passa a delegar a `cortante_nbr6118.laje_sem_armadura` (P15). O resultado muda só quando há força normal.
 
 ## 7. Fora do escopo
 
-1. **Não computáveis (156 itens).** Princípios, remissões e recomendações sem regra verificável: 16.x inteira, 25.x, a maior parte de 14.2 a 14.5. Estão listados na matriz como "não computável".
-2. **Análise estrutural (7 itens), porque o TQS faz:**
-   - esforços hiperestáticos de protensão (11.3.3.5);
-   - grelha de laje nervurada (14.7.7);
-   - pórtico equivalente de laje lisa (14.7.8);
-   - idealização geral de bielas e tirantes (22.3.1);
-   - modelos de cálculo de viga-parede, sapata e bloco por MEF ou treliça 3D (22.4.3, 22.6.3, 22.7.3).
-3. **Outra norma (1 item):** vento (11.4.1.2, NBR 6123). A biblioteca recebe os esforços de vento e os combina.
-
-Para cada um, o motivo está na matriz. Em todos, o pós-processamento normativo que depende dele está em algum pacote (P17, P26, P35, P37).
+1. **Não computáveis (143 itens).** Princípios, remissões e recomendações sem regra verificável: a 16.x inteira, a 25.x e as hipóteses gerais de 14.2 a 14.5. Estão listados na matriz como "não computável".
+2. **Outra norma (1 item):** o vento (11.4.1.2, NBR 6123). A biblioteca recebe os esforços de vento, combina-os (P4) e os compara com o desaprumo (P26).
+3. **Método que a biblioteca não vai ter:** elementos finitos de placa e de sólido (decisão 1). Isso não tira nenhum item do plano: onde a norma aceita outro procedimento, ele entra (grelha equivalente para laje lisa, treliça 3D para sapata e bloco). O que só se faz com elementos finitos, como a análise não linear de placas (14.7.5), já estava entre os não computáveis.
 
 ## 8. Riscos e cuidados
 
@@ -1221,11 +1331,15 @@ Para cada um, o motivo está na matriz. Em todos, o pós-processamento normativo
 5. **Descontinuidades propositais da norma.** Os degraus em Vd/VRd2 = 0,67 e 0,20 (18.3.3.2) e o limite exato |Mapoio| = 0,5·Mvão (18.3.2.4 c) são saltos da norma, não erros de redação. Cada um ganha teste dos dois lados do degrau.
 6. **Tabelas degrau contra interpolação.** Conferido na imagem: nem a Tabela 9.4 (α0t) nem a Tabela 19.2 (K) dizem como tratar valores intermediários. O `alpha_0t` atual usa o degrau superior, o que fica a favor da segurança, e continua assim, com teste em 30 % e 40 %. Para o K da punção, ver o P19. Regra geral: só interpolar quando a norma diz que pode (como nas Tabelas 8.1 e 8.3); quando não diz, a escolha fica declarada na docstring.
 7. **Figura 20.2 embaralhada no texto extraído.** Os percentuais e as frações de vão só se leem na imagem (p. 194). Vale para toda figura: a fonte é o PNG, nunca o .txt.
-8. **Mudança de comportamento.** Onde um pacote muda resultado existente (P3 com a opção da Figura 8.6, P15 com Vc em flexo-compressão, P30 com ψ1000 abaixo de 0,5·fptk devolvendo 0 em vez de erro), o parecer do pacote lista antes e depois, como a CORRECOES fez.
+8. **Mudança de comportamento.** Onde um pacote muda resultado existente (P3 com a Figura 8.6 como padrão, P15 com Vc em flexo-compressão, P30 com ψ1000 abaixo de 0,5·fptk devolvendo 0 em vez de erro), o parecer do pacote lista antes e depois, como a CORRECOES fez.
 9. **Comparação com o TQS.** Os pacotes que mexem em pilar (P25, P28) exigem rodar de novo o `compare_3way_parallel.py`. Os dois obstáculos da CORRECOES (o `import tests` e o fck fora da faixa fora do `try`) precisam ser resolvidos antes.
 10. **Tamanho do núcleo.** Ver 3.2, item 3.
+11. **Cálculo de barras sem número na norma.** O risco típico é erro de sinal ou de convenção de eixo, que passa despercebido num caso simétrico. Os testes do P44 cobrem as duas direções e os dois sentidos de carga, conferem o equilíbrio em todo resultado e comparam com solução fechada (3.1).
+12. **Renomear quebra import.** A preparação troca o nome dos módulos sem fachada. Antes do commit, o pytest inteiro e os scripts de comparação com o TQS têm de rodar com os nomes novos, e o README muda junto. O artigo do blog sobre a biblioteca usa o nome antigo no exemplo de código e nos créditos, e muda junto se ainda não tiver sido publicado.
 
 ## 9. Como a execução vai funcionar
+
+**Antes da onda 1, a preparação (decisão 4):** renomear os módulos com `git mv`, para o histórico acompanhar cada arquivo; trocar todos os imports (biblioteca, testes, `secoes_norma/`, scripts de comparação e README); levar o crédito ao Prof. Bastos para a docstring de cada módulo; rodar o pytest inteiro; e commitar sozinho, sem nenhuma mudança de conteúdo misturada.
 
 Para cada pacote, na ordem da seção 5:
 
@@ -1242,7 +1356,7 @@ Para cada pacote, na ordem da seção 5:
    - **Revisão do diff:** assinaturas, unidades no nome, faixa de validade, mensagens com acento, nada quebrado fora do pacote.
 4. **Correção e segunda volta.** O que as lentes acharem volta ao implementador, e só a lente que achou confere de novo.
 5. **Registro.** Uma linha por item na matriz (status novo, função, teste) e um parecer curto do pacote, com as mudanças de comportamento.
-6. **Commit.** Um por pacote, na branch da decisão 5, **só se ele autorizar**. Sem autorização, os pacotes ficam no disco com backup, como na correção de hoje.
+6. **Commit.** Um por pacote, direto no main (decisão 5), depois que as três lentes aprovarem. **Push só quando ele mandar.**
 7. **Fim de onda.** Resumo para ele revisar: pacotes fechados, testes, mudanças de comportamento e o que ficou para a onda seguinte.
 
 ## 10. Como este plano foi montado e conferido
@@ -1253,7 +1367,8 @@ Para cada pacote, na ordem da seção 5:
    - **Cobertura da norma:** as páginas 30 a 242 foram relidas por inteiro atrás de prescrição calculável sem item. Achou 4 candidatos: 1 era item novo (Tabela 13.2, que já estava implementada), e os outros 3 já existiam no mapa.
    - **Estado do código:** os 266 itens implementados, parciais ou ausentes de prioridade alta foram conferidos um a um, com Grep e execução. Três estavam errados e foram corrigidos: a Tabela 9.2 já existe no legado; a envoltória mínima com 2ª ordem já é verificada, faltando só calcular os momentos; e uma citação de função apontava para o lugar errado. Um quarto achado, que rebaixava o `alpha_0t` por não interpolar, foi rejeitado depois de ler a norma: a Tabela 9.4 não manda interpolar.
    - **Fórmulas na imagem:** as 458 fórmulas transcritas foram conferidas na imagem da página, uma a uma. A primeira rodada foi por amostragem e foi refeita completa. Cada achado passou por uma segunda leitura independente. Somando as duas rodadas, foram corrigidas 14 fórmulas ou condições de validade e 22 páginas. Outros 23 achados foram rejeitados, quase todos por confundirem a página impressa com a do PDF.
-4. **O que isso garante e o que não garante.** Garante que o escopo, o estado do código e a divisão em pacotes estão conferidos. Não dispensa conferir de novo cada fórmula na imagem na hora de implementar: o protocolo da seção 9 faz isso em todo pacote.
+4. **Revisão de 19/09/2026.** Com as decisões da seção 6, 21 itens entraram em pacotes: os 7 de análise que estavam fora; 13 que estavam como não computáveis só porque a biblioteca não calculava estrutura (reclassificados na revisão, com o motivo no campo `revisao` do JSON); e 1 item que o mapa não tinha (15.7.1, conferido no texto da p. 126). Um script confere que a matriz, o JSON e este plano dão os mesmos números. Os pacotes P44 a P48 foram escritos nessa revisão e ainda não passaram pelas três lentes da etapa 3; a conferência deles acontece na execução, como a de todo pacote.
+5. **O que isso garante e o que não garante.** Garante que o escopo, o estado do código e a divisão em pacotes estão conferidos. Não dispensa conferir de novo cada fórmula na imagem na hora de implementar: o protocolo da seção 9 faz isso em todo pacote.
 
 ---
 

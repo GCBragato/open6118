@@ -1,8 +1,8 @@
 # Matriz de cobertura da NBR 6118:2026 no open6118
 
-Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.md). Uma linha por item calculável ou conferível da norma, com a situação no código em 18/09/2026 e o pacote do plano que cuida dele.
+Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.md). Uma linha por item calculável ou conferível da norma, com a situação no código em 18/09/2026 e o pacote do plano que cuida dele. Revista em 19/09/2026 com as decisões da seção 6 do plano: a análise estrutural entrou no escopo, e os itens que ela trouxe estão nos pacotes P44 a P48.
 
-**Total:** 661 itens — 75 implementados, 58 parciais, 372 ausentes e 156 não computáveis.
+**Total:** 662 itens — 75 implementados, 58 parciais, 386 ausentes e 143 não computáveis.
 
 **Como ler:**
 
@@ -167,14 +167,14 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `11.3.2.3-empuxos-permanentes` | 11.3.2.3 | 77 | Empuxos permanentes de terra e materiais granulosos não removíveis | não computável | média | P |  |
 | `11.3.3.1-retracao-valor-simplificado` | 11.3.3.1 | 77 | Retração do concreto - valor simplificado εcs(t∞,t0) = −15·10⁻⁵ | parcial | média | P | P7 |
 | `11.3.3.2-fluencia-deformacao-total` | 11.3.3.2 | 78 | Deformação total do concreto por fluência (processo simplificado) | parcial | média | P | P7 |
-| `11.3.3.3-deslocamentos-apoio` | 11.3.3.3 | 78 | Deslocamentos de apoio como ação permanente indireta | não computável | média | P |  |
+| `11.3.3.3-deslocamentos-apoio` | 11.3.3.3 | 78 | Deslocamentos de apoio como ação permanente indireta | ausente | alta | P | P44 |
 | `11.3.3.4.1-desaprumo-global` | 11.3.3.4.1 | 79 | Imperfeições geométricas globais - desaprumo (θ1, θa) | ausente | alta | M | P26 |
 | `11.3.3.4.1-combinacao-vento-desaprumo` | 11.3.3.4.1 | 79 | Regra de combinação entre vento e desaprumo global (30%) | ausente | alta | M | P26 |
 | `11.3.3.4.2-imperfeicao-local` | 11.3.3.4.2 | 80 | Imperfeições geométricas locais (falta de retilineidade / desaprumo do lance de pilar) | implementado | alta | P |  |
 | `11.3.3.4.3-m1d-min-uniaxial` | 11.3.3.4.3 | 80 | Momento mínimo de 1a ordem para substituir imperfeições locais (uniaxial) | implementado | alta | P |  |
 | `11.3.3.4.3-envoltoria-minima-1a-ordem` | 11.3.3.4.3 | 81 | Envoltória mínima de 1a ordem (flexão composta oblíqua, Figura 11.3) | implementado | alta | G |  |
-| `11.3.3.5-protensao-acao` | 11.3.3.5 | 81 | Ação da protensão como ação permanente indireta | parcial | média | G | fora: Os esforços hiperestáticos de protensão exigem a análise da estrutura contínua, que é do TQS. A parcela isostática já existe, e o P30 entrega Pd,t. |
-| `11.4.1.1-cargas-utilizacao` | 11.4.1.1 | 81 | Cargas variáveis de utilização (verticais, móveis, impacto, frenagem, força centrífuga) | não computável | alta | P |  |
+| `11.3.3.5-protensao-acao` | 11.3.3.5 | 81 | Ação da protensão como ação permanente indireta | parcial | média | G | P47 |
+| `11.4.1.1-cargas-utilizacao` | 11.4.1.1 | 81 | Cargas variáveis de utilização (verticais, móveis, impacto, frenagem, força centrífuga) | ausente | alta | P | P44 |
 | `11.4.1.2-acao-vento` | 11.4.1.2 | 82 | Ação do vento (remissão a NBR 6123) | ausente | alta | G | fora: O vento é da NBR 6123. A biblioteca recebe os esforços de vento prontos, combina-os (P4) e os compara com o desaprumo (P26). |
 | `11.4.1.3-acao-agua` | 11.4.1.3 | 82 | Ação da água em reservatórios/tanques e água de chuva retida | ausente | baixa | P | P4 |
 | `11.4.1.4-acoes-fase-construtiva` | 11.4.1.4 | 82 | Ações variáveis durante a construção (fases construtivas) | não computável | média | P |  |
@@ -268,8 +268,8 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.4.2.3-cascas-definicao` | 14.4.2.3 | 105 | Definição de casca (elemento de superfície não plana) | não computável | baixa | P |  |
 | `14.4.2.4-pilar-parede-classif` | 14.4.2.4 | 105 | Critério de classificação de pilar-parede (menor dimensão menor que 1/5 da maior, na seção transversal) | ausente | média | P | P11 |
 | `14.5.1-metodos-generalidades` | 14.5.1 | 105 | Generalidades sobre os métodos de análise estrutural (14.5.2 a 14.5.6) | não computável | baixa | P |  |
-| `14.5.2-analise-linear` | 14.5.2 | 105 | Análise linear - hipóteses (comportamento elástico-linear, seção bruta, Ecs) | não computável | baixa | P |  |
-| `14.5.3-analise-redistrib-geral` | 14.5.3 | 106 | Análise linear com redistribuição - condições gerais | não computável | média | P |  |
+| `14.5.2-analise-linear` | 14.5.2 | 105 | Análise linear - hipóteses (comportamento elástico-linear, seção bruta, Ecs) | ausente | alta | P | P44 |
+| `14.5.3-analise-redistrib-geral` | 14.5.3 | 106 | Análise linear com redistribuição - condições gerais | ausente | média | P | P46 |
 | `14.5.4-analise-plastica-restricoes` | 14.5.4 | 106 | Restrições ao uso de análise plástica em estruturas reticuladas | ausente | média | P | P11 |
 | `14.5.5-analise-nao-linear-geral` | 14.5.5 | 106 | Análise não linear - condições gerais (geometria e armaduras completas, equilíbrio/compatibilidade/dutilidade) | não computável | baixa | P |  |
 | `14.5.6-modelos-fisicos` | 14.5.6 | 106 | Análise por modelos físicos (ensaios) - condições e margens de segurança | não computável | baixa | P |  |
@@ -281,8 +281,8 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.6.2.3-misulas-secao-efetiva` | 14.6.2.3 | 109 | Seção efetiva em mísulas e variações bruscas de seção (Figura 14.4) | ausente | alta | M | P14 |
 | `14.6.2.4-vao-efetivo-viga` | 14.6.2.4 | 110 | Vão efetivo de vigas (lef = l0 + a1 + a2) | implementado | alta | P |  |
 | `14.6.3-arredondamento-momentos` | 14.6.3 | 111 | Arredondamento do diagrama de momentos fletores sobre apoios/cargas concentradas (Figura 14.6) | ausente | alta | P | P14 |
-| `14.6.4.1-rigidez-vigas-pilares` | 14.6.4.1 | 111 | Valores de rigidez para análise linear (Ecs, momento de inércia bruto; flechas com fissuração/fluência) | não computável | média | P |  |
-| `14.6.4.2-restricoes-redistribuicao` | 14.6.4.2 | 111 | Restrições à redistribuição em pilares, elementos comprimidos e consolos | não computável | média | P |  |
+| `14.6.4.1-rigidez-vigas-pilares` | 14.6.4.1 | 111 | Valores de rigidez para análise linear (Ecs, momento de inércia bruto; flechas com fissuração/fluência) | ausente | alta | P | P44 |
+| `14.6.4.2-restricoes-redistribuicao` | 14.6.4.2 | 111 | Restrições à redistribuição em pilares, elementos comprimidos e consolos | ausente | média | P | P46 |
 | `14.6.4.3-xd-dutilidade` | 14.6.4.3 | 112 | Limite de x/d para dutilidade sem redistribuição (0,45 / 0,35) | implementado | alta | P |  |
 | `14.6.4.3-xd-redistribuicao` | 14.6.4.3 | 112 | Limite de x/d quando há redistribuição de momento (função do coeficiente δ) | ausente | alta | P | P13 |
 | `14.6.4.3-delta-min` | 14.6.4.3 | 112 | Limite mínimo do coeficiente de redistribuição (δ ≥ 0,75) | ausente | alta | P | P13 |
@@ -297,19 +297,19 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.7.1-hipoteses-placas` | 14.7.1 | 115 | Hipóteses básicas de estruturas de placas (seção plana em faixas estreitas, plano médio) | não computável | baixa | P |  |
 | `14.7.2.2-vao-efetivo-laje` | 14.7.2.2 | 116 | Vão efetivo de lajes/placas (mesma fórmula lef = l0+a1+a2 de 14.6.2.4) | implementado | alta | P |  |
 | `14.7.3-poisson-placas` | 14.7.3 | 116 | Coeficiente de Poisson para análise elástica de placas (ν = 0,2) | ausente | baixa | P | P2 |
-| `14.7.3.1-rigidez-estadio-I-placas` | 14.7.3.1 | 116 | Rigidez do Estadio I para verificação de flecha em placas (momento fletor menor que o de fissuração) | não computável | média | P |  |
+| `14.7.3.1-rigidez-estadio-I-placas` | 14.7.3.1 | 116 | Rigidez do Estadio I para verificação de flecha em placas (momento fletor menor que o de fissuração) | ausente | alta | P | P45 |
 | `14.7.3.2-redistribuicao-lajes` | 14.7.3.2 | 116 | Limites de x/d para redistribuição de momentos em placas (mesmas fórmulas de 14.6.4.3) | ausente | alta | P | P13 |
 | `14.7.4-xd-limite-plastico-laje` | 14.7.4 | 116 | Limite de x/d para dispensa de verificação de rotação na análise plástica de lajes (charneiras) | ausente | média | P | P13 |
 | `14.7.4-razao-momentos-borda-vao` | 14.7.4 | 116 | Razão mínima entre momentos de borda e de vão na análise plástica de lajes retangulares (1,5:1) | ausente | média | P | P13 |
 | `14.7.5-analise-nao-linear-placas` | 14.7.5 | 117 | Análise não linear de placas - aplicabilidade a ELU e ELS | não computável | baixa | P |  |
 | `14.7.6.1-reacoes-apoio-charneiras` | 14.7.6.1 | 117 | Reações de apoio de lajes maciças retangulares pelo método das charneiras plásticas (triângulos/trapézios) | parcial | alta | G | P17 |
 | `14.7.6.2-compatibilizacao-momentos` | 14.7.6.2 | 117 | Compatibilização de momentos negativos entre lajes vizinhas | parcial | alta | P | P17 |
-| `14.7.7-lajes-nervuradas-grelha-vigas` | 14.7.7 | 117 | Cálculo da laje nervurada como grelha de vigas quando as hipóteses de laje maciça não se aplicam | ausente | alta | G | fora: Modelar a laje nervurada como grelha é análise estrutural, feita no TQS. Os limites que tornam isso obrigatório estão no P10. |
-| `14.7.7-lajes-nervuradas-unidirecionais` | 14.7.7 | 118 | Lajes nervuradas unidirecionais: cálculo na direção das nervuras, com rigidez transversal e à torção desprezadas | não computável | alta | P |  |
-| `14.7.8-analise-numerica-lajes-lisas` | 14.7.8 | 118 | Exigência de procedimento numérico para análise de lajes lisas e lajes-cogumelo | não computável | alta | P |  |
-| `14.7.8-portico-equivalente` | 14.7.8 | 118 | Processo elástico aproximado (pórticos múltiplos com redistribuição) para lajes lisas/cogumelo com pilares em filas regulares | ausente | alta | G | fora: Montar e resolver o pórtico múltiplo é análise estrutural, feita no TQS. A repartição dos momentos entre faixas está no P17. |
+| `14.7.7-lajes-nervuradas-grelha-vigas` | 14.7.7 | 117 | Cálculo da laje nervurada como grelha de vigas quando as hipóteses de laje maciça não se aplicam | ausente | alta | G | P45 |
+| `14.7.7-lajes-nervuradas-unidirecionais` | 14.7.7 | 118 | Lajes nervuradas unidirecionais: cálculo na direção das nervuras, com rigidez transversal e à torção desprezadas | ausente | alta | P | P45 |
+| `14.7.8-analise-numerica-lajes-lisas` | 14.7.8 | 118 | Exigência de procedimento numérico para análise de lajes lisas e lajes-cogumelo | ausente | alta | P | P45 |
+| `14.7.8-portico-equivalente` | 14.7.8 | 118 | Processo elástico aproximado (pórticos múltiplos com redistribuição) para lajes lisas/cogumelo com pilares em filas regulares | ausente | alta | G | P45 |
 | `14.7.8-faixas-distribuicao-momento` | 14.7.8 | 118 | Distribuição percentual dos momentos do pórtico equivalente entre faixas internas e externas (Figura 14.9) | ausente | alta | P | P17 |
-| `14.8.1-vigas-parede-pilares-parede-analise` | 14.8.1 | 119 | Método de análise de vigas-parede e pilares-parede (linear/não linear; representação como elemento linear equivalente) | não computável | média | P |  |
+| `14.8.1-vigas-parede-pilares-parede-analise` | 14.8.1 | 119 | Método de análise de vigas-parede e pilares-parede (linear/não linear; representação como elemento linear equivalente) | ausente | alta | P | P44 |
 | `14.8.2-blocos-analise` | 14.8.2 | 119 | Método de análise de blocos de fundação (linear, plástica ou não linear) | não computável | média | P |  |
 
 ## Seção 15
@@ -332,6 +332,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `15.5.2-rigidez-pilar-equivalente` | 15.5.2 | 125 | Rigidez EcsIc de um pilar equivalente (para α e γz) | ausente | alta | G | P26 |
 | `15.5.3-coeficiente-gama-z` | 15.5.3 | 125 | Coeficiente γz de avaliação dos esforços globais de 2ª ordem | ausente | alta | P | P26 |
 | `15.6-comprimento-equivalente-nos-fixos` | 15.6 | 125 | Comprimento equivalente ℓe do pilar em estrutura de nós fixos | ausente | alta | P | P25 |
+| `15.7.1-nao-linearidade-nos-moveis` | 15.7.1 | 126 | Estruturas de nós móveis: não linearidade geométrica e física obrigatórias na análise | ausente | média | G | P46 |
 | `15.7.2-processo-aproximado-095-gamaz` | 15.7.2 | 126 | Processo aproximado de majoração das ações horizontais por 0,95 γz | ausente | alta | M | P26 |
 | `15.7.3-rigidez-aproximada-analise-global` | 15.7.3 | 126 | Rigidezes aproximadas para consideração da não linearidade física na análise global | ausente | alta | P | P26 |
 | `15.7.4-efeitos-locais-em-nos-moveis` | 15.7.4 | 127 | Encadeamento dos esforços globais de 2ª ordem para a análise local em nós móveis | ausente | alta | M | P25 |
@@ -383,7 +384,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `17.2.3-dutilidade-vigas` | 17.2.3 | 142 | Dutilidade em vigas: limite de x/d (remete a 14.6.4.3) | parcial | alta | P | P12 |
 | `17.2.4.1-forcas-concentradas-10pct-h` | 17.2.4.1 | 143 | Concentração das forças de armadura no centroide (critério 10% h) | ausente | baixa | P | P12 |
 | `17.2.4.1-armaduras-laterais-vigas` | 17.2.4.1 | 143 | Armaduras laterais de vigas podem entrar no cálculo dos esforços resistentes | não computável | média | P |  |
-| `17.2.4.2.1-protensao-hiperestatica-pre-alongamento` | 17.2.4.2.1 | 143 | Protensão no ELU: só hiperestáticos e pré-alongamento com perdas | não computável | média | P |  |
+| `17.2.4.2.1-protensao-hiperestatica-pre-alongamento` | 17.2.4.2.1 | 143 | Protensão no ELU: só hiperestáticos e pré-alongamento com perdas | ausente | média | P | P47 |
 | `17.2.4.3.1-fckj-especificado` | 17.2.4.3.1 | 143 | Especificação de fckj no projeto para o ato da protensão | não computável | baixa | P |  |
 | `17.2.4.3.1-coeficientes-ato-protensao` | 17.2.4.3.1-b | 143 | Coeficientes de ponderação para o ELU no ato da protensão | ausente | média | P | P32 |
 | `17.2.4.3.2-tensao-max-compressao` | 17.2.4.3.2-a | 144 | Tensão máxima de compressão no concreto no ato da protensão | ausente | média | P | P32 |
@@ -425,7 +426,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `17.4.2.3-VRd2-modeloII` | 17.4.2.3 a) | 158 | VRd2 - Modelo de cálculo II (θ variável de 30° a 45°) | implementado | alta | P |  |
 | `17.4.2.3-Vc-Vsw-modeloII` | 17.4.2.3 b) | 159 | Vc1 e Vsw - Modelo de cálculo II (todos os casos) | parcial | alta | M | P15 |
 | `17.4.2.3-decalagem-modeloII` | 17.4.2.3 c) | 159 | Decalagem do diagrama de força no banzo tracionado - Modelo II | implementado | alta | M |  |
-| `17.5.1.1-modelo-trelica-espacial` | 17.5.1.1 | 159 | Modelo resistente de treliça espacial para torcao uniforme | implementado | média | P |  |
+| `17.5.1.1-modelo-trelica-espacial` | 17.5.1.1 | 159 | Modelo resistente de treliça espacial para torção uniforme | implementado | média | P |  |
 | `17.5.1.2-taxa-min-torcao` | 17.5.1.2 | 160 | Taxas geométricas mínimas de torção (longitudinal e transversal) | implementado | média | P |  |
 | `17.5.1.2-dispensa-torcao-compatibilidade` | 17.5.1.2 | 160 | Dispensa de armadura de torção de compatibilidade | ausente | média | P | P16 |
 | `17.5.1.2-limite-Vsd-adaptacao-plastica` | 17.5.1.2 | 160 | Limite de VSd para adaptação plástica em trecho curto de torção | ausente | baixa | P | P16 |
@@ -595,7 +596,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `21.2.1-proporcao-lados-ac0` | 21.2.1 | 197 | Proporção máxima entre lados de área reduzida retangular | ausente | média | P | P34 |
 | `21.2.1-ressalvas-qualitativas` | 21.2.1 | 198 | Ressalvas de aplicação da fórmula de esmagamento em área reduzida | não computável | média | P |  |
 | `21.2.2-articulacao-concreto` | 21.2.2 | 198 | Geometria e inclinação limite de articulação de concreto (núcleo reduzido) | ausente | baixa | M | P34 |
-| `21.2.3-intro-protensao-modelo-3d` | 21.2.3 | 199 | Modelagem da região de introdução da protensão | não computável | média | G |  |
+| `21.2.3-intro-protensao-modelo-3d` | 21.2.3 | 199 | Modelagem da região de introdução da protensão | ausente | média | G | P48 |
 | `21.2.4-cargas-superficie-chumbadores` | 21.2.4 | 199 | Verificação de cargas de insertos e chumbadores na superfície do concreto | não computável | baixa | P |  |
 | `21.3.1-generalidades-furos-aberturas` | 21.3.1 | 200 | Generalidades sobre furos e aberturas em elementos estruturais | não computável | alta | P |  |
 | `21.3.2-classificacao-abertura-viga-parede` | 21.3.2 | 200 | Classificação de abertura em parede/viga-parede como normal ou prejudicial | não computável | média | M |  |
@@ -615,9 +616,9 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 
 | Id | Item | Pág. | O que é | Situação | Prior. | Compl. | Pacote |
 |---|---|---|---|---|---|---|---|
-| `22.2-limite-regiao-bd` | 22.2 | 202 | Limite convencional entre regiões B e D | não computável | baixa | P |  |
+| `22.2-limite-regiao-bd` | 22.2 | 202 | Limite convencional entre regiões B e D | ausente | média | P | P48 |
 | `22.2-gamma-n-consolo-gerber` | 22.2 | 203 | Coeficiente adicional γn para consolos e dentes Gerber | ausente | alta | P | P10 |
-| `22.3.1-procedimento-bielas-tirantes` | 22.3.1 | 203 | Procedimento geral do método de bielas e tirantes | ausente | média | G | fora: Idealizar a treliça de uma região D é modelagem do engenheiro. A biblioteca verifica bielas, nós e tirantes a partir das forças dadas (P35). |
+| `22.3.1-procedimento-bielas-tirantes` | 22.3.1 | 203 | Procedimento geral do método de bielas e tirantes | ausente | média | G | P48 |
 | `22.3.1-limite-inclinacao-biela` | 22.3.1 | 204 | Faixa de inclinação admissível das bielas inclinadas | ausente | média | P | P35 |
 | `22.3.2-fcd1` | 22.3.2 | 204 | Resistência de cálculo da biela/nó CCC (fcd1) | implementado | alta | P |  |
 | `22.3.2-fcd2` | 22.3.2 | 204 | Resistência de cálculo da biela/nó CTT ou TTT (fcd2) | ausente | média | P | P35 |
@@ -625,7 +626,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `22.3.3-as-tirante` | 22.3.3 | 204 | Área de aço de um tirante genérico do modelo biela-tirante | ausente | alta | P | P35 |
 | `22.4.1-classificacao-viga-parede` | 22.4.1 | 204 | Classificação de viga como viga-parede | ausente | média | P | P11 |
 | `22.4.2-comportamento-viga-parede` | 22.4.2 | 204 | Comportamento estrutural das vigas-parede | não computável | média | P |  |
-| `22.4.3-modelo-calculo-viga-parede` | 22.4.3 | 205 | Modelos de cálculo para viga-parede no ELU | ausente | média | G | fora: Exige MEF ou uma treliça montada caso a caso. As armaduras e verificações de 22.4.4 estão no P35. |
+| `22.4.3-modelo-calculo-viga-parede` | 22.4.3 | 205 | Modelos de cálculo para viga-parede no ELU | ausente | média | G | P48 |
 | `22.4.4.1-as-viga-parede-continua` | 22.4.4.1 | 205 | Distribuição da armadura negativa em viga-parede contínua (3 faixas) | ausente | média | M | P35 |
 | `22.4.4.1-armadura-horizontal-minima-viga-parede` | 22.4.4.1 | 205 | Armadura horizontal mínima de viga-parede | ausente | média | P | P35 |
 | `22.4.4.2-ancoragem-flexao-positiva-viga-parede` | 22.4.4.2 | 205 | Ancoragem da armadura de flexão positiva nos apoios de viga-parede | não computável | média | P |  |
@@ -650,7 +651,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `22.6.1-hipotese-distribuicao-plana` | 22.6.1 | 211 | Validade da hipótese de distribuição plana de tensões no contato sapata-solo | parcial | média | P | P37 |
 | `22.6.2.2-cisalhamento-compressao-diagonal-sapata-rigida` | 22.6.2.2 | 212 | Verificação ao cisalhamento de sapata rígida por compressão diagonal (superfície C) | implementado | alta | P |  |
 | `22.6.2.3-sapata-flexivel-puncao` | 22.6.2.3 | 212 | Sapata flexível: verificação ao cisalhamento por punção | ausente | alta | G | P20 |
-| `22.6.3-modelo-calculo-sapata` | 22.6.3 | 212 | Modelo de cálculo tridimensional (ou bielas-tirantes 3D) para sapatas | ausente | média | G | fora: O modelo 3D linear ou de bielas e tirantes é análise estrutural. O método simplificado de sapatas é completado no P37. |
+| `22.6.3-modelo-calculo-sapata` | 22.6.3 | 212 | Modelo de cálculo tridimensional (ou bielas-tirantes 3D) para sapatas | ausente | média | G | P48 |
 | `22.6.4.1.1-armadura-flexao-sapata-detalhamento` | 22.6.4.1.1 | 212 | Detalhamento da armadura de flexão de sapata rígida | ausente | alta | P | P37 |
 | `22.6.4.1.1-fendilhamento-barra-25mm` | 22.6.4.1.1 | 213 | Verificação de fendilhamento horizontal para barras de flexão com diâmetro ≥ 25 mm | ausente | média | M | P37 |
 | `22.6.4.1.2-armadura-arranque-pilar-sapata` | 22.6.4.1.2 | 213 | Altura da sapata suficiente para ancoragem da armadura de arranque do pilar | ausente | alta | P | P37 |
@@ -658,7 +659,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `22.7.1-classificacao-bloco-rigido-flexivel` | 22.7.1 | 213 | Classificação de bloco sobre estacas rígido x flexível | ausente | alta | P | P37 |
 | `22.7.2.1-a-faixa-armadura-estacas` | 22.7.2.1 | 213 | Faixa de concentração das trações sobre o eixo das estacas | ausente | alta | P | P37 |
 | `22.7.2.2-bloco-flexivel-comportamento` | 22.7.2.2 | 213 | Comportamento estrutural do bloco flexível | não computável | média | P |  |
-| `22.7.3-modelo-calculo-bloco` | 22.7.3 | 213 | Modelo de cálculo tridimensional (ou bielas-tirantes 3D) para blocos sobre estacas | ausente | média | G | fora: O modelo 3D é análise estrutural. O método das bielas (Blévot) é completado no P37. |
+| `22.7.3-modelo-calculo-bloco` | 22.7.3 | 213 | Modelo de cálculo tridimensional (ou bielas-tirantes 3D) para blocos sobre estacas | ausente | média | G | P48 |
 | `22.7.4.1.1-armadura-flexao-bloco-85pct` | 22.7.4.1.1 | 214 | Concentração mínima de 85% da armadura de flexão nas faixas das estacas | ausente | alta | M | P37 |
 | `22.7.4.1.1-estacas-tracionadas-ancoragem` | 22.7.4.1.1 | 214 | Ancoragem da armadura de estacas tracionadas no bloco | ausente | média | M | P37 |
 | `22.7.4.1.2-armadura-distribuicao-bloco-20pct` | 22.7.4.1.2 | 214 | Armadura de distribuição (malha positiva adicional) do bloco rígido | parcial | média | P | P37 |

@@ -1,5 +1,5 @@
 {
- "descricao": "Itens calculáveis ou conferíveis da NBR 6118:2026 mapeados contra o open6118 em 18/09/2026. Anexo do PLANO_IMPLEMENTACAO_NBR6118_2026.md. pagina_pdf = página impressa + 18. A fórmula transcrita é ponto de partida; a fonte é a imagem da página.",
+ "descricao": "Itens calculáveis ou conferíveis da NBR 6118:2026 mapeados contra o open6118 em 18/09/2026. Anexo do PLANO_IMPLEMENTACAO_NBR6118_2026.md. pagina_pdf = página impressa + 18. A fórmula transcrita é ponto de partida; a fonte é a imagem da página. Revisto em 19/09/2026 com as decisões da seção 6 do plano: a análise estrutural entrou no escopo (P44 a P48), 21 itens entraram em pacotes, e os nomes de módulo dos pacotes já estão na forma nova (*_nbr6118). O campo onde_no_codigo continua com os nomes de hoje.",
  "pacotes": [
   {
    "id": "P1",
@@ -20,7 +20,7 @@
    "nome": "Aço de protensão: catálogo e diagrama da Figura 8.6",
    "onda": 1,
    "prioridade": "alta",
-   "modulo": "dimensionamento/nucleo_nbr6118.py + rotinas/flexao_composta_obliqua.py + protendido_bastos.py"
+   "modulo": "dimensionamento/nucleo_nbr6118.py + rotinas/flexao_composta_obliqua.py + protendido_nbr6118.py"
   },
   {
    "id": "P4",
@@ -83,7 +83,7 @@
    "nome": "Vigas: armaduras mínima, máxima e de pele; instabilidade lateral",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/vigas_bastos.py (extensão)"
+   "modulo": "dimensionamento/vigas_nbr6118.py (extensão)"
   },
   {
    "id": "P13",
@@ -104,21 +104,21 @@
    "nome": "Força cortante completa (vigas e lajes)",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/cortante_bastos.py (extensão)"
+   "modulo": "dimensionamento/cortante_nbr6118.py (extensão)"
   },
   {
    "id": "P16",
    "nome": "Torção completa e combinação com flexão e cortante",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/torcao_bastos.py (extensão) + combinacao_esforcos_nbr6118.py"
+   "modulo": "dimensionamento/torcao_nbr6118.py (extensão) + combinacao_esforcos_nbr6118.py"
   },
   {
    "id": "P17",
    "nome": "Lajes: flexão, armaduras mínimas e momentos",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/lajes_bastos.py (extensão)"
+   "modulo": "dimensionamento/lajes_nbr6118.py (extensão)"
   },
   {
    "id": "P18",
@@ -146,7 +146,7 @@
    "nome": "Ancoragem passiva, ganchos e estribos",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/ancoragem_bastos.py (extensão)"
+   "modulo": "dimensionamento/ancoragem_nbr6118.py (extensão)"
   },
   {
    "id": "P22",
@@ -174,7 +174,7 @@
    "nome": "Pilares: 2ª ordem local pelo pilar-padrão",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/pilares_bastos.py (extensão) + rotinas/verificacao_pilar.py"
+   "modulo": "dimensionamento/pilares_nbr6118.py (extensão) + rotinas/verificacao_pilar.py"
   },
   {
    "id": "P26",
@@ -209,21 +209,21 @@
    "nome": "Protensão: força, limites e perdas",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/protendido_bastos.py (extensão)"
+   "modulo": "dimensionamento/protendido_nbr6118.py (extensão)"
   },
   {
    "id": "P31",
    "nome": "Protensão: ancoragem ativa, introdução da força e cabos",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/protensao_detalhamento_nbr6118.py + ancoragem_bastos.py"
+   "modulo": "dimensionamento/protensao_detalhamento_nbr6118.py + ancoragem_nbr6118.py"
   },
   {
    "id": "P32",
    "nome": "Protensão: ato da protensão e ELS de tensões",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/protendido_bastos.py (extensão)"
+   "modulo": "dimensionamento/protendido_nbr6118.py (extensão)"
   },
   {
    "id": "P33",
@@ -258,7 +258,7 @@
    "nome": "Fundações: sapatas e blocos",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/sapatas_bastos.py + blocos_bastos.py (extensão)"
+   "modulo": "dimensionamento/sapatas_nbr6118.py + blocos_nbr6118.py (extensão)"
   },
   {
    "id": "P38",
@@ -272,7 +272,7 @@
    "nome": "Fadiga: combinação, cortante, concreto e protensão",
    "onda": 4,
    "prioridade": "baixa",
-   "modulo": "dimensionamento/fadiga_nbr6118.py + cortante_bastos.py"
+   "modulo": "dimensionamento/fadiga_nbr6118.py + cortante_nbr6118.py"
   },
   {
    "id": "P40",
@@ -300,7 +300,42 @@
    "nome": "Método geral de perdas e fluência com tensão variável",
    "onda": 4,
    "prioridade": "baixa",
-   "modulo": "dimensionamento/tempo_concreto_nbr6118.py + protendido_bastos.py"
+   "modulo": "dimensionamento/tempo_concreto_nbr6118.py + protendido_nbr6118.py"
+  },
+  {
+   "id": "P44",
+   "nome": "Análise de barras: pórtico plano, pórtico espacial, grelha e treliça",
+   "onda": 2,
+   "prioridade": "alta",
+   "modulo": "dimensionamento/analise_barras_nbr6118.py"
+  },
+  {
+   "id": "P45",
+   "nome": "Lajes por grelha e pórtico equivalente",
+   "onda": 2,
+   "prioridade": "alta",
+   "modulo": "dimensionamento/analise_lajes_nbr6118.py"
+  },
+  {
+   "id": "P46",
+   "nome": "Redistribuição com reequilíbrio e 2ª ordem global por análise não linear",
+   "onda": 3,
+   "prioridade": "media",
+   "modulo": "dimensionamento/analise_barras_nbr6118.py + estabilidade_global_nbr6118.py"
+  },
+  {
+   "id": "P47",
+   "nome": "Esforços hiperestáticos de protensão",
+   "onda": 3,
+   "prioridade": "media",
+   "modulo": "dimensionamento/protendido_nbr6118.py + analise_barras_nbr6118.py"
+  },
+  {
+   "id": "P48",
+   "nome": "Bielas e tirantes: treliças e modelos de cálculo",
+   "onda": 3,
+   "prioridade": "media",
+   "modulo": "dimensionamento/bielas_tirantes_nbr6118.py"
   }
  ],
  "itens": [
@@ -2524,13 +2559,16 @@
    "pagina_pdf": 78,
    "titulo": "Deslocamentos de apoio como ação permanente indireta",
    "tipo": "qualitativo",
-   "status": "nao_computavel",
-   "prioridade": "media",
+   "status": "ausente",
+   "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "So considerar quando geram esforcos significativos; usar dk,sup pessimista (quantil 5%); inferior nulo; unica acao com mesmo coeficiente.",
    "conferido_na_imagem": true,
    "depende_de": [],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "pacote": "P44",
+   "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira o caso de carga de deslocamento imposto de apoio no P44."
   },
   {
    "id": "11.3.3.4.1-desaprumo-global",
@@ -2633,7 +2671,6 @@
    "status": "parcial",
    "prioridade": "media",
    "complexidade": "G",
-   "fora_do_escopo": "Os esforços hiperestáticos de protensão exigem a análise da estrutura contínua, que é do TQS. A parcela isostática já existe, e o P30 entrega Pd,t.",
    "onde_no_codigo": "dimensionamento/protendido_bastos.py: forca_protensao_axial/excentrica, perda_progressiva_simplificada, omega_perfil",
    "falta": "Nao ha calculo explicito de esforcos hiperestaticos de protensao em estruturas continuas -- so a parcela isostatica (P*e) esta coberta.",
    "o_que_calcula": "Protensao considerada em todas as estruturas protendidas, inclusive efeitos hiperestaticos; forca considera inicial e perdas (9.6.3).",
@@ -2642,7 +2679,10 @@
     "9.6.3-perdas-protensao (fora do trecho)"
    ],
    "teste_sugerido": "Viga continua de 2 vaos com cabo parabolico: comparar momento hiperestatico com referencia de exemplo de livro-texto.",
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "pacote": "P47",
+   "fora_do_escopo_ate_18_09": "Os esforços hiperestáticos de protensão exigem a análise da estrutura contínua, que é do TQS. A parcela isostática já existe, e o P30 entrega Pd,t.",
+   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras)."
   },
   {
    "id": "11.4.1.1-cargas-utilizacao",
@@ -2650,13 +2690,16 @@
    "pagina_pdf": 81,
    "titulo": "Cargas variáveis de utilização (verticais, móveis, impacto, frenagem, força centrífuga)",
    "tipo": "qualitativo",
-   "status": "nao_computavel",
+   "status": "ausente",
    "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "Tipos de carga variavel direta de utilizacao a considerar, nas posicoes mais desfavoraveis.",
    "conferido_na_imagem": false,
    "depende_de": [],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "pacote": "P44",
+   "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. As posições mais desfavoráveis viram a alternância de cargas do P44."
   },
   {
    "id": "11.4.1.2-acao-vento",
@@ -3995,15 +4038,18 @@
    "pagina_pdf": 105,
    "titulo": "Análise linear - hipóteses (comportamento elástico-linear, seção bruta, Ecs)",
    "tipo": "qualitativo",
-   "status": "nao_computavel",
-   "prioridade": "baixa",
+   "status": "ausente",
+   "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "Admite comportamento elastico-linear dos materiais, secao bruta de concreto na analise global e modulo de elasticidade secante Ecs (8.2.8/8.2.9); resultados usados sobretudo para ELS.",
    "conferido_na_imagem": false,
    "depende_de": [
     "nucleo_nbr6118.Ecs"
    ],
-   "trecho": "analise"
+   "trecho": "analise",
+   "pacote": "P44",
+   "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. É a própria análise linear que o P44 implementa."
   },
   {
    "id": "14.5.3-analise-redistrib-geral",
@@ -4011,7 +4057,7 @@
    "pagina_pdf": 106,
    "titulo": "Análise linear com redistribuição - condições gerais",
    "tipo": "qualitativo",
-   "status": "nao_computavel",
+   "status": "ausente",
    "prioridade": "media",
    "complexidade": "P",
    "o_que_calcula": "Exige recalculo de todos os esforcos internos para manter o equilibrio apos redistribuir momentos do ELU, considerando efeitos na ancoragem/corte de armaduras; ELS/fadiga preferencialmente sem redistribuicao.",
@@ -4020,7 +4066,10 @@
     "14.6.4.3-xd-redistribuicao",
     "14.6.4.3-delta-min"
    ],
-   "trecho": "analise"
+   "trecho": "analise",
+   "pacote": "P46",
+   "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Com o cálculo próprio, o reequilíbrio depois da redistribuição é calculável."
   },
   {
    "id": "14.5.4-analise-plastica-restricoes",
@@ -4199,8 +4248,8 @@
    "pagina_pdf": 111,
    "titulo": "Valores de rigidez para análise linear (Ecs, momento de inércia bruto; flechas com fissuração/fluência)",
    "tipo": "qualitativo",
-   "status": "nao_computavel",
-   "prioridade": "media",
+   "status": "ausente",
+   "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "Permite tomar Ecs e momento de inercia da secao bruta para a rigidez na analise; para flechas exige obrigatoriamente considerar fissuracao e fluencia (remete a 17.3.2.1).",
    "conferido_na_imagem": false,
@@ -4208,7 +4257,10 @@
     "nucleo_nbr6118.Ecs",
     "17.3.2.1-flecha-diferida"
    ],
-   "trecho": "analise"
+   "trecho": "analise",
+   "pacote": "P44",
+   "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira a rigidez padrão das barras no P44."
   },
   {
    "id": "14.6.4.2-restricoes-redistribuicao",
@@ -4216,12 +4268,15 @@
    "pagina_pdf": 111,
    "titulo": "Restrições à redistribuição em pilares, elementos comprimidos e consolos",
    "tipo": "qualitativo",
-   "status": "nao_computavel",
+   "status": "ausente",
    "prioridade": "media",
    "complexidade": "P",
    "o_que_calcula": "So permite redistribuir momentos/torcao em pilares, elementos com preponderancia de compressao e consolos quando decorrente de redistribuicao de momentos de vigas ligadas a eles; exige avaliar efeito na estabilidade global.",
    "conferido_na_imagem": false,
-   "trecho": "analise"
+   "trecho": "analise",
+   "pacote": "P46",
+   "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira a restrição aplicada pela função de redistribuição do P46."
   },
   {
    "id": "14.6.4.3-xd-dutilidade",
@@ -4466,15 +4521,18 @@
    "pagina_pdf": 116,
    "titulo": "Rigidez do Estadio I para verificação de flecha em placas (momento fletor menor que o de fissuração)",
    "tipo": "qualitativo",
-   "status": "nao_computavel",
-   "prioridade": "media",
+   "status": "ausente",
+   "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "Permite usar rigidez do Estadio I (Ecs, secao bruta) para verificar deformacao excessiva em placas, desde que os momentos fletores fiquem abaixo do momento de fissuracao; remete a Secao 17 para fissuracao/fluencia.",
    "conferido_na_imagem": true,
    "depende_de": [
     "dimensionamento.lajes_bastos.momento_fissuracao"
    ],
-   "trecho": "analise"
+   "trecho": "analise",
+   "pacote": "P45",
+   "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira a checagem M < Mr que autoriza a rigidez bruta na flecha de placa."
   },
   {
    "id": "14.7.3.2-redistribuicao-lajes",
@@ -4589,14 +4647,16 @@
    "status": "ausente",
    "prioridade": "alta",
    "complexidade": "G",
-   "fora_do_escopo": "Modelar a laje nervurada como grelha é análise estrutural, feita no TQS. Os limites que tornam isso obrigatório estão no P10.",
    "falta": "Nao ha modelagem de grelha de nervuras nesta biblioteca; lajes nervuradas hoje so aparecem via dimensionamento a flexao de secao T (vigas_bastos.secao_T_simples), nunca como sistema de analise em grelha.",
    "o_que_calcula": "Quando as condicoes de 13.2.4.2 nao sao atendidas (nervuras muito espacadas etc.), analisa a capa como laje macica apoiada numa grelha formada pelas nervuras.",
    "conferido_na_imagem": false,
    "depende_de": [
     "13.2.4.2-condicoes-nervuras"
    ],
-   "trecho": "analise"
+   "trecho": "analise",
+   "pacote": "P45",
+   "fora_do_escopo_ate_18_09": "Modelar a laje nervurada como grelha é análise estrutural, feita no TQS. Os limites que tornam isso obrigatório estão no P10.",
+   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras)."
   },
   {
    "id": "14.7.7-lajes-nervuradas-unidirecionais",
@@ -4604,12 +4664,15 @@
    "pagina_pdf": 118,
    "titulo": "Lajes nervuradas unidirecionais: cálculo na direção das nervuras, com rigidez transversal e à torção desprezadas",
    "tipo": "qualitativo",
-   "status": "nao_computavel",
+   "status": "ausente",
    "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "Define que lajes nervuradas unidirecionais devem ser calculadas segundo a direcao das nervuras, desprezando a rigidez transversal e a rigidez a torcao.",
    "conferido_na_imagem": false,
-   "trecho": "analise"
+   "trecho": "analise",
+   "pacote": "P45",
+   "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira o modelo de nervurada unidirecional do P45."
   },
   {
    "id": "14.7.8-analise-numerica-lajes-lisas",
@@ -4617,12 +4680,15 @@
    "pagina_pdf": 118,
    "titulo": "Exigência de procedimento numérico para análise de lajes lisas e lajes-cogumelo",
    "tipo": "qualitativo",
-   "status": "nao_computavel",
+   "status": "ausente",
    "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "Exige procedimento numerico adequado (diferencas finitas, elementos finitos, grelha equivalente ou elementos de contorno) para a analise estrutural de lajes lisas e cogumelo em geral.",
    "conferido_na_imagem": false,
-   "trecho": "analise"
+   "trecho": "analise",
+   "pacote": "P45",
+   "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. A grelha equivalente do P45 é um dos procedimentos que o item aceita."
   },
   {
    "id": "14.7.8-portico-equivalente",
@@ -4633,7 +4699,6 @@
    "status": "ausente",
    "prioridade": "alta",
    "complexidade": "G",
-   "fora_do_escopo": "Montar e resolver o pórtico múltiplo é análise estrutural, feita no TQS. A repartição dos momentos entre faixas está no P17.",
    "falta": "Nenhuma implementacao do processo do portico equivalente (rigidez de laje/pilar equivalente, montagem e solucao do portico multiplano por direcao).",
    "o_que_calcula": "Obtem os esforcos solicitantes em lajes lisas/cogumelo de concreto armado com pilares em filas ortogonais regulares e vaos pouco diferentes, montando porticos multiplos (um por direcao, com a carga total) sem precisar de um modelo completo em elementos finitos.",
    "conferido_na_imagem": false,
@@ -4641,7 +4706,10 @@
     "14.7.8-faixas-distribuicao-momento",
     "19.5-puncao"
    ],
-   "trecho": "analise"
+   "trecho": "analise",
+   "pacote": "P45",
+   "fora_do_escopo_ate_18_09": "Montar e resolver o pórtico múltiplo é análise estrutural, feita no TQS. A repartição dos momentos entre faixas está no P17.",
+   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras)."
   },
   {
    "id": "14.7.8-faixas-distribuicao-momento",
@@ -4666,12 +4734,15 @@
    "pagina_pdf": 119,
    "titulo": "Método de análise de vigas-parede e pilares-parede (linear/não linear; representação como elemento linear equivalente)",
    "tipo": "qualitativo",
-   "status": "nao_computavel",
-   "prioridade": "media",
+   "status": "ausente",
+   "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "Permite analise linear (em geral por procedimento numerico) ou nao linear de vigas-parede/pilares-parede; permite representa-los por elemento linear equivalente considerando deformacao por cisalhamento e ajuste de rigidez a flexao.",
    "conferido_na_imagem": false,
-   "trecho": "analise"
+   "trecho": "analise",
+   "pacote": "P44",
+   "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira a barra com deformação por cisalhamento do P44."
   },
   {
    "id": "14.8.2-blocos-analise",
@@ -4974,6 +5045,28 @@
    "depende_de": [],
    "teste_sugerido": "Caso ℓ0+h < ℓ -> le=ℓ0+h; caso ℓ0+h > ℓ -> le=ℓ (o menor sempre vence); casos triviais com valores redondos.",
    "trecho": "estab"
+  },
+  {
+   "id": "15.7.1-nao-linearidade-nos-moveis",
+   "item_norma": "15.7.1",
+   "pagina_pdf": 126,
+   "titulo": "Estruturas de nós móveis: não linearidade geométrica e física obrigatórias na análise",
+   "tipo": "procedimento",
+   "status": "ausente",
+   "prioridade": "media",
+   "complexidade": "G",
+   "pacote": "P46",
+   "o_que_calcula": "Em estrutura de nós móveis, a análise considera obrigatoriamente a não linearidade geométrica e a física, e o dimensionamento, os efeitos globais e locais de 2ª ordem. Com o cálculo de barras do P44, vira a análise P-Δ com as rigidezes de 15.7.3.",
+   "falta": "Não há análise de 2ª ordem global; hoje só se pode receber o γz pronto (P26).",
+   "conferido_na_imagem": false,
+   "depende_de": [
+    "15.7.3-rigidez-aproximada-analise-global",
+    "15.5.3-coeficiente-gama-z"
+   ],
+   "teste_sugerido": "Pilar em balanço com carga vertical e horizontal: momento na base contra o fator de amplificação 1/(1 − P/Pcr), com tolerância declarada.",
+   "trecho": "revisão 19/09/2026",
+   "novo": true,
+   "revisao": "19/09/2026: item que o mapa não tinha; texto conferido na p. 126 do PDF."
   },
   {
    "id": "15.7.2-processo-aproximado-095-gamaz",
@@ -5695,7 +5788,7 @@
    "pagina_pdf": 143,
    "titulo": "Protensão no ELU: só hiperestáticos e pré-alongamento com perdas",
    "tipo": "qualitativo",
-   "status": "nao_computavel",
+   "status": "ausente",
    "prioridade": "media",
    "complexidade": "P",
    "o_que_calcula": "No ELU so entram os esforcos hiperestaticos de protensao (isostaticos ficam de fora); a armadura ativa entra pelos diagramas de 8.4.5 considerando o pre-alongamento calculado com a tensao inicial de calculo e as perdas ate o instante t.",
@@ -5706,7 +5799,10 @@
     "protendido_bastos.perda_fluencia_kncm2",
     "protendido_bastos.perda_progressiva_simplificada"
    ],
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "pacote": "P47",
+   "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Com o hiperestático calculado no P47, a regra do ELU é aplicável."
   },
   {
    "id": "17.2.4.3.1-fckj-especificado",
@@ -6455,7 +6551,7 @@
    "id": "17.5.1.1-modelo-trelica-espacial",
    "item_norma": "17.5.1.1",
    "pagina_pdf": 159,
-   "titulo": "Modelo resistente de treliça espacial para torcao uniforme",
+   "titulo": "Modelo resistente de treliça espacial para torção uniforme",
    "tipo": "qualitativo",
    "status": "implementado",
    "prioridade": "media",
@@ -9185,7 +9281,7 @@
    "pagina_pdf": 199,
    "titulo": "Modelagem da região de introdução da protensão",
    "tipo": "qualitativo",
-   "status": "nao_computavel",
+   "status": "ausente",
    "prioridade": "media",
    "complexidade": "G",
    "falta": "Nao ha formula fechada nesta subsecao (remete a bielas e tirantes); o fendilhamento anelar sob ancoragem so vira computavel com a Secao 22 mapeada.",
@@ -9194,7 +9290,9 @@
    "depende_de": [
     "Secao22-bielas-tirantes"
    ],
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "pacote": "P48",
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira o modelo-padrão de bielas e tirantes da zona de ancoragem no P48."
   },
   {
    "id": "21.2.4-cargas-superficie-chumbadores",
@@ -9456,13 +9554,16 @@
    "pagina_pdf": 202,
    "titulo": "Limite convencional entre regiões B e D",
    "tipo": "qualitativo",
-   "status": "nao_computavel",
-   "prioridade": "baixa",
+   "status": "ausente",
+   "prioridade": "media",
    "complexidade": "P",
    "o_que_calcula": "Criterio de modelagem: distancia h (altura da secao) a partir da descontinuidade define o limite entre regiao B (Bernoulli) e regiao D (descontinuidade), delimitando onde aplicar bielas-e-tirantes.",
    "conferido_na_imagem": false,
    "depende_de": [],
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "pacote": "P48",
+   "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira a extensão da região D usada pelos modelos do P48."
   },
   {
    "id": "22.2-gamma-n-consolo-gerber",
@@ -9490,7 +9591,6 @@
    "status": "ausente",
    "prioridade": "media",
    "complexidade": "G",
-   "fora_do_escopo": "Idealizar a treliça de uma região D é modelagem do engenheiro. A biblioteca verifica bielas, nós e tirantes a partir das forças dadas (P35).",
    "o_que_calcula": "Idealizacao de uma regiao D como trelica isostatica autoequilibrada de bielas, tirantes e nos, a partir de reacoes obtidas por analise linear/nao linear.",
    "conferido_na_imagem": false,
    "depende_de": [
@@ -9499,7 +9599,10 @@
     "22.3.2-fcd3",
     "22.3.3-as-tirante"
    ],
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "pacote": "P48",
+   "fora_do_escopo_ate_18_09": "Idealizar a treliça de uma região D é modelagem do engenheiro. A biblioteca verifica bielas, nós e tirantes a partir das forças dadas (P35).",
+   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras)."
   },
   {
    "id": "22.3.1-limite-inclinacao-biela",
@@ -9638,7 +9741,6 @@
    "status": "ausente",
    "prioridade": "media",
    "complexidade": "G",
-   "fora_do_escopo": "Exige MEF ou uma treliça montada caso a caso. As armaduras e verificações de 22.4.4 estão no P35.",
    "o_que_calcula": "MEF (linear ou nao linear) ou modelo de bielas e tirantes calibrado para aproximar as forcas de um modelo elastico linear; verificacao indireta da biela pela tensao de compressao vertical no apoio (22.3.2).",
    "conferido_na_imagem": false,
    "depende_de": [
@@ -9647,7 +9749,10 @@
     "22.3.2-fcd3",
     "22.3.3-as-tirante"
    ],
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "pacote": "P48",
+   "fora_do_escopo_ate_18_09": "Exige MEF ou uma treliça montada caso a caso. As armaduras e verificações de 22.4.4 estão no P35.",
+   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras)."
   },
   {
    "id": "22.4.4.1-as-viga-parede-continua",
@@ -10058,7 +10163,6 @@
    "status": "ausente",
    "prioridade": "media",
    "complexidade": "G",
-   "fora_do_escopo": "O modelo 3D linear ou de bielas e tirantes é análise estrutural. O método simplificado de sapatas é completado no P37.",
    "o_que_calcula": "Dimensionamento por modelo tridimensional linear ou modelo biela-tirante tridimensional, contemplando o comportamento de 22.6.2 e o fendilhamento na regiao de contato pilar-sapata (21.2), podendo avaliar interacao solo-estrutura.",
    "conferido_na_imagem": false,
    "depende_de": [
@@ -10067,7 +10171,10 @@
     "22.3.2-fcd3",
     "22.3.3-as-tirante"
    ],
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "pacote": "P48",
+   "fora_do_escopo_ate_18_09": "O modelo 3D linear ou de bielas e tirantes é análise estrutural. O método simplificado de sapatas é completado no P37.",
+   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras)."
   },
   {
    "id": "22.6.4.1.1-armadura-flexao-sapata-detalhamento",
@@ -10196,7 +10303,6 @@
    "status": "ausente",
    "prioridade": "media",
    "complexidade": "G",
-   "fora_do_escopo": "O modelo 3D é análise estrutural. O método das bielas (Blévot) é completado no P37.",
    "o_que_calcula": "Modelos tridimensionais lineares/nao lineares ou bielas-tirantes 3D, contemplando o fendilhamento pilar-bloco (21.2) e a interacao solo-estrutura quando ha forcas horizontais significativas ou forte assimetria.",
    "conferido_na_imagem": false,
    "depende_de": [
@@ -10205,7 +10311,10 @@
     "22.3.2-fcd3",
     "22.3.3-as-tirante"
    ],
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "pacote": "P48",
+   "fora_do_escopo_ate_18_09": "O modelo 3D é análise estrutural. O método das bielas (Blévot) é completado no P37.",
+   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras)."
   },
   {
    "id": "22.7.4.1.1-armadura-flexao-bloco-85pct",
