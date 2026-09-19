@@ -260,7 +260,8 @@
    "nome": "Regiões especiais: furos, aberturas e pressão de contato",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/regioes_especiais_nbr6118.py"
+   "modulo": "dimensionamento/regioes_especiais_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P35",
@@ -12543,7 +12544,7 @@
    "pagina_pdf": 197,
    "titulo": "Resistência de cálculo ao esmagamento sob carga em área reduzida",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P34",
@@ -12555,7 +12556,22 @@
     "nucleo.fcd"
    ],
    "teste_sugerido": "Caso limite Ac1=Ac0 -> FRd=Ac0*fcd; ponto de transicao raiz(Ac1/Ac0)=3,3 (Ac1/Ac0=10,89) onde o teto passa a governar.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P34",
+    "data": "19/09/2026",
+    "funcoes": [
+     "FRd_area_reduzida"
+    ],
+    "testes": [
+     "test_FRd_area_reduzida_Ac1_igual_Ac0",
+     "test_FRd_area_reduzida_transicao_teto",
+     "test_FRd_area_reduzida_acima_da_transicao_satura_no_teto",
+     "test_FRd_area_reduzida_Ac1_menor_que_Ac0_erro",
+     "test_FRd_area_reduzida_com_proporcao_ok_e_ruim"
+    ],
+    "observacao": "FRd = Ac0*fcd*raiz(Ac1/Ac0) <= 3,3*fcd*Ac0, conferido na imagem (p. 197). fcd via nucleo_nbr6118.fcd (nao reimplementado). Ac1 < Ac0 levanta FaixaNormativaError. Aceita lado_maior_cm/lado_menor_cm opcionais para tambem aplicar o limite de proporcao."
+   }
   },
   {
    "id": "21.2.1-proporcao-lados-ac0",
@@ -12563,7 +12579,7 @@
    "pagina_pdf": 197,
    "titulo": "Proporção máxima entre lados de área reduzida retangular",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P34",
@@ -12574,7 +12590,20 @@
     "21.2.1-FRd-esmagamento-area-reduzida"
    ],
    "teste_sugerido": "Ac0 20x40cm -> razao=2,0 (limite, passa); 20x45cm -> razao=2,25 (reprova).",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P34",
+    "data": "19/09/2026",
+    "funcoes": [
+     "validar_proporcao_ac0"
+    ],
+    "testes": [
+     "test_proporcao_ac0_no_limite_passa",
+     "test_proporcao_ac0_acima_do_limite_reprova",
+     "test_proporcao_ac0_ordem_dos_lados_nao_importa"
+    ],
+    "observacao": "razao lado_maior/lado_menor <= 2; acima disso levanta FaixaNormativaError, dizendo que a formula de FRd deixa de se aplicar. Testado no limite exato (2,0, passa) e acima (2,25, reprova), como pedido pelo brief."
+   }
   },
   {
    "id": "21.2.1-ressalvas-qualitativas",
@@ -12598,7 +12627,7 @@
    "pagina_pdf": 198,
    "titulo": "Geometria e inclinação limite de articulação de concreto (núcleo reduzido)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "M",
    "pacote": "P34",
@@ -12608,7 +12637,22 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "c=20cm -> c/8=2,5cm>2cm, limite governante=2cm; c=10cm -> c/8=1,25cm<2cm, limite governante=1,25cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P34",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_articulacao_concreto"
+    ],
+    "testes": [
+     "test_articulacao_c20_limite_governante_2cm",
+     "test_articulacao_c20_deslocamento_acima_do_limite_falha",
+     "test_articulacao_c10_limite_governante_c_sobre_8",
+     "test_articulacao_c10_acima_do_limite_e_inclinacao_excessiva_falham",
+     "test_articulacao_extensao_volume_fretado_3c"
+    ],
+    "observacao": "Inclinacao da resultante <= 1/8; deslocamento dentro do volume fretado <= min(c/8, 2 cm); volume de fretagem com extensao 3c em cada direcao (Figura 21.2, p. 198). Os dois casos do teste sugerido (c=20 -> governa 2 cm; c=10 -> governa c/8=1,25 cm) foram cobertos."
+   }
   },
   {
    "id": "21.2.3-intro-protensao-modelo-3d",
@@ -12686,7 +12730,7 @@
    "pagina_pdf": 200,
    "titulo": "Diâmetro máximo de furo vertical em viga",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P34",
@@ -12696,7 +12740,19 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "bw=30cm -> phi_max=10cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P34",
+    "data": "19/09/2026",
+    "funcoes": [
+     "phi_max_furo_viga"
+    ],
+    "testes": [
+     "test_phi_max_furo_viga_bw30",
+     "test_phi_max_furo_viga_bw45"
+    ],
+    "observacao": "phi_max = bw/3, conferido na imagem (p. 200, Figura 21.5): 'nao podem ter diametros superiores a 1/3 da largura dessas vigas'. O JSON tinha conferido_na_imagem=false; confirmado que a formula bate com a norma."
+   }
   },
   {
    "id": "21.3.3-distancia-min-furo-face",
@@ -12704,7 +12760,7 @@
    "pagina_pdf": 200,
    "titulo": "Distância mínima do furo à face da viga",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P34",
@@ -12716,7 +12772,20 @@
     "21.3.3-diametro-max-furo-viga"
    ],
    "teste_sugerido": "cobrimento=3cm -> 2*3=6cm>5cm, dist_min=6cm; cobrimento=2cm -> 2*2=4cm<5cm, dist_min=5cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P34",
+    "data": "19/09/2026",
+    "funcoes": [
+     "distancia_min_furo_face"
+    ],
+    "testes": [
+     "test_distancia_min_furo_face_cobrimento_governa",
+     "test_distancia_min_furo_face_absoluta_governa",
+     "test_distancia_min_furo_face_no_limite_exato"
+    ],
+    "observacao": "dist_min = max(5 cm, 2*cobrimento), conferido na imagem (p. 200). Recebe cobrimento_cm como parametro direto (como o dispensa_verificacao_furo_viga de P10/limites_geometricos_nbr6118 ja faz para o item de 13.2.5.1, formula igual mas item da norma diferente: aqui e' 21.3.3, furo na direcao da altura)."
+   }
   },
   {
    "id": "21.3.3-secao-remanescente-furo-viga",
@@ -12724,7 +12793,7 @@
    "pagina_pdf": 200,
    "titulo": "Verificação da seção remanescente da viga na região do furo",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P34",
@@ -12738,7 +12807,21 @@
     "dimensionamento.cortante_nbr6118"
    ],
    "teste_sugerido": "Comparar momento/cortante resistentes com bw e com (bw - phi_furo) equivalente.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P34",
+    "data": "19/09/2026",
+    "funcoes": [
+     "secao_remanescente_furo_viga"
+    ],
+    "testes": [
+     "test_secao_remanescente_furo_viga_ok",
+     "test_secao_remanescente_furo_viga_falha_flexao",
+     "test_secao_remanescente_furo_viga_falha_cortante",
+     "test_secao_remanescente_furo_viga_furo_maior_que_bw_erro"
+    ],
+    "observacao": "A norma nao da formula propria, so exige Rd>=Sd na secao com bw reduzido pelo furo (bw_remanescente = bw - phi_furo). MRd vem de vigas_nbr6118.momento_resistente_simples (P12) e VRd (VRd2) de cortante_nbr6118.simplificada_modelo_I (P15), comparados via seguranca_nbr6118.verificar_seguranca (P5) -- nenhuma formula de material ou de secao foi reimplementada."
+   }
   },
   {
    "id": "21.3.3-conjunto-furos-alinhados",
@@ -12746,7 +12829,7 @@
    "pagina_pdf": 200,
    "titulo": "Distância mínima entre furos alinhados e estribo por intervalo",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P34",
@@ -12757,7 +12840,22 @@
     "21.3.3-diametro-max-furo-viga"
    ],
    "teste_sugerido": "phi_furo=8cm -> dist_min entre faces=8cm (governa o diametro).",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P34",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_conjunto_furos"
+    ],
+    "testes": [
+     "test_conjunto_furos_phi_governa_distancia",
+     "test_conjunto_furos_distancia_insuficiente_falha",
+     "test_conjunto_furos_sem_estribo_no_intervalo_falha",
+     "test_conjunto_furos_absoluta_governa_quando_phi_pequeno",
+     "test_conjunto_furos_tamanhos_incompativeis_erro"
+    ],
+    "observacao": "dist_min_entre_faces = max(5 cm, phi_furo); cada intervalo entre furos consecutivos precisa de >= 1 estribo, conferido na imagem (p. 200). Recebe uma distancia e uma flag de estribo por intervalo (n furos -> n-1 intervalos)."
+   }
   },
   {
    "id": "21.3.3-torcao-ajuste-limites",
@@ -12781,7 +12879,7 @@
    "pagina_pdf": 201,
    "titulo": "Verificação da seção remanescente de laje com abertura no ELU",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P34",
@@ -12792,7 +12890,22 @@
     "dimensionamento.lajes_nbr6118"
    ],
    "teste_sugerido": "Comparar momento resistente de uma faixa de largura b com o de largura (b - largura_abertura) na mesma secao.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P34",
+    "data": "19/09/2026",
+    "funcoes": [
+     "secao_remanescente_abertura_laje"
+    ],
+    "testes": [
+     "test_secao_remanescente_abertura_laje_ok",
+     "test_secao_remanescente_abertura_laje_falha_flexao",
+     "test_secao_remanescente_abertura_laje_cortante_ok",
+     "test_secao_remanescente_abertura_laje_cortante_falha",
+     "test_secao_remanescente_abertura_laje_abertura_maior_que_b_erro"
+    ],
+    "observacao": "Mesma logica Rd>=Sd, com b_remanescente = b - largura_abertura. MRd via vigas_nbr6118.momento_resistente_simples (laje como viga larga); VRd (VRd1) opcional via lajes_nbr6118.cortante_resistente_laje (P15), so quando VSd_kn e informado. O item 21.3.4 c) (aberturas perto de pilar em laje lisa/cogumelo) fica fora, pois nao consta na lista de 9 itens do pacote."
+   }
   },
   {
    "id": "21.3.4b-armadura-reforco-abertura-laje",
@@ -12800,7 +12913,7 @@
    "pagina_pdf": 201,
    "titulo": "Armadura de reforço equivalente à armadura interrompida por abertura em laje",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P34",
@@ -12812,7 +12925,22 @@
     "Secao9-ancoragem"
    ],
    "teste_sugerido": "Abertura interrompe 3 barras de 10mm (2,36cm2) -> As,reforco minima=2,36cm2, ancorada nas bordas.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P34",
+    "data": "19/09/2026",
+    "funcoes": [
+     "As_reforco_abertura"
+    ],
+    "testes": [
+     "test_As_reforco_abertura_3_barras_10mm",
+     "test_As_reforco_abertura_com_ancoragem",
+     "test_As_reforco_abertura_sem_ancoragem_lb_none",
+     "test_As_reforco_abertura_lista_vazia_erro",
+     "test_As_reforco_abertura_area_negativa_erro"
+    ],
+    "observacao": "As,reforco = soma das As das barras interrompidas (conferido no exemplo do plano: 3 barras de 10 mm -> 2,36 cm2). Quando phi_reforco_mm e fck_mpa sao informados, tambem calcula o comprimento de ancoragem necessario via ancoragem_nbr6118.comprimento_ancoragem (Secao 9), atendendo 'devidamente ancoradas nas bordas'."
+   }
   },
   {
    "id": "21.3.4c-puncao-abertura-proxima-pilar",

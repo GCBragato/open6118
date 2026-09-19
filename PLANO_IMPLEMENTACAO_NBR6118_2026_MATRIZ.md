@@ -592,21 +592,21 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | Id | Item | Pág. | O que é | Situação | Prior. | Compl. | Pacote |
 |---|---|---|---|---|---|---|---|
 | `21.1-definicao-regiao-especial` | 21.1 | 197 | Definição de regiões especiais e elementos especiais | não computável | média | P |  |
-| `21.2.1-FRd-esmagamento-area-reduzida` | 21.2.1 | 197 | Resistência de cálculo ao esmagamento sob carga em área reduzida | ausente | média | P | P34 |
-| `21.2.1-proporcao-lados-ac0` | 21.2.1 | 197 | Proporção máxima entre lados de área reduzida retangular | ausente | média | P | P34 |
+| `21.2.1-FRd-esmagamento-area-reduzida` | 21.2.1 | 197 | Resistência de cálculo ao esmagamento sob carga em área reduzida | implementado | média | P | P34 |
+| `21.2.1-proporcao-lados-ac0` | 21.2.1 | 197 | Proporção máxima entre lados de área reduzida retangular | implementado | média | P | P34 |
 | `21.2.1-ressalvas-qualitativas` | 21.2.1 | 198 | Ressalvas de aplicação da fórmula de esmagamento em área reduzida | não computável | média | P |  |
-| `21.2.2-articulacao-concreto` | 21.2.2 | 198 | Geometria e inclinação limite de articulação de concreto (núcleo reduzido) | ausente | baixa | M | P34 |
+| `21.2.2-articulacao-concreto` | 21.2.2 | 198 | Geometria e inclinação limite de articulação de concreto (núcleo reduzido) | implementado | baixa | M | P34 |
 | `21.2.3-intro-protensao-modelo-3d` | 21.2.3 | 199 | Modelagem da região de introdução da protensão | ausente | média | G | P48 |
 | `21.2.4-cargas-superficie-chumbadores` | 21.2.4 | 199 | Verificação de cargas de insertos e chumbadores na superfície do concreto | não computável | baixa | P |  |
 | `21.3.1-generalidades-furos-aberturas` | 21.3.1 | 200 | Generalidades sobre furos e aberturas em elementos estruturais | não computável | alta | P |  |
 | `21.3.2-classificacao-abertura-viga-parede` | 21.3.2 | 200 | Classificação de abertura em parede/viga-parede como normal ou prejudicial | não computável | média | M |  |
-| `21.3.3-diametro-max-furo-viga` | 21.3.3 | 200 | Diâmetro máximo de furo vertical em viga | ausente | alta | P | P34 |
-| `21.3.3-distancia-min-furo-face` | 21.3.3 | 200 | Distância mínima do furo à face da viga | ausente | alta | P | P34 |
-| `21.3.3-secao-remanescente-furo-viga` | 21.3.3 | 200 | Verificação da seção remanescente da viga na região do furo | ausente | alta | M | P34 |
-| `21.3.3-conjunto-furos-alinhados` | 21.3.3 | 200 | Distância mínima entre furos alinhados e estribo por intervalo | ausente | média | P | P34 |
+| `21.3.3-diametro-max-furo-viga` | 21.3.3 | 200 | Diâmetro máximo de furo vertical em viga | implementado | alta | P | P34 |
+| `21.3.3-distancia-min-furo-face` | 21.3.3 | 200 | Distância mínima do furo à face da viga | implementado | alta | P | P34 |
+| `21.3.3-secao-remanescente-furo-viga` | 21.3.3 | 200 | Verificação da seção remanescente da viga na região do furo | implementado | alta | M | P34 |
+| `21.3.3-conjunto-furos-alinhados` | 21.3.3 | 200 | Distância mínima entre furos alinhados e estribo por intervalo | implementado | média | P | P34 |
 | `21.3.3-torcao-ajuste-limites` | 21.3.3 | 201 | Ajuste dos limites de furo em vigas submetidas à torção | não computável | baixa | P |  |
-| `21.3.4a-secao-remanescente-abertura-laje` | 21.3.4 | 201 | Verificação da seção remanescente de laje com abertura no ELU | ausente | alta | M | P34 |
-| `21.3.4b-armadura-reforco-abertura-laje` | 21.3.4 | 201 | Armadura de reforço equivalente à armadura interrompida por abertura em laje | ausente | alta | P | P34 |
+| `21.3.4a-secao-remanescente-abertura-laje` | 21.3.4 | 201 | Verificação da seção remanescente de laje com abertura no ELU | implementado | alta | M | P34 |
+| `21.3.4b-armadura-reforco-abertura-laje` | 21.3.4 | 201 | Armadura de reforço equivalente à armadura interrompida por abertura em laje | implementado | alta | P | P34 |
 | `21.3.4c-puncao-abertura-proxima-pilar` | 21.3.4 | 201 | Equilíbrio de forças cortantes em laje lisa/cogumelo com abertura próxima a pilar | ausente | alta | G | P20 |
 | `21.4-nos-porticos-ligacoes-paredes` | 21.4 | 201 | Nós de pórticos e ligações entre paredes | não computável | média | P |  |
 | `21.5-ligacoes-pre-moldados` | 21.5 | 201 | Ligações de elementos estruturais pré-moldados | não computável | baixa | P |  |
