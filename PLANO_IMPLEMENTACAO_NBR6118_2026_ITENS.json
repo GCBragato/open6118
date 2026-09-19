@@ -195,7 +195,8 @@
    "nome": "Estabilidade global e imperfeições globais",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/estabilidade_global_nbr6118.py"
+   "modulo": "dimensionamento/estabilidade_global_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P27",
@@ -3347,7 +3348,7 @@
    "pagina_pdf": 79,
    "titulo": "Imperfeições geométricas globais - desaprumo (θ1, θa)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P26",
@@ -3357,7 +3358,27 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "H=30m, n=10 -> theta1=1/(100*sqrt(30))=0.001826; theta_a=theta1*sqrt(1.1/2)=theta1*0.7416.",
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P26",
+    "data": "19/09/2026",
+    "funcoes": [
+     "desaprumo_global"
+    ],
+    "testes": [
+     "test_desaprumo_theta1_ponto_interior_sem_clamp",
+     "test_desaprumo_theta1_fronteira_theta1_max_H_igual_4",
+     "test_desaprumo_theta1_fronteira_theta1_min_H_igual_9",
+     "test_desaprumo_theta1_clampado_no_maximo_predio_baixo",
+     "test_desaprumo_theta1_clampado_no_minimo_predio_alto",
+     "test_desaprumo_theta_a_com_n_igual_1_reproduz_theta1",
+     "test_desaprumo_theta_a_geral_n_maior_que_1",
+     "test_desaprumo_lajes_lisas_theta_a_igual_theta1_mesmo_com_n_grande",
+     "test_desaprumo_pilar_isolado_em_balanco_fixa_theta1_em_1_200",
+     "test_desaprumo_n_pilares_invalido_levanta"
+    ],
+    "observacao": "Sem achados nesta volta; nao alterado."
+   }
   },
   {
    "id": "11.3.3.4.1-combinacao-vento-desaprumo",
@@ -3365,7 +3386,7 @@
    "pagina_pdf": 79,
    "titulo": "Regra de combinação entre vento e desaprumo global (30%)",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P26",
@@ -3377,7 +3398,23 @@
     "11.3.3.4.1-desaprumo-global"
    ],
    "teste_sugerido": "Caso limite M_vento=0,3*M_desaprumo: os criterios (a) e (b) devem coincidir.",
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P26",
+    "data": "19/09/2026",
+    "funcoes": [
+     "combinar_vento_desaprumo"
+    ],
+    "testes": [
+     "test_combinar_vento_desaprumo_caso_a_somente_vento",
+     "test_combinar_vento_desaprumo_fronteira_caso_a_cai_em_c",
+     "test_combinar_vento_desaprumo_caso_b_somente_desaprumo",
+     "test_combinar_vento_desaprumo_fronteira_caso_b_cai_em_c",
+     "test_combinar_vento_desaprumo_caso_c_combina_as_duas",
+     "test_combinar_vento_desaprumo_negativo_levanta"
+    ],
+    "observacao": "Sem achados nesta volta; nao alterado."
+   }
   },
   {
    "id": "11.3.3.4.2-imperfeicao-local",
@@ -6689,7 +6726,7 @@
    "pagina_pdf": 123,
    "titulo": "Classificação da estrutura em nós fixos ou nós móveis",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P26",
@@ -6703,7 +6740,26 @@
     "15.5.3-coeficiente-gama-z"
    ],
    "teste_sugerido": "Caso limite α=α1 (ou γz=1,1 exato) deve cair no lado 'nós fixos' (<=), não no lado 'nós móveis'.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P26",
+    "data": "19/09/2026",
+    "funcoes": [
+     "classificar_nos"
+    ],
+    "testes": [
+     "test_classificar_nos_por_alfa_fixos_e_moveis",
+     "test_classificar_nos_por_alfa_caso_limite_igual_cai_em_nos_moveis",
+     "test_classificar_nos_por_alfa_abaixo_do_limite_e_nos_fixos",
+     "test_classificar_nos_por_gama_z_fronteira_1_1_e_nos_fixos",
+     "test_classificar_nos_por_gama_z_acima_de_1_1_e_nos_moveis",
+     "test_classificar_nos_dois_criterios_concordando",
+     "test_classificar_nos_dois_criterios_discordando_prevalece_nos_moveis",
+     "test_classificar_nos_sem_nenhum_criterio_levanta",
+     "test_classificar_nos_alfa_sem_alfa1_levanta"
+    ],
+    "observacao": "Corrigido nesta volta: criterio por alfa agora usa desigualdade estrita (alfa < alfa1), conforme 15.5.2 (p.124); criterio por gama_z mantido com <= 1,1 (15.5.3, p.125), que ja estava correto."
+   }
   },
   {
    "id": "15.4.3-contraventamento",
@@ -6739,7 +6795,7 @@
    "pagina_pdf": 124,
    "titulo": "Majoração de 10% do módulo de deformação secante na análise de estabilidade global",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P26",
@@ -6751,7 +6807,19 @@
     "nucleo.Ecs"
    ],
    "teste_sugerido": "Ecs_majorado deve ser exatamente 1,10x o Ecs padrão já testado em nucleo_nbr6118.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P26",
+    "data": "19/09/2026",
+    "funcoes": [
+     "Ecs_estabilidade_mpa"
+    ],
+    "testes": [
+     "test_ecs_estabilidade_majora_10_por_cento",
+     "test_ecs_estabilidade_sem_majorar_reproduz_ecs_padrao"
+    ],
+    "observacao": "Sem achados nesta volta; nao alterado."
+   }
   },
   {
    "id": "15.5.2-parametro-instabilidade-alfa",
@@ -6759,7 +6827,7 @@
    "pagina_pdf": 124,
    "titulo": "Parâmetro de instabilidade α",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P26",
@@ -6772,7 +6840,19 @@
     "15.5.2-rigidez-pilar-equivalente"
    ],
    "teste_sugerido": "Exemplo clássico de apostila de estabilidade global (Kimura/Bastos) com Htot, Nk e EcsIc conhecidos -> α dado.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P26",
+    "data": "19/09/2026",
+    "funcoes": [
+     "parametro_alfa"
+    ],
+    "testes": [
+     "test_parametro_alfa_formula",
+     "test_parametro_alfa_exige_grandezas_positivas"
+    ],
+    "observacao": "Sem achados nesta volta; nao alterado."
+   }
   },
   {
    "id": "15.5.2-alfa1-limite",
@@ -6780,7 +6860,7 @@
    "pagina_pdf": 124,
    "titulo": "Valor-limite α1 do parâmetro de instabilidade",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P26",
@@ -6790,7 +6870,23 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Valores tabulados diretos: n=1->0,3; n=2->0,4; n=3->0,5; n=4 (ou mais)->0,6; ramos de pilar-parede/pórticos puros conferidos por leitura direta do texto.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P26",
+    "data": "19/09/2026",
+    "funcoes": [
+     "alfa1"
+    ],
+    "testes": [
+     "test_alfa1_tabela_n_ate_3",
+     "test_alfa1_usual_n_maior_igual_4",
+     "test_alfa1_contraventamento_pilar_parede_exclusivo",
+     "test_alfa1_contraventamento_so_porticos",
+     "test_alfa1_n_invalido_levanta",
+     "test_alfa1_contraventamento_desconhecido_levanta"
+    ],
+    "observacao": "Sem achados nesta volta; nao alterado."
+   }
   },
   {
    "id": "15.5.2-rigidez-pilar-equivalente",
@@ -6798,7 +6894,7 @@
    "pagina_pdf": 125,
    "titulo": "Rigidez EcsIc de um pilar equivalente (para α e γz)",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "G",
    "pacote": "P26",
@@ -6808,7 +6904,20 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Caso trivial: um único pilar isolado engastado na base = o próprio pilar (rigidez equivalente = EcsIc do pilar, sem pórticos associados).",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P26",
+    "data": "19/09/2026",
+    "funcoes": [
+     "rigidez_pilar_equivalente"
+    ],
+    "testes": [
+     "test_rigidez_pilar_equivalente_caso_trivial_pilar_isolado",
+     "test_rigidez_pilar_equivalente_segundo_caso",
+     "test_rigidez_pilar_equivalente_exige_grandezas_positivas"
+    ],
+    "observacao": "Sem achados nesta volta; nao alterado."
+   }
   },
   {
    "id": "15.5.3-coeficiente-gama-z",
@@ -6816,7 +6925,7 @@
    "pagina_pdf": 125,
    "titulo": "Coeficiente γz de avaliação dos esforços globais de 2ª ordem",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P26",
@@ -6828,7 +6937,21 @@
     "15.7.3-rigidez-aproximada-analise-global"
    ],
    "teste_sugerido": "Exemplo clássico de apostila (Bastos/Kimura, edifício de 4+ andares) com M1,tot,d e ΔMtot,d tabelados -> γz dado; caso limite ΔMtot,d=0 -> γz=1,0.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P26",
+    "data": "19/09/2026",
+    "funcoes": [
+     "gama_z"
+    ],
+    "testes": [
+     "test_gama_z_fronteira_1_1",
+     "test_gama_z_delta_zero_da_1_0",
+     "test_gama_z_ponto_interior",
+     "test_gama_z_m1_nao_positivo_levanta"
+    ],
+    "observacao": "Sem achados nesta volta; nao alterado."
+   }
   },
   {
    "id": "15.6-comprimento-equivalente-nos-fixos",
@@ -6876,7 +6999,7 @@
    "pagina_pdf": 126,
    "titulo": "Processo aproximado de majoração das ações horizontais por 0,95 γz",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P26",
@@ -6888,7 +7011,20 @@
     "15.5.3-coeficiente-gama-z"
    ],
    "teste_sugerido": "γz=1,3 (limite superior de validade) -> fator=1,235, deve ser aceito; γz=1,31 deve ser recusado/sinalizado como fora do processo aproximado.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P26",
+    "data": "19/09/2026",
+    "funcoes": [
+     "majoracao_horizontal"
+    ],
+    "testes": [
+     "test_majoracao_horizontal_no_limite_1_3_e_aceito",
+     "test_majoracao_horizontal_ponto_interior",
+     "test_majoracao_horizontal_acima_do_limite_levanta"
+    ],
+    "observacao": "Sem achados nesta volta; nao alterado."
+   }
   },
   {
    "id": "15.7.3-rigidez-aproximada-analise-global",
@@ -6896,7 +7032,7 @@
    "pagina_pdf": 126,
    "titulo": "Rigidezes aproximadas para consideração da não linearidade física na análise global",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P26",
@@ -6906,7 +7042,23 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Teste trivial: a função devolve exatamente 0,3/0,4/0,5/0,8 * Ec * Ic para cada tipo de elemento.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P26",
+    "data": "19/09/2026",
+    "funcoes": [
+     "rigidezes_aproximadas"
+    ],
+    "testes": [
+     "test_rigidezes_aproximadas_laje",
+     "test_rigidezes_aproximadas_viga_as_diferente",
+     "test_rigidezes_aproximadas_viga_as_igual",
+     "test_rigidezes_aproximadas_pilar",
+     "test_rigidezes_aproximadas_viga_sem_as_igual_levanta",
+     "test_rigidezes_aproximadas_elemento_desconhecido_levanta"
+    ],
+    "observacao": "Corrigido nesta volta: docstring reescrita para nao citar parametro 'avaliacao_especifica' inexistente; a excecao normativa (edificios <4 pavimentos, Nsd pequeno) continua fora do escopo automatico da funcao, agora dito sem prometer parametro. Nao foi adicionado parametro/flag novo porque a norma (p.127) nao da formula alternativa, apenas manda avaliar 'de forma especifica' -- decisao de engenheiro, nao regra codificavel."
+   }
   },
   {
    "id": "15.7.4-efeitos-locais-em-nos-moveis",

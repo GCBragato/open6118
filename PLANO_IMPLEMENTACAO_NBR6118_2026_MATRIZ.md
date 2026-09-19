@@ -168,8 +168,8 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `11.3.3.1-retracao-valor-simplificado` | 11.3.3.1 | 77 | Retração do concreto - valor simplificado εcs(t∞,t0) = −15·10⁻⁵ | implementado | média | P | P7 |
 | `11.3.3.2-fluencia-deformacao-total` | 11.3.3.2 | 78 | Deformação total do concreto por fluência (processo simplificado) | implementado | média | P | P7 |
 | `11.3.3.3-deslocamentos-apoio` | 11.3.3.3 | 78 | Deslocamentos de apoio como ação permanente indireta | implementado | alta | P | P44 |
-| `11.3.3.4.1-desaprumo-global` | 11.3.3.4.1 | 79 | Imperfeições geométricas globais - desaprumo (θ1, θa) | ausente | alta | M | P26 |
-| `11.3.3.4.1-combinacao-vento-desaprumo` | 11.3.3.4.1 | 79 | Regra de combinação entre vento e desaprumo global (30%) | ausente | alta | M | P26 |
+| `11.3.3.4.1-desaprumo-global` | 11.3.3.4.1 | 79 | Imperfeições geométricas globais - desaprumo (θ1, θa) | implementado | alta | M | P26 |
+| `11.3.3.4.1-combinacao-vento-desaprumo` | 11.3.3.4.1 | 79 | Regra de combinação entre vento e desaprumo global (30%) | implementado | alta | M | P26 |
 | `11.3.3.4.2-imperfeicao-local` | 11.3.3.4.2 | 80 | Imperfeições geométricas locais (falta de retilineidade / desaprumo do lance de pilar) | implementado | alta | P |  |
 | `11.3.3.4.3-m1d-min-uniaxial` | 11.3.3.4.3 | 80 | Momento mínimo de 1a ordem para substituir imperfeições locais (uniaxial) | implementado | alta | P |  |
 | `11.3.3.4.3-envoltoria-minima-1a-ordem` | 11.3.3.4.3 | 81 | Envoltória mínima de 1a ordem (flexão composta oblíqua, Figura 11.3) | implementado | alta | G |  |
@@ -323,18 +323,18 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `15.3.1-kappa-sec-adimensional` | 15.3.1 | 122 | Rigidez secante adimensional κsec | ausente | baixa | P | P25 |
 | `15.3.2-envoltoria-minima-2a-ordem` | 15.3.2 | 122 | Envoltória mínima com 2ª ordem (Figura 15.2) | parcial | alta | M | P25 |
 | `15.4.1-efeitos-globais-locais-localizados` | 15.4.1 | 122 | Definições de efeitos globais, locais e localizados de 2ª ordem | não computável | alta | P |  |
-| `15.4.2-classificacao-nos-fixos-moveis` | 15.4.2 | 123 | Classificação da estrutura em nós fixos ou nós móveis | ausente | alta | P | P26 |
+| `15.4.2-classificacao-nos-fixos-moveis` | 15.4.2 | 123 | Classificação da estrutura em nós fixos ou nós móveis | implementado | alta | P | P26 |
 | `15.4.3-contraventamento` | 15.4.3 | 123 | Subestruturas de contraventamento e elementos contraventados | não computável | média | P |  |
 | `15.4.4-elementos-isolados` | 15.4.4 | 124 | O que é considerado elemento isolado para análise local | não computável | média | P |  |
-| `15.5.1-majoracao-ecs-analise-global` | 15.5.1 | 124 | Majoração de 10% do módulo de deformação secante na análise de estabilidade global | ausente | média | P | P26 |
-| `15.5.2-parametro-instabilidade-alfa` | 15.5.2 | 124 | Parâmetro de instabilidade α | ausente | alta | P | P26 |
-| `15.5.2-alfa1-limite` | 15.5.2 | 124 | Valor-limite α1 do parâmetro de instabilidade | ausente | alta | P | P26 |
-| `15.5.2-rigidez-pilar-equivalente` | 15.5.2 | 125 | Rigidez EcsIc de um pilar equivalente (para α e γz) | ausente | alta | G | P26 |
-| `15.5.3-coeficiente-gama-z` | 15.5.3 | 125 | Coeficiente γz de avaliação dos esforços globais de 2ª ordem | ausente | alta | P | P26 |
+| `15.5.1-majoracao-ecs-analise-global` | 15.5.1 | 124 | Majoração de 10% do módulo de deformação secante na análise de estabilidade global | implementado | média | P | P26 |
+| `15.5.2-parametro-instabilidade-alfa` | 15.5.2 | 124 | Parâmetro de instabilidade α | implementado | alta | P | P26 |
+| `15.5.2-alfa1-limite` | 15.5.2 | 124 | Valor-limite α1 do parâmetro de instabilidade | implementado | alta | P | P26 |
+| `15.5.2-rigidez-pilar-equivalente` | 15.5.2 | 125 | Rigidez EcsIc de um pilar equivalente (para α e γz) | implementado | alta | G | P26 |
+| `15.5.3-coeficiente-gama-z` | 15.5.3 | 125 | Coeficiente γz de avaliação dos esforços globais de 2ª ordem | implementado | alta | P | P26 |
 | `15.6-comprimento-equivalente-nos-fixos` | 15.6 | 125 | Comprimento equivalente ℓe do pilar em estrutura de nós fixos | ausente | alta | P | P25 |
 | `15.7.1-nao-linearidade-nos-moveis` | 15.7.1 | 126 | Estruturas de nós móveis: não linearidade geométrica e física obrigatórias na análise | ausente | média | G | P46 |
-| `15.7.2-processo-aproximado-095-gamaz` | 15.7.2 | 126 | Processo aproximado de majoração das ações horizontais por 0,95 γz | ausente | alta | M | P26 |
-| `15.7.3-rigidez-aproximada-analise-global` | 15.7.3 | 126 | Rigidezes aproximadas para consideração da não linearidade física na análise global | ausente | alta | P | P26 |
+| `15.7.2-processo-aproximado-095-gamaz` | 15.7.2 | 126 | Processo aproximado de majoração das ações horizontais por 0,95 γz | implementado | alta | M | P26 |
+| `15.7.3-rigidez-aproximada-analise-global` | 15.7.3 | 126 | Rigidezes aproximadas para consideração da não linearidade física na análise global | implementado | alta | P | P26 |
 | `15.7.4-efeitos-locais-em-nos-moveis` | 15.7.4 | 127 | Encadeamento dos esforços globais de 2ª ordem para a análise local em nós móveis | ausente | alta | M | P25 |
 | `15.8.1-limite-esbeltez-200` | 15.8.1 | 127 | Limite geral de esbeltez para elementos isolados (λ ≤ 200) | ausente | alta | P | P25 |
 | `15.8.1-n1-majoracao-lambda140` | 15.8.1 | 127 | Coeficiente adicional γn1 para esbeltez > 140 | parcial | alta | P | P25 |
