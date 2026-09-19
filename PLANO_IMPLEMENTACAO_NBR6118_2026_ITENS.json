@@ -308,7 +308,8 @@
    "nome": "Flexo-torção de perfis abertos",
    "onda": 4,
    "prioridade": "baixa",
-   "modulo": "dimensionamento/torcao_perfis_abertos_nbr6118.py"
+   "modulo": "dimensionamento/torcao_perfis_abertos_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P43",
@@ -8500,14 +8501,29 @@
    "pagina_pdf": 162,
    "titulo": "Torção em perfis abertos de parede fina - generalidades e rigidezes reduzidas",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "M",
    "pacote": "P42",
    "falta": "Nenhum modulo trata perfis abertos de parede fina (I, C, Z, U); toda a torcao implementada e para secao vazada/cheia fechada (torcao uniforme de Saint-Venant)",
    "o_que_calcula": "Quando o elemento e assimilavel a perfil aberto (I, C, Z, U), o projeto deve considerar torcao uniforme + flexo-torcao; permite desprezar o mecanismo de menor rigidez; rigidezes reduzidas por fissuracao: 0,15 da elastica para torcao uniforme, 0,50 para flexo-torcao",
    "formula_ou_regra": "rigidez_torcao_uniforme = 0,15 * rigidez_elastica; rigidez_flexo_torcao = 0,50 * rigidez_elastica",
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P42",
+    "data": "19/09/2026",
+    "funcoes": [
+     "rigidezes_reduzidas"
+    ],
+    "testes": [
+     "test_fatores_rigidez_reduzida_conforme_norma",
+     "test_rigidezes_reduzidas_caso_basico",
+     "test_rigidezes_reduzidas_torcao_uniforme_governante",
+     "test_rigidezes_reduzidas_zero_e_fronteira",
+     "test_rigidezes_reduzidas_negativa_levanta_erro"
+    ],
+    "observacao": "Generalidades de 17.5.2.1 são qualitativas (compatibilizar torção uniforme + flexo-torção; pode-se desprezar o mecanismo de menor rigidez) e ficam registradas na docstring do módulo e de rigidezes_reduzidas(); a função implementa a parte quantitativa de 17.5.2.2 (fatores 0,15 e 0,50) e expõe o campo governante para o projetista decidir qual mecanismo desprezar, sem decidir isso sozinha."
+   }
   },
   {
    "id": "17.5.2.3-rigidez-flexo-torcao",
@@ -8515,7 +8531,7 @@
    "pagina_pdf": 163,
    "titulo": "Coeficiente de mola (rigidez) à flexo-torção de perfil com paredes opostas",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "G",
    "pacote": "P42",
@@ -8526,7 +8542,22 @@
    "depende_de": [
     "17.5.2.1-17.5.2.2-perfis-abertos-generalidades"
    ],
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P42",
+    "data": "19/09/2026",
+    "funcoes": [
+     "rigidez_flexo_torcao"
+    ],
+    "testes": [
+     "test_rigidez_flexo_torcao_caso_simetrico_a_mao",
+     "test_rigidez_flexo_torcao_caso_assimetrico",
+     "test_rigidez_flexo_torcao_z_invalido",
+     "test_rigidez_flexo_torcao_flecha_negativa",
+     "test_rigidez_flexo_torcao_theta_nulo_levanta_erro"
+    ],
+    "observacao": "Assinatura recebida como rigidez_flexo_torcao(a1_cm, a2_cm, z_cm, T_kncm) em vez de (f1, f2, z, T) do texto-resumo do pacote, para casar com os nomes a1/a2 e a fórmula theta=(a1+a2)/z da própria norma (Figura 17.5). A função não recalcula as flechas (depende de P14 apenas para o bf de cada parede, usado por quem monta a1/a2 fora deste módulo, conforme o texto da norma na Figura 17.5)."
+   }
   },
   {
    "id": "17.5.2.4-resistencia-flexo-torcao",
@@ -8534,7 +8565,7 @@
    "pagina_pdf": 163,
    "titulo": "Resistência à flexo-torção a partir da resistência à flexão das paredes",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "M",
    "pacote": "P42",
@@ -8545,7 +8576,22 @@
    "depende_de": [
     "17.5.2.3-rigidez-flexo-torcao"
    ],
-   "trecho": "cortors"
+   "trecho": "cortors",
+   "implementacao": {
+    "pacote": "P42",
+    "data": "19/09/2026",
+    "funcoes": [
+     "TRd_flexo_torcao"
+    ],
+    "testes": [
+     "test_TRd_flexo_torcao_caso_simetrico_a_mao",
+     "test_TRd_flexo_torcao_parede_2_governante",
+     "test_TRd_flexo_torcao_delta_zero_fronteira_nao_ok",
+     "test_TRd_flexo_torcao_delta_negativo",
+     "test_TRd_flexo_torcao_z_invalido"
+    ],
+    "observacao": "Assinatura expandida para TRd_flexo_torcao(FRd_parede1_kn, FSd_parede1_kn, FRd_parede2_kn, FSd_parede2_kn, z_cm) em vez de (FRd, FSd, z) do texto-resumo do pacote: a fórmula 17.5.2.4 exige explicitamente FRd e FSd das duas paredes opostas para tomar o delta_FRd,min entre elas ('o valor delta_FRd,min é o menor entre as duas paredes consideradas', p. 164), então um único par (FRd,FSd) não bastaria."
+   }
   },
   {
    "id": "17.6-fissuracao-inclinada-alma",

@@ -438,9 +438,9 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `17.5.1.6.a-TRd3-estribos` | 17.5.1.6 a) | 162 | TRd3 - resistência dos estribos de torção | implementado | média | P |  |
 | `17.5.1.6.b-TRd4-longitudinal` | 17.5.1.6 b) | 162 | TRd4 - resistência das barras longitudinais de torção | implementado | média | P |  |
 | `17.5.1.6-arranjo-armadura-torcao` | 17.5.1.6 | 162 | Regras de arranjo da armadura longitudinal de torção | ausente | baixa | P | P16 |
-| `17.5.2.1-17.5.2.2-perfis-abertos-generalidades` | 17.5.2.1/17.5.2.2 | 162 | Torção em perfis abertos de parede fina - generalidades e rigidezes reduzidas | ausente | baixa | M | P42 |
-| `17.5.2.3-rigidez-flexo-torcao` | 17.5.2.3 | 163 | Coeficiente de mola (rigidez) à flexo-torção de perfil com paredes opostas | ausente | baixa | G | P42 |
-| `17.5.2.4-resistencia-flexo-torcao` | 17.5.2.4 | 163 | Resistência à flexo-torção a partir da resistência à flexão das paredes | ausente | baixa | M | P42 |
+| `17.5.2.1-17.5.2.2-perfis-abertos-generalidades` | 17.5.2.1/17.5.2.2 | 162 | Torção em perfis abertos de parede fina - generalidades e rigidezes reduzidas | implementado | baixa | M | P42 |
+| `17.5.2.3-rigidez-flexo-torcao` | 17.5.2.3 | 163 | Coeficiente de mola (rigidez) à flexo-torção de perfil com paredes opostas | implementado | baixa | G | P42 |
+| `17.5.2.4-resistencia-flexo-torcao` | 17.5.2.4 | 163 | Resistência à flexo-torção a partir da resistência à flexão das paredes | implementado | baixa | M | P42 |
 | `17.6-fissuracao-inclinada-alma` | 17.6 | 164 | Limite de espaçamento da armadura transversal para fissuração inclinada da alma | ausente | baixa | P | P15 |
 | `17.7.1.1-flexao-torcao-generalidades` | 17.7.1.1 | 164 | Verificação separada de torção e flexão com complementos obrigatórios | não computável | média | P |  |
 | `17.7.1.2-soma-armadura-longitudinal` | 17.7.1.2 | 164 | Soma da armadura longitudinal de torção com a de flexão (zona tracionada) | ausente | alta | P | P16 |
