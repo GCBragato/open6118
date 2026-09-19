@@ -38,7 +38,8 @@
    "nome": "Verificação de segurança e coeficientes de resistência",
    "onda": 1,
    "prioridade": "media",
-   "modulo": "dimensionamento/seguranca_nbr6118.py + nucleo_nbr6118.py"
+   "modulo": "dimensionamento/seguranca_nbr6118.py + nucleo_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P6",
@@ -2759,7 +2760,7 @@
    "pagina_pdf": 74,
    "titulo": "Rol dos estados-limites últimos a verificar (a-h)",
    "tipo": "classificacao",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P5",
@@ -2772,7 +2773,23 @@
     "12.5.2-Rd-Sd"
    ],
    "teste_sugerido": "Conferir que um relatorio de dimensionamento lista quais dos 8 ELU foram checados.",
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P5",
+    "data": "19/09/2026",
+    "funcoes": [
+     "seguranca_nbr6118.ESTADOS_LIMITES_ULTIMOS",
+     "seguranca_nbr6118.checklist_elu"
+    ],
+    "testes": [
+     "test_estados_limites_ultimos_tem_as_oito_letras_a_h",
+     "test_estados_limites_ultimos_textos_conforme_10_3",
+     "test_checklist_elu_marca_os_verificados",
+     "test_checklist_elu_aceita_maiuscula_e_espaco",
+     "test_checklist_elu_letra_desconhecida_levanta"
+    ],
+    "observacao": "Dá o checklist/orquestrador que faltava: rastreia quais dos 8 ELU (a-h) de 10.3 foram verificados, para a memória de cálculo. Não implementa cada ELU em si (colapso progressivo, fogo, sismo continuam fora do escopo de outros pacotes); apenas dá o lugar único para listar e marcar quais foram checados, como o brief do pacote pediu."
+   }
   },
   {
    "id": "10.4-els",
@@ -3541,7 +3558,7 @@
    "pagina_pdf": 87,
    "titulo": "Verificação de perda de equilíbrio como corpo rígido (Fsd ≥ Fnd)",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P5",
@@ -3553,7 +3570,30 @@
     "11.7.1-tabela-11.1-gamma_f"
    ],
    "teste_sugerido": "Sapata excentrica sob vento: conferir Fsd>=Fnd.",
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P5",
+    "data": "19/09/2026",
+    "funcoes": [
+     "seguranca_nbr6118.fsd_equilibrio",
+     "seguranca_nbr6118.fnd_equilibrio",
+     "seguranca_nbr6118.verificar_equilibrio_corpo_rigido"
+    ],
+    "testes": [
+     "test_fsd_equilibrio_normal_gama_favoravel_e_1",
+     "test_fsd_equilibrio_sem_rd",
+     "test_fnd_equilibrio_normal",
+     "test_fnd_equilibrio_sem_qs_min",
+     "test_fnd_equilibrio_gama_g_reduzido_pela_nota_a",
+     "test_fnd_equilibrio_combinacao_especial",
+     "test_fnd_equilibrio_combinacao_excepcional",
+     "test_fnd_equilibrio_gama_explicito_sobrepoe_tabela",
+     "test_verificar_equilibrio_corpo_rigido_passa_quando_fsd_maior_igual_fnd",
+     "test_verificar_equilibrio_corpo_rigido_nao_passa",
+     "test_sapata_excentrica_sob_vento_fsd_maior_igual_fnd"
+    ],
+    "observacao": "Fsd = gama_gs*Gsk + Rd e Fnd = gama_gn*Gnk + gama_q*Qnk - gama_qs*Qs,min, conferidos com S(Fsd) >= S(Fnd) via verificar_seguranca. gama_gs/gama_gn/gama_q vêm da Tabela 11.1 (acoes_nbr6118.gama_f_tabela_11_1, reuso de P4), com combinacao configurável (normal/especial/excepcional) e override explicito. gama_qs (o multiplicador de Qs,min) NÃO está na Tabela 11.1 nem na 11.3 com nome próprio; adotei 1,0 por decisão documentada na docstring (ver divergência abaixo) -- é a única lacuna real do item, e está exposta como parâmetro para o usuário sobrepor."
+   }
   },
   {
    "id": "11.8.2.1-combinacao-ultima-protendido",
@@ -3830,7 +3870,7 @@
    "pagina_pdf": 91,
    "titulo": "Decomposição γm = γm1·γm2·γm3",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P5",
@@ -3840,7 +3880,21 @@
    "formula_ou_regra": "gamma_m = gamma_m1 * gamma_m2 * gamma_m3",
    "conferido_na_imagem": true,
    "depende_de": [],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P5",
+    "data": "19/09/2026",
+    "funcoes": [
+     "nucleo_nbr6118.gama_m_composto",
+     "nucleo_nbr6118.GAMA_M_ELS (comentário/constante)"
+    ],
+    "testes": [
+     "test_gama_m_composto",
+     "test_gama_m_composto_negativo_levanta",
+     "test_gama_m_els_e_1"
+    ],
+    "observacao": "A própria norma só agrega gama_m1*gama_m2*gama_m3 na Tabela 12.1 (não há como separar os três fatores a partir dela); gama_m_composto serve para quem já tiver os três valores por outra via. Documentado no bloco novo do núcleo, sem reordenar o que já existia (GAMA_C, GAMA_S, GAMAS_TABELA_12_1 continuam onde estavam)."
+   }
   },
   {
    "id": "12.4.1-tabela-12.1-gamma_c_gamma_s",
@@ -3865,7 +3919,7 @@
    "pagina_pdf": 91,
    "titulo": "Majoração de γc por 1,1 em condições desfavoráveis de execução",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P5",
@@ -3876,7 +3930,19 @@
    "depende_de": [
     "12.4.1-tabela-12.1-gamma_c_gamma_s"
    ],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P5",
+    "data": "19/09/2026",
+    "funcoes": [
+     "nucleo_nbr6118.gama_c_ajustado(execucao_desfavoravel=True)"
+    ],
+    "testes": [
+     "test_gama_c_ajustado_execucao_desfavoravel_multiplica_por_1_1",
+     "test_gama_c_ajustado_nao_aceita_as_duas_flags_juntas"
+    ],
+    "observacao": "gama_c * 1,1 (ex.: 1,4*1,1=1,54 na combinação normal), conforme a imagem da p. 91."
+   }
   },
   {
    "id": "12.4.1-gamma_c-testemunhos-extraidos",
@@ -3884,7 +3950,7 @@
    "pagina_pdf": 91,
    "titulo": "Redução de γc dividindo por 1,1 no caso de testemunhos extraídos",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P5",
@@ -3895,7 +3961,18 @@
    "depende_de": [
     "12.4.1-tabela-12.1-gamma_c_gamma_s"
    ],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P5",
+    "data": "19/09/2026",
+    "funcoes": [
+     "nucleo_nbr6118.gama_c_ajustado(testemunho_extraido=True)"
+    ],
+    "testes": [
+     "test_gama_c_ajustado_testemunho_extraido_divide_por_1_1"
+    ],
+    "observacao": "gama_c / 1,1 (ex.: 1,4/1,1=1,2727... na combinação normal). As duas flags (execução desfavorável x testemunho extraído) não podem ser combinadas -- levantam ValueError -- por serem situações distintas (projeto novo x avaliação de estrutura existente); a norma não trata do caso combinado."
+   }
   },
   {
    "id": "12.4.1-gamma_s-ca25-sem-controle",
@@ -3903,7 +3980,7 @@
    "pagina_pdf": 91,
    "titulo": "Majoração de γs por 1,1 para CA-25 sem controle de qualidade da NBR 7480",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P5",
@@ -3912,7 +3989,19 @@
    "formula_ou_regra": "gamma_s_ajustado = gamma_s * 1,1",
    "conferido_na_imagem": true,
    "depende_de": [],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P5",
+    "data": "19/09/2026",
+    "funcoes": [
+     "nucleo_nbr6118.gama_s_ajustado(ca25_sem_controle=True)"
+    ],
+    "testes": [
+     "test_gama_s_ajustado_sem_flag_reproduz_tabela_12_1",
+     "test_gama_s_ajustado_ca25_sem_controle_multiplica_por_1_1"
+    ],
+    "observacao": "gama_s * 1,1 (ex.: 1,15*1,1=1,265 na combinação normal)."
+   }
   },
   {
    "id": "12.4.2-gamma_m-els-unitario",

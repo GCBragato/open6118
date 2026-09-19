@@ -154,7 +154,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 |---|---|---|---|---|---|---|---|
 | `10.1-criterios-seguranca` | 10.1 | 74 | Critérios de segurança baseados na ABNT NBR 8681 | não computável | alta | P |  |
 | `10.2-classificacao-estados-limites` | 10.2 | 74 | Classificação em estados-limites últimos e de serviço | não computável | alta | P |  |
-| `10.3-lista-elu` | 10.3 | 74 | Rol dos estados-limites últimos a verificar (a-h) | parcial | média | M | P5 |
+| `10.3-lista-elu` | 10.3 | 74 | Rol dos estados-limites últimos a verificar (a-h) | implementado | média | M | P5 |
 | `10.4-els` | 10.4 | 74 | Estados-limites de serviço (conforto, durabilidade, aparência) | não computável | alta | P |  |
 
 ## Seção 11
@@ -193,7 +193,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `11.7.1-mesmo-gamma-carga-permanente` | 11.7.1 | 86 | Regra: mesmo γf para cargas permanentes de mesma origem em toda a estrutura | não computável | média | P |  |
 | `11.7.2-gamma_f-els` | 11.7.2 | 86 | Coeficiente de ponderação das ações para ELS: γf = γf2 | implementado | alta | P | P4 |
 | `11.8.2.1-combinacao-ultima-normal` | 11.8.2.1 / 11.8.2.4 (Tabela 11.3) | 87 | Combinação última normal para concreto armado - Fd | implementado | alta | M | P4 |
-| `11.8.2.1-perda-equilibrio-corpo-rigido` | 11.8.2.1 (Tabela 11.3) | 87 | Verificação de perda de equilíbrio como corpo rígido (Fsd ≥ Fnd) | ausente | média | M | P5 |
+| `11.8.2.1-perda-equilibrio-corpo-rigido` | 11.8.2.1 (Tabela 11.3) | 87 | Verificação de perda de equilíbrio como corpo rígido (Fsd ≥ Fnd) | implementado | média | M | P5 |
 | `11.8.2.1-combinacao-ultima-protendido` | 11.8.2.1 (Tabela 11.3) | 87 | Força de protensão como carregamento externo na combinação última (Pk,máx/Pk,mín) | não computável | média | P |  |
 | `11.8.2.2-combinacao-ultima-especial-construcao` | 11.8.2.2 / 11.8.2.4 (Tabela 11.3) | 87 | Combinação última especial ou de construção - Fd | implementado | média | M | P4 |
 | `11.8.2.3-combinacao-ultima-excepcional` | 11.8.2.3 / 11.8.2.4 (Tabela 11.3) | 87 | Combinação última excepcional - Fd | implementado | baixa | M | P4 |
@@ -211,11 +211,11 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `12.3.2-tensoes-resistentes-calculo` | 12.3.2 | 90 | Tensões resistentes de cálculo σRd, τRd (definição conceitual) | não computável | média | P |  |
 | `12.3.3-fcd-28dias` | 12.3.3-a | 90 | Resistência de cálculo do concreto para verificação em j ≥ 28 dias | implementado | alta | P |  |
 | `12.3.3-fcd-antes-28dias` | 12.3.3-b | 90 | Resistência de cálculo do concreto para verificação em j < 28 dias (β1, s por cimento) | implementado | alta | P |  |
-| `12.4-gamma_m-decomposicao` | 12.4 | 91 | Decomposição γm = γm1·γm2·γm3 | parcial | baixa | P | P5 |
+| `12.4-gamma_m-decomposicao` | 12.4 | 91 | Decomposição γm = γm1·γm2·γm3 | implementado | baixa | P | P5 |
 | `12.4.1-tabela-12.1-gamma_c_gamma_s` | 12.4.1 | 91 | Tabela 12.1 - Valores de γc e γs por tipo de combinação | implementado | alta | P |  |
-| `12.4.1-gamma_c-condicoes-desfavoraveis` | 12.4.1 | 91 | Majoração de γc por 1,1 em condições desfavoráveis de execução | ausente | baixa | P | P5 |
-| `12.4.1-gamma_c-testemunhos-extraidos` | 12.4.1 | 91 | Redução de γc dividindo por 1,1 no caso de testemunhos extraídos | ausente | baixa | P | P5 |
-| `12.4.1-gamma_s-ca25-sem-controle` | 12.4.1 | 91 | Majoração de γs por 1,1 para CA-25 sem controle de qualidade da NBR 7480 | ausente | baixa | P | P5 |
+| `12.4.1-gamma_c-condicoes-desfavoraveis` | 12.4.1 | 91 | Majoração de γc por 1,1 em condições desfavoráveis de execução | implementado | baixa | P | P5 |
+| `12.4.1-gamma_c-testemunhos-extraidos` | 12.4.1 | 91 | Redução de γc dividindo por 1,1 no caso de testemunhos extraídos | implementado | baixa | P | P5 |
+| `12.4.1-gamma_s-ca25-sem-controle` | 12.4.1 | 91 | Majoração de γs por 1,1 para CA-25 sem controle de qualidade da NBR 7480 | implementado | baixa | P | P5 |
 | `12.4.2-gamma_m-els-unitario` | 12.4.2 | 92 | Coeficiente de ponderação das resistências no ELS: γm = 1,0 | implementado | média | P |  |
 | `12.5.1-condicoes-construtivas-seguranca` | 12.5.1 | 92 | Condições construtivas de segurança (detalhamento, controle de materiais, execução) | não computável | média | P |  |
 | `12.5.2-Rd-Sd` | 12.5.2 | 92 | Condição analítica de segurança Rd ≥ Sd | implementado | média | P |  |

@@ -1186,3 +1186,96 @@ def sigma_p(eps_p_pmil: float, fpyk_mpa: float, fptk_mpa: float,
 # variabilidade, com o critério da NBR 8681.
 GAMA_F = 1.4
 GAMA_G = 1.4
+
+
+# ---------------------------------------------------------------------------
+# === P5: Verificação de segurança e coeficientes de resistência ===
+# ---------------------------------------------------------------------------
+# 12.4 — Decomposição do coeficiente de ponderação das resistências (PDF p. 91)
+#   γm = γm1 · γm2 · γm3
+# γm1 considera a variabilidade da resistência dos materiais envolvidos; γm2
+# considera a diferença entre a resistência do material no corpo de prova e
+# na estrutura; γm3 considera os desvios gerados na construção e as
+# aproximações feitas no projeto do ponto de vista das resistências. A norma
+# só tabela o produto agregado (Tabela 12.1: γc = 1,4/1,2, γs = 1,15/1,0,
+# conforme GAMA_C, GAMA_S e GAMAS_TABELA_12_1 já existentes acima); não há
+# como separar os três fatores a partir dela — mesma limitação que a própria
+# norma tem (ela também só usa os valores agregados na Tabela 12.1).
+GAMA_M_ELS = 1.0   # 12.4.2 — no ELS os limites já não pedem minoração, γm = 1,0 (PDF p. 91)
+
+
+def gama_m_composto(gama_m1: float, gama_m2: float, gama_m3: float) -> float:
+    """γm = γm1·γm2·γm3, decomposição do coeficiente de ponderação das resistências (12.4, PDF p. 91).
+
+    Nenhum dos três fatores pode ser negativo. A norma não tabela γm1, γm2 e
+    γm3 em separado (só o produto agregado, Tabela 12.1); esta função serve
+    para quem já tiver os três valores por outra via (ex.: avaliação de
+    estrutura existente, ABNT NBR 6118 Anexo específico ou norma internacional).
+    """
+    for nome, v in (("γm1", gama_m1), ("γm2", gama_m2), ("γm3", gama_m3)):
+        if v < 0.0:
+            raise ValueError(f"{nome} negativo ({v:g}).")
+    return float(gama_m1) * float(gama_m2) * float(gama_m3)
+
+
+_ALIAS_COMBINACAO_GAMA_M = {
+    "normal": "normal", "normais": "normal",
+    "especial": "especial", "especiais": "especial",
+    "construcao": "construcao", "deconstrucao": "construcao",
+    "especialdeconstrucao": "especial", "especialconstrucao": "especial",
+    "especialoudeconstrucao": "especial", "especiaisoudeconstrucao": "especial",
+    "excepcional": "excepcional", "excepcionais": "excepcional",
+}
+
+
+def _normalizar_combinacao_gama_m(combinacao: str) -> str:
+    chave = _chave(combinacao)
+    if chave not in _ALIAS_COMBINACAO_GAMA_M:
+        raise ValueError(
+            f"Combinação desconhecida: {combinacao!r}. Use 'normal', 'especial', "
+            "'construcao' ou 'excepcional' (Tabela 12.1)."
+        )
+    return _ALIAS_COMBINACAO_GAMA_M[chave]
+
+
+def gama_c_ajustado(combinacao: str = "normal", execucao_desfavoravel: bool = False,
+                    testemunho_extraido: bool = False) -> float:
+    """γc ajustado por condições de execução ou por avaliação da estrutura (12.4.1, PDF p. 91).
+
+    Parte do γc da Tabela 12.1 pela ``combinacao`` ('normal' 1,4; 'especial'
+    ou 'construcao' 1,2; 'excepcional' 1,2) e aplica, quando pedido:
+      - ``execucao_desfavoravel=True``: γc × 1,1 — condições desfavoráveis de
+        execução previstas em projeto (más condições de transporte,
+        adensamento manual ou concretagem dificultada por concentração de
+        armadura);
+      - ``testemunho_extraido=True``: γc / 1,1 — resistência avaliada por
+        testemunhos extraídos da estrutura (admitido pela norma).
+    São situações distintas (projeto novo × avaliação de estrutura
+    existente); informar as duas ao mesmo tempo levanta ``ValueError``.
+    """
+    if execucao_desfavoravel and testemunho_extraido:
+        raise ValueError(
+            "execucao_desfavoravel e testemunho_extraido são situações "
+            "distintas (12.4.1): não se aplicam ao mesmo γc."
+        )
+    gama_c, _ = GAMAS_TABELA_12_1[_normalizar_combinacao_gama_m(combinacao)]
+    if execucao_desfavoravel:
+        return gama_c * 1.1
+    if testemunho_extraido:
+        return gama_c / 1.1
+    return gama_c
+
+
+def gama_s_ajustado(combinacao: str = "normal", ca25_sem_controle: bool = False) -> float:
+    """γs ajustado para CA-25 sem controle de qualidade da NBR 7480 (12.4.1, PDF p. 91).
+
+    Parte do γs da Tabela 12.1 pela ``combinacao`` ('normal' 1,15; 'especial'
+    ou 'construcao' 1,15; 'excepcional' 1,0). Com
+    ``ca25_sem_controle=True``: γs × 1,1 — admitido em obras de pequena
+    importância, o emprego de aço CA-25 sem a realização do controle de
+    qualidade estabelecido na ABNT NBR 7480.
+    """
+    _, gama_s = GAMAS_TABELA_12_1[_normalizar_combinacao_gama_m(combinacao)]
+    if ca25_sem_controle:
+        return gama_s * 1.1
+    return gama_s
