@@ -672,11 +672,11 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 
 | Id | Item | Pág. | O que é | Situação | Prior. | Compl. | Pacote |
 |---|---|---|---|---|---|---|---|
-| `23.3-freq-natural-vs-critica` | 23.3 | 215 | Verificação de vibrações excessivas (fn > 1,2 fcrit) | ausente | baixa | P | P38 |
-| `23.3-tab23.1-fcrit` | 23.3 Tabela 23.1 | 216 | Tabela 23.1 - Frequência crítica para vibrações verticais por tipo de uso | ausente | baixa | P | P38 |
+| `23.3-freq-natural-vs-critica` | 23.3 | 215 | Verificação de vibrações excessivas (fn > 1,2 fcrit) | implementado | baixa | P | P38 |
+| `23.3-tab23.1-fcrit` | 23.3 Tabela 23.1 | 216 | Tabela 23.1 - Frequência crítica para vibrações verticais por tipo de uso | implementado | baixa | P | P38 |
 | `23.4-ressonancia-amplificacao` | 23.4 | 216 | ELU por ressonância ou amplificação dinâmica | não computável | baixa | P |  |
-| `23.5.1-limite-20000-ciclos` | 23.5.1 | 216 | Limite inferior de aplicabilidade da fadiga (20 000 ciclos) e superior de abrangência (2 000 000 ciclos) | ausente | baixa | P | P38 |
-| `23.5.1-palmgren-miner` | 23.5.1 | 217 | Regra de Palmgren-Miner (dano acumulado de fadiga) | ausente | média | M | P38 |
+| `23.5.1-limite-20000-ciclos` | 23.5.1 | 216 | Limite inferior de aplicabilidade da fadiga (20 000 ciclos) e superior de abrangência (2 000 000 ciclos) | implementado | baixa | P | P38 |
+| `23.5.1-palmgren-miner` | 23.5.1 | 217 | Regra de Palmgren-Miner (dano acumulado de fadiga) | implementado | média | M | P38 |
 | `23.5.2-combinacao-frequente-fadiga` | 23.5.2 | 217 | Combinação frequente de ações para verificação de fadiga | parcial | média | P | P39 |
 | `23.5.2-psi1-fadiga-tabela` | 23.5.2 | 217 | Fator de redução ψ1 para verificação de fadiga por tipo de obra/peça | ausente | baixa | P | P39 |
 | `23.5.5-fator-reducao-ciclos-menor` | 23.5.2 | 217 | Aumento da resistência à fadiga para pontes rolantes de operação pouco frequente (número de ciclos << 2e6) | ausente | baixa | M | P39 |
@@ -690,14 +690,14 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `23.5.4.1-fadiga-concreto-compressao` | 23.5.4.1 | 219 | Verificação da fadiga do concreto em compressão | ausente | média | M | P39 |
 | `23.5.4.1-eta-c-grad` | 23.5.4.1 | 219 | Fator de gradiente de tensões de compressão ηc,grad | ausente | média | P | P39 |
 | `23.5.4.2-fadiga-concreto-tracao` | 23.5.4.2 | 220 | Verificação da fadiga do concreto em tração | ausente | média | P | P39 |
-| `23.5.5-verificacao-fadiga-armadura` | 23.5.5 | 220 | Verificação da fadiga da armadura (passiva ou ativa) | ausente | média | M | P38 |
-| `23.5.5-tab23.2-delta-fsd-fad` | 23.5.5 Tabela 23.2 | 220 | Tabela 23.2 - Variação de tensão admissível à fadiga (Δfsd,fad,mín) para 2·10⁶ ciclos, por tipo de barra/detalhe e diâmetro | ausente | média | M | P38 |
-| `23.5.5-nota-e-barra-reta-limite` | 23.5.5 nota e | 221 | Limite superior da curva S-N pela resistência da barra reta correspondente | ausente | baixa | P | P38 |
-| `23.5.5-fator-redutor-pino-dobramento` | 23.5.5 nota d | 221 | Fator redutor ξ em função do diâmetro do pino de dobramento (para barras dobradas/estribos, base dos valores da Tabela 23.2) | ausente | baixa | P | P38 |
-| `23.5.5-tab23.3-tipos-curva` | 23.5.5 Tabela 23.3 | 222 | Tabela 23.3 - Parâmetros das curvas S-N (Tipo, N*, k1, k2) | ausente | média | P | P38 |
-| `23.5.5-curva-SN-armadura` | 23.5.5 | 222 | Curva S-N da armadura (resistência à fadiga N para uma amplitude de tensão qualquer, fora dos 2·10⁶ ciclos de referência) | ausente | média | M | P38 |
-| `23.5.5-relevo-nervura-r-h` | 23.5.5 | 223 | Condição geométrica de nervura para a Tabela 23.2 ser aplicável (relação raio/altura da saliência) | ausente | baixa | P | P38 |
-| `23.6-deformacao-progressiva-ciclica` | 23.6 | 223 | Estimativa do aumento progressivo de deformação (flecha) sob n ciclos de carga | ausente | baixa | P | P38 |
+| `23.5.5-verificacao-fadiga-armadura` | 23.5.5 | 220 | Verificação da fadiga da armadura (passiva ou ativa) | implementado | média | M | P38 |
+| `23.5.5-tab23.2-delta-fsd-fad` | 23.5.5 Tabela 23.2 | 220 | Tabela 23.2 - Variação de tensão admissível à fadiga (Δfsd,fad,mín) para 2·10⁶ ciclos, por tipo de barra/detalhe e diâmetro | implementado | média | M | P38 |
+| `23.5.5-nota-e-barra-reta-limite` | 23.5.5 nota e | 221 | Limite superior da curva S-N pela resistência da barra reta correspondente | implementado | baixa | P | P38 |
+| `23.5.5-fator-redutor-pino-dobramento` | 23.5.5 nota d | 221 | Fator redutor ξ em função do diâmetro do pino de dobramento (para barras dobradas/estribos, base dos valores da Tabela 23.2) | implementado | baixa | P | P38 |
+| `23.5.5-tab23.3-tipos-curva` | 23.5.5 Tabela 23.3 | 222 | Tabela 23.3 - Parâmetros das curvas S-N (Tipo, N*, k1, k2) | implementado | média | P | P38 |
+| `23.5.5-curva-SN-armadura` | 23.5.5 | 222 | Curva S-N da armadura (resistência à fadiga N para uma amplitude de tensão qualquer, fora dos 2·10⁶ ciclos de referência) | implementado | média | M | P38 |
+| `23.5.5-relevo-nervura-r-h` | 23.5.5 | 223 | Condição geométrica de nervura para a Tabela 23.2 ser aplicável (relação raio/altura da saliência) | implementado | baixa | P | P38 |
+| `23.6-deformacao-progressiva-ciclica` | 23.6 | 223 | Estimativa do aumento progressivo de deformação (flecha) sob n ciclos de carga | implementado | baixa | P | P38 |
 | `23.6-fissuracao-agravada-ciclica` | 23.6 | 223 | ELS de fissuração sob ações cíclicas (aparecimento/agravamento de fissuras) | não computável | baixa | P |  |
 
 ## Seção 24

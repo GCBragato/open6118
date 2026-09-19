@@ -279,7 +279,8 @@
    "nome": "Fadiga da armadura, curvas S-N e vibração",
    "onda": 4,
    "prioridade": "baixa",
-   "modulo": "dimensionamento/fadiga_nbr6118.py"
+   "modulo": "dimensionamento/fadiga_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P39",
@@ -12315,7 +12316,7 @@
    "pagina_pdf": 215,
    "titulo": "Verificação de vibrações excessivas (fn > 1,2 fcrit)",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P38",
@@ -12327,7 +12328,23 @@
     "23.3-tab23.1-fcrit"
    ],
    "teste_sugerido": "fn=5.0, fcrit=4.0 (escritorio) -> 5.0 > 1.2*4.0=4.8 OK; fn=4.5 -> falha; fn=2.9 -> falha por piso minimo mesmo com fcrit baixo",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P38",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_vibracao",
+     "ResultadoVibracao"
+    ],
+    "testes": [
+     "test_233_fn_maior_que_1_2_fcrit_passa",
+     "test_233_fn_menor_que_1_2_fcrit_reprova",
+     "test_233_fronteira_1_2_fcrit_exata_nao_passa",
+     "test_233_piso_absoluto_3hz_reprova_mesmo_com_fcrit_baixo",
+     "test_233_sem_uso_nem_fcrit_leva_a_valueerror"
+    ],
+    "observacao": "Sem mudanca funcional nesta rodada; corrigida so a acentuacao de docstrings, comentarios e mensagens de erro/memoria."
+   }
   },
   {
    "id": "23.3-tab23.1-fcrit",
@@ -12335,7 +12352,7 @@
    "pagina_pdf": 216,
    "titulo": "Tabela 23.1 - Frequência crítica para vibrações verticais por tipo de uso",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P38",
@@ -12345,7 +12362,20 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Conferir os 5 valores contra a leitura da imagem da Tabela 23.1 (pagina 216 do PDF)",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P38",
+    "data": "19/09/2026",
+    "funcoes": [
+     "fcrit_tabela_23_1",
+     "TABELA_23_1_FCRIT_HZ"
+    ],
+    "testes": [
+     "test_231_tabela_fcrit_todos_os_valores",
+     "test_231_fcrit_uso_desconhecido_leva_a_valueerror"
+    ],
+    "observacao": "Sem mudanca funcional nesta rodada; corrigida so a acentuacao."
+   }
   },
   {
    "id": "23.4-ressonancia-amplificacao",
@@ -12367,7 +12397,7 @@
    "pagina_pdf": 216,
    "titulo": "Limite inferior de aplicabilidade da fadiga (20 000 ciclos) e superior de abrangência (2 000 000 ciclos)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P38",
@@ -12377,7 +12407,20 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "n=19999 -> fora do campo de aplicacao da secao; n=2000001 -> fora do campo coberto (precisa analise especial)",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P38",
+    "data": "19/09/2026",
+    "funcoes": [
+     "faixa_aplicabilidade"
+    ],
+    "testes": [
+     "test_2351_faixa_aplicabilidade_fronteiras_ok",
+     "test_2351_abaixo_de_20000_fora_do_campo",
+     "test_2351_acima_de_2_milhoes_fora_do_campo"
+    ],
+    "observacao": "Mensagem de FaixaNormativaError agora traz acento ('nao'->'não', 'acao'->'ação'); comportamento (quando levanta erro) inalterado."
+   }
   },
   {
    "id": "23.5.1-palmgren-miner",
@@ -12385,7 +12428,7 @@
    "pagina_pdf": 217,
    "titulo": "Regra de Palmgren-Miner (dano acumulado de fadiga)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P38",
@@ -12400,7 +12443,23 @@
     "23.5.4.2-fadiga-concreto-tracao"
    ],
    "teste_sugerido": "Espectro com um unico patamar onde n_i = N_i -> soma = 1,0 (limite); dois patamares com metade do dano cada -> soma = 1,0",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P38",
+    "data": "19/09/2026",
+    "funcoes": [
+     "palmgren_miner",
+     "ResultadoPalmgrenMiner"
+    ],
+    "testes": [
+     "test_palmgren_miner_um_patamar_no_limite",
+     "test_palmgren_miner_dois_patamares_metade_do_dano_cada",
+     "test_palmgren_miner_acima_de_1_reprova",
+     "test_palmgren_miner_espectro_vazio_leva_a_valueerror",
+     "test_palmgren_miner_N_i_zero_leva_a_valueerror"
+    ],
+    "observacao": "Sem mudanca funcional nesta rodada; corrigida so a acentuacao."
+   }
   },
   {
    "id": "23.5.2-combinacao-frequente-fadiga",
@@ -12669,7 +12728,7 @@
    "pagina_pdf": 220,
    "titulo": "Verificação da fadiga da armadura (passiva ou ativa)",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P38",
@@ -12681,7 +12740,22 @@
     "23.5.5-tab23.2-delta-fsd-fad"
    ],
    "teste_sugerido": "delta_sigma_Ss = delta_fsd,fad exato -> caso limite (aprovado); delta_sigma_Ss > limite -> reprovado",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P38",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_fadiga_armadura",
+     "ResultadoFadigaArmadura"
+    ],
+    "testes": [
+     "test_verificacao_fadiga_no_limite_exato_passa",
+     "test_verificacao_fadiga_acima_do_limite_reprova",
+     "test_verificacao_fadiga_aplica_reducao_de_relevo",
+     "test_verificacao_fadiga_gama_f_diferente_de_1"
+    ],
+    "observacao": "Sem mudanca funcional nesta rodada; corrigida so a acentuacao."
+   }
   },
   {
    "id": "23.5.5-tab23.2-delta-fsd-fad",
@@ -12689,7 +12763,7 @@
    "pagina_pdf": 220,
    "titulo": "Tabela 23.2 - Variação de tensão admissível à fadiga (Δfsd,fad,mín) para 2·10⁶ ciclos, por tipo de barra/detalhe e diâmetro",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P38",
@@ -12699,7 +12773,32 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Conferir celula a celula contra a imagem das paginas 220-221 (Tabela 23.2, partes 1 e 2); casos com '-' sao combinacoes nao definidas na norma e devem retornar erro/None, nao zero",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P38",
+    "data": "19/09/2026",
+    "funcoes": [
+     "TABELA_23_2_PASSIVA_MPA",
+     "TABELA_23_2_ATIVA_MPA",
+     "delta_fsd_fad",
+     "_lookup_23_2"
+    ],
+    "testes": [
+     "test_tabela232_barra_reta_todas_as_celulas",
+     "test_tabela232_estribo_dmin_8phi_todas_as_celulas",
+     "test_tabela232_estribo_dmin_5phi_celulas_definidas",
+     "test_tabela232_estribo_dmin_5phi_celulas_traco_levantam_erro",
+     "test_tabela232_estribo_dmin_3phi_celula_definida",
+     "test_tabela232_estribo_dmin_3phi_celulas_traco_levantam_erro",
+     "test_tabela232_marinho_classe_iv_todas_as_celulas",
+     "test_tabela232_soldada_ou_conector_mecanico_todas_as_celulas",
+     "test_tabela232_armadura_ativa_todos_os_casos",
+     "test_tabela232_caso_desconhecido_leva_a_valueerror",
+     "test_tabela232_phi_fora_da_grade_levanta_erro_faixa",
+     "test_tabela232_phi_obrigatorio_para_caso_passivo"
+    ],
+    "observacao": "Sem mudanca funcional nesta rodada; corrigida so a acentuacao das mensagens de erro e docstrings da tabela."
+   }
   },
   {
    "id": "23.5.5-nota-e-barra-reta-limite",
@@ -12707,7 +12806,7 @@
    "pagina_pdf": 221,
    "titulo": "Limite superior da curva S-N pela resistência da barra reta correspondente",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P38",
@@ -12719,7 +12818,20 @@
     "23.5.5-curva-SN-armadura"
    ],
    "teste_sugerido": "Achar N onde as duas curvas (detalhe e barra reta) se cruzam e conferir que abaixo desse N o valor usado e sempre o da barra reta",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P38",
+    "data": "19/09/2026",
+    "funcoes": [
+     "delta_fsd_fad"
+    ],
+    "testes": [
+     "test_notae_teto_da_barra_reta_ativa_abaixo_do_cruzamento",
+     "test_notae_teto_nao_ativa_acima_do_cruzamento",
+     "test_notae_barra_reta_nao_tem_teto_proprio"
+    ],
+    "observacao": "Sem mudanca funcional nesta rodada; corrigida so a acentuacao dos comentarios do teste e da docstring."
+   }
   },
   {
    "id": "23.5.5-fator-redutor-pino-dobramento",
@@ -12727,7 +12839,7 @@
    "pagina_pdf": 221,
    "titulo": "Fator redutor ξ em função do diâmetro do pino de dobramento (para barras dobradas/estribos, base dos valores da Tabela 23.2)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P38",
@@ -12739,7 +12851,20 @@
     "23.5.5-tab23.2-delta-fsd-fad"
    ],
    "teste_sugerido": "D=25*phi -> xi=0,35+0,026*25=0,999 (deve empatar com o valor da barra reta, consistencia na fronteira entre os dois casos da Tabela 23.2)",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P38",
+    "data": "19/09/2026",
+    "funcoes": [
+     "fator_redutor_pino_dobramento"
+    ],
+    "testes": [
+     "test_notad_xi_em_D_igual_25phi_reproduz_barra_reta",
+     "test_notad_xi_D_8phi_e_D_5phi",
+     "test_notad_phi_zero_ou_negativo_levanta_erro"
+    ],
+    "observacao": "Mensagem de ValueError agora traz acento ('nao'->'não'); comportamento inalterado."
+   }
   },
   {
    "id": "23.5.5-tab23.3-tipos-curva",
@@ -12747,7 +12872,7 @@
    "pagina_pdf": 222,
    "titulo": "Tabela 23.3 - Parâmetros das curvas S-N (Tipo, N*, k1, k2)",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P38",
@@ -12757,7 +12882,18 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Conferir os 7 tipos x 3 colunas contra a imagem da pagina 222",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P38",
+    "data": "19/09/2026",
+    "funcoes": [
+     "TABELA_23_3"
+    ],
+    "testes": [
+     "test_tabela233_todas_as_linhas"
+    ],
+    "observacao": "Sem mudanca funcional nesta rodada; corrigida so a acentuacao da docstring."
+   }
   },
   {
    "id": "23.5.5-curva-SN-armadura",
@@ -12765,7 +12901,7 @@
    "pagina_pdf": 222,
    "titulo": "Curva S-N da armadura (resistência à fadiga N para uma amplitude de tensão qualquer, fora dos 2·10⁶ ciclos de referência)",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P38",
@@ -12778,7 +12914,22 @@
     "23.5.5-tab23.3-tipos-curva"
    ],
    "teste_sugerido": "N=2e6 -> deve reproduzir exatamente o valor da Tabela 23.2 (consistencia); N=N* -> os dois ramos (k1 e k2) devem coincidir no mesmo valor (continuidade na transicao)",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P38",
+    "data": "19/09/2026",
+    "funcoes": [
+     "curva_SN"
+    ],
+    "testes": [
+     "test_curva_sn_reproduz_valor_tabelado_em_2e6_ciclos",
+     "test_curva_sn_continua_em_N_estrela",
+     "test_curva_sn_decresce_com_o_numero_de_ciclos",
+     "test_curva_sn_tipo_desconhecido_leva_a_valueerror",
+     "test_curva_sn_n_ciclos_nao_positivo_leva_a_valueerror"
+    ],
+    "observacao": "Sem mudanca funcional nesta rodada; corrigida so a acentuacao."
+   }
   },
   {
    "id": "23.5.5-relevo-nervura-r-h",
@@ -12786,7 +12937,7 @@
    "pagina_pdf": 223,
    "titulo": "Condição geométrica de nervura para a Tabela 23.2 ser aplicável (relação raio/altura da saliência)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P38",
@@ -12798,7 +12949,19 @@
     "23.5.5-tab23.2-delta-fsd-fad"
    ],
    "teste_sugerido": "r/h=0,4 -> usa Tabela 23.2 direto; r/h=0,6 sem ensaio -> aplica fator 0,70",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P38",
+    "data": "19/09/2026",
+    "funcoes": [
+     "fator_relevo"
+    ],
+    "testes": [
+     "test_relevo_r_h_abaixo_de_0_5_usa_tabela_direto",
+     "test_relevo_r_h_igual_ou_acima_de_0_5_aplica_reducao_de_30_por_cento"
+    ],
+    "observacao": "Sem mudanca funcional nesta rodada; corrigida so a acentuacao da docstring."
+   }
   },
   {
    "id": "23.6-deformacao-progressiva-ciclica",
@@ -12806,7 +12969,7 @@
    "pagina_pdf": 223,
    "titulo": "Estimativa do aumento progressivo de deformação (flecha) sob n ciclos de carga",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P38",
@@ -12816,7 +12979,20 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "n=1 -> fator=1,5-0,5*exp(-0,05)=1,0244; n->infinito -> fator->1,5 (limite assintotico)",
-   "trecho": "fadiga"
+   "trecho": "fadiga",
+   "implementacao": {
+    "pacote": "P38",
+    "data": "19/09/2026",
+    "funcoes": [
+     "deformacao_progressiva"
+    ],
+    "testes": [
+     "test_deformacao_progressiva_n_igual_1",
+     "test_deformacao_progressiva_cresce_e_tende_a_1_5_a1",
+     "test_deformacao_progressiva_n_menor_que_1_levanta_erro"
+    ],
+    "observacao": "Mensagem de ValueError agora traz acento; comportamento inalterado."
+   }
   },
   {
    "id": "23.6-fissuracao-agravada-ciclica",
