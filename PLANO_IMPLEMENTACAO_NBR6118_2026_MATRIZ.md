@@ -165,8 +165,8 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `11.3.2.1-peso-proprio` | 11.3.2.1 | 76 | Peso próprio da estrutura (remissão a 8.2.2) | não computável | alta | P |  |
 | `11.3.2.2-peso-elementos-fixos` | 11.3.2.2 | 77 | Peso de elementos construtivos fixos e instalações (remissão a NBR 6120) | não computável | alta | P |  |
 | `11.3.2.3-empuxos-permanentes` | 11.3.2.3 | 77 | Empuxos permanentes de terra e materiais granulosos não removíveis | não computável | média | P |  |
-| `11.3.3.1-retracao-valor-simplificado` | 11.3.3.1 | 77 | Retração do concreto - valor simplificado εcs(t∞,t0) = −15·10⁻⁵ | parcial | média | P | P7 |
-| `11.3.3.2-fluencia-deformacao-total` | 11.3.3.2 | 78 | Deformação total do concreto por fluência (processo simplificado) | parcial | média | P | P7 |
+| `11.3.3.1-retracao-valor-simplificado` | 11.3.3.1 | 77 | Retração do concreto - valor simplificado εcs(t∞,t0) = −15·10⁻⁵ | implementado | média | P | P7 |
+| `11.3.3.2-fluencia-deformacao-total` | 11.3.3.2 | 78 | Deformação total do concreto por fluência (processo simplificado) | implementado | média | P | P7 |
 | `11.3.3.3-deslocamentos-apoio` | 11.3.3.3 | 78 | Deslocamentos de apoio como ação permanente indireta | ausente | alta | P | P44 |
 | `11.3.3.4.1-desaprumo-global` | 11.3.3.4.1 | 79 | Imperfeições geométricas globais - desaprumo (θ1, θa) | ausente | alta | M | P26 |
 | `11.3.3.4.1-combinacao-vento-desaprumo` | 11.3.3.4.1 | 79 | Regra de combinação entre vento e desaprumo global (30%) | ausente | alta | M | P26 |
@@ -754,11 +754,11 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 
 | Id | Item | Pág. | O que é | Situação | Prior. | Compl. | Pacote |
 |---|---|---|---|---|---|---|---|
-| `A.2.1-eps-imediata` | A.2.1 | 232 | Deformação imediata do concreto por ocasião do carregamento | ausente | média | P | P7 |
+| `A.2.1-eps-imediata` | A.2.1 | 232 | Deformação imediata do concreto por ocasião do carregamento | implementado | média | P | P7 |
 | `A.2.2.2-hipoteses` | A.2.2.2 | 233 | Hipóteses de cálculo da fluência (a a f) | não computável | baixa | P |  |
 | `A.2.2.3-phi-a` | A.2.2.3 | 234 | Coeficiente de deformação rápida φa | implementado | alta | P | P6 |
 | `A.2.2.3-phi-t-t0` | A.2.2.3 | 234 | Coeficiente de fluência φ(t,t0) - procedimento completo | implementado | alta | G | P6 |
-| `A.2.2.3-eps-cc` | A.2.2.3 | 234 | Deformação por fluência εcc(t,t0) | ausente | alta | P | P7 |
+| `A.2.2.3-eps-cc` | A.2.2.3 | 234 | Deformação por fluência εcc(t,t0) | implementado | alta | P | P7 |
 | `A.2.2.3-phi2c` | A.2.2.3 (A.2.4) | 235 | Coeficiente φ2c (função da espessura fictícia) | implementado | alta | P | P6 |
 | `A.2.2.3-phi-f-inf` | A.2.2.3 | 235 | Valor final do coeficiente de deformação lenta irreversível φf∞ | implementado | alta | P | P6 |
 | `A.2.2.3-beta-d` | A.2.2.3 | 235 | Coeficiente βd(t) - evolução da deformação lenta reversível | implementado | alta | P | P6 |
@@ -777,8 +777,8 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `A.2.4.1-idade-ficticia` | A.2.4.1 | 239 | Idade fictícia do concreto t | implementado | alta | M | P6 |
 | `A.2.4.2-hfic` | A.2.4.2 | 240 | Espessura fictícia da peça hfic | implementado | alta | P |  |
 | `A.2.5-formula-integral` | A.2.5 | 240 | Deformação total do concreto - forma integral (caso geral, tensão variável) | ausente | baixa | G | P43 |
-| `A.2.5-formula-simplificada` | A.2.5 | 240 | Deformação total do concreto - forma prática simplificada (φ como função única) | ausente | média | M | P7 |
-| `A.2.5-alfa-decisao` | A.2.5 | 240 | Escolha do coeficiente α (0,5 ou 0,8) na fórmula simplificada de εc(t) | ausente | média | P | P7 |
+| `A.2.5-formula-simplificada` | A.2.5 | 240 | Deformação total do concreto - forma prática simplificada (φ como função única) | implementado | média | M | P7 |
+| `A.2.5-alfa-decisao` | A.2.5 | 240 | Escolha do coeficiente α (0,5 ou 0,8) na fórmula simplificada de εc(t) | implementado | média | P | P7 |
 | `A.2.5-qualitativo-fundacao-deformavel` | A.2.5 | 241 | Alerta - fundações deformáveis e elementos sem deformação lenta (tirantes metálicos) | não computável | baixa | P |  |
-| `A.3.1-eps-s` | A.3.1 | 241 | Deformação da armadura sob tensão constante (fluência/relaxação do aço) | parcial | média | P | P7 |
-| `A.3.2-eps-s-impedida` | A.3.2 | 241 | Deformação total da armadura quando a fluência livre é impedida | ausente | média | M | P7 |
+| `A.3.1-eps-s` | A.3.1 | 241 | Deformação da armadura sob tensão constante (fluência/relaxação do aço) | implementado | média | P | P7 |
+| `A.3.2-eps-s-impedida` | A.3.2 | 241 | Deformação total da armadura quando a fluência livre é impedida | implementado | média | M | P7 |

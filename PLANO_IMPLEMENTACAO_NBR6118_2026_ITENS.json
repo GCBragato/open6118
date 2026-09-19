@@ -54,7 +54,8 @@
    "nome": "Deformações diferidas do concreto e da armadura",
    "onda": 1,
    "prioridade": "media",
-   "modulo": "dimensionamento/tempo_concreto_nbr6118.py"
+   "modulo": "dimensionamento/tempo_concreto_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P8",
@@ -2888,7 +2889,7 @@
    "pagina_pdf": 77,
    "titulo": "Retração do concreto - valor simplificado εcs(t∞,t0) = −15·10⁻⁵",
    "tipo": "limite",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P7",
@@ -2901,7 +2902,25 @@
     "nucleo.Tabela_8.1 (fora do trecho)"
    ],
    "teste_sugerido": "Comparar o atalho -15e-5 com phi_eps_cs_NBR para caso tipico (h=20cm, UR=75%, t0 grande).",
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P7",
+    "data": "19/09/2026",
+    "funcoes": [
+     "retracao_simplificada_pmil(dimensao_cm=None, UR_pct=None, caracteristico='superior')"
+    ],
+    "testes": [
+     "test_retracao_simplificada_valor_fixo",
+     "test_retracao_simplificada_caracteristico_inferior_e_nulo",
+     "test_retracao_simplificada_caracteristico_desconhecido",
+     "test_retracao_simplificada_dimensao_dentro_da_faixa_sem_aviso",
+     "test_retracao_simplificada_dimensao_fora_da_faixa_avisa",
+     "test_retracao_simplificada_UR_no_limite_75_sem_aviso",
+     "test_retracao_simplificada_UR_abaixo_de_75_avisa",
+     "test_retracao_simplificada_sem_informar_dimensao_ou_UR_nao_avisa"
+    ],
+    "observacao": "Valor fixo -15e-5 = -0,15 permil; fora de [10,100] cm ou UR<75% emite AvisoNBR6118 mas mantem o valor (a norma nao define outro atalho, so recomenda o Anexo A/Tabela 8.1); caracteristico='inferior' devolve 0,0."
+   }
   },
   {
    "id": "11.3.3.2-fluencia-deformacao-total",
@@ -2909,7 +2928,7 @@
    "pagina_pdf": 78,
    "titulo": "Deformação total do concreto por fluência (processo simplificado)",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P7",
@@ -2924,7 +2943,21 @@
     "nucleo.Tabela_8.1 (fora do trecho)"
    ],
    "teste_sugerido": "Conferir que ec cresce com phi e que ec(t0,t0)=sc(t0)/Eci(t0) quando phi=0.",
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P7",
+    "data": "19/09/2026",
+    "funcoes": [
+     "deformacao_total_fluencia_simplificada_pmil(sigma_c_t0_mpa, Ec_t0_mpa, Ec_28_mpa, phi_t_inf_t0)"
+    ],
+    "testes": [
+     "test_deformacao_total_fluencia_simplificada_phi_zero_reduz_a_elastica",
+     "test_deformacao_total_fluencia_simplificada_cresce_com_phi",
+     "test_deformacao_total_fluencia_simplificada_conta_completa",
+     "test_deformacao_total_fluencia_simplificada_Ec_nao_positivo_levanta"
+    ],
+    "observacao": "eps_c(t_inf,t0) = sigma_c(t0)*[1/Ec(t0)+phi/Ec(28)]; phi=0 reduz a sigma_c(t0)/Ec(t0), como pedia o teste sugerido."
+   }
   },
   {
    "id": "11.3.3.3-deslocamentos-apoio",
@@ -12394,7 +12427,7 @@
    "pagina_pdf": 232,
    "titulo": "Deformação imediata do concreto por ocasião do carregamento",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P7",
@@ -12407,7 +12440,20 @@
     "nucleo.Eci_idade"
    ],
    "teste_sugerido": "para sigma_c(t0) e fck dados, comparar com sigma_c(t0)/Eci(t0) calculado manualmente a partir do nucleo.",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P7",
+    "data": "19/09/2026",
+    "funcoes": [
+     "eps_c_imediata_pmil(sigma_c_mpa, Eci_t0_mpa)"
+    ],
+    "testes": [
+     "test_eps_c_imediata_divisao_direta",
+     "test_eps_c_imediata_bate_com_o_nucleo",
+     "test_eps_c_imediata_Eci_nao_positivo_levanta"
+    ],
+    "observacao": "eps_c(t0) = sigma_c(t0)/Eci(t0), em permil; Eci(t0) reusa nucleo_nbr6118.Eci_idade/Eci."
+   }
   },
   {
    "id": "A.2.2.2-hipoteses",
@@ -12502,7 +12548,7 @@
    "pagina_pdf": 234,
    "titulo": "Deformação por fluência εcc(t,t0)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P7",
@@ -12514,7 +12560,20 @@
     "nucleo.Eci"
    ],
    "teste_sugerido": "phi=0 deve dar eps_cc=0; crescimento linear com sigma_c para phi fixo.",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P7",
+    "data": "19/09/2026",
+    "funcoes": [
+     "eps_cc_pmil(sigma_c_mpa, Eci_mpa, phi)"
+    ],
+    "testes": [
+     "test_eps_cc_phi_zero_da_zero",
+     "test_eps_cc_cresce_linear_com_sigma_c_para_phi_fixo",
+     "test_eps_cc_Eci_nao_positivo_levanta"
+    ],
+    "observacao": "eps_cc(t,t0) = (sigma_c/Eci)*phi(t,t0); Eci e o de 8.2.8 aos 28 dias (nao Eci(t0)), conforme a imagem da p.234."
+   }
   },
   {
    "id": "A.2.2.3-phi2c",
@@ -13069,7 +13128,7 @@
    "pagina_pdf": 240,
    "titulo": "Deformação total do concreto - forma prática simplificada (φ como função única)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P7",
@@ -13082,7 +13141,21 @@
     "A.2.5-alfa-decisao"
    ],
    "teste_sugerido": "com Delta_sigma_c=0 (tensao constante) deve reduzir a sigma_c(t0)/Ec(t0) + eps_cc(t,t0) + eps_cs(t,t0), igual a decomposicao de A.2.1.",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P7",
+    "data": "19/09/2026",
+    "funcoes": [
+     "eps_c_total_simplificada_pmil(sigma_c_t0_mpa, delta_sigma_c_mpa, phi, eps_cs_pmil, Ec_t0_mpa, Eci_mpa, alfa=None)"
+    ],
+    "testes": [
+     "test_eps_c_total_simplificada_com_delta_zero_reduz_a_A21_mais_A223",
+     "test_eps_c_total_simplificada_alfa_padrao_e_08",
+     "test_eps_c_total_simplificada_conta_completa",
+     "test_eps_c_total_simplificada_Ec_ou_Eci_nao_positivo_levanta"
+    ],
+    "observacao": "Forma pratica com phi como funcao unica (A.2.5, p.240); alfa default 0,8 (caso geral) quando omitido; com delta_sigma_c=0 reduz-se a decomposicao de A.2.1+A.2.2.3, como pedia o teste sugerido."
+   }
   },
   {
    "id": "A.2.5-alfa-decisao",
@@ -13090,7 +13163,7 @@
    "pagina_pdf": 240,
    "titulo": "Escolha do coeficiente α (0,5 ou 0,8) na fórmula simplificada de εc(t)",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P7",
@@ -13100,7 +13173,19 @@
    "depende_de": [
     "A.2.5-formula-simplificada"
    ],
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P7",
+    "data": "19/09/2026",
+    "funcoes": [
+     "alfa_envelhecimento(caso)"
+    ],
+    "testes": [
+     "test_alfa_envelhecimento_caso_unico_e_geral",
+     "test_alfa_envelhecimento_caso_desconhecido"
+    ],
+    "observacao": "caso='unico' -> 0,5 (peca e protensao concretadas/aplicadas de uma so vez, 9.6.3.4.2); caso='geral' -> 0,8."
+   }
   },
   {
    "id": "A.2.5-qualitativo-fundacao-deformavel",
@@ -13121,7 +13206,7 @@
    "pagina_pdf": 241,
    "titulo": "Deformação da armadura sob tensão constante (fluência/relaxação do aço)",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P7",
@@ -13132,7 +13217,24 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "chi=0 (sem fluencia do aco) deve reduzir a eps_s(t)=sigma_s(t0)/Es (Hooke puro).",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P7",
+    "data": "19/09/2026",
+    "funcoes": [
+     "eps_s_fluencia_pmil(sigma_s_t0_mpa, Es_mpa, chi, fptk_mpa=None)",
+     "_chi_efetivo(sigma_s_t0_mpa, chi, fptk_mpa)"
+    ],
+    "testes": [
+     "test_eps_s_fluencia_chi_zero_reduz_a_hooke",
+     "test_eps_s_fluencia_conta_completa_sem_criterio_fptk",
+     "test_eps_s_fluencia_criterio_05_fptk_acima_considera_chi",
+     "test_eps_s_fluencia_criterio_05_fptk_abaixo_descarta_chi",
+     "test_eps_s_fluencia_criterio_05_fptk_no_limite_exato_descarta_chi",
+     "test_eps_s_fluencia_Es_nao_positivo_levanta"
+    ],
+    "observacao": "eps_s(t) = sigma_s(t0)/Es*(1+chi); com fptk_mpa informado, chi so conta se sigma_s(t0) > 0,5*fptk (limite exato descarta, '>' estrito como na imagem); chi vem de fonte externa (nao reimplementado aqui)."
+   }
   },
   {
    "id": "A.3.2-eps-s-impedida",
@@ -13140,7 +13242,7 @@
    "pagina_pdf": 241,
    "titulo": "Deformação total da armadura quando a fluência livre é impedida",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P7",
@@ -13151,7 +13253,21 @@
     "A.3.1-eps-s"
    ],
    "teste_sugerido": "com Delta_sigma_s=0 deve reduzir exatamente a formula de A.3.1.",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P7",
+    "data": "19/09/2026",
+    "funcoes": [
+     "eps_s_impedida_pmil(sigma_s_t0_mpa, Es_mpa, chi, delta_sigma_s_mpa, fptk_mpa=None)"
+    ],
+    "testes": [
+     "test_eps_s_impedida_com_delta_zero_reduz_a_A31",
+     "test_eps_s_impedida_conta_completa",
+     "test_eps_s_impedida_criterio_fptk_aplica_as_duas_parcelas_de_chi",
+     "test_eps_s_impedida_Es_nao_positivo_levanta"
+    ],
+    "observacao": "Com delta_sigma_s=0 reduz-se exatamente a eps_s_fluencia_pmil, como pedia o teste sugerido; o mesmo criterio de 0,5*fptk se aplica as duas parcelas de chi."
+   }
   }
  ]
 }

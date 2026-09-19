@@ -31,6 +31,7 @@ Unidades e cuidados:
 from __future__ import annotations
 
 import math
+import warnings
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -40,6 +41,7 @@ except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
     from dimensionamento import nucleo_nbr6118 as nbr
 
 FaixaNormativaError = nbr.FaixaNormativaError
+AvisoNBR6118 = nbr.AvisoNBR6118
 
 
 # ---------------------------------------------------------------------------
@@ -706,3 +708,275 @@ def eps_cs_pmil(t_ficticia_dias: float, t0_ficticia_dias: float, h_fic_cm: float
     """εcs(t,t0) do Anexo A em ‰ (A.2.3.2, PDF p. 236); atalho de ``retracao``."""
     return retracao(t_ficticia_dias, t0_ficticia_dias, h_fic_cm, U_pct, ambiente,
                     abatimento_cm).eps_cs_pmil
+
+
+# ---------------------------------------------------------------------------
+# === P7: Deformações diferidas do concreto e da armadura ===
+#
+# Decomposição εc(t) = εc(t0) + εcc(t) + εcs(t) do Anexo A (A.2.1), a forma
+# simplificada de A.2.5 (φ tratado como função única), o atalho de 11.3.3.2
+# para pilares/encurtamento diferencial, o atalho de retração de 11.3.3.1 e a
+# deformação da armadura por fluência/relaxação (A.3.1 e A.3.2). εcc, εcs e
+# εs saem sempre em ‰, na mesma convenção de eps1s_pmil/eps_cs_pmil acima;
+# φ(t,t0) e χ(t,t0) são coeficientes adimensionais (de ``coeficiente_fluencia``
+# ou de fonte externa) e não entram nesta conversão.
+# ---------------------------------------------------------------------------
+
+# 11.3.3.1 — retração simplificada (PDF p. 77): faixa de validade do atalho.
+RETRACAO_SIMPLIFICADA_PMIL = -0.15  # -15 * 10^-5 = -0,15 ‰
+DIM_RETRACAO_SIMPLIFICADA_MIN_CM = 10.0
+DIM_RETRACAO_SIMPLIFICADA_MAX_CM = 100.0
+UR_RETRACAO_SIMPLIFICADA_MIN_PCT = 75.0
+
+# A.3.1 — fluência da armadura só é considerada acima desta fração de fptk.
+FRACAO_FPTK_FLUENCIA_ACO = 0.5
+
+
+def eps_c_imediata_pmil(sigma_c_mpa: float, Eci_t0_mpa: float) -> float:
+    """εc(t0), deformação imediata do concreto no carregamento, em ‰ (A.2.1, PDF p. 232).
+
+        εc(t0) = σc(t0) / Eci(t0)
+
+    Primeiro termo da decomposição εc(t) = εc(t0) + εcc(t) + εcs(t). σc(t0) em
+    MPa (compressão negativa, como o resto do módulo); Eci(t0) em MPa, com
+    Eci(t0) conforme 8.2.8 (``nucleo_nbr6118.Eci_idade`` para idade entre 7 e
+    28 dias, ou ``nucleo_nbr6118.Eci`` aos 28 dias).
+    """
+    Eci_t0 = float(Eci_t0_mpa)
+    if Eci_t0 <= 0.0:
+        raise FaixaNormativaError("Eci(t0) deve ser positivo (MPa).")
+    return float(sigma_c_mpa) / Eci_t0 * 1000.0
+
+
+def eps_cc_pmil(sigma_c_mpa: float, Eci_mpa: float, phi: float) -> float:
+    """εcc(t,t0), deformação do concreto por fluência, em ‰ (A.2.2.3, PDF p. 234).
+
+        εcc(t,t0) = εcca + εccd + εccf = (σc(t0) / Eci) · φ(t,t0)
+
+    com Eci conforme 8.2.8 (``nucleo_nbr6118.Eci``, aos 28 dias — não é
+    Eci(t0)). φ(t,t0) vem de ``coeficiente_fluencia``/``phi`` (adimensional).
+    φ = 0 dá εcc = 0.
+    """
+    Eci = float(Eci_mpa)
+    if Eci <= 0.0:
+        raise FaixaNormativaError("Eci deve ser positivo (MPa).")
+    return float(sigma_c_mpa) / Eci * float(phi) * 1000.0
+
+
+_ALFA_ENVELHECIMENTO = {
+    # A.2.5, PDF p. 240 — caso usual de perdas de protensão (9.6.3.4.2):
+    # peça concretada de uma só vez e protensão aplicada de uma só vez.
+    "unico": 0.5,
+    "pecaunicaeprotensaounica": 0.5,
+    "9.6.3.4.2": 0.5,
+    "963.4.2": 0.5,
+    # Demais casos usuais.
+    "geral": 0.8,
+    "demaiscasosusuais": 0.8,
+    "outroscasosusuais": 0.8,
+}
+
+
+def alfa_envelhecimento(caso: str) -> float:
+    """α da forma simplificada de εc(t) (A.2.5, PDF p. 240).
+
+    α = 0,5, com Ec(t0) = Eci, no caso usual de cálculo de perdas de
+    protensão em que a peça é concretada de uma só vez e a protensão é
+    aplicada de uma só vez (coerente com 9.6.3.4.2): ``caso='unico'``.
+
+    α = 0,8, mantendo Ec(t0) ≠ Eci quando significativo, nos demais casos
+    usuais: ``caso='geral'``.
+    """
+    chave = nbr._chave(caso)
+    if chave not in _ALFA_ENVELHECIMENTO:
+        raise ValueError(
+            f"Caso desconhecido: {caso!r}. Use 'unico' (peça e protensão "
+            "concretadas/aplicadas de uma só vez) ou 'geral' (demais casos "
+            "usuais), A.2.5."
+        )
+    return _ALFA_ENVELHECIMENTO[chave]
+
+
+def eps_c_total_simplificada_pmil(sigma_c_t0_mpa: float, delta_sigma_c_mpa: float,
+                                   phi: float, eps_cs_pmil: float,
+                                   Ec_t0_mpa: float, Eci_mpa: float,
+                                   alfa: float | None = None) -> float:
+    """εc(t), forma prática simplificada com φ como função única, em ‰ (A.2.5, PDF p. 240).
+
+        εc(t) = σc(t0)·[1/Ec(t0) + φ(t,t0)/Eci] + εcs(t,t0)
+                + Δσc(t,t0)·[1/Ec(t0) + α·φ(t,t0)/Eci]
+
+    Substitui a forma integral de A.2.5 tratando φ(t,t0) como uma única
+    função (sem separar φa, φf e φd); é a base do "método geral" de perda
+    progressiva de protensão (9.6.3.4.2), mas vale para qualquer caso de
+    tensão variável no concreto (armadura, concretos de idades diferentes
+    etc.).
+
+    σc(t0), Δσc(t,t0) em MPa; Ec(t0), Eci em MPa (Ec(t0) é o módulo próprio
+    da idade t0 — ``nucleo_nbr6118.Eci_idade`` no caso geral, ou igual a Eci
+    no caso α=0,5; Eci é sempre o de 8.2.8 aos 28 dias); εcs(t,t0) em ‰
+    (``eps_cs_pmil``, do Anexo A, ou ``retracao_simplificada_pmil``).
+
+    α: 0,5 ou 0,8 conforme ``alfa_envelhecimento``; se omitido, usa 0,8 (o
+    caso geral, mantendo Ec(t0) próprio da idade). Com Δσc = 0 a expressão se
+    reduz a σc(t0)/Ec(t0) + εcc(t,t0) + εcs(t,t0), a decomposição de A.2.1.
+    """
+    Ec_t0 = float(Ec_t0_mpa)
+    Eci = float(Eci_mpa)
+    if Ec_t0 <= 0.0:
+        raise FaixaNormativaError("Ec(t0) deve ser positivo (MPa).")
+    if Eci <= 0.0:
+        raise FaixaNormativaError("Eci deve ser positivo (MPa).")
+    a = 0.8 if alfa is None else float(alfa)
+    sigma_c_t0 = float(sigma_c_t0_mpa)
+    delta_sigma_c = float(delta_sigma_c_mpa)
+    p = float(phi)
+    termo_imediato_e_fluencia = sigma_c_t0 * (1.0 / Ec_t0 + p / Eci) * 1000.0
+    termo_delta = delta_sigma_c * (1.0 / Ec_t0 + a * p / Eci) * 1000.0
+    return termo_imediato_e_fluencia + float(eps_cs_pmil) + termo_delta
+
+
+def deformacao_total_fluencia_simplificada_pmil(sigma_c_t0_mpa: float,
+                                                 Ec_t0_mpa: float,
+                                                 Ec_28_mpa: float,
+                                                 phi_t_inf_t0: float) -> float:
+    """εc(t∞,t0), deformação total do concreto por fluência, processo simplificado, em ‰ (11.3.3.2, PDF p. 78).
+
+        εc(t∞,t0) = σc(t0)·[1/Ec(t0) + φ(t∞,t0)/Ec(28)]
+
+    Nos casos em que a tensão σc(t0) não varia significativamente (peça
+    submetida a carregamento único e sustentado, sem redistribuição
+    relevante), soma a parcela elástica e a de fluência entre t0 e t∞. É o
+    caso particular de ``eps_c_total_simplificada_pmil`` com Δσc = 0 e
+    εcs = 0 (a retração entra à parte, por 11.3.3.1 ou pelo Anexo A).
+
+    σc(t0) em MPa; Ec(t0), Ec(28) em MPa (Ec(28) = Eci de 8.2.8 aos 28 dias).
+    φ(t∞,t0) pode vir de ``coeficiente_fluencia``/``phi`` (Anexo A, valor
+    característico superior) ou da Tabela 8.1 por interpolação
+    (``nucleo_nbr6118.phi_eps_cs_NBR``); o valor característico inferior de
+    φ(t∞,t0) é nulo. φ = 0 reduz εc(t∞,t0) a σc(t0)/Ec(t0).
+    """
+    Ec_t0 = float(Ec_t0_mpa)
+    Ec_28 = float(Ec_28_mpa)
+    if Ec_t0 <= 0.0:
+        raise FaixaNormativaError("Ec(t0) deve ser positivo (MPa).")
+    if Ec_28 <= 0.0:
+        raise FaixaNormativaError("Ec(28) deve ser positivo (MPa).")
+    sigma_c_t0 = float(sigma_c_t0_mpa)
+    return sigma_c_t0 * (1.0 / Ec_t0 + float(phi_t_inf_t0) / Ec_28) * 1000.0
+
+
+def retracao_simplificada_pmil(dimensao_cm: float | None = None,
+                                UR_pct: float | None = None,
+                                caracteristico: str = "superior") -> float:
+    """εcs(t∞,t0), valor simplificado da retração do concreto armado, em ‰ (11.3.3.1, PDF p. 77).
+
+        εcs(t∞,t0) = −15·10⁻⁵ = −0,15 ‰
+
+    Atalho para os casos correntes de obras de concreto armado, em função da
+    restrição à retração imposta pela armadura, quando esta satisfaz o
+    mínimo desta Norma. Válido para elementos estruturais de dimensões
+    usuais, entre 10 cm e 100 cm, sujeitos a umidade ambiente não inferior a
+    75 %; fora dessa faixa o cálculo prossegue com o mesmo valor, mas emite
+    ``AvisoNBR6118`` (a norma não define outro atalho — usar o procedimento
+    completo do Anexo A ou a Tabela 8.1 é o caminho correto fora da faixa).
+
+    dimensao_cm, UR_pct: quando informados, conferem a faixa de validade
+    (dimensao_cm, ex. a menor dimensão do elemento; UR_pct, a umidade
+    relativa do ambiente). Omitidos, nenhuma checagem é feita.
+
+    caracteristico: 'superior' (padrão), devolve −0,15 ‰; 'inferior' devolve
+    0,0 (o valor característico inferior da retração é sempre considerado
+    nulo).
+    """
+    car = nbr._chave(caracteristico)
+    if car not in ("superior", "inferior"):
+        raise ValueError(
+            f"caracteristico deve ser 'superior' ou 'inferior', não {caracteristico!r}."
+        )
+    if car == "inferior":
+        return 0.0
+    avisos: list[str] = []
+    if dimensao_cm is not None:
+        d = float(dimensao_cm)
+        if not (DIM_RETRACAO_SIMPLIFICADA_MIN_CM <= d <= DIM_RETRACAO_SIMPLIFICADA_MAX_CM):
+            avisos.append(
+                f"dimensão de {d:g} cm fora de "
+                f"{DIM_RETRACAO_SIMPLIFICADA_MIN_CM:g} cm a "
+                f"{DIM_RETRACAO_SIMPLIFICADA_MAX_CM:g} cm"
+            )
+    if UR_pct is not None:
+        U = float(UR_pct)
+        if U < UR_RETRACAO_SIMPLIFICADA_MIN_PCT:
+            avisos.append(
+                f"umidade relativa de {U:g} % abaixo de "
+                f"{UR_RETRACAO_SIMPLIFICADA_MIN_PCT:g} %"
+            )
+    if avisos:
+        warnings.warn(
+            "Valor simplificado da retração (11.3.3.1) fora da faixa de "
+            "validade (elementos de 10 cm a 100 cm de dimensão, UR >= 75 %): "
+            + "; ".join(avisos) + ". O valor -15e-5 é mantido, mas considere "
+            "o procedimento completo do Anexo A.",
+            AvisoNBR6118,
+            stacklevel=2,
+        )
+    return RETRACAO_SIMPLIFICADA_PMIL
+
+
+def _chi_efetivo(sigma_s_t0_mpa: float, chi: float, fptk_mpa: float | None) -> float:
+    """χ(t,t0) efetivo: só se conta a fluência do aço se σs(t0) > 0,5·fptk (A.3.1)."""
+    if fptk_mpa is None:
+        return float(chi)
+    if float(sigma_s_t0_mpa) > FRACAO_FPTK_FLUENCIA_ACO * float(fptk_mpa):
+        return float(chi)
+    return 0.0
+
+
+def eps_s_fluencia_pmil(sigma_s_t0_mpa: float, Es_mpa: float, chi: float,
+                        fptk_mpa: float | None = None) -> float:
+    """εs(t), deformação da armadura sob tensão constante, em ‰ (A.3.1, PDF p. 241).
+
+        εs(t) = σs(t0)/Es + [σs(t0)/Es]·χ(t,t0)
+
+    O primeiro termo é a deformação imediata no carregamento; o segundo, a
+    deformação por fluência/relaxação do aço no intervalo (t,t0), **só
+    considerada quando σs(t0) > 0,5·fptk**.
+
+    σs(t0), Es em MPa; χ(t,t0), coeficiente de fluência do aço, adimensional
+    (fonte externa a este item — não confundir com φ do concreto).
+    fptk_mpa: quando informado, aplica o critério de 0,5·fptk (χ é
+    descartado se σs(t0) não o ultrapassar); omitido, χ é sempre considerado
+    (o critério já verificado pelo chamador). χ = 0 reduz εs(t) a σs(t0)/Es
+    (Lei de Hooke).
+    """
+    Es = float(Es_mpa)
+    if Es <= 0.0:
+        raise FaixaNormativaError("Es deve ser positivo (MPa).")
+    sigma_s_t0 = float(sigma_s_t0_mpa)
+    chi_ef = _chi_efetivo(sigma_s_t0, chi, fptk_mpa)
+    return sigma_s_t0 / Es * (1.0 + chi_ef) * 1000.0
+
+
+def eps_s_impedida_pmil(sigma_s_t0_mpa: float, Es_mpa: float, chi: float,
+                        delta_sigma_s_mpa: float,
+                        fptk_mpa: float | None = None) -> float:
+    """εs(t), deformação total da armadura com fluência livre impedida, em ‰ (A.3.2, PDF p. 241).
+
+        εs(t) = σs(t0)/Es + [σs(t0)/Es]·χ(t,t0) + [Δσs(t,t0)/Es]·[1 + χ(t,t0)]
+
+    Situação análoga a A.2.5 para o concreto: a armadura não pode se
+    deformar livremente por fluência. Δσs(t,t0), a variação total de tensão
+    na armadura no intervalo (t,t0), em MPa; os demais parâmetros como em
+    ``eps_s_fluencia_pmil`` (mesmo critério de 0,5·fptk para χ, aplicado às
+    duas parcelas de χ). Com Δσs = 0 reduz-se exatamente a
+    ``eps_s_fluencia_pmil``.
+    """
+    Es = float(Es_mpa)
+    if Es <= 0.0:
+        raise FaixaNormativaError("Es deve ser positivo (MPa).")
+    sigma_s_t0 = float(sigma_s_t0_mpa)
+    chi_ef = _chi_efetivo(sigma_s_t0, chi, fptk_mpa)
+    base = sigma_s_t0 / Es * (1.0 + chi_ef)
+    termo_delta = float(delta_sigma_s_mpa) / Es * (1.0 + chi_ef)
+    return (base + termo_delta) * 1000.0
