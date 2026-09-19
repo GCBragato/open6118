@@ -300,30 +300,55 @@ class CurvaAp(Protocol):
 
 @dataclass
 class CurvaApBilinear:
-    """Aco de protensao bilinear: linear ate fpyd, depois patamar.
+    """Aço de protensão (8.4.5, Figura 8.6, PDF p. 50).
+
+    Com ``ramo_inclinado=True`` (padrão desde o pacote P3, decisão 2 de
+    19/09/2026): reta de origem até (eps_pyd, fpyd) com inclinação Ep, seguida
+    de um segundo trecho ainda ascendente até (eps_pu, fptd) -- reproduz a
+    Figura 8.6 completa, não só o joelho. Com ``ramo_inclinado=False``, usa o
+    patamar horizontal (fpyd constante acima do joelho) que era o
+    comportamento padrão antes deste pacote; mantido para comparação
+    (``diagrama='patamar'`` em ``nucleo_nbr6118.sigma_p``) e para chamador que
+    dependa dele.
 
     Defaults para cordoalha CP-190RB (NBR 7483).
     """
-    fpyk_mpa: float = 1710.0   # tensao de escoamento (CP-190RB)
-    fptk_mpa: float = 1900.0   # tensao de ruptura
+    fpyk_mpa: float = 1710.0   # tensão de escoamento (CP-190RB)
+    fptk_mpa: float = 1900.0   # tensão de ruptura
     Ep_kncm2: float = 20000.0  # 200 GPa
     gama_s: float = GAMA_S
-    eps_pu_pmilh: float = 35.0  # deformacao ultima (NBR)
+    eps_pu_pmilh: float = 35.0  # deformação última (NBR)
+    ramo_inclinado: bool = True
 
     @cached_property
     def fpyd_kncm2(self) -> float:
         return (self.fpyk_mpa / self.gama_s) * 0.1
 
     @cached_property
+    def fptd_kncm2(self) -> float:
+        return (self.fptk_mpa / self.gama_s) * 0.1
+
+    @cached_property
     def eps_pyd_pmilh(self) -> float:
         return self.fpyd_kncm2 / self.Ep_kncm2 * 1000.0
 
     def sigma(self, eps: np.ndarray) -> np.ndarray:
-        return np.where(
-            np.abs(eps) <= self.eps_pyd_pmilh,
-            eps / 1000.0 * self.Ep_kncm2,
-            np.sign(eps) * self.fpyd_kncm2,
-        )
+        eps = np.asarray(eps, dtype=float)
+        abs_eps = np.abs(eps)
+        trecho1 = abs_eps / 1000.0 * self.Ep_kncm2
+        if not self.ramo_inclinado:
+            magnitude = np.minimum(trecho1, self.fpyd_kncm2)
+        else:
+            faixa = self.eps_pu_pmilh - self.eps_pyd_pmilh
+            trecho2 = self.fpyd_kncm2 + (self.fptd_kncm2 - self.fpyd_kncm2) * (
+                (abs_eps - self.eps_pyd_pmilh) / faixa
+            )
+            magnitude = np.where(
+                abs_eps <= self.eps_pyd_pmilh,
+                trecho1,
+                np.minimum(trecho2, self.fptd_kncm2),
+            )
+        return np.sign(eps) * magnitude
 
 
 @dataclass(frozen=True)

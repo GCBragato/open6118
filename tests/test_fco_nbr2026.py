@@ -468,10 +468,17 @@ def test_fco06_Nd_max_pol_com_cabos():
 
 
 def test_fco06_Nd_min_pol_com_cabos():
+    """Cabos a -10 - 6 = -16 por mil: acima do joelho (eps_pyd ~= 7,43 por
+    mil), logo no segundo trecho da Figura 8.6 desde o pacote P3 (decisao 2
+    de 19/09/2026, ramo_inclinado=True e o padrao), nao mais no patamar em
+    fpyd. Antes: sigma = fpyd = 148,6957 kN/cm2 (1486,96 MPa). Depois: sigma
+    cai na reta (eps_pyd, fpyd) -> (eps_pu, fptd) e sobe para ~153,83 kN/cm2
+    (1538,3 MPa, +3,4 %)."""
     s, bq = _secao_com_cabos()
     As = sum(b.area_cm2 for b in bq)
-    fpyd = 1710.0 / 1.15 / 10.0
-    esperado = -ACO.fyd_kncm2 * As - fpyd * 4.0   # cabos a -10 - 6 por mil: escoados
+    sigma_cabo_kncm2 = float(F.CurvaApBilinear().sigma(np.array([-16.0]))[0])
+    assert sigma_cabo_kncm2 == pytest.approx(-153.83, abs=0.01)
+    esperado = -ACO.fyd_kncm2 * As + sigma_cabo_kncm2 * 4.0
     assert F.Nd_min_kn_pol(s, ACO) == pytest.approx(esperado, rel=1e-12)
 
 
@@ -719,10 +726,18 @@ def test_fco15_ate_C50_uma_zona_so():
 # FCO-16 -- pivô A nos cabos; sem armadura não há pivô A (Figura 17.1)
 # ===========================================================================
 def test_fco16_so_cabo_pivo_A_no_cabo():
-    """Achado: seção só com cabo usava d = 1 cm (+0,4 %)."""
+    """Achado: seção só com cabo usava d = 1 cm (+0,4 %).
+
+    O Oráculo modela o cabo com o patamar horizontal (clip em fpyd); desde o
+    pacote P3 (decisão 2 de 19/09/2026) o padrão de CurvaApBilinear passou a
+    ser a Figura 8.6 com ramo inclinado. Aqui o teste verifica o achado do
+    pivô A, não a Figura 8.6, então o cabo usa explicitamente
+    ramo_inclinado=False para continuar comparável ao Oráculo."""
     c35 = F.Concreto(fck_mpa=35.0)
-    s = F.Secao.retangular(20.0, 60.0, c35, barras=(), cabos=(F.Cabo(0.0, -25.0, 2.0, 6.0),),
-                           n_dy=240, n_dx=4)
+    s = F.Secao.retangular(
+        20.0, 60.0, c35, barras=(),
+        cabos=(F.Cabo(0.0, -25.0, 2.0, 6.0, curva=F.CurvaApBilinear(ramo_inclinado=False)),),
+        n_dy=240, n_dx=4)
     _, yp_max = F._h_inc_yp_max_pol(s, 0.0)
     assert F._d_inc_pol(s, 0.0, yp_max) == pytest.approx(55.0)
     ora = Oraculo(20.0, 60.0, (), fck=35.0, cabos=[(-25.0, 2.0, 6.0)])

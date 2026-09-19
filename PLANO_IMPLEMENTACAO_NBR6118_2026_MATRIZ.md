@@ -66,9 +66,9 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `8.3.7-dutilidade-aco-passivo` | 8.3.7 | 49 | Classificação de dutilidade do aço passivo | implementado | baixa | P | P2 |
 | `8.3.8-fadiga-aco-passivo-referencia` | 8.3.8 | 49 | Resistência à fadiga do aço passivo (remete a 23.5.5) | não computável | baixa | P |  |
 | `8.3.9-soldabilidade-aco` | 8.3.9 | 49 | Soldabilidade do aço e critérios de ensaio da emenda soldada | não computável | baixa | P |  |
-| `8.4.1-classificacao-aco-ativo` | 8.4.1 | 49 | Classificação do aço de armadura ativa (fios/cordoalhas, RN/RB) | parcial | média | P | P3 |
-| `8.4.5-fig8.6-diagrama-aco-ativo` | 8.4.5 (Figura 8.6) | 50 | Diagrama tensão-deformação simplificado do aço de armadura ativa | parcial | alta | M | P3 |
-| `8.4.6-dutilidade-aco-ativo` | 8.4.6 | 50 | Classificação de dutilidade de fios e cordoalhas | ausente | baixa | P | P3 |
+| `8.4.1-classificacao-aco-ativo` | 8.4.1 | 49 | Classificação do aço de armadura ativa (fios/cordoalhas, RN/RB) | implementado | média | P | P3 |
+| `8.4.5-fig8.6-diagrama-aco-ativo` | 8.4.5 (Figura 8.6) | 50 | Diagrama tensão-deformação simplificado do aço de armadura ativa | implementado | alta | M | P3 |
+| `8.4.6-dutilidade-aco-ativo` | 8.4.6 | 50 | Classificação de dutilidade de fios e cordoalhas | implementado | baixa | P | P3 |
 | `8.4.7-fadiga-aco-ativo-referencia` | 8.4.7 | 50 | Resistência à fadiga do aço ativo (remete a 23.5.5) | não computável | baixa | P |  |
 | `8.4.8-tab8.3-relaxacao-psi1000` | 8.4.8 (Tabela 8.3) | 51 | Tabela 8.3 - ψ1000 por σp0/fptk, tipo de armadura e classe RN/RB | implementado | média | P |  |
 

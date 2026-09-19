@@ -375,8 +375,34 @@ def test_ei_secante_diminui_com_momento() -> None:
 
 
 def test_curva_ap_bilinear() -> None:
-    """CurvaApBilinear: linear ate eps_pyd, depois patamar."""
+    """CurvaApBilinear, padrao (ramo_inclinado=True): reta ate eps_pyd, depois
+    segundo trecho ainda ascendente ate fptd em eps_pu (Figura 8.6, 8.4.5,
+    PDF p. 50 -- decisao 2 de 19/09/2026, pacote P3). Antes deste pacote o
+    padrao era o patamar horizontal; ver test_curva_ap_bilinear_patamar para
+    o comportamento antigo, preservado com ramo_inclinado=False."""
     curva = CurvaApBilinear()
+    eps_pyd = curva.eps_pyd_pmilh
+    fpyd = curva.fpyd_kncm2
+    fptd = curva.fptd_kncm2
+    eps_pu = curva.eps_pu_pmilh
+    eps = np.array([0.0, eps_pyd / 2, eps_pyd, eps_pyd * 2, eps_pu, -eps_pu])
+    sig = curva.sigma(eps)
+    assert sig[0] == 0.0
+    assert _aprox(sig[1], curva.Ep_kncm2 * (eps_pyd / 2) / 1000.0, 1e-6)
+    assert _aprox(sig[2], fpyd, 1e-6)
+    # ponto interior do segundo trecho: reta de (eps_pyd, fpyd) a (eps_pu, fptd)
+    esperado_interior = fpyd + (fptd - fpyd) * (eps_pyd * 2 - eps_pyd) / (eps_pu - eps_pyd)
+    assert _aprox(sig[3], esperado_interior, 1e-6)
+    assert esperado_interior > fpyd  # segundo trecho ainda ascendente, nao patamar
+    assert _aprox(sig[4], fptd, 1e-6)  # extremo eps_pu -> fptd
+    assert _aprox(sig[5], -fptd, 1e-6)  # simetrico em tracao
+
+
+def test_curva_ap_bilinear_patamar() -> None:
+    """CurvaApBilinear(ramo_inclinado=False): reproduz o patamar horizontal
+    que era o comportamento padrao antes do pacote P3 (achado FCO-17 da
+    auditoria)."""
+    curva = CurvaApBilinear(ramo_inclinado=False)
     eps_pyd = curva.eps_pyd_pmilh
     fpyd = curva.fpyd_kncm2
     eps = np.array([0.0, eps_pyd / 2, eps_pyd, eps_pyd * 2, -eps_pyd * 2])

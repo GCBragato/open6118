@@ -860,6 +860,12 @@ def propriedades_cordoalha(diam_mm: float,
     """Retorna propriedades da cordoalha de 7 fios.
 
     Areas em mm2; F_max = forca de ruptura caracteristica = fptk * Ap.
+
+    ``categoria`` só precisa conter "CP-190" ou "CP-210": um eventual sufixo
+    RN/RB (ex.: "CP-190 RB", "CP-190 RN") é aceito mas ignorado aqui de
+    propósito, porque RN e RB têm a mesma geometria, massa e fptk dentro da
+    mesma categoria (8.4.1) -- a diferença entre elas está na perda por
+    relaxação (ver PSI_1000_TIPICOS), não na geometria do produto.
     """
     cat = categoria.upper()
     if "CP-190" in cat:
@@ -1466,6 +1472,118 @@ def _demo() -> None:
     print(f"  P axial (ep=0)        = {P_axial:.1f} kN")
     print(f"  P ep=h/6 = 5 cm       = {P_h6:.1f} kN")
     print(f"  P ep=10 cm (maxima)   = {P_max:.1f} kN")
+
+
+# === P3: Catálogo de aço ativo (8.4.1, p.49) e dutilidade (8.4.6, p.50) ===
+# Fios de aço de protensão (NBR 7482) -- valores nominais de catálogo de
+# fabricante (ArcelorMittal/Belgo, ABNT NBR 7482, "Fios e Cordoalhas para
+# Concreto Protendido"). Corrigido na verificação do pacote P3 (19/09/2026):
+# os pares antigos não batiam com o catálogo, e a estrutura de uma única
+# entrada por diâmetro não suporta os diâmetros que têm mais de uma
+# categoria/fptk (6,0 mm e 7,0 mm existem em duas categorias, com a mesma
+# área mas fptk diferente). A chave agora é (diâmetro, categoria). ATENÇÃO:
+# a NBR 7482 não está entre as páginas da NBR 6118:2026 lidas para este
+# pacote (é outra norma), então esta tabela não foi conferida contra o texto
+# original da NBR 7482 -- só contra o catálogo de mercado citado acima.
+# Conferir com o fabricante antes de uso em projeto real.
+TABELA_FIOS_NBR7482 = {
+    # (diam_mm, categoria): (area_mm2, fptk_MPa)
+    (4.0, "CP-175"): (12.6, 1750.0),
+    (5.0, "CP-175"): (19.6, 1750.0),
+    (6.0, "CP-175"): (28.3, 1750.0),
+    (6.0, "CP-190"): (28.3, 1900.0),
+    (7.0, "CP-170"): (38.5, 1700.0),
+    (7.0, "CP-190"): (38.5, 1900.0),
+    (8.0, "CP-150"): (50.3, 1500.0),
+    (9.0, "CP-145"): (63.6, 1450.0),
+}
+
+
+def propriedades_fio(diam_mm: float, categoria: str | None = None) -> dict:
+    """Retorna propriedades do fio de aço de protensão (NBR 7482).
+
+    Área em mm2; fptk conforme a categoria (CP) associada ao diâmetro pela
+    tabela de catálogo. Alguns diâmetros (6,0 mm e 7,0 mm) existem em mais de
+    uma categoria com fptk diferente -- nesse caso ``categoria`` é
+    obrigatória; se o diâmetro só tiver uma categoria no catálogo, pode ser
+    omitida. Ver ressalva de TABELA_FIOS_NBR7482 sobre a fonte.
+    """
+    opcoes = {c: (a, f) for (d, c), (a, f) in TABELA_FIOS_NBR7482.items() if d == diam_mm}
+    if not opcoes:
+        raise ValueError(f"diâmetro {diam_mm} não tabelado em TABELA_FIOS_NBR7482")
+    if categoria is None:
+        if len(opcoes) > 1:
+            raise ValueError(
+                f"diâmetro {diam_mm} tem mais de uma categoria no catálogo "
+                f"({sorted(opcoes)}); informe categoria."
+            )
+        categoria = next(iter(opcoes))
+    elif categoria not in opcoes:
+        raise ValueError(
+            f"categoria {categoria!r} não tabelada para o diâmetro {diam_mm} "
+            f"(opções: {sorted(opcoes)})"
+        )
+    area, fptk = opcoes[categoria]
+    return {
+        "diam_mm": diam_mm,
+        "area_mm2": area,
+        "area_cm2": area / 100.0,
+        "fptk_MPa": fptk,
+        "categoria": categoria,
+    }
+
+
+# Catálogo unificado (8.4.1): fios (NBR 7482) e cordoalhas (NBR 7483). RN
+# (relaxação normal) e RB (relaxação baixa) têm a mesma geometria, massa e
+# fptk dentro de cada categoria (CP-190/CP-210) -- a diferença entre RN e RB
+# está na perda por relaxação, já coberta por PSI_1000_TIPICOS (chave
+# (categoria, "RN"/"RB")) e não na geometria do produto; por isso a mesma
+# tabela geométrica atende as duas classes de relaxação, e
+# propriedades_cordoalha() aceita (e ignora) o sufixo RN/RB na string de
+# categoria.
+TABELA_ACOS_ATIVOS = {
+    "fios": TABELA_FIOS_NBR7482,
+    "cordoalhas": {
+        "CP-190": TABELA_CORDOALHAS_CP190_RB,
+        "CP-210": TABELA_CORDOALHAS_CP210_RB,
+    },
+}
+
+
+@dataclass(frozen=True)
+class DutilidadeAcoAtivo:
+    """Classificação de dutilidade de fio/cordoalha de aço ativo (8.4.6, p.50)."""
+    eps_uk_pmilh: float
+    minimo_pmilh: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def dutilidade_aco_ativo(eps_uk_pmilh: float, minimo_pmilh: float) -> DutilidadeAcoAtivo:
+    """Classifica a dutilidade de um fio ou cordoalha de aço ativo (8.4.6).
+
+    "Os fios e cordoalhas cujo valor de eps_uk for maior que o mínimo
+    indicado nas ABNT NBR 7482 e ABNT NBR 7483, respectivamente, podem ser
+    considerados como tendo dutilidade normal." (8.4.6, PDF p. 50)
+
+    eps_uk_pmilh: alongamento após ruptura característico do lote/catálogo, em
+        por mil.
+    minimo_pmilh: mínimo exigido pela NBR 7482 (fio) ou NBR 7483 (cordoalha)
+        para o produto em questão, em por mil (varia por fabricante/produto e
+        deve ser informado pelo chamador).
+    """
+    ok = float(eps_uk_pmilh) > float(minimo_pmilh)
+    governante = "dutilidade normal" if ok else "abaixo do mínimo normativo"
+    memoria = (
+        f"8.4.6 (p.50): eps_uk = {eps_uk_pmilh:g} por mil; "
+        f"mínimo NBR 7482/7483 = {minimo_pmilh:g} por mil.",
+        f"eps_uk {'>' if ok else '<='} mínimo -> {governante}.",
+    )
+    return DutilidadeAcoAtivo(
+        eps_uk_pmilh=float(eps_uk_pmilh), minimo_pmilh=float(minimo_pmilh),
+        ok=ok, governante=governante, memoria=memoria,
+    )
 
 
 if __name__ == "__main__":

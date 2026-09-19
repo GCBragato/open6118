@@ -22,7 +22,8 @@
    "nome": "Aço de protensão: catálogo e diagrama da Figura 8.6",
    "onda": 1,
    "prioridade": "alta",
-   "modulo": "dimensionamento/nucleo_nbr6118.py + rotinas/flexao_composta_obliqua.py + protendido_nbr6118.py"
+   "modulo": "dimensionamento/nucleo_nbr6118.py + rotinas/flexao_composta_obliqua.py + protendido_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P4",
@@ -1274,7 +1275,7 @@
    "pagina_pdf": 49,
    "titulo": "Classificação do aço de armadura ativa (fios/cordoalhas, RN/RB)",
    "tipo": "qualitativo",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P3",
@@ -1284,7 +1285,25 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Comparar com catalogos para outras bitolas/classes.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P3",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/protendido_nbr6118.py:propriedades_fio",
+     "dimensionamento/protendido_nbr6118.py:TABELA_FIOS_NBR7482",
+     "dimensionamento/protendido_nbr6118.py:TABELA_ACOS_ATIVOS",
+     "dimensionamento/protendido_nbr6118.py:propriedades_cordoalha"
+    ],
+    "testes": [
+     "tests/test_p03_aco_protensao.py::test_propriedades_fio_nbr7482_bordas_e_interior",
+     "tests/test_p03_aco_protensao.py::test_propriedades_fio_diametro_com_duas_categorias_exige_escolha",
+     "tests/test_p03_aco_protensao.py::test_propriedades_fio_bitola_nao_tabelada_levanta_erro",
+     "tests/test_p03_aco_protensao.py::test_tabela_acos_ativos_cobre_fios_e_cordoalhas",
+     "tests/test_p03_aco_protensao.py::test_propriedades_cordoalha_rn_mesma_geometria_que_rb"
+    ],
+    "observacao": "Tabela de fios reconstruída contra o catálogo do fabricante citado no achado, chaveada por (diâmetro, categoria); teste RN/RB agora exercita RN de fato."
+   }
   },
   {
    "id": "8.4.5-fig8.6-diagrama-aco-ativo",
@@ -1292,7 +1311,7 @@
    "pagina_pdf": 50,
    "titulo": "Diagrama tensão-deformação simplificado do aço de armadura ativa",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P3",
@@ -1305,7 +1324,29 @@
     "8.3.5-8.4.4-modulo-elasticidade-aco"
    ],
    "teste_sugerido": "Comparar sigma(eps) acima do joelho com reta (fpyk,fpyd)->(fptk,fptd).",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P3",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/nucleo_nbr6118.py:sigma_p",
+     "dimensionamento/rotinas/flexao_composta_obliqua.py:CurvaApBilinear"
+    ],
+    "testes": [
+     "tests/test_p03_aco_protensao.py::test_sigma_p_joelho_exato_cp190_rb",
+     "tests/test_p03_aco_protensao.py::test_sigma_p_extremo_eps_pu_exato_cp190_rb",
+     "tests/test_p03_aco_protensao.py::test_sigma_p_ponto_interior_segundo_trecho",
+     "tests/test_p03_aco_protensao.py::test_sigma_p_linear_abaixo_do_joelho",
+     "tests/test_p03_aco_protensao.py::test_sigma_p_patamar_nao_ultrapassa_fpyd",
+     "tests/test_p03_aco_protensao.py::test_sigma_p_patamar_fora_da_faixa_tambem_levanta_erro",
+     "tests/test_p03_aco_protensao.py::test_sigma_p_monotona_ate_eps_pu",
+     "tests/test_p03_aco_protensao.py::test_sigma_p_fora_da_faixa_levanta_erro",
+     "tests/test_p03_aco_protensao.py::test_sigma_p_diagrama_invalido_levanta_erro",
+     "tests/test_p03_aco_protensao.py::test_curva_ap_bilinear_default_e_figura_8_6",
+     "tests/test_p03_aco_protensao.py::test_mrd_secao_protendida_ramo_inclinado_maior_que_patamar"
+    ],
+    "observacao": "Diagrama 'patamar' agora valida a mesma faixa |eps|<=eps_pu que o diagrama padrão."
+   }
   },
   {
    "id": "8.4.6-dutilidade-aco-ativo",
@@ -1313,7 +1354,7 @@
    "pagina_pdf": 50,
    "titulo": "Classificação de dutilidade de fios e cordoalhas",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P3",
@@ -1323,7 +1364,21 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Comparar euk com minimos tabelados.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P3",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/protendido_nbr6118.py:dutilidade_aco_ativo",
+     "dimensionamento/protendido_nbr6118.py:DutilidadeAcoAtivo"
+    ],
+    "testes": [
+     "tests/test_p03_aco_protensao.py::test_dutilidade_aco_ativo_acima_do_minimo",
+     "tests/test_p03_aco_protensao.py::test_dutilidade_aco_ativo_no_minimo_exato_nao_e_normal",
+     "tests/test_p03_aco_protensao.py::test_dutilidade_aco_ativo_abaixo_do_minimo"
+    ],
+    "observacao": "Sem alteração funcional; corrigidas apenas acentuação de docstring/strings de retorno e o teste que comparava contra o valor sem acento."
+   }
   },
   {
    "id": "8.4.7-fadiga-aco-ativo-referencia",

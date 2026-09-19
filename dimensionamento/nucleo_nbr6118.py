@@ -1114,3 +1114,56 @@ def wk_max_mm(tipo_concreto: str, caa: str, nivel_protensao: int | None = None,
         return (None, "ELS-F (combinação frequente) e ELS-D (combinação quase-permanente; "
                       "a critério do projetista, ELS-DP com ap = 50 mm no lugar do ELS-D)")
     return (None, "ELS-F (combinação rara) e ELS-D (combinação frequente)")
+
+
+# === P3: Aço de protensão — diagrama tensão-deformação (8.4.5, Figura 8.6) ===
+def sigma_p(eps_p_pmil: float, fpyk_mpa: float, fptk_mpa: float,
+            Ep_mpa: float = EP_MPA, eps_pu_pmil: float = 35.0,
+            gama_s: float = GAMA_S, diagrama: str = "nbr_fig_8_6") -> float:
+    """Tensão de cálculo no aço de armadura ativa, MPa (8.4.5, Figura 8.6, PDF p. 50).
+
+    ``diagrama="nbr_fig_8_6"`` (padrão, decisão 2 de 19/09/2026): dois trechos
+    retos e ascendentes — reta de origem até (εpyd, fpyd) com inclinação Ep, e
+    reta de (εpyd, fpyd) até (εpu, fptd), com fpyd = fpyk/γs, fptd = fptk/γs e
+    εpyd = fpyd/Ep. Fora de |εp| <= εpu levanta ``FaixaNormativaError`` (a
+    norma não define tensão além do alongamento último). ``diagrama="patamar"``
+    reproduz o comportamento anterior a este pacote: reta até fpyd, depois
+    patamar horizontal (sem trecho ascendente) — mantido para comparação e
+    para não quebrar chamador que dependia dele. Também respeita |εp| <= εpu
+    (levanta ``FaixaNormativaError`` acima disso, igual ao diagrama padrão):
+    a norma não define tensão além do alongamento último em nenhum dos dois.
+
+    eps_p_pmil: deformação do aço, ‰ (sinal indica tração/compressão).
+    fpyk_mpa, fptk_mpa: resistências características de escoamento
+    convencional e de ruptura à tração, MPa (catálogo do fabricante, NBR
+    7482/7483).
+    """
+    eps = float(eps_p_pmil)
+    a = abs(eps)
+    fpyd = fpyk_mpa / gama_s
+    eps_pyd = fpyd / Ep_mpa * 1000.0
+    if diagrama == "patamar":
+        if a > eps_pu_pmil:
+            raise FaixaNormativaError(
+                f"εp = {a:g} ‰ acima de εpu = {eps_pu_pmil:g} ‰ "
+                "(8.4.5, Figura 8.6): a norma não define tensão além do "
+                "alongamento último."
+            )
+        val = min(Ep_mpa * a / 1000.0, fpyd)
+    elif diagrama == "nbr_fig_8_6":
+        fptd = fptk_mpa / gama_s
+        if a <= eps_pyd:
+            val = Ep_mpa * a / 1000.0
+        elif a <= eps_pu_pmil:
+            val = fpyd + (fptd - fpyd) * (a - eps_pyd) / (eps_pu_pmil - eps_pyd)
+        else:
+            raise FaixaNormativaError(
+                f"εp = {a:g} ‰ acima de εpu = {eps_pu_pmil:g} ‰ "
+                "(8.4.5, Figura 8.6): a norma não define tensão além do "
+                "alongamento último."
+            )
+    else:
+        raise ValueError(
+            f"diagrama desconhecido: {diagrama!r}. Use 'nbr_fig_8_6' ou 'patamar'."
+        )
+    return math.copysign(val, eps) if eps != 0.0 else 0.0
