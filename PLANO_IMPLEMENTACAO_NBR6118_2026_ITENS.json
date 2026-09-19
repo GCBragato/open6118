@@ -6,7 +6,8 @@
    "nome": "Durabilidade, cobrimento e abertura de fissura admissível",
    "onda": 1,
    "prioridade": "alta",
-   "modulo": "dimensionamento/durabilidade_nbr6118.py + nucleo_nbr6118.py"
+   "modulo": "dimensionamento/durabilidade_nbr6118.py + nucleo_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P2",
@@ -391,7 +392,7 @@
    "pagina_pdf": 32,
    "titulo": "Tabela 5.1 - Classes de consequência (CC1, CC2, CC3) por caso típico de construção",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P1",
@@ -401,7 +402,27 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Predio residencial de 6 pavimentos -> CC3; de 4 pavimentos -> CC2; casa terrea unifamiliar -> CC1.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P1",
+    "data": "19/09/2026",
+    "funcoes": [
+     "classe_consequencia",
+     "TABELA_5_1_CC3_TIPOS"
+    ],
+    "testes": [
+     "test_cc_texto_livre_pavimentos",
+     "test_cc3_casos_tipicos_por_palavra_chave",
+     "test_cc3_criterios_estruturais",
+     "test_cc3_cc2_muro_de_contencao_degrau_2_5m",
+     "test_cc3_balanco_degrau_3m",
+     "test_cc2_cc3_reforma_acrescimo_degrau_5pct",
+     "test_cc2_multifamiliar_ate_5_pavimentos",
+     "test_cc1_unifamiliar_e_agricola",
+     "test_cc_duvida_vira_cc3_item_5_3_3"
+    ],
+    "observacao": "Nao alterado nesta rodada de correcao; verificado apenas que a funcao existe e os testes do item continuam passando no pytest completo."
+   }
   },
   {
    "id": "6.1-6.2-vida-util-projeto",
@@ -409,7 +430,7 @@
    "pagina_pdf": 34,
    "titulo": "Exigência de durabilidade e vida útil de projeto de referência",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P1",
@@ -419,7 +440,18 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Valor fixo: 50 anos.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P1",
+    "data": "19/09/2026",
+    "funcoes": [
+     "VIDA_UTIL_PROJETO_ANOS"
+    ],
+    "testes": [
+     "test_vida_util_projeto_50_anos"
+    ],
+    "observacao": "Constante fixa em 50; nao alterado nesta rodada."
+   }
   },
   {
    "id": "6.3-mecanismos-deterioracao",
@@ -441,7 +473,7 @@
    "pagina_pdf": 36,
    "titulo": "Tabela 6.1 - Classes de agressividade ambiental (CAA I a IV)",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P1",
@@ -451,7 +483,24 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Rural -> CAA I; urbano comum -> CAA II; marinho -> CAA III; industrial quimico -> CAA IV.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P1",
+    "data": "19/09/2026",
+    "funcoes": [
+     "TABELA_6_1",
+     "classe_agressividade"
+    ],
+    "testes": [
+     "test_tabela_6_1_todas_as_celulas",
+     "test_tabela_6_1_nota_a_ambiente_interno_ou_revestido",
+     "test_tabela_6_1_nota_b_clima_seco",
+     "test_tabela_6_1_notas_nao_acumulam",
+     "test_tabela_6_1_nota_nao_aplicavel_levanta_erro",
+     "test_tabela_6_1_ambiente_desconhecido"
+    ],
+    "observacao": "Nao alterado nesta rodada."
+   }
   },
   {
    "id": "7.4.2-tab7.1-relacao-ac-classe-concreto",
@@ -459,7 +508,7 @@
    "pagina_pdf": 38,
    "titulo": "Tabela 7.1 - Correspondência entre classe de agressividade e qualidade do concreto (a/c máx. e classe mínima)",
    "tipo": "tabela",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P1",
@@ -472,7 +521,22 @@
     "6.4-tab6.1-classes-agressividade"
    ],
    "teste_sugerido": "CA, CAA III -> a/c<=0,55 e >=C30.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P1",
+    "data": "19/09/2026",
+    "funcoes": [
+     "TABELA_7_1_AC_MAXIMA",
+     "TABELA_7_1_CLASSE_MINIMA",
+     "relacao_ac_maxima",
+     "classe_concreto_minima"
+    ],
+    "testes": [
+     "test_tabela_7_1_todas_as_celulas",
+     "test_tabela_7_1_caa_aceita_variantes"
+    ],
+    "observacao": "Nao alterado nesta rodada."
+   }
   },
   {
    "id": "7.4.7.1-cnom-cmin-formula",
@@ -480,7 +544,7 @@
    "pagina_pdf": 38,
    "titulo": "cnom = cmín + Δc, com Δc ≥ 10 mm em obras correntes",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P1",
@@ -493,7 +557,21 @@
     "6.4-tab6.1-classes-agressividade"
    ],
    "teste_sugerido": "cnom(CAA II, laje)=25mm=cmin+10; cmin=15mm.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P1",
+    "data": "19/09/2026",
+    "funcoes": [
+     "nucleo_nbr6118.cobrimento_nominal",
+     "nucleo_nbr6118.cobrimento_minimo_mm",
+     "nucleo_nbr6118.normalizar_caa"
+    ],
+    "testes": [
+     "test_cmin_cnom_caa_ii_laje",
+     "test_cnom_delta_c_10mm_e_argumento_explicito"
+    ],
+    "observacao": "Nao alterado nesta rodada."
+   }
   },
   {
    "id": "7.4.7-tab7.2-cobrimento-nominal",
@@ -501,7 +579,7 @@
    "pagina_pdf": 39,
    "titulo": "Tabela 7.2 - Cobrimento nominal por CAA, tipo de estrutura e elemento, com reduções admitidas",
    "tipo": "tabela",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P1",
@@ -514,7 +592,25 @@
     "6.4-tab6.1-classes-agressividade"
    ],
    "teste_sugerido": "Comparar cada celula com a imagem da Tabela 7.2 (ja conferido, bate).",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P1",
+    "data": "19/09/2026",
+    "funcoes": [
+     "nucleo_nbr6118.cobrimento_nominal",
+     "face_revestida",
+     "superficie_exposta_agressiva"
+    ],
+    "testes": [
+     "test_tabela_7_2_todas_as_celulas",
+     "test_tabela_7_2_nota_d_pilar_solo",
+     "test_face_revestida_laje_e_viga_cnom_15mm",
+     "test_face_revestida_nao_vale_para_pilar_solo_ou_protendido",
+     "test_superficie_exposta_agressiva_forca_caa_iv",
+     "test_cobrimento_nominal_entradas_invalidas_continuam_levantando"
+    ],
+    "observacao": "Nao alterado nesta rodada."
+   }
   },
   {
    "id": "7.4.7.4-delta-c-premoldados",
@@ -522,7 +618,7 @@
    "pagina_pdf": 38,
    "titulo": "Redução de Δc para 5 mm em estruturas pré-moldadas com controle rigoroso (NBR 9062)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P1",
@@ -534,7 +630,20 @@
     "7.4.7.1-cnom-cmin-formula"
    ],
    "teste_sugerido": "cnom reduzido = cnom(Tabela 7.2) - 5mm.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P1",
+    "data": "19/09/2026",
+    "funcoes": [
+     "nucleo_nbr6118.cobrimento_nominal (delta_c_mm, reducao_classe_superior)"
+    ],
+    "testes": [
+     "test_delta_c_5mm_premoldados_reduz_5mm_o_cnom_da_tabela",
+     "test_reducao_5mm_classe_de_concreto_superior",
+     "test_reducao_classe_superior_nao_atinge_piso_de_pilar_solo"
+    ],
+    "observacao": "Nao alterado nesta rodada."
+   }
   },
   {
    "id": "7.4.7.5-cnom-minimos-barra-feixe-bainha",
@@ -542,7 +651,7 @@
    "pagina_pdf": 39,
    "titulo": "Cobrimento nominal mínimo em função do diâmetro da barra, feixe e bainha",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P1",
@@ -554,7 +663,25 @@
     "7.4.7.1-cnom-cmin-formula"
    ],
    "teste_sugerido": "Feixe de 3 barras de 20mm: phi_feixe=20*sqrt(3)=34,6mm; cnom>=34,6mm.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P1",
+    "data": "19/09/2026",
+    "funcoes": [
+     "phi_feixe_mm",
+     "verificar_cobrimento"
+    ],
+    "testes": [
+     "test_phi_feixe_formula_phi_vezes_raiz_n",
+     "test_phi_feixe_exige_ao_menos_2_barras",
+     "test_verificar_cobrimento_so_barra_ok",
+     "test_verificar_cobrimento_barra_maior_que_cnom_levanta_aviso",
+     "test_verificar_cobrimento_feixe_maior_que_cnom_levanta_aviso",
+     "test_verificar_cobrimento_bainha_metade_do_diametro",
+     "test_verificar_cobrimento_memoria_usa_nao_ok_com_acento"
+    ],
+    "observacao": "Item corrigido nesta rodada: acentuacao de 'nao ok' -> 'não ok' na memoria de calculo (3 ocorrencias), com teste novo cobrindo os tres ramos. Funcionalidade em si ja estava implementada e correta; o defeito era so de texto/acentuacao."
+   }
   },
   {
    "id": "7.4.7.6-dmax-agregado-cobrimento",
@@ -562,7 +689,7 @@
    "pagina_pdf": 39,
    "titulo": "Dimensão máxima do agregado graúdo limitada pelo cobrimento nominal",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P1",
@@ -574,7 +701,19 @@
     "7.4.7.1-cnom-cmin-formula"
    ],
    "teste_sugerido": "cnom=30mm -> dmax admissivel=36mm.",
-   "trecho": "mat"
+   "trecho": "mat",
+   "implementacao": {
+    "pacote": "P1",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dmax_agregado_mm"
+    ],
+    "testes": [
+     "test_dmax_agregado_item_do_pacote",
+     "test_dmax_agregado_proporcional"
+    ],
+    "observacao": "Nao alterado nesta rodada."
+   }
   },
   {
    "id": "7.6-7.8-fissuracao-manutencao-durabilidade",
@@ -3956,7 +4095,7 @@
    "pagina_pdf": 100,
    "titulo": "Abertura máxima wk pela classe de agressividade e tipo de concreto/protensão (Tabela 13.4)",
    "tipo": "tabela",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P1",
@@ -3969,7 +4108,26 @@
     "nucleo.cobrimento_nominal"
    ],
    "teste_sugerido": "armado CAA II -> wk_max=0.3, comb=frequente; protendido nivel1 pos-tracao CAA II -> wk_max=0.2; protendido nivel3 pre-tracao qualquer CAA -> duas verificacoes ELS-F(rara)/ELS-D(frequente); concreto simples -> None.",
-   "trecho": "limites"
+   "trecho": "limites",
+   "implementacao": {
+    "pacote": "P1",
+    "data": "19/09/2026",
+    "funcoes": [
+     "nucleo_nbr6118.wk_max_mm",
+     "abertura_fissura_wk (aceita caa=)"
+    ],
+    "testes": [
+     "test_wk_max_concreto_simples_nao_exige",
+     "test_wk_max_concreto_armado_todas_as_celulas",
+     "test_wk_max_protendido_nivel1_faixas_de_caa",
+     "test_wk_max_protendido_nivel2_duas_verificacoes",
+     "test_wk_max_protendido_nivel3_duas_verificacoes_qualquer_caa",
+     "test_wk_max_mm_entradas_invalidas",
+     "test_abertura_fissura_wk_aceita_caa",
+     "test_abertura_fissura_wk_caa_protendido_nivel_sem_wk_max_levanta_erro"
+    ],
+    "observacao": "Nao alterado nesta rodada."
+   }
   },
   {
    "id": "13.4.3-aceitabilidade-sensorial-fissura",

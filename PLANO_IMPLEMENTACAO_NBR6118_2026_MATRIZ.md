@@ -18,26 +18,26 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `5.1-requisitos-qualidade` | 5.1 | 30 | Requisitos de qualidade da estrutura (segurança/ruína, serviço, durabilidade) | não computável | baixa | P |  |
 | `5.2-requisitos-projeto-documentacao` | 5.2 | 31 | Requisitos de qualidade do projeto, condições impostas e documentação da solução adotada | não computável | baixa | P |  |
 | `5.3-atp-procedimento` | 5.3 | 33 | Procedimento de avaliação técnica de projeto (ATP): quando fazer, quem faz, quando pode ser dispensada | não computável | baixa | P |  |
-| `5.3-tab5.1-classes-consequencia` | 5.3.2 (Tabela 5.1) | 32 | Tabela 5.1 - Classes de consequência (CC1, CC2, CC3) por caso típico de construção | ausente | média | P | P1 |
+| `5.3-tab5.1-classes-consequencia` | 5.3.2 (Tabela 5.1) | 32 | Tabela 5.1 - Classes de consequência (CC1, CC2, CC3) por caso típico de construção | implementado | média | P | P1 |
 
 ## Seção 6
 
 | Id | Item | Pág. | O que é | Situação | Prior. | Compl. | Pacote |
 |---|---|---|---|---|---|---|---|
-| `6.1-6.2-vida-util-projeto` | 6.1, 6.2.4 | 34 | Exigência de durabilidade e vida útil de projeto de referência | ausente | média | P | P1 |
+| `6.1-6.2-vida-util-projeto` | 6.1, 6.2.4 | 34 | Exigência de durabilidade e vida útil de projeto de referência | implementado | média | P | P1 |
 | `6.3-mecanismos-deterioracao` | 6.3 | 34 | Mecanismos de envelhecimento e deterioração (concreto, armadura, estrutura) | não computável | baixa | P |  |
-| `6.4-tab6.1-classes-agressividade` | 6.4 (Tabela 6.1) | 36 | Tabela 6.1 - Classes de agressividade ambiental (CAA I a IV) | ausente | alta | P | P1 |
+| `6.4-tab6.1-classes-agressividade` | 6.4 (Tabela 6.1) | 36 | Tabela 6.1 - Classes de agressividade ambiental (CAA I a IV) | implementado | alta | P | P1 |
 
 ## Seção 7
 
 | Id | Item | Pág. | O que é | Situação | Prior. | Compl. | Pacote |
 |---|---|---|---|---|---|---|---|
-| `7.4.2-tab7.1-relacao-ac-classe-concreto` | 7.4.2 (Tabela 7.1) | 38 | Tabela 7.1 - Correspondência entre classe de agressividade e qualidade do concreto (a/c máx. e classe mínima) | parcial | alta | P | P1 |
-| `7.4.7.1-cnom-cmin-formula` | 7.4.7.1-7.4.7.3 | 38 | cnom = cmín + Δc, com Δc ≥ 10 mm em obras correntes | parcial | média | P | P1 |
-| `7.4.7-tab7.2-cobrimento-nominal` | 7.4.7.2, 7.4.7.6-nota, Tabela 7.2 | 39 | Tabela 7.2 - Cobrimento nominal por CAA, tipo de estrutura e elemento, com reduções admitidas | parcial | alta | P | P1 |
-| `7.4.7.4-delta-c-premoldados` | 7.4.7.4 | 38 | Redução de Δc para 5 mm em estruturas pré-moldadas com controle rigoroso (NBR 9062) | ausente | baixa | P | P1 |
-| `7.4.7.5-cnom-minimos-barra-feixe-bainha` | 7.4.7.5 | 39 | Cobrimento nominal mínimo em função do diâmetro da barra, feixe e bainha | ausente | média | P | P1 |
-| `7.4.7.6-dmax-agregado-cobrimento` | 7.4.7.6 | 39 | Dimensão máxima do agregado graúdo limitada pelo cobrimento nominal | ausente | baixa | P | P1 |
+| `7.4.2-tab7.1-relacao-ac-classe-concreto` | 7.4.2 (Tabela 7.1) | 38 | Tabela 7.1 - Correspondência entre classe de agressividade e qualidade do concreto (a/c máx. e classe mínima) | implementado | alta | P | P1 |
+| `7.4.7.1-cnom-cmin-formula` | 7.4.7.1-7.4.7.3 | 38 | cnom = cmín + Δc, com Δc ≥ 10 mm em obras correntes | implementado | média | P | P1 |
+| `7.4.7-tab7.2-cobrimento-nominal` | 7.4.7.2, 7.4.7.6-nota, Tabela 7.2 | 39 | Tabela 7.2 - Cobrimento nominal por CAA, tipo de estrutura e elemento, com reduções admitidas | implementado | alta | P | P1 |
+| `7.4.7.4-delta-c-premoldados` | 7.4.7.4 | 38 | Redução de Δc para 5 mm em estruturas pré-moldadas com controle rigoroso (NBR 9062) | implementado | baixa | P | P1 |
+| `7.4.7.5-cnom-minimos-barra-feixe-bainha` | 7.4.7.5 | 39 | Cobrimento nominal mínimo em função do diâmetro da barra, feixe e bainha | implementado | média | P | P1 |
+| `7.4.7.6-dmax-agregado-cobrimento` | 7.4.7.6 | 39 | Dimensão máxima do agregado graúdo limitada pelo cobrimento nominal | implementado | baixa | P | P1 |
 | `7.6-7.8-fissuracao-manutencao-durabilidade` | 7.6, 7.7, 7.8 | 40 | Controle de fissuração para durabilidade (remete a 13.4.2), medidas especiais e manual de manutenção (remete a 25.3) | não computável | baixa | P |  |
 
 ## Seção 8
@@ -248,7 +248,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `13.3-nota3-combinacao-deslocamento` | 13.3, NOTA 3, NOTA 5, NOTA 6 | 99 | Combinação de ações para deslocamento total e flecha diferida | parcial | alta | M | P8 |
 | `13.4.1-fissuracao-intro` | 13.4.1 | 99 | Princípio geral do controle de fissuração | não computável | média | P |  |
 | `13.4.2-outras-causas-fissuracao` | 13.4.2 (paragrafo introdutorio) | 100 | Outras causas de fissuração (retração plástica, térmica, reações químicas internas) | não computável | baixa | P |  |
-| `13.4.2-tab13.4-wk-max-caa` | 13.4.2, Tabela 13.4 | 100 | Abertura máxima wk pela classe de agressividade e tipo de concreto/protensão (Tabela 13.4) | parcial | alta | M | P1 |
+| `13.4.2-tab13.4-wk-max-caa` | 13.4.2, Tabela 13.4 | 100 | Abertura máxima wk pela classe de agressividade e tipo de concreto/protensão (Tabela 13.4) | implementado | alta | M | P1 |
 | `13.4.3-aceitabilidade-sensorial-fissura` | 13.4.3 | 101 | Controle de fissuração por aceitabilidade sensorial e utilização | não computável | média | P |  |
 
 ## Seção 14

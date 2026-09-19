@@ -330,13 +330,33 @@ def abertura_fissura_wk(
     eta1_val: float = 2.25,
     Es_kncm2: float = E_S_KNCM2,
     wk_max_mm: float = 0.30,
+    caa: str | None = None,
+    tipo_concreto: str = "armado",
+    nivel_protensao: int | None = None,
+    tipo_protensao: str | None = None,
 ) -> ResultadoFissuracao:
     """wk (mm) pelo menor entre Eq. 86 e Eq. 87.
 
     wk1 = (phi / (12.5 * eta1)) * (sigma_si / Es) * (4 / rho_ri + 45)
     wk2 = (phi / (12.5 * eta1)) * (sigma_si / Es) * (3 * sigma_si / fctm)
     Resultados em mm (entrada phi em mm).
+
+    caa (P1, 13.4.2): se informado, wk_max_mm passa a vir da Tabela 13.4
+    (nucleo_nbr6118.wk_max_mm), com tipo_concreto/nivel_protensao/
+    tipo_protensao; o wk_max_mm explícito continua como alternativa (usado
+    quando caa é None, que é o padrão — compatível com o comportamento
+    anterior a este pacote). Para tipo_concreto='protendido' com nível 2 ou
+    3, a Tabela 13.4 não dá um wk_max numérico (a exigência é ELS-F/ELS-D,
+    não wk): a função levanta ValueError nesse caso, citando a exigência.
     """
+    if caa is not None:
+        limite, combinacao = nbr.wk_max_mm(tipo_concreto, caa, nivel_protensao, tipo_protensao)
+        if limite is None:
+            raise ValueError(
+                f"A Tabela 13.4 não dá wk_max para {tipo_concreto!r} nesse caso "
+                f"(exigência: {combinacao}); verifique ELS-F/ELS-D, não wk."
+            )
+        wk_max_mm = limite
     rho = As_cm2 / Acr_cm2
     fctm = fctm_kncm2(fck_mpa)
     base = (phi_mm / (12.5 * eta1_val)) * (sigma_si_kncm2 / Es_kncm2)

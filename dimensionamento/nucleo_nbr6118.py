@@ -88,6 +88,7 @@ def mpa_para_kncm2(valor_mpa: float) -> float:
 # Cobrimento nominal — Tabela 7.2 (PDF p. 39), Δc = 10 mm
 # ---------------------------------------------------------------------------
 _CAA = {"i": 0, "1": 0, "ii": 1, "2": 1, "iii": 2, "3": 2, "iv": 3, "4": 3}
+_ROMANOS_CAA = ("I", "II", "III", "IV")
 _COBRIMENTO_TABELA_7_2 = {   # mm, CAA I, II, III, IV
     ("armado", "laje"): (20, 25, 35, 45),
     ("armado", "vigapilar"): (25, 30, 40, 50),
@@ -100,29 +101,9 @@ _ELEMENTO = {"laje": "laje", "viga": "vigapilar", "pilar": "vigapilar",
              "contatocomosolo": "solo", "pilarsolo": "pilarsolo"}
 
 
-def cobrimento_nominal(caa: str, elemento: str, protendido: bool = False) -> int:
-    """Cobrimento nominal da Tabela 7.2, em mm (Δc = 10 mm).
-
-    caa: 'I', 'II', 'III' ou 'IV' (aceita 'CAA II', 'CAII', '2'...).
-    elemento: 'laje', 'viga', 'pilar', 'solo' (elementos estruturais em
-    contato com o solo) ou 'pilar solo' (trecho de pilar em contato com o
-    solo junto à fundação: cnom >= 45 mm, nota d).
-    protendido=True dá o cobrimento da bainha ou dos fios, cabos e cordoalhas
-    (nota a); a armadura passiva segue a linha de concreto armado.
-
-    A tabela não inclui as reduções permitidas: até 5 mm com concreto de
-    classe acima da mínima exigida, e a da nota b (face superior revestida,
-    >= 15 mm). Também não verifica cnom >= φ da barra, φn do feixe e
-    0,5·φ da bainha (7.4.7.5).
-    """
-    chave = _chave(caa)
-    for prefixo in ("caa", "ca"):   # 'CAA II', 'CAII' -> 'ii'
-        if chave.startswith(prefixo):
-            chave = chave[len(prefixo):]
-            break
-    if chave not in _CAA:
-        raise ValueError(f"Classe de agressividade desconhecida: {caa!r}. Use I, II, III ou IV.")
-    i = _CAA[chave]
+def _cnom_tabela_bruta(caa: str, elemento: str, protendido: bool = False) -> float:
+    """cnom tal como impresso na Tabela 7.2 (Δc = 10 mm já embutido), em mm."""
+    i = _ROMANOS_CAA.index(normalizar_caa(caa))
     el = _ELEMENTO.get(_chave(elemento).replace("/", ""))
     if el is None:
         raise ValueError(f"Elemento desconhecido: {elemento!r}. Use laje, viga, pilar, solo ou 'pilar solo'.")
@@ -130,10 +111,61 @@ def cobrimento_nominal(caa: str, elemento: str, protendido: bool = False) -> int
     if el == "pilarsolo":
         if protendido:
             raise ValueError("A nota d da Tabela 7.2 trata da armadura passiva de pilar em contato com o solo.")
-        return max(_COBRIMENTO_TABELA_7_2[("armado", "solo")][i], 45)
+        return float(max(_COBRIMENTO_TABELA_7_2[("armado", "solo")][i], 45))
     if (tipo, el) not in _COBRIMENTO_TABELA_7_2:
         raise ValueError("A Tabela 7.2 não dá cobrimento de concreto protendido em contato com o solo.")
-    return _COBRIMENTO_TABELA_7_2[(tipo, el)][i]
+    return float(_COBRIMENTO_TABELA_7_2[(tipo, el)][i])
+
+
+def cobrimento_nominal(caa: str, elemento: str, protendido: bool = False,
+                       delta_c_mm: float = 10.0,
+                       reducao_classe_superior: bool = False,
+                       face_revestida: bool = False,
+                       superficie_exposta_agressiva: bool = False) -> float:
+    """Cobrimento nominal cnom = cmín + Δc, em mm (7.4.7.1-7.4.7.4, Tabela 7.2).
+
+    caa: 'I', 'II', 'III' ou 'IV' (aceita 'CAA II', 'CAII', '2'...; ver
+    normalizar_caa).
+    elemento: 'laje', 'viga', 'pilar', 'solo' (elementos estruturais em
+    contato com o solo) ou 'pilar solo' (trecho de pilar em contato com o
+    solo junto à fundação: cnom >= 45 mm, nota d).
+    protendido=True dá o cobrimento da bainha ou dos fios, cabos e cordoalhas
+    (nota a); a armadura passiva segue a linha de concreto armado.
+
+    delta_c_mm: tolerância de execução, Δc >= 10 mm em obras correntes
+    (7.4.7.3); Δc = 5 mm é admitido em estruturas pré-moldadas com controle
+    rigoroso de qualidade, conforme a ABNT NBR 9062 (7.4.7.4).
+    reducao_classe_superior: True desconta 5 mm quando o concreto empregado
+    é de classe de resistência superior à mínima exigida pela Tabela 7.1
+    (nota logo após a Tabela 7.2, p. 39).
+    face_revestida: True usa a nota b da Tabela 7.2 (face superior de laje
+    ou viga que será revestida com argamassa de contrapiso, piso cerâmico
+    etc.): as exigências desta tabela são substituídas pelas de 7.4.7.5,
+    respeitado cnom >= 15 mm (confira phi/feixe/bainha com
+    verificar_cobrimento, em durabilidade_nbr6118). Só vale para
+    elemento='laje' ou 'viga' em concreto armado.
+    superficie_exposta_agressiva: True força os cobrimentos da CAA IV (nota
+    c da Tabela 7.2: reservatórios, estações de tratamento de água e
+    esgoto, condutos de esgoto, canaletas de efluentes e outras obras em
+    ambiente químico e intensamente agressivo), qualquer que seja a CAA
+    informada.
+
+    Não verifica cnom >= φ da barra, φn do feixe e 0,5·φ da bainha
+    (7.4.7.5): use durabilidade_nbr6118.verificar_cobrimento para isso.
+    """
+    if face_revestida:
+        if protendido:
+            raise ValueError("A nota b da Tabela 7.2 vale só para concreto armado (laje/viga).")
+        el_chave = _chave(elemento).replace("/", "")
+        if el_chave not in ("laje", "viga"):
+            raise ValueError(
+                "A nota b da Tabela 7.2 (face revestida) vale só para 'laje' e 'viga', "
+                f"não para {elemento!r}."
+            )
+        return 15.0
+    cmin = cobrimento_minimo_mm(caa, elemento, protendido, reducao_classe_superior,
+                                superficie_exposta_agressiva)
+    return cmin + delta_c_mm
 
 
 # ---------------------------------------------------------------------------
@@ -961,3 +993,124 @@ def dutilidade_aco_passivo(categoria: str) -> str:
     if chave not in DUTILIDADE_ACO_CATEGORIA:
         raise ValueError(f"Categoria de aço desconhecida: {categoria!r}. Use CA-25, CA-50 ou CA-60.")
     return DUTILIDADE_ACO_CATEGORIA[chave]
+
+
+# ---------------------------------------------------------------------------
+# === P1: Durabilidade, cobrimento e abertura de fissura admissível ===
+# ---------------------------------------------------------------------------
+class AvisoNBR6118(UserWarning):
+    """Aviso de uso fora do que a NBR 6118:2026 prevê (o cálculo prossegue).
+
+    Antes vivia em dimensionamento/rotinas/flexao_composta_obliqua.py, que
+    agora reexporta este mesmo tipo (P1: precisava dele fora do kernel).
+    """
+
+
+
+# --- Normalização única de CAA — Tabela 6.1 (PDF p. 36) ---------------------
+def normalizar_caa(caa: str) -> str:
+    """Normaliza a Classe de Agressividade Ambiental para 'I', 'II', 'III' ou 'IV'.
+
+    Aceita as variantes usuais de entrada: 'I', 'CAA II', 'CAIII', 'CA IV',
+    '4'... É a normalização única de CAA da biblioteca (decisão do P1),
+    usada por cobrimento_nominal, cobrimento_minimo_mm, wk_max_mm e por
+    durabilidade_nbr6118 (relacao_ac_maxima, classe_concreto_minima).
+    """
+    chave = _chave(caa)
+    for prefixo in ("caa", "ca"):   # 'CAA II', 'CAII' -> 'ii'
+        if chave.startswith(prefixo):
+            chave = chave[len(prefixo):]
+            break
+    if chave not in _CAA:
+        raise ValueError(f"Classe de agressividade desconhecida: {caa!r}. Use I, II, III ou IV.")
+    return _ROMANOS_CAA[_CAA[chave]]
+
+
+# --- Cobrimento mínimo — 7.4.7.1, 7.4.7.2 (PDF p. 38-39) --------------------
+def cobrimento_minimo_mm(caa: str, elemento: str, protendido: bool = False,
+                         reducao_classe_superior: bool = False,
+                         superficie_exposta_agressiva: bool = False) -> float:
+    """Cobrimento mínimo cmín, em mm (7.4.7.1: cnom = cmín + Δc).
+
+    cmín é o valor da Tabela 7.2 (impressa para Δc = 10 mm) menos 10 mm,
+    com o desconto de até 5 mm quando o concreto é de classe superior à
+    mínima exigida pela Tabela 7.1 (nota após a Tabela 7.2, p. 39).
+    Mesmos argumentos caa/elemento/protendido de cobrimento_nominal;
+    superficie_exposta_agressiva força os valores da CAA IV (nota c da
+    Tabela 7.2). O piso de 45 mm da nota d (pilar em contato com o solo,
+    elemento='pilar solo') não sofre a redução por classe superior: é um
+    mínimo absoluto da norma, não decomposto em cmín/Δc.
+    """
+    el_chave = _chave(elemento).replace("/", "")
+    if el_chave == "pilarsolo":
+        return _cnom_tabela_bruta(caa, elemento, protendido) - 10.0
+    caa_usar = "IV" if superficie_exposta_agressiva else caa
+    cmin = _cnom_tabela_bruta(caa_usar, elemento, protendido) - 10.0
+    if reducao_classe_superior:
+        cmin -= 5.0
+    return cmin
+
+
+# --- Abertura máxima de fissura wk,máx — 13.4.2, Tabela 13.4 (PDF p. 100-101)
+CAA_ARMADO_WK_MM = {"I": 0.4, "II": 0.3, "III": 0.3, "IV": 0.2}
+
+
+def wk_max_mm(tipo_concreto: str, caa: str, nivel_protensao: int | None = None,
+             tipo_protensao: str | None = None) -> tuple[float | None, str]:
+    """wk,máx (mm) e a combinação de serviço a usar, pela Tabela 13.4 (p. 100-101).
+
+    tipo_concreto: 'simples', 'armado' ou 'protendido'.
+    nivel_protensao (só para 'protendido'): 1 (parcial), 2 (limitada) ou 3
+    (completa).
+    tipo_protensao (só para 'protendido'): 'pré-tração' ou 'pós-tração'
+    (aceita sem acento e sem hífen).
+
+    'simples' devolve (None, '-'): a tabela não exige fissuração.
+    'armado' devolve (wk,máx, 'frequente'): 0,4/0,3/0,3/0,2 mm para
+    CAA I/II/III/IV, sempre com a combinação frequente (ELS-W).
+    'protendido' nível 1 (protensão parcial) devolve (0,2, 'frequente')
+    (ELS-W), respeitada a faixa de CAA de cada tipo de protensão:
+    pré-tração só CAA I; pós-tração CAA I e II. Fora da faixa, levanta
+    FaixaNormativaError (a Tabela 13.4 não define esse caso).
+    'protendido' níveis 2 (protensão limitada, pré-tração CAA I/II ou
+    pós-tração CAA I a IV) e 3 (protensão completa, CAA I a IV para os dois
+    tipos de protensão) não têm limite de wk: a exigência são duas
+    verificações de tensão, ELS-F e ELS-D (a critério do projetista,
+    ELS-D pode virar ELS-DP com ap = 50 mm — Figura 3.1). A função devolve
+    (None, <as duas verificações e a combinação de cada uma>); o cálculo de
+    tensão do ELS-F/ELS-D em si não é deste pacote.
+    """
+    tipo = _chave(tipo_concreto)
+    if tipo == "simples":
+        return (None, "-")
+    if tipo == "armado":
+        return (CAA_ARMADO_WK_MM[normalizar_caa(caa)], "frequente")
+    if tipo != "protendido":
+        raise ValueError(
+            f"tipo_concreto desconhecido: {tipo_concreto!r}. Use 'simples', 'armado' ou 'protendido'."
+        )
+    if nivel_protensao not in (1, 2, 3):
+        raise ValueError("protendido exige nivel_protensao em {1, 2, 3} (parcial/limitada/completa).")
+    tp = _chave(tipo_protensao or "")
+    if tp not in ("pretracao", "postracao"):
+        raise ValueError("protendido exige tipo_protensao 'pré-tração' ou 'pós-tração'.")
+    romano = normalizar_caa(caa)
+    idx = _ROMANOS_CAA.index(romano)
+    if nivel_protensao == 1:
+        faixa = (0,) if tp == "pretracao" else (0, 1)
+        if idx not in faixa:
+            raise FaixaNormativaError(
+                f"Tabela 13.4 não dá nível 1 (protensão parcial) para CAA {romano} em "
+                f"{'pré-tração (só CAA I)' if tp == 'pretracao' else 'pós-tração (só CAA I e II)'}."
+            )
+        return (0.2, "frequente")
+    if nivel_protensao == 2:
+        faixa = (0, 1) if tp == "pretracao" else (0, 1, 2, 3)
+        if idx not in faixa:
+            raise FaixaNormativaError(
+                f"Tabela 13.4 não dá nível 2 (protensão limitada) para CAA {romano} em "
+                "pré-tração (só CAA I e II)."
+            )
+        return (None, "ELS-F (combinação frequente) e ELS-D (combinação quase-permanente; "
+                      "a critério do projetista, ELS-DP com ap = 50 mm no lugar do ELS-D)")
+    return (None, "ELS-F (combinação rara) e ELS-D (combinação frequente)")

@@ -75,8 +75,10 @@ GAMA_F3 = nbr.GAMA_F3  # 15.3.1 -- formulacao de seguranca da relacao momento-cu
 TOL_UNIAXIAL = 1e-6   # |M perpendicular|/|M| abaixo disso = flexao normal
 
 
-class AvisoNBR6118(UserWarning):
-    """Aviso de uso fora do que a NBR 6118:2026 preve (o calculo prossegue)."""
+# AvisoNBR6118 mudou de casa para o nucleo normativo no P1 (durabilidade_nbr6118
+# precisava dele fora do kernel); fica reexportado aqui para nao quebrar quem
+# importa `from dimensionamento.rotinas.flexao_composta_obliqua import AvisoNBR6118`.
+AvisoNBR6118 = nbr.AvisoNBR6118
 
 
 # ---------------------------------------------------------------------------
