@@ -133,7 +133,8 @@
    "nome": "Lajes: flexão, armaduras mínimas e momentos",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/lajes_nbr6118.py (extensão)"
+   "modulo": "dimensionamento/lajes_nbr6118.py (extensão)",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P18",
@@ -6419,7 +6420,7 @@
    "pagina_pdf": 117,
    "titulo": "Reações de apoio de lajes maciças retangulares pelo método das charneiras plásticas (triângulos/trapézios)",
    "tipo": "procedimento",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "G",
    "pacote": "P17",
@@ -6429,7 +6430,29 @@
    "formula_ou_regra": "reacao_apoio ~= carga_uniforme * area_do_triangulo_ou_trapezio definida pelas charneiras (angulos 45/60/90 graus conforme a vinculacao de cada borda) / comprimento_do_apoio; charneiras podem vir da analise plastica de 14.7.4 ou serem aproximadas por retas.",
    "conferido_na_imagem": false,
    "teste_sugerido": "Comparar a reacao dada por reacoes_duas_direcoes com o calculo direto do triangulo (angulo 45 graus) para um caso quadrado com todas as bordas do mesmo tipo.",
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P17",
+    "data": "19/09/2026",
+    "funcoes": [
+     "reacoes_charneiras",
+     "_tempo_borda_charneira",
+     "_clip_semiplano",
+     "_area_poligono"
+    ],
+    "testes": [
+     "test_charneiras_quadrado_apoiada_bate_com_bares_tipo1",
+     "test_charneiras_quadrado_engastada_bate_com_bares_tipo6",
+     "test_charneiras_retangular_apoiada_lambda2_bate_com_bares_tipo1",
+     "test_charneiras_conserva_a_carga_total",
+     "test_charneiras_borda_livre_nao_recebe_reacao",
+     "test_charneiras_engastada_atrai_mais_area_que_apoiada_oposta",
+     "test_charneiras_vinculo_desconhecido_levanta_erro",
+     "test_charneiras_faltando_chave_levanta_erro",
+     "test_charneiras_menos_de_2_apoios_levanta_erro"
+    ],
+    "observacao": "Nenhum achado da verificacao para este item; sem alteracao nesta rodada."
+   }
   },
   {
    "id": "14.7.6.2-compatibilizacao-momentos",
@@ -6437,7 +6460,7 @@
    "pagina_pdf": 117,
    "titulo": "Compatibilização de momentos negativos entre lajes vizinhas",
    "tipo": "procedimento",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P17",
@@ -6446,7 +6469,20 @@
    "o_que_calcula": "Ajusta o momento negativo sobre um apoio comum a duas lajes calculadas isoladamente, seja pela regra simplificada (adotar o maior valor absoluto) seja por uma compatibilizacao aproximada.",
    "formula_ou_regra": "simplificado (texto de 2026): M_apoio = max(|M1|,|M2|); regra classica usada no codigo (apostila): X >= max(0,8*|M1|, (|M1|+|M2|)/2)",
    "conferido_na_imagem": false,
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P17",
+    "data": "19/09/2026",
+    "funcoes": [
+     "compat_momento_negativo"
+    ],
+    "testes": [
+     "test_compat_momento_default_media_08_inalterado",
+     "test_compat_momento_regra_maior",
+     "test_compat_momento_regra_invalida"
+    ],
+    "observacao": "Nenhum achado da verificacao para este item; sem alteracao nesta rodada."
+   }
   },
   {
    "id": "14.7.7-lajes-nervuradas-grelha-vigas",
@@ -6527,7 +6563,7 @@
    "pagina_pdf": 118,
    "titulo": "Distribuição percentual dos momentos do pórtico equivalente entre faixas internas e externas (Figura 14.9)",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P17",
@@ -6536,7 +6572,20 @@
    "formula_ou_regra": "faixas internas (as duas juntas): 45% dos momentos positivos e 25% dos negativos; cada faixa externa: 27,5% dos momentos positivos e 37,5% dos negativos; larguras das faixas conforme Figura 14.9 (faixa externa = l2/4 de cada lado; faixas internas = restante l2/2, por vao l1 analisado).",
    "conferido_na_imagem": true,
    "teste_sugerido": "Somar as duas faixas internas (45%+25%) e as duas faixas externas (2*27,5%+2*37,5%) e conferir que cada lado fecha 100% dos positivos e 100% dos negativos.",
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P17",
+    "data": "19/09/2026",
+    "funcoes": [
+     "repartir_momentos_faixas"
+    ],
+    "testes": [
+     "test_faixas_positivo",
+     "test_faixas_negativo",
+     "test_faixas_tipo_invalido"
+    ],
+    "observacao": "Nenhum achado da verificacao para este item; sem alteracao nesta rodada."
+   }
   },
   {
    "id": "14.8.1-vigas-parede-pilares-parede-analise",
@@ -10700,7 +10749,7 @@
    "pagina_pdf": 179,
    "titulo": "Princípios do ELU de lajes (flexão e forças normais)",
    "tipo": "qualitativo",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P17",
@@ -10713,7 +10762,22 @@
     "nucleo.rho_min_flexao"
    ],
    "teste_sugerido": "Emitir aviso quando ângulo de desvio sintético > 15°.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P17",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_desvio_armadura_tensoes_principais"
+    ],
+    "testes": [
+     "test_desvio_ate_15_graus_nao_avisa",
+     "test_desvio_acima_de_15_graus_avisa",
+     "test_desvio_negativo_acima_de_15_graus_avisa",
+     "test_citacoes_de_pagina_pdf_179_180_nos_itens_19x",
+     "test_mensagem_aviso_desvio_15_graus_tem_acentuacao"
+    ],
+    "observacao": "Corrigida a citacao de pagina (161->179) na docstring e na mensagem de aviso, e acentuada a mensagem de warnings.warn."
+   }
   },
   {
    "id": "19.3.1-els-deformacao",
@@ -10807,7 +10871,7 @@
    "pagina_pdf": 179,
    "titulo": "Extensão mínima da armadura negativa de borda sem continuidade",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P17",
@@ -10819,7 +10883,20 @@
     "19.3.3.2-tab19.1-as-min"
    ],
    "teste_sugerido": "lx=500cm -> extensão=75cm.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P17",
+    "data": "19/09/2026",
+    "funcoes": [
+     "extensao_negativa_borda_cm"
+    ],
+    "testes": [
+     "test_extensao_negativa_borda_lx500",
+     "test_extensao_negativa_borda_lx300",
+     "test_citacoes_de_pagina_pdf_179_180_nos_itens_19x"
+    ],
+    "observacao": "Corrigida a citacao de pagina (161->179) na docstring."
+   }
   },
   {
    "id": "19.3.3.2-tab19.1-as-min",
@@ -10827,7 +10904,7 @@
    "pagina_pdf": 180,
    "titulo": "Tabela 19.1 - valores mínimos para armaduras passivas aderentes de laje",
    "tipo": "tabela",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P17",
@@ -10841,7 +10918,37 @@
     "17.3.5.2.1-rho-min (fora)"
    ],
    "teste_sugerido": "Reproduzir as 10 células com rho_min e rho_p sintéticos; com rho_p=0 deve colapsar no caso sem armadura ativa.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P17",
+    "data": "19/09/2026",
+    "funcoes": [
+     "TABELA_19_1",
+     "rho_min_laje"
+    ],
+    "testes": [
+     "test_rho_min_flexao_25_e_0015",
+     "test_tab191_negativa_sem_ativa",
+     "test_tab191_negativa_aderente",
+     "test_tab191_negativa_nao_aderente",
+     "test_tab191_negativa_colapsa_com_rho_p_zero",
+     "test_tab191_negativa_borda_sem_continuidade_independe_de_ativa",
+     "test_tab191_positiva_duas_direcoes_sem_ativa",
+     "test_tab191_positiva_duas_direcoes_aderente",
+     "test_tab191_positiva_duas_direcoes_nao_aderente",
+     "test_tab191_positiva_duas_direcoes_aderente_colapsa_com_rho_p_zero",
+     "test_tab191_positiva_duas_direcoes_nao_aderente_nao_colapsa_para_0",
+     "test_tab191_positiva_principal_sem_ativa",
+     "test_tab191_positiva_principal_aderente",
+     "test_tab191_positiva_principal_nao_aderente",
+     "test_tab191_positiva_principal_colapsa_com_rho_p_zero",
+     "test_tab191_positiva_secundaria_rho_sem_e_aderente_e_0_5_rho_min",
+     "test_tab191_positiva_secundaria_nao_aderente_e_indefinida",
+     "test_tab191_tipo_e_situacao_invalidos_levantam_valueerror",
+     "test_citacoes_de_pagina_pdf_179_180_nos_itens_19x"
+    ],
+    "observacao": "Corrigida a citacao de pagina (162->180) no comentario da tabela e na docstring de rho_min_laje. As 15 celulas da tabela (5 tipos x 3 situacoes) estao implementadas e testadas."
+   }
   },
   {
    "id": "19.3.3.2-as-min-laje-lisa-nao-aderente",
@@ -10849,7 +10956,7 @@
    "pagina_pdf": 180,
    "titulo": "Armadura negativa mínima em laje lisa/cogumelo com armadura ativa não aderente",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P17",
@@ -10859,7 +10966,22 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "h=20cm, l=600cm -> As_min=9,0 cm2.",
-   "trecho": "lajes"
+   "trecho": "lajes",
+   "implementacao": {
+    "pacote": "P17",
+    "data": "19/09/2026",
+    "funcoes": [
+     "as_min_laje_lisa_nao_aderente_cm2",
+     "largura_cobertura_negativa_lisa_cm"
+    ],
+    "testes": [
+     "test_as_min_laje_lisa_nao_aderente_h20_l600",
+     "test_as_min_laje_lisa_nao_aderente_h15_l500",
+     "test_largura_cobertura_negativa_lisa",
+     "test_citacoes_de_pagina_pdf_179_180_nos_itens_19x"
+    ],
+    "observacao": "Corrigida a citacao de pagina (162->180) nas duas docstrings."
+   }
   },
   {
    "id": "19.3.3.3-as-max",

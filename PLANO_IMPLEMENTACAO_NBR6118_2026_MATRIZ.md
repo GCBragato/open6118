@@ -302,13 +302,13 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.7.4-xd-limite-plastico-laje` | 14.7.4 | 116 | Limite de x/d para dispensa de verificação de rotação na análise plástica de lajes (charneiras) | implementado | média | P | P13 |
 | `14.7.4-razao-momentos-borda-vao` | 14.7.4 | 116 | Razão mínima entre momentos de borda e de vão na análise plástica de lajes retangulares (1,5:1) | implementado | média | P | P13 |
 | `14.7.5-analise-nao-linear-placas` | 14.7.5 | 117 | Análise não linear de placas - aplicabilidade a ELU e ELS | não computável | baixa | P |  |
-| `14.7.6.1-reacoes-apoio-charneiras` | 14.7.6.1 | 117 | Reações de apoio de lajes maciças retangulares pelo método das charneiras plásticas (triângulos/trapézios) | parcial | alta | G | P17 |
-| `14.7.6.2-compatibilizacao-momentos` | 14.7.6.2 | 117 | Compatibilização de momentos negativos entre lajes vizinhas | parcial | alta | P | P17 |
+| `14.7.6.1-reacoes-apoio-charneiras` | 14.7.6.1 | 117 | Reações de apoio de lajes maciças retangulares pelo método das charneiras plásticas (triângulos/trapézios) | implementado | alta | G | P17 |
+| `14.7.6.2-compatibilizacao-momentos` | 14.7.6.2 | 117 | Compatibilização de momentos negativos entre lajes vizinhas | implementado | alta | P | P17 |
 | `14.7.7-lajes-nervuradas-grelha-vigas` | 14.7.7 | 118 | Cálculo da laje nervurada como grelha de vigas quando as hipóteses de laje maciça não se aplicam | ausente | alta | G | P45 |
 | `14.7.7-lajes-nervuradas-unidirecionais` | 14.7.7 | 118 | Lajes nervuradas unidirecionais: cálculo na direção das nervuras, com rigidez transversal e à torção desprezadas | ausente | alta | P | P45 |
 | `14.7.8-analise-numerica-lajes-lisas` | 14.7.8 | 118 | Exigência de procedimento numérico para análise de lajes lisas e lajes-cogumelo | ausente | alta | P | P45 |
 | `14.7.8-portico-equivalente` | 14.7.8 | 118 | Processo elástico aproximado (pórticos múltiplos com redistribuição) para lajes lisas/cogumelo com pilares em filas regulares | ausente | alta | G | P45 |
-| `14.7.8-faixas-distribuicao-momento` | 14.7.8 | 118 | Distribuição percentual dos momentos do pórtico equivalente entre faixas internas e externas (Figura 14.9) | ausente | alta | P | P17 |
+| `14.7.8-faixas-distribuicao-momento` | 14.7.8 | 118 | Distribuição percentual dos momentos do pórtico equivalente entre faixas internas e externas (Figura 14.9) | implementado | alta | P | P17 |
 | `14.8.1-vigas-parede-pilares-parede-analise` | 14.8.1 | 119 | Método de análise de vigas-parede e pilares-parede (linear/não linear; representação como elemento linear equivalente) | implementado | alta | P | P44 |
 | `14.8.2-blocos-analise` | 14.8.2 | 119 | Método de análise de blocos de fundação (linear, plástica ou não linear) | não computável | média | P |  |
 
@@ -522,13 +522,13 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | Id | Item | Pág. | O que é | Situação | Prior. | Compl. | Pacote |
 |---|---|---|---|---|---|---|---|
 | `19.1-simbologia` | 19.1 | 178 | Simbologia específica da seção 19 (lajes) | não computável | baixa | P |  |
-| `19.2-principios-elu` | 19.2 | 179 | Princípios do ELU de lajes (flexão e forças normais) | parcial | alta | P | P17 |
+| `19.2-principios-elu` | 19.2 | 179 | Princípios do ELU de lajes (flexão e forças normais) | implementado | alta | P | P17 |
 | `19.3.1-els-deformacao` | 19.3.1 | 179 | ELS de deformação de lajes remete a 17.3.2 | implementado | alta | M | P8 |
 | `19.3.2-els-fissuracao` | 19.3.2 | 179 | ELS de fissuração/descompressão em lajes remete a 17.3.3 e 17.3.4 | parcial | alta | M | P9 |
 | `19.3.3.1-principios-as-max-min` | 19.3.3.1 | 179 | Princípios básicos de armaduras máximas e mínimas de laje | implementado | alta | P |  |
-| `19.3.3.2-extensao-armadura-negativa-borda` | 19.3.3.2 | 179 | Extensão mínima da armadura negativa de borda sem continuidade | ausente | alta | P | P17 |
-| `19.3.3.2-tab19.1-as-min` | 19.3.3.2 / Tabela 19.1 | 180 | Tabela 19.1 - valores mínimos para armaduras passivas aderentes de laje | parcial | alta | M | P17 |
-| `19.3.3.2-as-min-laje-lisa-nao-aderente` | 19.3.3.2 | 180 | Armadura negativa mínima em laje lisa/cogumelo com armadura ativa não aderente | ausente | média | P | P17 |
+| `19.3.3.2-extensao-armadura-negativa-borda` | 19.3.3.2 | 179 | Extensão mínima da armadura negativa de borda sem continuidade | implementado | alta | P | P17 |
+| `19.3.3.2-tab19.1-as-min` | 19.3.3.2 / Tabela 19.1 | 180 | Tabela 19.1 - valores mínimos para armaduras passivas aderentes de laje | implementado | alta | M | P17 |
+| `19.3.3.2-as-min-laje-lisa-nao-aderente` | 19.3.3.2 | 180 | Armadura negativa mínima em laje lisa/cogumelo com armadura ativa não aderente | implementado | média | P | P17 |
 | `19.3.3.3-as-max` | 19.3.3.3 | 181 | Armadura máxima de flexão de laje remete a 17.3.5.2 | implementado | alta | P | P12 |
 | `19.4.1-vrd1` | 19.4.1 | 181 | Força cortante resistente de laje sem armadura transversal (VRd1) | implementado | alta | M | P15 |
 | `19.4.1-decalagem-al-15d` | 19.4.1 | 182 | Deslocamento da lei de decalagem em lajes (al=1,5d) | implementado | média | P | P15 |

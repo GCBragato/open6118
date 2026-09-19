@@ -584,9 +584,26 @@ def flecha_imediata_duas_direcoes(
 # ---------------------------------------------------------------------------
 # 3. Compatibilizacao, fissuracao e fluencia
 # ---------------------------------------------------------------------------
-def compat_momento_negativo(M1: float, M2: float) -> float:
-    """Eq. 22: X >= max(0.8 |X1|, (|X1|+|X2|)/2). Retorna positivo."""
+def compat_momento_negativo(M1: float, M2: float, regra: str = "media_08") -> float:
+    """Compatibiliza o momento negativo sobre um apoio comum a duas lajes
+    calculadas isoladamente (NBR 6118 14.7.6.2, PDF p. 117). Retorna positivo.
+
+    regra:
+      'media_08' (default; Eq. 22 da apostila, classica): X = max(0,8*max(|M1|,|M2|), (|M1|+|M2|)/2).
+      'maior'    (simplificado, texto da norma): X = max(|M1|, |M2|) — "Permite-se,
+                 simplificadamente, a adocao do maior valor de momento negativo em
+                 vez de equilibrar os momentos de lajes diferentes sobre uma borda
+                 comum."
+
+    Default mantido em 'media_08' para nao mudar o comportamento de quem ja chama
+    esta funcao. O procedimento iterativo de compatibilizacao para analise
+    plastica, descrito no mesmo item 14.7.6.2, nao e implementado aqui (P17).
+    """
     a, b = abs(M1), abs(M2)
+    if regra == "maior":
+        return max(a, b)
+    if regra != "media_08":
+        raise ValueError(f"regra deve ser 'media_08' ou 'maior', recebido {regra!r}.")
     return max(0.8 * max(a, b), (a + b) / 2.0)
 
 
@@ -936,6 +953,366 @@ def main() -> None:
     if "--test" in sys.argv:
         sys.exit(0 if rodar_testes() else 1)
     rodar_testes()
+
+
+# ---------------------------------------------------------------------------
+# === P17: Lajes - flexao, armaduras minimas e momentos ===
+# ---------------------------------------------------------------------------
+# Tabela 19.1 (NBR 6118 19.3.3.2, PDF p. 180) - valores minimos para
+# armaduras passivas aderentes de laje, como fracao de rho_min (Tabela 17.3,
+# ja no nucleo: nbr.rho_min_flexao). rho_s = As/(bw h); rho_p = Ap/(bw h).
+TIPOS_ARMADURA_LAJE = (
+    "negativa",
+    "negativa_borda_sem_continuidade",
+    "positiva_duas_direcoes",
+    "positiva_principal_uma_direcao",
+    "positiva_secundaria_uma_direcao",
+)
+SITUACOES_ATIVA_LAJE = ("sem", "aderente", "nao_aderente")
+
+# Documentacao da tabela como dado (as formulas de verdade estao em
+# rho_min_laje; aqui e so o registro legivel da celula, para quem consulta
+# a tabela sem ler o codigo). "-" (None) = a norma nao define aquele caso.
+TABELA_19_1 = {
+    "negativa": {
+        "sem": "rho_min",
+        "aderente": "max(rho_min - rho_p, 0.67 rho_min)",
+        "nao_aderente": "max(rho_min - 0.5 rho_p, 0.67 rho_min)",
+    },
+    "negativa_borda_sem_continuidade": {
+        "sem": "0.67 rho_min", "aderente": "0.67 rho_min", "nao_aderente": "0.67 rho_min",
+    },
+    "positiva_duas_direcoes": {
+        "sem": "0.67 rho_min",
+        "aderente": "max(0.67 rho_min - rho_p, 0.5 rho_min)",
+        "nao_aderente": "max(rho_min - 0.5 rho_p, 0.5 rho_min)",
+    },
+    "positiva_principal_uma_direcao": {
+        "sem": "rho_min",
+        "aderente": "max(rho_min - rho_p, 0.5 rho_min)",
+        "nao_aderente": "max(rho_min - 0.5 rho_p, 0.5 rho_min)",
+    },
+    "positiva_secundaria_uma_direcao": {
+        "sem": "max(20% As_principal, 0.9 cm2/m, 0.5 rho_min bw h)",
+        "aderente": "max(20% As_principal, 0.9 cm2/m, 0.5 rho_min bw h)",
+        "nao_aderente": None,
+    },
+}
+
+
+def rho_min_laje(
+    tipo_armadura: str, situacao_ativa: str, fck_mpa: float, rho_p: float = 0.0,
+) -> float:
+    """rho_s minimo (Tabela 19.1, NBR 6118 19.3.3.2, PDF p. 180), como fracao.
+
+    rho_s = As/(bw h); rho_p = Ap/(bw h) (armadura ativa; default 0 quando nao
+    ha). rho_min vem da Tabela 17.3 (nbr.rho_min_flexao, com interpolacao
+    entre classes de fck). Com rho_p = 0, as colunas 'aderente' e
+    'nao_aderente' colapsam no valor da coluna 'sem'.
+
+    tipo_armadura: 'negativa', 'negativa_borda_sem_continuidade',
+    'positiva_duas_direcoes', 'positiva_principal_uma_direcao' ou
+    'positiva_secundaria_uma_direcao' (esta ultima devolve so a parcela em
+    rho_min da celula; use as_min_secundaria_uma_direcao_cm2_por_m para o
+    criterio inteiro, que inclui tambem As/s >= 20% da principal e
+    As/s >= 0,9 cm2/m).
+    situacao_ativa: 'sem', 'aderente' ou 'nao_aderente'.
+
+    Levanta FaixaNormativaError na celula "-" da tabela (armadura secundaria
+    com armadura ativa nao aderente: a norma nao define esse caso).
+    """
+    if tipo_armadura not in TIPOS_ARMADURA_LAJE:
+        raise ValueError(
+            f"tipo_armadura desconhecido: {tipo_armadura!r}. Use um de {TIPOS_ARMADURA_LAJE}."
+        )
+    if situacao_ativa not in SITUACOES_ATIVA_LAJE:
+        raise ValueError(
+            f"situacao_ativa desconhecida: {situacao_ativa!r}. Use um de {SITUACOES_ATIVA_LAJE}."
+        )
+    rho_min = nbr.rho_min_flexao(fck_mpa)
+
+    if tipo_armadura == "negativa_borda_sem_continuidade":
+        return 0.67 * rho_min
+
+    if tipo_armadura == "positiva_secundaria_uma_direcao":
+        if situacao_ativa == "nao_aderente":
+            raise nbr.FaixaNormativaError(
+                "Tabela 19.1 (19.3.3.2, PDF p. 180): a NBR 6118 nao define "
+                "armadura secundaria minima para laje com armadura ativa "
+                'nao aderente (celula "-" da tabela).'
+            )
+        return 0.5 * rho_min
+
+    if tipo_armadura == "negativa":
+        if situacao_ativa == "sem":
+            return rho_min
+        if situacao_ativa == "aderente":
+            return max(rho_min - rho_p, 0.67 * rho_min)
+        return max(rho_min - 0.5 * rho_p, 0.67 * rho_min)
+
+    if tipo_armadura == "positiva_duas_direcoes":
+        if situacao_ativa == "sem":
+            return 0.67 * rho_min
+        if situacao_ativa == "aderente":
+            return max(0.67 * rho_min - rho_p, 0.5 * rho_min)
+        return max(rho_min - 0.5 * rho_p, 0.5 * rho_min)
+
+    # positiva_principal_uma_direcao
+    if situacao_ativa == "sem":
+        return rho_min
+    if situacao_ativa == "aderente":
+        return max(rho_min - rho_p, 0.5 * rho_min)
+    return max(rho_min - 0.5 * rho_p, 0.5 * rho_min)
+
+
+def as_min_secundaria_uma_direcao_cm2_por_m(
+    As_principal_cm2_por_m: float, bw_cm: float, h_cm: float, fck_mpa: float,
+    situacao_ativa: str = "sem",
+) -> float:
+    """As/s minima da armadura secundaria de laje armada em uma direcao
+    (Tabela 19.1, ultima linha, NBR 6118 19.3.3.2, PDF p. 180), em cm2/m:
+
+        As/s >= max(0,20 * As_principal, 0,9 cm2/m, 0,5 rho_min bw h)
+
+    situacao_ativa: 'sem' ou 'aderente' (colunas onde a norma define valor).
+    'nao_aderente' levanta FaixaNormativaError (celula "-" da tabela).
+    """
+    rho_s_min = rho_min_laje("positiva_secundaria_uma_direcao", situacao_ativa, fck_mpa)
+    return max(0.20 * As_principal_cm2_por_m, 0.9, rho_s_min * bw_cm * h_cm)
+
+
+def as_min_laje_lisa_nao_aderente_cm2(h_cm: float, l_cm: float) -> float:
+    """As minima da armadura passiva negativa sobre apoios de laje lisa ou
+    laje-cogumelo com armadura ativa nao aderente (NBR 6118 19.3.3.2, PDF
+    p. 180):
+
+        As >= 0,00075 h l
+
+    h = altura da laje (cm); l = vao medio da laje na direcao da armadura a
+    ser colocada (cm). Resultado em cm2 (faixa de 1 m ja embutida no
+    coeficiente, como no restante deste modulo).
+    """
+    return 0.00075 * h_cm * l_cm
+
+
+def largura_cobertura_negativa_lisa_cm(dimensao_apoio_cm: float, h_cm: float) -> float:
+    """Largura da faixa transversal que a armadura de
+    as_min_laje_lisa_nao_aderente_cm2 deve cobrir (NBR 6118 19.3.3.2, PDF
+    p. 180): dimensao do apoio (pilar/capitel), na direcao considerada,
+    acrescida de 1,5 h para cada lado.
+    """
+    return dimensao_apoio_cm + 2.0 * 1.5 * h_cm
+
+
+def extensao_negativa_borda_cm(l_menor_cm: float) -> float:
+    """Extensao minima da armadura negativa de borda sem continuidade (NBR
+    6118 19.3.3.2, PDF p. 179): >= 0,15 do vao menor da laje, medida a
+    partir da face do apoio.
+    """
+    return 0.15 * l_menor_cm
+
+
+def verificar_desvio_armadura_tensoes_principais(angulo_desvio_graus: float) -> None:
+    """Avisa quando a direcao adotada para a armadura desviar das direcoes
+    das tensoes principais em mais de 15 graus (NBR 6118 19.2, PDF p. 179):
+    "esse fato deve ser considerado no calculo das armaduras". Esta funcao
+    nao aplica nenhuma correcao automatica (a norma nao da uma formula
+    unica para isso); ela so emite AvisoNBR6118 para quem decide o
+    tratamento (por exemplo, majorar As ou refazer a analise com a direcao
+    real das tensoes principais).
+
+    Mensagem de aviso em portugues com acento (texto mostrado ao usuario
+    final em tempo de execucao); o restante deste modulo segue em ASCII por
+    convencao pre-existente do arquivo (ver retorno da verificacao do P17).
+    """
+    if abs(angulo_desvio_graus) > 15.0:
+        warnings.warn(
+            f"Desvio de {angulo_desvio_graus:.1f} graus entre a direção "
+            "da armadura e as tensões principais (> 15 graus, NBR 6118 "
+            "19.2, p. 179): considerar esse efeito no cálculo das "
+            "armaduras.",
+            nbr.AvisoNBR6118, stacklevel=2,
+        )
+
+
+# --- 14.7.6.1 (PDF p. 117) - reacoes de apoio por charneiras plasticas -----
+# Metodo aproximado do item b: charneiras substituidas por retas a partir
+# dos vertices, com 45 graus entre dois apoios do mesmo tipo, 60 graus a
+# partir do apoio engastado (30 graus do lado apoiado - os dois angulos do
+# canto somam 90 graus) quando o outro for simplesmente apoiado, e 90 graus
+# a partir do apoio quando a borda vizinha for livre.
+#
+# Generaliza-se o angulo de canto para toda a laje com um "esqueleto reto"
+# (straight skeleton) ponderado por peso de borda: peso 1,0 para apoiada,
+# tan(60 graus) para engastada (a razao entre os dois pesos, num canto entre
+# uma borda apoiada e uma engastada, reproduz exatamente arctan(1,0) = 45
+# graus quando os pesos sao iguais e arctan(tan60/1) = 60 graus quando nao -
+# conferido em tests/test_p17_lajes_flexao.py) e 0 (fora da disputa) para
+# livre. A regiao de cada borda e o lugar geometrico onde o "tempo"
+# (distancia perpendicular a borda / peso da borda) e o menor entre as
+# bordas apoiadas ou engastadas; a reacao equivalente e a carga uniforme
+# vezes a area dessa regiao, dividida pelo comprimento da borda - exatamente
+# a aproximacao (a) do item 14.7.6.1 ("as reacoes... podem ser, de maneira
+# aproximada, consideradas uniformemente distribuidas").
+_PESO_BORDA_CHARNEIRA = {
+    "apoiada": 1.0,
+    "engastada": math.tan(math.radians(60.0)),
+}
+_BORDAS_LAJE_CHARNEIRA = ("x0", "x1", "y0", "y1")
+
+
+def _tempo_borda_charneira(
+    borda: str, vinculos: dict[str, str], lx_m: float, ly_m: float, x: float, y: float,
+) -> float:
+    peso = _PESO_BORDA_CHARNEIRA[vinculos[borda]]
+    if borda == "y0":
+        return y / peso
+    if borda == "y1":
+        return (ly_m - y) / peso
+    if borda == "x0":
+        return x / peso
+    return (lx_m - x) / peso   # 'x1'
+
+
+def _clip_semiplano(poligono: list[tuple[float, float]], valor) -> list[tuple[float, float]]:
+    """Recorta um poligono convexo (Sutherland-Hodgman), mantendo os pontos
+    onde valor(x, y) >= 0."""
+    if not poligono:
+        return []
+    saida: list[tuple[float, float]] = []
+    n = len(poligono)
+    for i in range(n):
+        atual = poligono[i]
+        anterior = poligono[i - 1]
+        v_atual = valor(*atual)
+        v_anterior = valor(*anterior)
+        dentro_atual = v_atual >= -1e-9
+        dentro_anterior = v_anterior >= -1e-9
+        if dentro_atual:
+            if not dentro_anterior:
+                t = v_anterior / (v_anterior - v_atual)
+                saida.append((anterior[0] + t * (atual[0] - anterior[0]),
+                             anterior[1] + t * (atual[1] - anterior[1])))
+            saida.append(atual)
+        elif dentro_anterior:
+            t = v_anterior / (v_anterior - v_atual)
+            saida.append((anterior[0] + t * (atual[0] - anterior[0]),
+                         anterior[1] + t * (atual[1] - anterior[1])))
+    return saida
+
+
+def _area_poligono(pontos: list[tuple[float, float]]) -> float:
+    if len(pontos) < 3:
+        return 0.0
+    soma = 0.0
+    n = len(pontos)
+    for i in range(n):
+        x1, y1 = pontos[i]
+        x2, y2 = pontos[(i + 1) % n]
+        soma += x1 * y2 - x2 * y1
+    return abs(soma) / 2.0
+
+
+def reacoes_charneiras(
+    lx_cm: float, ly_cm: float, p_kn_m2: float, vinculos: dict[str, str],
+) -> dict[str, float]:
+    """Reacoes de apoio de laje macica retangular pelo metodo aproximado das
+    charneiras plasticas (NBR 6118 14.7.6.1 b, PDF p. 117), para qualquer
+    combinacao de vinculacao nas 4 bordas - cobre o que NU_TABELAS (tabelas
+    de Bares, elasticas) so cobre para as 5 vinculacoes ja tabeladas (tipos
+    1, 3, 5A, 5B, 6): fora delas (por exemplo, uma so borda engastada, ou
+    uma borda livre), esta funcao da a aproximacao que a norma permite em
+    vez de exigir uma tabela nova.
+
+    vinculos: dict com as 4 chaves 'x0', 'x1' (bordas perpendiculares a x,
+    comprimento ly_cm, nos extremos x=0 e x=lx) e 'y0', 'y1' (bordas
+    perpendiculares a y, comprimento lx_cm, nos extremos y=0 e y=ly), cada
+    valor em 'apoiada', 'engastada' ou 'livre'. lx_cm e ly_cm sao os vaos
+    nas direcoes x e y e nao precisam vir ordenados (lx_cm pode ser o maior).
+
+    Retorna dict {'x0':.., 'x1':.., 'y0':.., 'y1':..} com a reacao
+    uniformemente distribuida equivalente a carga do triangulo/trapezio de
+    cada borda, em kN/m (0,0 quando a borda e livre).
+
+    Para o caso classico (as 4 bordas do mesmo tipo, angulo de 45 graus em
+    todo canto), reproduz exatamente os coeficientes nu_x/nu_y de NU_TIPO_1
+    (tudo apoiada) e NU_TIPO_6 (tudo engastada) para qualquer lambda.
+    """
+    for borda in _BORDAS_LAJE_CHARNEIRA:
+        if borda not in vinculos:
+            raise ValueError(
+                f"vinculos precisa das chaves {_BORDAS_LAJE_CHARNEIRA}; falta {borda!r}."
+            )
+        if vinculos[borda] not in ("apoiada", "engastada", "livre"):
+            raise ValueError(
+                f"Vinculo desconhecido em {borda!r}: {vinculos[borda]!r}. "
+                "Use 'apoiada', 'engastada' ou 'livre'."
+            )
+    apoiadas = [b for b in _BORDAS_LAJE_CHARNEIRA if vinculos[b] != "livre"]
+    if len(apoiadas) < 2:
+        raise ValueError(
+            "O metodo das charneiras precisa de pelo menos 2 bordas apoiadas "
+            "ou engastadas; com 0 ou 1 borda de apoio a laje nao fecha uma "
+            "placa em equilibrio nos 4 lados."
+        )
+
+    lx_m, ly_m = lx_cm / 100.0, ly_cm / 100.0
+    comprimento_m = {"x0": ly_m, "x1": ly_m, "y0": lx_m, "y1": lx_m}
+    retangulo = [(0.0, 0.0), (lx_m, 0.0), (lx_m, ly_m), (0.0, ly_m)]
+
+    reacoes: dict[str, float] = {}
+    for borda in _BORDAS_LAJE_CHARNEIRA:
+        if vinculos[borda] == "livre":
+            reacoes[borda] = 0.0
+            continue
+        poligono = retangulo
+        for outra in apoiadas:
+            if outra == borda:
+                continue
+            poligono = _clip_semiplano(
+                poligono,
+                lambda x, y, b=borda, o=outra: (
+                    _tempo_borda_charneira(o, vinculos, lx_m, ly_m, x, y)
+                    - _tempo_borda_charneira(b, vinculos, lx_m, ly_m, x, y)
+                ),
+            )
+            if not poligono:
+                break
+        area_m2 = _area_poligono(poligono)
+        reacoes[borda] = p_kn_m2 * area_m2 / comprimento_m[borda]
+    return reacoes
+
+
+# --- 14.7.8 (PDF p. 118, Figura 14.9) - faixas de laje lisa ----------------
+def repartir_momentos_faixas(M_portico: float, tipo: str) -> dict[str, float]:
+    """Reparte o momento obtido no portico multiplo (por direcao, com a
+    carga total) entre a faixa interna (as duas juntas) e cada faixa
+    externa, conforme a Figura 14.9 (NBR 6118 14.7.8, PDF p. 118), para laje
+    lisa ou laje-cogumelo calculada por porticos multiplos.
+
+    tipo: 'positivo' ou 'negativo'.
+    Retorna dict com 'faixas_internas' (as duas juntas: 45 % dos momentos
+    positivos ou 25 % dos negativos) e 'faixa_externa' (cada uma das duas:
+    27,5 % dos positivos ou 37,5 % dos negativos). faixas_internas +
+    2 * faixa_externa fecha 100 % de M_portico.
+
+    Larguras das faixas (Figura 14.9): faixa externa = l2/4 de cada lado;
+    faixas internas = o restante, l2/2, por vao l1 analisado (nao calculadas
+    aqui - a funcao so reparte o momento, ja obtido para a largura l2 do
+    portico).
+    """
+    chave = tipo.strip().lower()
+    percentuais = {
+        "positivo": (0.45, 0.275),
+        "negativo": (0.25, 0.375),
+    }
+    if chave not in percentuais:
+        raise ValueError(f"tipo deve ser 'positivo' ou 'negativo', recebido {tipo!r}.")
+    frac_internas, frac_externa = percentuais[chave]
+    return {
+        "faixas_internas": frac_internas * M_portico,
+        "faixa_externa": frac_externa * M_portico,
+    }
 
 
 if __name__ == "__main__":
