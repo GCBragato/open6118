@@ -246,7 +246,8 @@
    "nome": "Protensão: ato da protensão e ELS de tensões",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/protendido_nbr6118.py (extensão)"
+   "modulo": "dimensionamento/protendido_nbr6118.py (extensão)",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P33",
@@ -8071,7 +8072,7 @@
    "pagina_pdf": 140,
    "titulo": "Acréscimo de tensão em armadura ativa não aderente (Dsp)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P32",
@@ -8081,7 +8082,29 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "rho_p pequeno deve aproximar Dsp de 70 MPa (parcela dominante); checar saturacao no teto de 420/210 MPa.",
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P32",
+    "data": "19/09/2026",
+    "funcoes": [
+     "rho_p_armadura_ativa",
+     "delta_sigma_p_nao_aderente"
+    ],
+    "testes": [
+     "test_rho_p_armadura_ativa",
+     "test_rho_p_armadura_ativa_invalida",
+     "test_delta_sigma_p_nao_aderente_vao_curto",
+     "test_delta_sigma_p_nao_aderente_vao_longo",
+     "test_delta_sigma_p_nao_aderente_fronteira_35_usa_ramo_curto",
+     "test_delta_sigma_p_nao_aderente_saturacao_teto",
+     "test_delta_sigma_p_nao_aderente_rho_grande_aproxima_70",
+     "test_delta_sigma_p_nao_aderente_rho_invalido",
+     "test_delta_sigma_p_nao_aderente_docstring_cita_divisao_por_ponderacao",
+     "test_delta_sigma_p_nao_aderente_gama_s_divide_o_resultado",
+     "test_delta_sigma_p_nao_aderente_gama_s_invalido"
+    ],
+    "observacao": "Corrigido nesta volta: acrescentado o parâmetro opcional gama_s (17.2.2 c, 'devendo ainda ser divididos pelos devidos coeficientes de ponderação') e a docstring passou a avisar que o retorno é o valor característico. Default None preserva o comportamento anterior, então nada que já chamava a função quebra."
+   }
   },
   {
    "id": "17.2.2d-tracao-desprezada-elu",
@@ -8330,7 +8353,7 @@
    "pagina_pdf": 143,
    "titulo": "Coeficientes de ponderação para o ELU no ato da protensão",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P32",
@@ -8339,7 +8362,21 @@
    "formula_ou_regra": "gama_c=1,2; gama_s=1,15; gama_p=1,0 (pre-tracao) ou 1,1 (pos-tracao); gama_f=1,0 (desfavoravel) ou 0,9 (favoravel)",
    "conferido_na_imagem": true,
    "depende_de": [],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P32",
+    "data": "19/09/2026",
+    "funcoes": [
+     "GAMAS_ATO_PROTENSAO",
+     "gama_p_ato_protensao"
+    ],
+    "testes": [
+     "test_17_2_4_3_1_b_tabela_coeficientes",
+     "test_gama_p_ato_protensao",
+     "test_gama_p_ato_protensao_invalido"
+    ],
+    "observacao": "Sem alteração nesta volta; a verificação independente não achou defeito neste item."
+   }
   },
   {
    "id": "17.2.4.3.2-tensao-max-compressao",
@@ -8347,7 +8384,7 @@
    "pagina_pdf": 144,
    "titulo": "Tensão máxima de compressão no concreto no ato da protensão",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P32",
@@ -8358,7 +8395,21 @@
     "nucleo.fckj"
    ],
    "teste_sugerido": "Continuidade em fck=50 MPa: os dois ramos dao 0,7.fckj; para fck=90, o fator vale 0,7.(1-40/200)=0,56.fckj.",
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P32",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tensao_max_compressao_ato_kncm2"
+    ],
+    "testes": [
+     "test_tensao_max_compressao_ato_fck20",
+     "test_tensao_max_compressao_ato_continuidade_fck50",
+     "test_tensao_max_compressao_ato_fck90",
+     "test_tensao_max_compressao_ato_fora_da_faixa"
+    ],
+    "observacao": "Sem alteração nesta volta."
+   }
   },
   {
    "id": "17.2.4.3.2-tensao-max-tracao",
@@ -8366,7 +8417,7 @@
    "pagina_pdf": 144,
    "titulo": "Tensão máxima de tração no concreto no ato da protensão",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P32",
@@ -8376,7 +8427,20 @@
    "depende_de": [
     "nucleo.fct_m_idade"
    ],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P32",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tensao_max_tracao_ato_kncm2"
+    ],
+    "testes": [
+     "test_tensao_max_tracao_ato_fckj20",
+     "test_tensao_max_tracao_ato_fckj_acima_de_50",
+     "test_tensao_max_tracao_ato_fora_da_faixa"
+    ],
+    "observacao": "Sem alteração nesta volta."
+   }
   },
   {
    "id": "17.2.4.3.2-armadura-tracao-estadio2",
@@ -8384,7 +8448,7 @@
    "pagina_pdf": 144,
    "titulo": "Armadura de tração no Estádio II para o ato da protensão",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P32",
@@ -8394,7 +8458,24 @@
    "depende_de": [
     "17.2.4.3.2-tensao-max-tracao"
    ],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P32",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_ato_protensao",
+     "_forca_tracao_estadio1_kn"
+    ],
+    "testes": [
+     "test_ato_protensao_secao_toda_comprimida_sem_tracao",
+     "test_ato_protensao_compressao_excede_limite",
+     "test_ato_protensao_com_tracao_e_armadura_ok",
+     "test_ato_protensao_tracao_sem_As_informado_levanta_erro",
+     "test_ato_protensao_armadura_lisa_x_nervurada",
+     "test_ato_protensao_tipo_barra_invalido"
+    ],
+    "observacao": "Sem alteração nesta volta."
+   }
   },
   {
    "id": "17.2.4.4.1-limites-tensao-compressao-els",
@@ -8402,7 +8483,7 @@
    "pagina_pdf": 144,
    "titulo": "Limites de tensão de compressão no concreto em serviço (protensão completa/limitada)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P32",
@@ -8412,7 +8493,23 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "C30, combinacao quase-permanente: limite = 0,45*30 = 13,5 MPa.",
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P32",
+    "data": "19/09/2026",
+    "funcoes": [
+     "limite_compressao_servico_mpa"
+    ],
+    "testes": [
+     "test_17_2_4_4_1_c30_quase_permanente",
+     "test_17_2_4_4_1_c30_frequente_e_rara",
+     "test_17_2_4_4_1_limitada_aceita_quase_permanente_e_frequente",
+     "test_17_2_4_4_1_rara_so_vale_para_completa",
+     "test_17_2_4_4_1_nivel_parcial_nao_tem_limite",
+     "test_17_2_4_4_1_combinacao_desconhecida"
+    ],
+    "observacao": "Sem alteração nesta volta."
+   }
   },
   {
    "id": "17.2.4.4.2-limite-tensao-tracao-els",
@@ -8420,7 +8517,7 @@
    "pagina_pdf": 144,
    "titulo": "Limite de tensão de tração no concreto (ELS-F / ELS-D)",
    "tipo": "limite",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P32",
@@ -8430,7 +8527,23 @@
    "formula_ou_regra": "ELS-F: tensao-limite = 0,7*alfa*fctm (acima disso, secao passa a trabalhar em Estadio II). ELS-D: tensao-limite de tracao = 0.",
    "conferido_na_imagem": false,
    "depende_de": [],
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P32",
+    "data": "19/09/2026",
+    "funcoes": [
+     "limite_tracao_servico_mpa",
+     "limites_tensao_servico"
+    ],
+    "testes": [
+     "test_17_2_4_4_2_els_d_tensao_nula",
+     "test_17_2_4_4_2_els_f_retangular",
+     "test_17_2_4_4_2_els_f_secao_T",
+     "test_17_2_4_4_2_estado_invalido",
+     "test_limites_tensao_servico_dispatcher"
+    ],
+    "observacao": "Sem alteração nesta volta."
+   }
   },
   {
    "id": "17.2.5-interacao-flexao-obliqua",
@@ -8574,7 +8687,7 @@
    "pagina_pdf": 148,
    "titulo": "Flecha em elementos com armaduras ativas",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "parcial",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P32",
@@ -8585,7 +8698,28 @@
     "17.3.2.1.1-flecha-imediata-rigidez-equivalente",
     "nucleo.eps_c2/fluencia (Anexo A, fora do trecho)"
    ],
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P32",
+    "data": "19/09/2026",
+    "funcoes": [
+     "momento_fissuracao_protendido_kncm",
+     "flecha_protendido",
+     "flecha_total_protendido"
+    ],
+    "testes": [
+     "test_momento_fissuracao_protendido",
+     "test_momento_fissuracao_protendido_geometria_invalida",
+     "test_flecha_protendido_nao_fissurado",
+     "test_flecha_protendido_fissurado_delega_p8",
+     "test_flecha_protendido_docstring_nao_cita_alfa_f_para_flecha_diferida",
+     "test_flecha_total_protendido_so_parcela_permanente",
+     "test_flecha_total_protendido_com_parcela_variavel",
+     "test_flecha_total_protendido_phi_zero_nao_altera_flecha_imediata",
+     "test_flecha_total_protendido_phi_negativo_levanta_erro"
+    ],
+    "observacao": "Continua parcial por desenho: a integração da curvatura para obter a flecha imediata em si e a aplicação do limite (verificar_flecha) ficam fora do escopo deste pacote, como já registrado na primeira entrega. Corrigido nesta volta o que a verificação achou: a docstring de flecha_protendido citava a fórmula errada ((1+alfa_f) em vez de (1+phi)) para a flecha diferida de elementos protendidos, e agora existe flecha_total_protendido implementando f_total = f_variável + f_permanente*(1+phi) (phi vindo de fora, do P6/P7, sem reimplementar fluência)."
+   }
   },
   {
    "id": "17.3.3.2-abertura-fissura-wk",
@@ -8678,7 +8812,7 @@
    "pagina_pdf": 150,
    "titulo": "Estados-limites de descompressão e de formação de fissuras (verificação direta)",
    "tipo": "verificacao",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P32",
@@ -8689,7 +8823,22 @@
    "depende_de": [
     "17.2.4.4.2-limite-tensao-tracao-els"
    ],
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P32",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_descompressao_fissuracao"
+    ],
+    "testes": [
+     "test_descompressao_sigma_zero_exato",
+     "test_descompressao_els_d_falha_com_tracao",
+     "test_descompressao_els_f_usa_limite_de_tracao_servico",
+     "test_descompressao_els_f_sem_fck_levanta_erro",
+     "test_descompressao_estado_invalido"
+    ],
+    "observacao": "Sem alteração nesta volta."
+   }
   },
   {
    "id": "17.3.5.1-principios-basicos-as-min-max",

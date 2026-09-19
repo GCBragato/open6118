@@ -2900,6 +2900,602 @@ def perdas_metodo_geral(
     return res
 
 
+# === P32: Protensão — ato da protensão e ELS de tensões (17.2.2 c,
+# 17.2.4.3, 17.2.4.4, 17.3.2.1.3, 17.3.4; PDF p. 140-150) ===
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import els_deformacao_nbr6118 as _els8_p32
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import els_deformacao_nbr6118 as _els8_p32
+
+
+# ---------------------------------------------------------------------------
+# 17.2.4.3 — Estado-limite último no ato da protensão (PDF p. 143-144)
+# ---------------------------------------------------------------------------
+# 17.2.4.3.1-b (PDF p. 143) — coeficientes de ponderação específicos desta
+# verificação transitória, distintos dos gama padrão do ELU normal (Seção
+# 11): "com as cargas que efetivamente atuarem nessa ocasião".
+GAMAS_ATO_PROTENSAO = {
+    "gama_c": 1.2,
+    "gama_s": 1.15,
+    "gama_p_pre_tracao": 1.0,
+    "gama_p_pos_tracao": 1.1,
+    "gama_f_desfavoravel": 1.0,
+    "gama_f_favoravel": 0.9,
+}
+
+
+def gama_p_ato_protensao(sistema: str) -> float:
+    """γp do ato da protensão, 17.2.4.3.1-b (PDF p. 143): 1,0 na pré-tração,
+    1,1 na pós-tração — diferente do γp usual da Tabela 11.1 (P30/P4), que
+    não se aplica a esta verificação transitória (8. Riscos e cuidados,
+    item 4 do plano). sistema: 'pre_tracao'/'pre' ou 'pos_tracao'/'pos'
+    (aceita variações com/sem acento e hífen, como os outros normalizadores
+    deste módulo)."""
+    chave = _chave_p30(sistema).replace("_", "")
+    if chave in ("pretracao", "pre"):
+        return GAMAS_ATO_PROTENSAO["gama_p_pre_tracao"]
+    if chave in ("postracao", "pos"):
+        return GAMAS_ATO_PROTENSAO["gama_p_pos_tracao"]
+    raise ValueError(
+        f"sistema {sistema!r} desconhecido: use 'pre_tracao' ou 'pos_tracao'."
+    )
+
+
+def tensao_max_compressao_ato_kncm2(fckj_mpa: float) -> float:
+    """Tensão máxima de compressão no concreto no ato da protensão, kN/cm²,
+    17.2.4.3.2-a (PDF p. 144), verificação simplificada em Estádio I, com as
+    solicitações já ponderadas por γp = 1,1 e γf = 1,0 (GAMAS_ATO_PROTENSAO):
+
+        fckj <= 50 MPa:  limite = 0,7·fckj
+        50 < fckj <= 90:  limite = 0,7·[1,0 − (fckj − 50)/200]·fckj
+
+    Contínua em fckj = 50 (as duas expressões dão 0,7·fckj). Faixa de
+    validade: FCKJ_MIN (7 MPa, 8.2.5) a FCK_MAX (90 MPa, 8.2.1) — fora dela,
+    FaixaNormativaError. Retorna em kN/cm² (÷10 de MPa)."""
+    f = float(fckj_mpa)
+    if not (nbr.FCKJ_MIN <= f <= nbr.FCK_MAX):
+        raise nbr.FaixaNormativaError(
+            f"fckj = {f:g} MPa fora da faixa de 17.2.4.3.2-a "
+            f"({nbr.FCKJ_MIN:g} a {nbr.FCK_MAX:g} MPa)."
+        )
+    if f <= 50.0:
+        limite_mpa = 0.7 * f
+    else:
+        limite_mpa = 0.7 * (1.0 - (f - 50.0) / 200.0) * f
+    return nbr.mpa_para_kncm2(limite_mpa)
+
+
+def tensao_max_tracao_ato_kncm2(fckj_mpa: float) -> float:
+    """Tensão máxima de tração no concreto no ato da protensão, kN/cm²,
+    17.2.4.3.2-b (PDF p. 144): sigma_ct,max = 1,2·fct,m(fckj). Delega a
+    fct,m ao núcleo (nbr.fct_m_idade — não reimplementa a fórmula de
+    material; já valida a faixa de fckj, 8.2.5)."""
+    return nbr.mpa_para_kncm2(1.2 * nbr.fct_m_idade(fckj_mpa))
+
+
+# 17.2.4.3.2-c (PDF p. 144) — acréscimo de tensão máximo na armadura de
+# tração calculada no Estádio II, para o ato da protensão.
+LIMITE_DSIGMA_S_ATO_MPA = {
+    "lisa": 150.0,       # fios ou barras lisas
+    "nervurada": 250.0,  # barras nervuradas
+}
+
+
+def _forca_tracao_estadio1_kn(sigma_b_kncm2: float, sigma_t_kncm2: float,
+                              bw_cm: float, h_cm: float) -> float:
+    """Resultante das tensões de tração no concreto no Estádio I, kN, para
+    seção retangular com distribuição linear de tensão entre a base
+    (sigma_b) e o topo (sigma_t) — a integral, ao longo de h, da parte
+    positiva (tração, convenção deste módulo) do diagrama linear de
+    tensões. Usada em 17.2.4.3.2-c. Devolve 0 se a seção estiver
+    inteiramente comprimida."""
+    sb, st = sigma_b_kncm2, sigma_t_kncm2
+    if sb <= 0.0 and st <= 0.0:
+        return 0.0
+    if sb >= 0.0 and st >= 0.0:  # seção inteira tracionada (trapézio)
+        return bw_cm * h_cm * (sb + st) / 2.0
+    if sb > 0.0:  # tração na base, compressão no topo: triângulo de altura y_tr
+        y_tr = h_cm * sb / (sb - st)
+        return bw_cm * 0.5 * sb * y_tr
+    y_tr = h_cm * st / (st - sb)  # tração no topo, compressão na base
+    return bw_cm * 0.5 * st * y_tr
+
+
+@dataclass(frozen=True)
+class ResultadoAtoProtensao:
+    """Verificação simplificada do ELU no ato da protensão, Estádio I,
+    NBR 6118:2026 17.2.4.3.2 (PDF p. 144)."""
+    sigma_base_kncm2: float
+    sigma_topo_kncm2: float
+    sigma_compressao_max_kncm2: float
+    limite_compressao_kncm2: float
+    ok_compressao: bool
+    sigma_tracao_max_kncm2: float
+    limite_tracao_kncm2: float
+    ok_tracao_concreto: bool
+    Fs_tracao_kn: float
+    delta_sigma_s_mpa: float | None
+    limite_delta_sigma_s_mpa: float | None
+    ok_armadura_tracao: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_ato_protensao(
+    bw_cm: float, h_cm: float, P_kn: float, ep_cm: float, M_kncm: float,
+    fckj_mpa: float, tipo_barra: str = "nervurada",
+    As_tracao_cm2: float | None = None, sinal_P: int = -1,
+) -> ResultadoAtoProtensao:
+    """Verificação simplificada do ELU no ato da protensão, seção
+    retangular, NBR 6118:2026 17.2.4.3.2 (PDF p. 144), Estádio I (concreto
+    não fissurado, comportamento elástico linear):
+
+        a) tensão máxima de compressão <= tensao_max_compressao_ato_kncm2(fckj);
+        b) tensão máxima de tração <= tensao_max_tracao_ato_kncm2(fckj)
+           (= 1,2·fct,m(fckj));
+        c) havendo tração, a força de tração resultante das tensões de
+           tração no concreto no Estádio I (a "resultante das tensões de
+           tração no concreto no estádio I", _forca_tracao_estadio1_kn),
+           dividida pela área de armadura de tração informada
+           (As_tracao_cm2), não pode gerar acréscimo de tensão no aço acima
+           de 150 MPa (fios ou barras lisas) ou 250 MPa (barras nervuradas).
+
+    P_kn e M_kncm já devem vir ponderados pelos coeficientes do ato da
+    protensão (17.2.4.3.1-b: γp = 1,1 na pós-tração ou 1,0 na pré-tração,
+    γf = 1,0 — GAMAS_ATO_PROTENSAO/gama_p_ato_protensao; ver Pd_kn, do P30,
+    com gama_p explícito). Esta função só compara Rd contra Sd (via
+    seguranca_nbr6118.verificar_seguranca), sem aplicar coeficiente algum.
+    fckj_mpa é a resistência característica do concreto na idade do ato,
+    "claramente especificada no projeto" (17.2.4.3.1-a). tipo_barra:
+    'nervurada' (250 MPa) ou 'lisa' (fios ou barras lisas, 150 MPa).
+    As_tracao_cm2: área de armadura de tração na região tracionada —
+    obrigatória apenas quando a seção tem tração no Estádio I; ValueError se
+    faltar nesse caso. bw_cm, h_cm, sinal_P: seção retangular (b constante
+    ao longo de h) — ver Ac_retangular/W_retangular/sigma_base_topo.
+    """
+    Ac = Ac_retangular(bw_cm, h_cm)
+    W = W_retangular(bw_cm, h_cm)
+    sb, st = sigma_base_topo(P_kn, ep_cm, M_kncm, Ac, W, W, sinal_P)
+
+    sigma_c_max = -min(sb, st, 0.0)   # magnitude da maior compressão (>= 0)
+    limite_c = tensao_max_compressao_ato_kncm2(fckj_mpa)
+    r_c = _seg_p30.verificar_seguranca(
+        limite_c, sigma_c_max, rotulo="sigma_c,máx x limite", item="17.2.4.3.2-a")
+
+    sigma_t_max = max(sb, st, 0.0)
+    limite_t = tensao_max_tracao_ato_kncm2(fckj_mpa)
+    r_t = _seg_p30.verificar_seguranca(
+        limite_t, sigma_t_max, rotulo="sigma_t,máx x limite", item="17.2.4.3.2-b")
+
+    tipo = _chave_p30(tipo_barra)
+    if tipo not in LIMITE_DSIGMA_S_ATO_MPA:
+        raise ValueError(
+            f"tipo_barra deve ser 'nervurada' ou 'lisa', recebido {tipo_barra!r}."
+        )
+    limite_ds = LIMITE_DSIGMA_S_ATO_MPA[tipo]
+
+    Fs = _forca_tracao_estadio1_kn(sb, st, bw_cm, h_cm)
+    tem_tracao = Fs > 1e-9
+    if not tem_tracao:
+        delta_sigma_s = None
+        ok_armadura = True
+    else:
+        if not As_tracao_cm2 or As_tracao_cm2 <= 0.0:
+            raise ValueError(
+                "Há tração no concreto no ato da protensão (17.2.4.3.2-c): "
+                "informe As_tracao_cm2 (área de armadura de tração)."
+            )
+        delta_sigma_s = (Fs / As_tracao_cm2) * 10.0   # kN/cm2 -> MPa
+        ok_armadura = delta_sigma_s <= limite_ds + 1e-9 * max(1.0, limite_ds)
+
+    ok = r_c.ok and r_t.ok and ok_armadura
+    if not r_c.ok:
+        governante = "17.2.4.3.2-a: compressão acima do limite"
+    elif not r_t.ok:
+        governante = "17.2.4.3.2-b: tração acima do limite"
+    elif not ok_armadura:
+        governante = "17.2.4.3.2-c: acréscimo de tensão na armadura acima do limite"
+    else:
+        governante = "dentro dos limites do ato da protensão"
+
+    memoria = (
+        f"17.2.4.3.2-a (p. 144): sigma_c,máx = {_fmt_p30(sigma_c_max * 10.0)} MPa; "
+        f"limite = {_fmt_p30(limite_c * 10.0)} MPa -> {'ok' if r_c.ok else 'não ok'}.",
+        f"17.2.4.3.2-b (p. 144): sigma_t,máx = {_fmt_p30(sigma_t_max * 10.0)} MPa; "
+        f"limite = 1,2·fctm(fckj) = {_fmt_p30(limite_t * 10.0)} MPa -> "
+        f"{'ok' if r_t.ok else 'não ok'}.",
+        (f"17.2.4.3.2-c (p. 144): Fs = {_fmt_p30(Fs)} kN, Δσs = Fs/As = "
+         f"{_fmt_p30(delta_sigma_s)} MPa; limite ({tipo}) = {_fmt_p30(limite_ds)} "
+         f"MPa -> {'ok' if ok_armadura else 'não ok'}." if tem_tracao else
+         "17.2.4.3.2-c (p. 144): seção sem tração no Estádio I — item não se aplica."),
+    )
+    return ResultadoAtoProtensao(
+        sb, st, sigma_c_max, limite_c, r_c.ok,
+        sigma_t_max, limite_t, r_t.ok,
+        Fs, delta_sigma_s, (limite_ds if tem_tracao else None), ok_armadura,
+        ok, governante, memoria,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 17.2.4.4 — Estado-limite de serviço: limites de tensão (PDF p. 144)
+# ---------------------------------------------------------------------------
+# 17.2.4.4.1 (PDF p. 144) — limites de compressão em serviço, seção não
+# fissurada e após todas as perdas, só para protensão completa (Nível 3) e
+# protensão limitada (Nível 2); a norma não dá este limite para protensão
+# parcial (Nível 1).
+FATOR_COMPRESSAO_SERVICO = {
+    "quase_permanente": 0.45,
+    "frequente": 0.60,
+    "rara": 0.60,   # somente protensão completa (Nível 3)
+}
+NIVEIS_LIMITE_COMPRESSAO_SERVICO = ("completa", "limitada")
+
+
+def limite_compressao_servico_mpa(fck_mpa: float, combinacao: str,
+                                  nivel: str = "completa") -> float:
+    """Limite de tensão de compressão no concreto em serviço, MPa,
+    17.2.4.4.1 (PDF p. 144), para protensão completa (Nível 3) e protensão
+    limitada (Nível 2), seção não fissurada e após todas as perdas:
+
+        a) combinação quase permanente: 0,45·fck
+        b) combinação frequente:        0,60·fck
+        c) combinação rara:             0,60·fck (somente Nível 3)
+
+    combinacao: 'quase_permanente', 'frequente' ou 'rara' (mesmas chaves de
+    acoes_nbr6118.combinacao_servico, P4). nivel: 'completa' (Nível 3) ou
+    'limitada' (Nível 2) — fora desses dois valores (por exemplo, protensão
+    parcial/Nível 1) levanta FaixaNormativaError, porque a norma não dá este
+    limite para esse caso. combinacao='rara' com nivel='limitada' também
+    levanta FaixaNormativaError (só vale para o Nível 3). fck em MPa.
+    """
+    niv = _chave_p30(nivel)
+    if niv not in NIVEIS_LIMITE_COMPRESSAO_SERVICO:
+        raise nbr.FaixaNormativaError(
+            f"nível de protensão {nivel!r}: 17.2.4.4.1 só dá o limite de "
+            "compressão em serviço para protensão completa (Nível 3) e "
+            "protensão limitada (Nível 2)."
+        )
+    comb = _chave_p30(combinacao)
+    if comb not in FATOR_COMPRESSAO_SERVICO:
+        raise ValueError(
+            f"combinacao {combinacao!r} desconhecida: use 'quase_permanente', "
+            "'frequente' ou 'rara'."
+        )
+    if comb == "rara" and niv != "completa":
+        raise nbr.FaixaNormativaError(
+            "17.2.4.4.1-c (p. 144): o limite da combinação rara só vale para "
+            "protensão completa (Nível 3)."
+        )
+    fck = _positivo_p30(fck_mpa, "fck")
+    return FATOR_COMPRESSAO_SERVICO[comb] * fck
+
+
+def limite_tracao_servico_mpa(fck_mpa: float, estado_limite: str,
+                              secao: str = "retangular") -> float:
+    """Limite de tensão de tração no concreto em serviço, MPa, 17.2.4.4.2
+    (PDF p. 144), tomando como base a seção não fissurada:
+
+        ELS-D: tensão-limite de tração nula;
+        ELS-F: tensão-limite = 0,7·alpha·fct,m — acima disso a seção passa
+               a trabalhar em Estádio II.
+
+    Para ELS-F reusa fct_admissivel_traçao_kncm2 (mesma fórmula 0,7·alpha·
+    fct,m, com alpha pela forma da seção — 1,2 para mesa T/duplo T, 1,3
+    para I/T-invertido, 1,5 para retangular; só muda a ordem dos fatores em
+    relação ao texto de 17.2.4.4.2). Não há divergência de grandeza com o
+    JSON do plano (que registrava dúvida sobre isso): é a mesma expressão.
+    estado_limite: 'ELS-D' ou 'ELS-F' (sem diferenciar maiúsculas/hífen/
+    espaço).
+    """
+    est = _chave_p30(estado_limite).replace("_", "")
+    if est == "elsd":
+        return 0.0
+    if est == "elsf":
+        return fct_admissivel_traçao_kncm2(fck_mpa, secao) * 10.0
+    raise ValueError(
+        f"estado_limite deve ser 'ELS-D' ou 'ELS-F', recebido {estado_limite!r}."
+    )
+
+
+@dataclass(frozen=True)
+class ResultadoLimiteServico:
+    """Limite de tensão em serviço: compressão (17.2.4.4.1) ou tração
+    (17.2.4.4.2)."""
+    tipo: str            # "compressao" ou "tracao"
+    combinacao: str
+    fck_mpa: float
+    limite_mpa: float
+    memoria: tuple[str, ...]
+
+
+def limites_tensao_servico(fck_mpa: float, combinacao: str,
+                           nivel: str = "completa",
+                           secao: str = "retangular") -> ResultadoLimiteServico:
+    """Ponto de entrada único para os limites de tensão em serviço de
+    17.2.4.4 (PDF p. 144): ``combinacao`` aceita tanto as combinações da
+    verificação de compressão (17.2.4.4.1 — 'quase_permanente', 'frequente',
+    'rara', com ``nivel``) quanto os estados-limites da verificação de
+    tração (17.2.4.4.2 — 'ELS-F', 'ELS-D'; ``nivel`` é ignorado nesse caso).
+
+    Qual combinação de ações corresponde a cada estado-limite (ELS-F/ELS-D)
+    para cada nível de protensão é definido na Tabela 13.4 — fora deste
+    pacote (P32): quem chama informa o estado-limite de tração já decidido.
+    """
+    comb = _chave_p30(combinacao)
+    if comb in FATOR_COMPRESSAO_SERVICO:
+        limite = limite_compressao_servico_mpa(fck_mpa, comb, nivel)
+        memoria = (
+            f"17.2.4.4.1 (p. 144), nível {nivel}, combinação {combinacao}: "
+            f"limite = {_fmt_p30(FATOR_COMPRESSAO_SERVICO[comb])}·fck = "
+            f"{_fmt_p30(FATOR_COMPRESSAO_SERVICO[comb])}·{_fmt_p30(float(fck_mpa))} "
+            f"= {_fmt_p30(limite)} MPa.",
+        )
+        return ResultadoLimiteServico("compressao", str(combinacao), float(fck_mpa),
+                                      limite, memoria)
+    limite = limite_tracao_servico_mpa(fck_mpa, combinacao, secao)
+    memoria = (
+        f"17.2.4.4.2 (p. 144), {combinacao}: limite de tração = "
+        f"{_fmt_p30(limite)} MPa.",
+    )
+    return ResultadoLimiteServico("tracao", str(combinacao), float(fck_mpa), limite, memoria)
+
+
+# ---------------------------------------------------------------------------
+# 17.3.4 — Estado-limite de descompressão e de formação de fissuras (PDF p. 150)
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class ResultadoDescompressaoFissuracao:
+    """Verificação direta de descompressão (ELS-D) ou de formação de
+    fissuras (ELS-F), NBR 6118:2026 17.3.4 (PDF p. 150)."""
+    estado: str
+    sigma_base_kncm2: float
+    sigma_topo_kncm2: float
+    sigma_tracao_max_kncm2: float
+    limite_kncm2: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_descompressao_fissuracao(
+    P_kn: float, ep_cm: float, M_kncm: float,
+    Ac_cm2: float, Wb_cm3: float, Wt_cm3: float,
+    estado: str = "ELS-D", fck_mpa: float | None = None,
+    secao: str = "retangular", sinal_P: int = -1,
+) -> ResultadoDescompressaoFissuracao:
+    """Verifica o estado-limite de descompressão (ELS-D) ou de formação de
+    fissuras (ELS-F), NBR 6118:2026 17.3.4 (PDF p. 150): "essa verificação
+    pode ser feita calculando-se a máxima tensão de tração do concreto no
+    estádio I" (concreto não fissurado, comportamento elástico linear).
+
+    sigma_base_topo dá as tensões nas duas fibras extremas no Estádio I; a
+    maior das duas (ou 0, se as duas forem de compressão) é a tensão de
+    tração máxima da seção, comparada com:
+        ELS-D: tensão-limite = 0 (descompressão exata);
+        ELS-F: tensão-limite = limite_tracao_servico_mpa(fck_mpa, 'ELS-F',
+               secao), 17.2.4.4.2 — exige fck_mpa.
+    P_kn, ep_cm, M_kncm, Ac_cm2, Wb_cm3, Wt_cm3, sinal_P: mesma convenção de
+    sigma_base_topo (compressão negativa, tração positiva). A comparação
+    usa seguranca_nbr6118.verificar_seguranca (igualdade passa — cobre o
+    caso "descompressão com sigma = 0 exato").
+    """
+    sb, st = sigma_base_topo(P_kn, ep_cm, M_kncm, Ac_cm2, Wb_cm3, Wt_cm3, sinal_P)
+    sigma_tracao_max = max(sb, st, 0.0)
+    est = _chave_p30(estado).replace("_", "")
+    if est == "elsd":
+        limite = 0.0
+    elif est == "elsf":
+        if fck_mpa is None:
+            raise ValueError("estado='ELS-F' exige fck_mpa (17.2.4.4.2).")
+        limite = nbr.mpa_para_kncm2(limite_tracao_servico_mpa(fck_mpa, "ELS-F", secao))
+    else:
+        raise ValueError(f"estado deve ser 'ELS-D' ou 'ELS-F', recebido {estado!r}.")
+
+    r = _seg_p30.verificar_seguranca(
+        limite, sigma_tracao_max, rotulo="tensão de tração x limite", item="17.3.4")
+    governante = (f"{estado}: seção dentro do limite" if r.ok
+                  else f"{estado}: tensão de tração acima do limite")
+    memoria = (
+        f"17.3.4 (p. 150), Estádio I: sigma_base = {_fmt_p30(sb * 10.0)} MPa, "
+        f"sigma_topo = {_fmt_p30(st * 10.0)} MPa.",
+        f"sigma_tração,máx = {_fmt_p30(sigma_tracao_max * 10.0)} MPa; limite "
+        f"({estado}) = {_fmt_p30(limite * 10.0)} MPa -> {'ok' if r.ok else 'não ok'}.",
+    )
+    return ResultadoDescompressaoFissuracao(
+        str(estado), sb, st, sigma_tracao_max, limite, r.ok, governante, memoria)
+
+
+# ---------------------------------------------------------------------------
+# 17.2.2 c) — Acréscimo de tensão em armadura ativa não aderente (PDF p. 140)
+# ---------------------------------------------------------------------------
+def rho_p_armadura_ativa(Ap_cm2: float, bc_cm: float, dp_cm: float) -> float:
+    """Taxa geométrica da armadura ativa, rho_p = Ap/(bc·dp), 17.2.2 c)
+    (PDF p. 140-141). bc: largura da mesa de compressão; dp: altura útil
+    referida à armadura ativa. Adimensional."""
+    if bc_cm <= 0.0 or dp_cm <= 0.0:
+        raise ValueError("bc_cm e dp_cm devem ser positivos.")
+    return Ap_cm2 / (bc_cm * dp_cm)
+
+
+DELTA_SIGMA_P_NAO_ADERENTE_TETO_MPA = {
+    "curto": 420.0,   # vão/dp <= 35
+    "longo": 210.0,   # vão/dp > 35
+}
+
+
+def delta_sigma_p_nao_aderente(fck_mpa: float, rho_p: float,
+                               vao_dp: float,
+                               gama_s: float | None = None) -> float:
+    """Acréscimo de tensão na armadura ativa NÃO aderente, MPa, para
+    estruturas usuais de edifícios, 17.2.2 c) (PDF p. 140-141), "na falta de
+    valores experimentais e de análises não lineares adequadas" (condição
+    não verificada por esta função):
+
+        vão/dp <= 35: Δσp = 70 + fck/(100·rho_p), Δσp <= 420 MPa
+        vão/dp  > 35: Δσp = 70 + fck/(300·rho_p), Δσp <= 210 MPa
+
+    fck em MPa; rho_p a taxa geométrica da armadura ativa
+    (rho_p_armadura_ativa); vao_dp = vão/altura útil (adimensional; exatamente
+    35 usa o primeiro ramo, "igual ou menor que 35").
+
+    A norma abre o item c) dizendo que "os valores do acréscimo das tensões
+    para estruturas usuais de edifícios estão apresentados a seguir,
+    devendo ainda ser divididos pelos devidos coeficientes de ponderação"
+    (PDF p. 140). O valor acima (e o teto de 420/210 MPa) é, portanto, o
+    valor característico de Δσp, calculado antes dessa divisão — não o
+    valor pronto para uma verificação de projeto. Informe gama_s (por
+    exemplo, GAMA_S = 1,15, o coeficiente de ponderação do aço já usado
+    neste módulo) para obter o valor já dividido; default None preserva o
+    valor característico (comportamento desta função antes deste ajuste),
+    deixando a divisão a critério de quem chama.
+    """
+    if rho_p <= 0.0:
+        raise ValueError("rho_p deve ser positivo.")
+    fck = _positivo_p30(fck_mpa, "fck")
+    if float(vao_dp) <= 35.0:
+        delta = 70.0 + fck / (100.0 * rho_p)
+        teto = DELTA_SIGMA_P_NAO_ADERENTE_TETO_MPA["curto"]
+    else:
+        delta = 70.0 + fck / (300.0 * rho_p)
+        teto = DELTA_SIGMA_P_NAO_ADERENTE_TETO_MPA["longo"]
+    valor = min(delta, teto)
+    if gama_s is not None:
+        if gama_s <= 0.0:
+            raise ValueError("gama_s deve ser positivo.")
+        valor = valor / float(gama_s)
+    return valor
+
+
+# ---------------------------------------------------------------------------
+# 17.3.2.1.3 — Flecha em elementos com armaduras ativas (PDF p. 148)
+# ---------------------------------------------------------------------------
+def momento_fissuracao_protendido_kncm(
+    Mr_sem_protensao_kncm: float, P_kn: float, ep_cm: float,
+    Ac_cm2: float, W_cm3: float,
+) -> float:
+    """Momento de fissuração de um elemento protendido, considerando a
+    protensão como ação externa equivalente, 17.3.2.1.3 (PDF p. 148): "a
+    expressão completa de 17.3.2.1.1 pode ser aplicada, desde que [...] Mr
+    [...] [seja] calculado[.] considerando o elemento estrutural [...]
+    acrescida da protensão representada como ação externa equivalente
+    (gerando força normal e momento fletor)".
+
+    Dedução por equilíbrio elástico (não é uma fórmula textual da norma,
+    e sim a aplicação direta da instrução acima): a protensão P, com
+    excentricidade ep, descomprime a fibra tracionada por P·(ep + W/Ac)
+    antes de somar ao momento de fissuração da seção sem protensão
+    (Mr_sem_protensao_kncm, de
+    ``els_deformacao_nbr6118.momento_fissuracao_kncm``, que já inclui o
+    fator alfa de 17.3.1):
+
+        Mr,p = Mr,sem_P + |P|·(ep + W/Ac)
+
+    Ac_cm2, W_cm3: área e módulo de resistência (fibra tracionada) da seção
+    de concreto (W/Ac é a distância do CG ao núcleo central do lado da
+    fibra tracionada — ver nucleo_central_retangular). Retorna Mr,p em
+    kN.cm. P_kn e ep_cm entram em módulo.
+    """
+    if Ac_cm2 <= 0.0 or W_cm3 <= 0.0:
+        raise ValueError("Ac_cm2 e W_cm3 devem ser positivos.")
+    return abs(Mr_sem_protensao_kncm) + abs(P_kn) * (abs(ep_cm) + W_cm3 / Ac_cm2)
+
+
+@dataclass(frozen=True)
+class ResultadoFlechaProtendido:
+    """(EI)eq para a flecha imediata de elementos com armadura ativa,
+    NBR 6118:2026 17.3.2.1.3 (PDF p. 148)."""
+    EI_eq_kncm2: float
+    fissurado: bool
+    Mr_protendido_kncm: float
+    Ma_kncm: float
+    memoria: tuple[str, ...]
+
+
+def flecha_protendido(
+    Ecs_kncm2: float, Ic_cm4: float, III_cm4: float,
+    Mr_sem_protensao_kncm: float, Ma_kncm: float,
+    P_kn: float, ep_cm: float, Ac_cm2: float, W_cm3: float,
+    barras_lisas: bool = False,
+) -> ResultadoFlechaProtendido:
+    """Rigidez equivalente (EI)eq para a flecha imediata de elementos com
+    armadura ativa, NBR 6118:2026 17.3.2.1.3 (PDF p. 148):
+
+    "Nos elementos estruturais com armaduras ativas, é suficiente
+    considerar (EI)eq = Ecs·Ic, desde que não seja ultrapassado o
+    estado-limite de formação de fissuras. Caso contrário, a expressão
+    completa de 17.3.2.1.1 pode ser aplicada" — com III, Mr e Ma
+    considerando a protensão como ação externa equivalente
+    (momento_fissuracao_protendido_kncm; Ma_kncm é o momento na combinação
+    de ações escolhida, já acrescido do momento equivalente de protensão,
+    a critério de quem chama, como a instrução manda).
+
+    Delega a expressão completa de 17.3.2.1.1 a
+    ``els_deformacao_nbr6118.rigidez_equivalente_kncm2`` (P8) — não a
+    reimplementa. Depois de obter (EI)eq, a flecha imediata em si
+    (integração da curvatura ao longo do vão) é do cálculo estrutural do
+    elemento — fora do escopo deste pacote —, e a flecha diferida e o
+    limite seguem por ``flecha_total_protendido``/
+    ``els_deformacao_nbr6118.verificar_flecha`` (17.3.2.1.3, PDF p. 148:
+    "para consideração da deformação diferida no tempo, basta multiplicar
+    a parcela permanente da flecha imediata acima referida por (1 + phi),
+    onde phi é o coeficiente de fluência (ver 8.2.11)" — não o alfa_f de
+    13.3 Nota 5/17.3.2.1.2, que é fórmula diferente, pensada para elementos
+    com armadura passiva).
+    """
+    Mr_p = momento_fissuracao_protendido_kncm(
+        Mr_sem_protensao_kncm, P_kn, ep_cm, Ac_cm2, W_cm3)
+    fissurado = abs(Ma_kncm) > Mr_p
+    if fissurado:
+        EI = _els8_p32.rigidez_equivalente_kncm2(
+            Ecs_kncm2, Ic_cm4, III_cm4, Mr_p, Ma_kncm, barras_lisas)
+    else:
+        EI = Ecs_kncm2 * Ic_cm4
+    memoria = (
+        f"17.3.2.1.3 (p. 148): Mr,protendido = {_fmt_p30(abs(Mr_sem_protensao_kncm))} "
+        f"+ |P|·(ep + W/Ac) = {_fmt_p30(Mr_p)} kN.cm.",
+        (f"|Ma| = {_fmt_p30(abs(Ma_kncm))} kN.cm > Mr,p -> ultrapassa a formação de "
+         f"fissuras, aplica a expressão completa de 17.3.2.1.1: (EI)eq = "
+         f"{_fmt_p30(EI)} kN.cm2." if fissurado else
+         f"|Ma| = {_fmt_p30(abs(Ma_kncm))} kN.cm <= Mr,p = {_fmt_p30(Mr_p)} kN.cm -> "
+         f"(EI)eq = Ecs·Ic = {_fmt_p30(EI)} kN.cm2 (seção não fissurada)."),
+    )
+    return ResultadoFlechaProtendido(EI, fissurado, Mr_p, float(Ma_kncm), memoria)
+
+
+def flecha_total_protendido(
+    f_imediata_permanente_cm: float, phi: float,
+    f_imediata_variavel_cm: float = 0.0,
+) -> float:
+    """Flecha total de elementos com armaduras ativas, NBR 6118:2026
+    17.3.2.1.3 (PDF p. 148): "Para consideração da deformação diferida no
+    tempo, basta multiplicar a parcela permanente da flecha imediata acima
+    referida por (1 + phi), onde phi é o coeficiente de fluência (ver
+    8.2.11)".
+
+    Atenção: phi aqui é o coeficiente de fluência de 8.2.11 (Anexo A —
+    ``tempo_concreto_nbr6118.coeficiente_fluencia``/``phi``) — não é o
+    alfa_f de 17.3.2.1.2/13.3 Nota 5 (``els_deformacao_nbr6118.alpha_f``),
+    que é uma fórmula diferente (depende de rho', a taxa de armadura de
+    compressão) pensada para elementos com armadura passiva. Esta função
+    não recalcula phi — quem chama informa o valor (P6/P7).
+
+        f_total = f_imediata,variável + f_imediata,permanente · (1 + phi)
+
+    f_imediata_permanente_cm: parcela da flecha imediata devida às ações
+    permanentes — a que a norma manda multiplicar por (1 + phi).
+    f_imediata_variavel_cm: parcela da flecha imediata devida às ações
+    variáveis, que não entra no fator de fluência; default 0,0 quando só a
+    parcela permanente interessa. phi entra em módulo (sinal não importa).
+    """
+    if phi < 0.0:
+        raise ValueError("phi não pode ser negativo.")
+    fp = float(f_imediata_permanente_cm)
+    fv = float(f_imediata_variavel_cm)
+    return fv + fp * (1.0 + abs(float(phi)))
+
+
 if __name__ == "__main__":
     if "--test" in sys.argv:
         sys.exit(run_tests())
