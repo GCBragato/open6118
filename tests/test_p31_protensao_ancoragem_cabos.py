@@ -240,7 +240,7 @@ def test_sec9_comp_ancor_necessario_ativo_facade_mesmo_numero():
 # ===========================================================================
 # 9.6.2.2 — Ângulo de difusão β, pós-tração (PDF p. 68)
 # ===========================================================================
-def test_9622_angulo_beta_tangente_2_terços():
+def test_9622_angulo_beta_tangente_2_tercos():
     """tg(β) = 2/3 (Figura 9.7)."""
     beta = pd.angulo_difusao_beta_graus()
     assert math.tan(math.radians(beta)) == pytest.approx(2.0 / 3.0, rel=1e-9)

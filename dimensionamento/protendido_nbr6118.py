@@ -390,7 +390,7 @@ def theta_parabola_rad(y_cm: float, x_m: float) -> float:
 # ---------------------------------------------------------------------------
 # Estimativa da força de protensão final P (item 4.6.1)
 # ---------------------------------------------------------------------------
-def fct_admissivel_traçao_kncm2(fck_mpa: float, secao: str = "T") -> float:
+def fct_admissivel_tracao_kncm2(fck_mpa: float, secao: str = "T") -> float:
     """fct para tensão admissível de tração no ELS-F (NBR/Bastos Eq. 4.16).
 
     seção = 'T' ou 'duplo-T'  -> alpha = 1.2
@@ -449,7 +449,7 @@ def estimar_P_protensao_completa(
     P_A = P_estimado_ELS(0.0, sigma_carga_D, Ac_cm2, Wb_cm3, ep_cm)
 
     # ELS-F combinação rara -> sigma_alvo = +fct
-    fct = fct_admissivel_traçao_kncm2(fck_mpa, secao)
+    fct = fct_admissivel_tracao_kncm2(fck_mpa, secao)
     sigma_carga_F = bg1 + bg2 + bq1 + psi1 * bq2
     P_B = P_estimado_ELS(fct, sigma_carga_F, Ac_cm2, Wb_cm3, ep_cm)
 
@@ -484,7 +484,7 @@ def estimar_P_protensao_limitada(
     sigma_carga_D = bg1 + bg2 + psi2 * bq1 + psi2 * bq2
     P_A = P_estimado_ELS(0.0, sigma_carga_D, Ac_cm2, Wb_cm3, ep_cm)
 
-    fct = fct_admissivel_traçao_kncm2(fck_mpa, secao)
+    fct = fct_admissivel_tracao_kncm2(fck_mpa, secao)
     sigma_carga_F = bg1 + bg2 + psi1 * bq1 + psi2 * bq2
     P_B = P_estimado_ELS(fct, sigma_carga_F, Ac_cm2, Wb_cm3, ep_cm)
 
@@ -502,17 +502,17 @@ def estimar_P_protensao_parcial(
     Mg1_kncm: float, Mg2_kncm: float, Mq1_kncm: float, Mq2_kncm: float,
     psi1: float, psi2: float,
     Ac_cm2: float, Wb_cm3: float, ep_cm: float,
-    fck_mpa: float, sigma_traçao_kncm2: float,
+    fck_mpa: float, sigma_tracao_kncm2: float,
     secao: str = "T",
 ) -> dict:
     """Força de protensão final P para protensão parcial (item 4.6.1.3).
 
     Permite tensão de tração na base superior a fct (controle por ELS-W com
-    abertura máxima de 0.2 mm). O usuário informa sigma_traçao_kncm2 como
+    abertura máxima de 0.2 mm). O usuário informa sigma_tracao_kncm2 como
     a tensão de tração admitida na borda inferior em ELS-F freq.
 
     - ELS-D (combinação quase permanente): sigma_b_total = 0
-    - ELS-F (combinação frequente): sigma_b_total = sigma_traçao_kncm2 (>fct)
+    - ELS-F (combinação frequente): sigma_b_total = sigma_tracao_kncm2 (>fct)
     """
     bg1 = Mg1_kncm / Wb_cm3
     bg2 = Mg2_kncm / Wb_cm3
@@ -523,7 +523,7 @@ def estimar_P_protensao_parcial(
     P_A = P_estimado_ELS(0.0, sigma_carga_D, Ac_cm2, Wb_cm3, ep_cm)
 
     sigma_carga_F = bg1 + bg2 + psi1 * bq1 + psi2 * bq2
-    P_B = P_estimado_ELS(sigma_traçao_kncm2, sigma_carga_F,
+    P_B = P_estimado_ELS(sigma_tracao_kncm2, sigma_carga_F,
                          Ac_cm2, Wb_cm3, ep_cm)
 
     return {
@@ -1095,9 +1095,9 @@ def test_perda_atrito_parabola_apostila() -> None:
 
 def test_fct_admissivel_secao() -> None:
     """C50, seção duplo T: fct = 1.2 * 0.7 * 0.3 * 50^(2/3) = 3.42 MPa."""
-    fct_T = fct_admissivel_traçao_kncm2(50.0, "T")
-    fct_I = fct_admissivel_traçao_kncm2(50.0, "I")
-    fct_R = fct_admissivel_traçao_kncm2(50.0, "retangular")
+    fct_T = fct_admissivel_tracao_kncm2(50.0, "T")
+    fct_I = fct_admissivel_tracao_kncm2(50.0, "I")
+    fct_R = fct_admissivel_tracao_kncm2(50.0, "retangular")
     assert _aprox(fct_T * 10.0, 3.42, 0.01), f"fct_T={fct_T*10:.3f}"
     assert _aprox(fct_I * 10.0, 3.71, 0.01)
     assert _aprox(fct_R * 10.0, 4.28, 0.01)
@@ -1154,7 +1154,7 @@ def test_protensao_limitada_viga_duplo_T_apostila() -> None:
 
 def test_protensao_parcial_basica() -> None:
     """Protensão parcial admite tração maior que fct na base. Para a
-    mesma viga, tomando sigma_traçao = 0.50 kN/cm2 (~5 MPa, > fct):
+    mesma viga, tomando sigma_tracao = 0.50 kN/cm2 (~5 MPa, > fct):
     P_estB será menor que na limitada."""
     r_lim = estimar_P_protensao_limitada(
         18619.0, 13500.0, 5063.0, 0.0, 0.4, 0.3,
@@ -1163,7 +1163,7 @@ def test_protensao_parcial_basica() -> None:
     r_par = estimar_P_protensao_parcial(
         18619.0, 13500.0, 5063.0, 0.0, 0.4, 0.3,
         2648.0, 17260.0, 25.0, 50.0,
-        sigma_traçao_kncm2=0.50, secao="duplo-T",
+        sigma_tracao_kncm2=0.50, secao="duplo-T",
     )
     # parcial deve ter P_B menor que limitada (mais tração admitida)
     assert r_par["P_estB_ELS_F_kN"] < r_lim["P_estB_ELS_F_kN"]
@@ -3181,7 +3181,7 @@ def limite_tracao_servico_mpa(fck_mpa: float, estado_limite: str,
         ELS-F: tensão-limite = 0,7·alpha·fct,m — acima disso a seção passa
                a trabalhar em Estádio II.
 
-    Para ELS-F reusa fct_admissivel_traçao_kncm2 (mesma fórmula 0,7·alpha·
+    Para ELS-F reusa fct_admissivel_tracao_kncm2 (mesma fórmula 0,7·alpha·
     fct,m, com alpha pela forma da seção — 1,2 para mesa T/duplo T, 1,3
     para I/T-invertido, 1,5 para retangular; só muda a ordem dos fatores em
     relação ao texto de 17.2.4.4.2). Não há divergência de grandeza com o
@@ -3193,7 +3193,7 @@ def limite_tracao_servico_mpa(fck_mpa: float, estado_limite: str,
     if est == "elsd":
         return 0.0
     if est == "elsf":
-        return fct_admissivel_traçao_kncm2(fck_mpa, secao) * 10.0
+        return fct_admissivel_tracao_kncm2(fck_mpa, secao) * 10.0
     raise ValueError(
         f"estado_limite deve ser 'ELS-D' ou 'ELS-F', recebido {estado_limite!r}."
     )

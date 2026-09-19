@@ -54,13 +54,13 @@ def test_PRO01_agregado_desconhecido_levanta():
 def test_PRO01_fct_admissivel_usa_fctm_do_nucleo(fck):
     for secao, alpha in (("T", 1.2), ("I", 1.3), ("retangular", 1.5)):
         esperado = alpha * 0.7 * nbr.fct_m(fck) * 0.1
-        assert PT.fct_admissivel_traçao_kncm2(fck, secao) == pytest.approx(esperado)
+        assert PT.fct_admissivel_tracao_kncm2(fck, secao) == pytest.approx(esperado)
 
 
 def test_PRO01_fct_admissivel_C70_nao_e_o_valor_antigo():
     # Com fct,m de 2014 (bug antigo), fct_R(70) sairia maior; o correto usa
     # fct,m do nucleo (Grupo II).
-    correto = PT.fct_admissivel_traçao_kncm2(70.0, "retangular") * 10.0  # MPa
+    correto = PT.fct_admissivel_tracao_kncm2(70.0, "retangular") * 10.0  # MPa
     assert correto == pytest.approx(4.841, abs=0.01)
 
 

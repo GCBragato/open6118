@@ -239,9 +239,9 @@ def test_17_2_4_4_2_els_f_retangular():
     esperado = 0.7 * 1.5 * _fctm(30.0)
     assert PT.limite_tracao_servico_mpa(30.0, "ELS-F", "retangular") \
         == pytest.approx(esperado)
-    # Mesma fórmula de fct_admissivel_traçao_kncm2 (sem divergência real).
+    # Mesma fórmula de fct_admissivel_tracao_kncm2 (sem divergência real).
     assert PT.limite_tracao_servico_mpa(30.0, "ELS-F", "retangular") == pytest.approx(
-        PT.fct_admissivel_traçao_kncm2(30.0, "retangular") * 10.0)
+        PT.fct_admissivel_tracao_kncm2(30.0, "retangular") * 10.0)
 
 
 def test_17_2_4_4_2_els_f_secao_T():
