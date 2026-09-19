@@ -490,15 +490,15 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `18.3.6-definicao-viga-pendurada` | 18.3.6 | 172 | Classificação viga pendurada x não pendurada | ausente | baixa | P | P23 |
 | `18.3.7-armadura-ligacao-mesa-alma` | 18.3.7 | 173 | Armadura mínima de ligação mesa-alma ou talão-alma (1,5 cm2/m) | ausente | média | P | P23 |
 | `18.4.1-introducao-pilar-x-pilar-parede` | 18.4.1 | 173 | Classificação pilar comum x pilar-parede pela razão entre dimensões da seção (maior ≤ 5 vezes a menor) | implementado | alta | P | P11 |
-| `18.4.2.1-diametro-min-max-barra-longitudinal-pilar` | 18.4.2.1 | 173 | Diâmetro mínimo e máximo da barra longitudinal de pilar | ausente | alta | P | P24 |
+| `18.4.2.1-diametro-min-max-barra-longitudinal-pilar` | 18.4.2.1 | 173 | Diâmetro mínimo e máximo da barra longitudinal de pilar | implementado | alta | P | P24 |
 | `18.4.2.1-taxa-armadura-pilar-remissao` | 18.4.2.1 | 173 | Taxa geométrica de armadura longitudinal de pilar (remissão a 17.3.5.3) | implementado | alta | P |  |
-| `18.4.2.2-distribuicao-transversal-vertices-pilar` | 18.4.2.2 | 173 | Número mínimo de barras por geometria de pilar (1 por vértice; mínimo 6 em seção circular) | ausente | alta | P | P24 |
-| `18.4.2.2-espacamento-min-barras-pilar` | 18.4.2.2 | 173 | Espaçamento mínimo livre entre barras longitudinais de pilar (fora da região de emenda) | ausente | alta | P | P24 |
-| `18.4.2.2-espacamento-max-eixos-pilar` | 18.4.2.2 | 174 | Espaçamento máximo entre eixos das barras longitudinais de pilar (2x a menor dimensão, limitado a 400mm) | ausente | alta | P | P24 |
-| `18.4.3-diametro-min-estribo-pilar` | 18.4.3 | 174 | Diâmetro mínimo do estribo de pilar (5mm ou 1/4 do diâmetro da barra/feixe longitudinal) | ausente | alta | P | P24 |
-| `18.4.3-espacamento-max-estribo-pilar-basico` | 18.4.3 | 174 | Espaçamento longitudinal máximo básico entre estribos de pilar (200mm; menor dimensão; 24phi CA-25/12phi CA-50) | ausente | alta | P | P24 |
-| `18.4.3-espacamento-max-estribo-pilar-phi-reduzido` | 18.4.3 | 174 | Limite adicional de espaçamento quando φt < φℓ/4 (fórmula com fyk) | ausente | média | P | P24 |
-| `18.4.3-nota-dutilidade-concreto-alta-resistencia` | 18.4.3 (NOTA) | 174 | Recomendação de redução de 50% no espaçamento de estribos para concretos C55 a C90 (dutilidade) | ausente | média | P | P24 |
+| `18.4.2.2-distribuicao-transversal-vertices-pilar` | 18.4.2.2 | 173 | Número mínimo de barras por geometria de pilar (1 por vértice; mínimo 6 em seção circular) | implementado | alta | P | P24 |
+| `18.4.2.2-espacamento-min-barras-pilar` | 18.4.2.2 | 173 | Espaçamento mínimo livre entre barras longitudinais de pilar (fora da região de emenda) | implementado | alta | P | P24 |
+| `18.4.2.2-espacamento-max-eixos-pilar` | 18.4.2.2 | 174 | Espaçamento máximo entre eixos das barras longitudinais de pilar (2x a menor dimensão, limitado a 400mm) | implementado | alta | P | P24 |
+| `18.4.3-diametro-min-estribo-pilar` | 18.4.3 | 174 | Diâmetro mínimo do estribo de pilar (5mm ou 1/4 do diâmetro da barra/feixe longitudinal) | implementado | alta | P | P24 |
+| `18.4.3-espacamento-max-estribo-pilar-basico` | 18.4.3 | 174 | Espaçamento longitudinal máximo básico entre estribos de pilar (200mm; menor dimensão; 24phi CA-25/12phi CA-50) | implementado | alta | P | P24 |
+| `18.4.3-espacamento-max-estribo-pilar-phi-reduzido` | 18.4.3 | 174 | Limite adicional de espaçamento quando φt < φℓ/4 (fórmula com fyk) | implementado | média | P | P24 |
+| `18.4.3-nota-dutilidade-concreto-alta-resistencia` | 18.4.3 (NOTA) | 174 | Recomendação de redução de 50% no espaçamento de estribos para concretos C55 a C90 (dutilidade) | implementado | média | P | P24 |
 | `18.5-pilar-parede-esforcos-transversais-remissao-secao15` | 18.5 | 174 | Pilar-parede: exigência adicional de considerar 1a e 2a ordem transversal (Seção 15), inclusive 2a ordem localizada | não computável | média | P |  |
 | `18.5-armadura-transversal-pilar-parede-25pct` | 18.5 | 174 | Armadura transversal mínima de pilar-parede (25% da longitudinal por metro de face, se flexão de placa não for calculada) | ausente | média | P | P29 |
 | `18.6.1.1-tracado-qualitativo` | 18.6.1.1 | 175 | Traçado admissível dos cabos de protensão | não computável | baixa | P |  |

@@ -245,11 +245,11 @@ class ResultadoCobrimento:
 def phi_feixe_mm(phi_mm: float, n_barras: int) -> float:
     """Diâmetro equivalente do feixe de barras, mm (7.4.7.5, item e).
 
-    φn = φ·√n (n = número de barras do feixe, cf. 9.4.2).
+    φn = φ·√n (n = número de barras do feixe, cf. 9.4.2). Fachada de
+    ``nucleo_nbr6118.phi_n_feixe`` (promovida ao núcleo no P24, por ser a
+    mesma conta usada também no detalhamento de vigas e pilares).
     """
-    if n_barras < 2:
-        raise ValueError("Feixe de barras requer n_barras >= 2 (cf. 9.4.2).")
-    return float(phi_mm) * n_barras ** 0.5
+    return nbr.phi_n_feixe(phi_mm, n_barras)
 
 
 def verificar_cobrimento(cnom_mm: float, phi_mm: float,

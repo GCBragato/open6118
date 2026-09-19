@@ -181,7 +181,8 @@
    "nome": "Detalhamento de pilares",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/detalhamento_pilares_nbr6118.py"
+   "modulo": "dimensionamento/detalhamento_pilares_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P25",
@@ -9749,7 +9750,7 @@
    "pagina_pdf": 173,
    "titulo": "Diâmetro mínimo e máximo da barra longitudinal de pilar",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P24",
@@ -9759,7 +9760,22 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Menor dimensao=20cm -> phi_max=25mm (200mm/8). phi=8mm sempre reprovado.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P24",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_pilares_nbr6118.phi_longitudinal_limites_mm"
+    ],
+    "testes": [
+     "test_1842_1_phi_min_e_max_menor_dimensao_20cm",
+     "test_1842_1_phi_8mm_sempre_reprovado",
+     "test_1842_1_bordas_da_faixa",
+     "test_1842_1_ponto_interior",
+     "test_1842_1_b_min_invalido"
+    ],
+    "observacao": "10 mm <= phi <= (1/8)*b_min (b_min em cm, convertido a mm dentro da função); confirmado na imagem p173."
+   }
   },
   {
    "id": "18.4.2.1-taxa-armadura-pilar-remissao",
@@ -9787,7 +9803,7 @@
    "pagina_pdf": 173,
    "titulo": "Número mínimo de barras por geometria de pilar (1 por vértice; mínimo 6 em seção circular)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P24",
@@ -9797,7 +9813,21 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Pilar retangular (4 vertices): minimo 4 barras. Pilar circular: minimo 6 barras.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P24",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_pilares_nbr6118.n_min_barras"
+    ],
+    "testes": [
+     "test_1842_2_pilar_retangular_minimo_4_barras",
+     "test_1842_2_pilar_circular_minimo_6_barras",
+     "test_1842_2_pilar_triangular_minimo_3_barras",
+     "test_1842_2_forma_invalida_levanta_erro"
+    ],
+    "observacao": "Aceita 'circular', nomes usuais de polígono (retangular/quadrada/triangular/pentagonal/hexagonal/octogonal) ou o número de vértices como inteiro."
+   }
   },
   {
    "id": "18.4.2.2-espacamento-min-barras-pilar",
@@ -9805,7 +9835,7 @@
    "pagina_pdf": 173,
    "titulo": "Espaçamento mínimo livre entre barras longitudinais de pilar (fora da região de emenda)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P24",
@@ -9817,7 +9847,22 @@
     "18.3.2.2-espacamento-longitudinal-vigas"
    ],
    "teste_sugerido": "phi=25mm, dmax_agregado=19mm: espacamento_min=max(20;25;22.8)=25mm.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P24",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_pilares_nbr6118.espacamento_min_livre_cm",
+     "nucleo_nbr6118.phi_n_feixe"
+    ],
+    "testes": [
+     "test_1842_2_espacamento_min_governado_pelo_dmax",
+     "test_1842_2_espacamento_min_governado_pelo_absoluto_20mm",
+     "test_1842_2_espacamento_min_governado_pelo_dmax_no_limite",
+     "test_1842_2_espacamento_min_considera_feixe"
+    ],
+    "observacao": "max(20 mm; phi da barra/feixe/luva; 1,2*dmax). phi_n_feixe (phi*sqrt(n), 9.4.2) foi promovido ao núcleo por já servir P22 e P27; durabilidade_nbr6118.phi_feixe_mm virou fachada de uma linha."
+   }
   },
   {
    "id": "18.4.2.2-espacamento-max-eixos-pilar",
@@ -9825,7 +9870,7 @@
    "pagina_pdf": 174,
    "titulo": "Espaçamento máximo entre eixos das barras longitudinais de pilar (2x a menor dimensão, limitado a 400mm)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P24",
@@ -9835,7 +9880,20 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Menor dimensao=25cm -> espacamento_max=min(50cm;40cm)=40cm. Menor dimensao=15cm -> espacamento_max=min(30cm;40cm)=30cm.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P24",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_pilares_nbr6118.espacamento_max_eixos_cm"
+    ],
+    "testes": [
+     "test_1842_2_espacamento_max_eixos_governado_pelo_absoluto_400mm",
+     "test_1842_2_espacamento_max_eixos_governado_por_2x_b_min",
+     "test_1842_2_espacamento_max_eixos_fronteira_exata"
+    ],
+    "observacao": "min(2*b_min; 400 mm); confirmado na imagem p174."
+   }
   },
   {
    "id": "18.4.3-diametro-min-estribo-pilar",
@@ -9843,7 +9901,7 @@
    "pagina_pdf": 174,
    "titulo": "Diâmetro mínimo do estribo de pilar (5mm ou 1/4 do diâmetro da barra/feixe longitudinal)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P24",
@@ -9853,7 +9911,20 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "phi_longitudinal=20mm -> phi_estribo_min=max(5;5)=5mm. phi_longitudinal=32mm -> phi_estribo_min=max(5;8)=8mm.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P24",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_pilares_nbr6118.phi_min_estribo_pilar_mm"
+    ],
+    "testes": [
+     "test_1843_phi_estribo_min_governado_pelo_absoluto_5mm",
+     "test_1843_phi_estribo_min_governado_por_phi_sobre_4",
+     "test_1843_phi_estribo_min_fronteira_exata"
+    ],
+    "observacao": "max(5 mm; phi/4); aceita phi da barra isolada ou phi_n do feixe."
+   }
   },
   {
    "id": "18.4.3-espacamento-max-estribo-pilar-basico",
@@ -9861,7 +9932,7 @@
    "pagina_pdf": 174,
    "titulo": "Espaçamento longitudinal máximo básico entre estribos de pilar (200mm; menor dimensão; 24phi CA-25/12phi CA-50)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P24",
@@ -9871,7 +9942,24 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "CA-50, phi_long=20mm, menor_dimensao=25cm: s_max=min(200;250;240)=200mm. phi_long=25mm CA-50: s_max=min(200;250;300)=200mm.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P24",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_pilares_nbr6118.s_max_estribo_pilar_basico_cm"
+    ],
+    "testes": [
+     "test_1843_s_max_basico_governado_pelo_absoluto_200mm_ca50",
+     "test_1843_s_max_basico_ca50_outro_ponto_ainda_governado_pelo_absoluto",
+     "test_1843_s_max_basico_governado_por_12phi_ca50",
+     "test_1843_s_max_basico_governado_pela_menor_dimensao",
+     "test_1843_s_max_basico_fator_24_para_ca25",
+     "test_1843_s_max_basico_fator_24_ca25_governando",
+     "test_1843_s_max_basico_categoria_nao_definida_levanta_erro"
+    ],
+    "observacao": "min(200 mm; b_min; 24phi CA-25 ou 12phi CA-50); CA-60 (sem fator definido pela norma) levanta FaixaNormativaError, como a célula '-' de uma tabela."
+   }
   },
   {
    "id": "18.4.3-espacamento-max-estribo-pilar-phi-reduzido",
@@ -9879,7 +9967,7 @@
    "pagina_pdf": 174,
    "titulo": "Limite adicional de espaçamento quando φt < φℓ/4 (fórmula com fyk)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P24",
@@ -9892,7 +9980,24 @@
     "18.3.3.2-espacamento-longitudinal-max-estribos"
    ],
    "teste_sugerido": "phi_t=5mm, phi_long=25mm (phi_t<phi/4, admissivel), fyk=500MPa: s_max=90000*(25/25)/500=180mm.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P24",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_pilares_nbr6118.s_max_estribo_pilar_phi_reduzido_mm",
+     "detalhamento_pilares_nbr6118.s_max_estribo_pilar_cm"
+    ],
+    "testes": [
+     "test_1843_phi_reduzido_conta_a_mao",
+     "test_1843_phi_reduzido_fronteira_phi_t_igual_phi_sobre_4_reprovado",
+     "test_1843_phi_reduzido_phi_t_maior_que_phi_sobre_4_reprovado",
+     "test_1843_phi_reduzido_ponto_interior_fyk_diferente",
+     "test_s_max_estribo_combinado_phi_reduzido_prevalece",
+     "test_s_max_estribo_combinado_phi_t_nao_admissivel_ignora_reduzido"
+    ],
+    "observacao": "smax = 90000*(phi_t^2/phi)/fyk, só quando phi_t < phi/4 (fora disso levanta FaixaNormativaError). Pendência menor: a comparação com os mínimos de 18.3 (vigas) para pilar com cortante/torção, citada no texto da norma, fica fora desta função porque 18.3.2.2/18.3.3.2 de vigas ainda não estão implementados neste worktree (P22); o chamador deve comparar externamente quando for o caso."
+   }
   },
   {
    "id": "18.4.3-nota-dutilidade-concreto-alta-resistencia",
@@ -9900,7 +10005,7 @@
    "pagina_pdf": 174,
    "titulo": "Recomendação de redução de 50% no espaçamento de estribos para concretos C55 a C90 (dutilidade)",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P24",
@@ -9913,7 +10018,22 @@
     "18.4.3-espacamento-max-estribo-pilar-phi-reduzido"
    ],
    "teste_sugerido": "fck=60MPa: s_max_recomendado=0,5*s_max calculado pelas regras normais. fck=40MPa: sem reducao.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P24",
+    "data": "19/09/2026",
+    "funcoes": [
+     "detalhamento_pilares_nbr6118.s_max_estribo_pilar_reduzido_dutilidade_cm",
+     "detalhamento_pilares_nbr6118.s_max_estribo_pilar_cm"
+    ],
+    "testes": [
+     "test_1843_nota_reducao_dentro_da_faixa_c55_c90",
+     "test_1843_nota_sem_reducao_fora_da_faixa",
+     "test_1843_nota_fronteiras_exatas_55_e_90",
+     "test_1843_nota_fck_fora_da_faixa_da_norma_levanta_erro"
+    ],
+    "observacao": "Recomendação (NOTA), não obrigatória: reduz 50% o espaçamento máximo para C55-C90; aplicada como opção em s_max_estribo_pilar_cm quando fck_mpa é informado."
+   }
   },
   {
    "id": "18.5-pilar-parede-esforcos-transversais-remissao-secao15",

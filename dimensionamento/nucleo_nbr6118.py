@@ -1279,3 +1279,21 @@ def gama_s_ajustado(combinacao: str = "normal", ca25_sem_controle: bool = False)
     if ca25_sem_controle:
         return gama_s * 1.1
     return gama_s
+
+
+# ---------------------------------------------------------------------------
+# === P24: Diâmetro equivalente de feixe de barras (9.4.2) ===
+# ---------------------------------------------------------------------------
+def phi_n_feixe(phi_mm: float, n_barras: int) -> float:
+    """Diâmetro equivalente do feixe de barras, mm (9.4.2, PDF p. 60).
+
+    φn = φ·√n (n = número de barras que compõem o feixe). Usado no
+    detalhamento de vigas (18.3.2.2), pilares (18.4.2.2 e 18.4.3) e
+    lajes (P22, P24, P27): a fórmula é a mesma nos três, por isso mora
+    aqui. ``durabilidade_nbr6118.phi_feixe_mm`` é a mesma conta, mantida
+    como fachada por compatibilidade.
+    """
+    n = int(n_barras)
+    if n < 2:
+        raise ValueError("Feixe de barras requer n_barras >= 2 (cf. 9.4.2).")
+    return float(phi_mm) * n ** 0.5
