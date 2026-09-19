@@ -475,6 +475,491 @@ def aplicar_gama_n(b_cm: float, esforco: float) -> tuple[float, float]:
     return esforco * gn, gn
 
 
+# === P25: 2ª ordem local pelo pilar-padrão (15.3.1, 15.3.2, 15.6, 15.7.4, 15.8) ===
+from dataclasses import replace as _replace_p25
+
+LAMBDA_MAX_PILAR = 200.0            # 15.8.1 (PDF p. 127)
+LAMBDA_GAMA_N1 = 140.0              # 15.8.1 (PDF p. 127) e 15.8.3.2 (PDF p. 129)
+LAMBDA_FLUENCIA = 90.0              # 15.8.3.1 e 15.8.4 (PDF p. 129 e 131)
+FRACAO_POUCO_COMPRIMIDO = 0.10      # 15.8.1: Nd < 0,10·fcd·Ac (PDF p. 127)
+_TOL_P25 = 1e-9
+
+
+def _fmt_p25(x: float) -> str:
+    """Número para a memória de cálculo, com vírgula decimal."""
+    return f"{x:.6g}".replace(".", ",")
+
+
+def _positivo_p25(valor: float, nome: str, item: str) -> float:
+    v = float(valor)
+    if not (v > 0.0) or math.isinf(v):
+        raise nbr.FaixaNormativaError(
+            f"{nome} = {v:g} inválido: tem de ser positivo e finito (NBR 6118:2026, {item})."
+        )
+    return v
+
+
+# ---------------------------------------------------------------------------
+# 15.3.1 — Rigidez secante adimensional κsec (PDF p. 122)
+# ---------------------------------------------------------------------------
+def kappa_sec(EI_sec_kncm2: float, Ac_cm2: float, h_cm: float, fcd_mpa: float) -> float:
+    """Rigidez secante adimensional κsec (15.3.1, PDF p. 122).
+
+        κsec = (EI)sec / (Ac · h² · fcd)
+
+    (EI)sec em kN·cm² (por exemplo, de ``flexao_composta_obliqua.ei_secante``),
+    Ac em cm², h (altura da seção considerada) em cm e fcd em MPa. O fcd é
+    convertido para kN/cm² dentro da função (÷ 10), para que κsec saia
+    adimensional. Serve para ábacos de interação N-M com os valores últimos
+    NRd e MRd.
+    """
+    EI = float(EI_sec_kncm2)
+    if not (EI > 0.0):
+        raise nbr.FaixaNormativaError(
+            f"(EI)sec = {EI:g} kN·cm² inválido: a rigidez secante tem de ser positiva (15.3.1)."
+        )
+    Ac = _positivo_p25(Ac_cm2, "Ac", "15.3.1")
+    h = _positivo_p25(h_cm, "h", "15.3.1")
+    fcd = _positivo_p25(fcd_mpa, "fcd", "15.3.1")
+    return EI / (Ac * h * h * nbr.mpa_para_kncm2(fcd))
+
+
+# ---------------------------------------------------------------------------
+# 15.6 — Comprimento equivalente ℓe (PDF p. 125-126) e 15.8.2 (PDF p. 128)
+# ---------------------------------------------------------------------------
+def comprimento_equivalente_cm(l0_cm: float, h_cm: float, l_cm: float,
+                               engastado_livre: bool = False) -> float:
+    """Comprimento equivalente ℓe do pilar (15.6, PDF p. 126; 15.8.2, PDF p. 128).
+
+    Pilar vinculado nas duas extremidades (15.6), o menor dos valores:
+
+        ℓe = ℓ0 + h
+        ℓe = ℓ
+
+    ℓ0: distância entre as faces internas dos elementos estruturais, supostos
+    horizontais, que vinculam o pilar; h: altura da seção transversal do
+    pilar, medida no plano da estrutura em estudo; ℓ: distância entre os
+    eixos dos elementos estruturais aos quais o pilar está vinculado. Tudo
+    em cm.
+
+    ``engastado_livre=True``: pilar engastado na base e livre no topo,
+    ℓe = 2·ℓ (15.8.2, PDF p. 128); ℓ0 e h não entram.
+
+    ℓ0 > ℓ é geometricamente impossível (a distância entre faces não passa
+    da distância entre eixos) e levanta ``FaixaNormativaError``.
+    """
+    l = _positivo_p25(l_cm, "ℓ", "15.6")
+    if engastado_livre:
+        return 2.0 * l
+    l0 = _positivo_p25(l0_cm, "ℓ0", "15.6")
+    h = _positivo_p25(h_cm, "h", "15.6")
+    if l0 > l + _TOL_P25:
+        raise nbr.FaixaNormativaError(
+            f"ℓ0 = {l0:g} cm maior que ℓ = {l:g} cm: a distância entre as faces "
+            "internas não pode passar da distância entre os eixos (NBR 6118:2026, 15.6)."
+        )
+    return min(l0 + h, l)
+
+
+# ---------------------------------------------------------------------------
+# 15.8.2 — Índice de esbeltez λ = ℓe/i (PDF p. 127)
+# ---------------------------------------------------------------------------
+def raio_giracao_cm(I_cm4: float, A_cm2: float) -> float:
+    """Raio de giração i = √(I/A), cm (15.8.2, PDF p. 127). I em cm⁴, A em cm²."""
+    I = _positivo_p25(I_cm4, "I", "15.8.2")
+    A = _positivo_p25(A_cm2, "A", "15.8.2")
+    return math.sqrt(I / A)
+
+
+def esbeltez(le_cm: float, I_cm4: float, A_cm2: float) -> float:
+    """Índice de esbeltez λ = ℓe / i, com i = √(I/A) (15.8.2, PDF p. 127).
+
+    Forma geral, para qualquer seção (circular, poligonal, composta): ℓe em
+    cm (15.6), I em cm⁴ (momento de inércia da seção bruta no plano de
+    flambagem considerado) e A em cm². Para seção retangular, i = h/√12 e
+    λ = √12·ℓe/h ≈ 3,46·ℓe/h, que é o que ``esbeltez_lambda`` usa; para
+    seção circular de diâmetro D, i = D/4 e λ = 4·ℓe/D.
+    """
+    le = _positivo_p25(le_cm, "ℓe", "15.8.2")
+    return le / raio_giracao_cm(I_cm4, A_cm2)
+
+
+# ---------------------------------------------------------------------------
+# 15.8.1 — Limite λ <= 200 e coeficiente γn1 (PDF p. 127)
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class ResultadoEsbeltezLimite:
+    """Verificação do limite de esbeltez de 15.8.1 e o que a faixa de λ exige."""
+    lambda_: float
+    lambda_max: float
+    Nd_kn: float
+    Nd_pouco_comprimido_kn: float     # 0,10·fcd·Ac, kN
+    pouco_comprimido: bool            # Nd < 0,10·fcd·Ac
+    gama_n1: float                    # 15.8.1, 1,0 para λ <= 140
+    exige_fluencia: bool              # λ > 90 (15.8.3.1, 15.8.4)
+    exige_metodo_geral: bool          # λ > 140 (15.8.3.2)
+    pilar_padrao_permitido: bool      # λ <= 90 (15.8.3.3.2, 15.8.3.3.3)
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def gama_n1(lambda_val: float) -> float:
+    """Coeficiente adicional γn1 dos efeitos locais de 2ª ordem (15.8.1, PDF p. 127).
+
+        γn1 = 1 + (λ − 140)/140 >= 1
+
+    Para λ <= 140, γn1 = 1,0. Mesma fórmula de ``n1_majoracao``, com
+    validação de λ (não negativo e finito).
+    """
+    lam = float(lambda_val)
+    if lam < 0.0 or math.isnan(lam) or math.isinf(lam):
+        raise nbr.FaixaNormativaError(f"λ = {lam:g} inválido (15.8.1).")
+    return n1_majoracao(lam)
+
+
+def aplicar_gama_n1(M2d_kncm: float, lambda_val: float) -> tuple[float, float]:
+    """Majora os efeitos locais de 2ª ordem por γn1 (15.8.1, PDF p. 127).
+
+    "Para pilares com índice de esbeltez superior a 140, deve-se majorar os
+    efeitos locais de 2ª ordem por um coeficiente adicional" γn1. O
+    coeficiente multiplica a parcela de 2ª ordem (M2d), não o momento de
+    1ª ordem. Devolve (γn1·M2d, γn1). Com λ <= 140, volta M2d inalterado.
+
+    O pilar-padrão (λ <= 90) nunca ativa γn1; quem ativa são o método geral
+    e o pilar-padrão acoplado a diagramas M, N, 1/r (15.8.3.2 e 15.8.3.3.4,
+    pacote P28), que devem chamar esta função com o M2d que calcularem.
+    """
+    gn1 = gama_n1(lambda_val)
+    return float(M2d_kncm) * gn1, gn1
+
+
+def verificar_esbeltez_limite(lambda_val: float, Nd_kn: float, fck_mpa: float,
+                              Ac_cm2: float, gama_c: float = GAMA_C) -> ResultadoEsbeltezLimite:
+    """Limite geral de esbeltez λ <= 200 (15.8.1, PDF p. 127).
+
+    "Os pilares devem ter índice de esbeltez menor ou igual a 200 (λ <= 200).
+    Apenas no caso de elementos pouco comprimidos com força normal de
+    cálculo menor que 0,10·fcd·Ac, o índice de esbeltez pode ser maior que
+    200." λ = 200 passa; a exceção exige Nd < 0,10·fcd·Ac (estrito).
+
+    Informa também o que a faixa de λ exige: fluência para λ > 90
+    (15.8.3.1 e 15.8.4, PDF p. 129 e 131), método geral para λ > 140
+    (15.8.3.2, PDF p. 129) e γn1 para λ > 140 (15.8.1). O pilar-padrão com
+    curvatura ou rigidez κ aproximada só vale para λ <= 90.
+
+    Nd em kN (compressão positiva; Nd <= 0 levanta FaixaNormativaError, porque
+    a exceção vale só para elementos pouco comprimidos), fck em MPa, Ac em cm².
+    """
+    lam = float(lambda_val)
+    if lam < 0.0 or math.isnan(lam) or math.isinf(lam):
+        raise nbr.FaixaNormativaError(f"λ = {lam:g} inválido (15.8.1).")
+    Ac = _positivo_p25(Ac_cm2, "Ac", "15.8.1")
+    fcd = fcd_kncm2(fck_mpa, gama_c)
+    Nd = float(Nd_kn)
+    if not (Nd > 0.0) or math.isinf(Nd):
+        raise nbr.FaixaNormativaError(
+            f"Nd = {Nd:g} kN: o limite de esbeltez vale para pilar comprimido (Nd > 0); "
+            "a exceção de 15.8.1 é para elementos pouco comprimidos, não tracionados."
+        )
+    N_lim = FRACAO_POUCO_COMPRIMIDO * fcd * Ac
+    pouco = Nd < N_lim
+    dentro = lam <= LAMBDA_MAX_PILAR + _TOL_P25
+    ok = dentro or pouco
+    gn1 = gama_n1(lam)
+    if dentro:
+        governante = f"λ = {_fmt_p25(lam)} <= 200"
+    elif pouco:
+        governante = (f"λ = {_fmt_p25(lam)} > 200, admitido: Nd = {_fmt_p25(Nd)} kN "
+                      f"< 0,10·fcd·Ac = {_fmt_p25(N_lim)} kN")
+    else:
+        governante = (f"λ = {_fmt_p25(lam)} > 200 com Nd = {_fmt_p25(Nd)} kN "
+                      f">= 0,10·fcd·Ac = {_fmt_p25(N_lim)} kN — não passa")
+    memoria = (
+        f"15.8.1: λ = {_fmt_p25(lam)}; limite λ <= 200.",
+        f"15.8.1: 0,10·fcd·Ac = 0,10 × {_fmt_p25(fcd)} kN/cm² × {_fmt_p25(Ac)} cm² = "
+        f"{_fmt_p25(N_lim)} kN; Nd = {_fmt_p25(Nd)} kN "
+        f"({'pouco comprimido' if pouco else 'não é pouco comprimido'}).",
+        f"15.8.1: γn1 = {_fmt_p25(gn1)}"
+        + (f" = 1 + ({_fmt_p25(lam)} − 140)/140." if lam > LAMBDA_GAMA_N1 else " (λ <= 140)."),
+        f"15.8.3: fluência {'obrigatória' if lam > LAMBDA_FLUENCIA else 'dispensada'} (λ > 90: 15.8.4); "
+        f"método geral {'obrigatório' if lam > LAMBDA_GAMA_N1 else 'não obrigatório'} (λ > 140: 15.8.3.2).",
+        f"Resultado: {governante} -> {'ok' if ok else 'não ok'}.",
+    )
+    return ResultadoEsbeltezLimite(
+        lambda_=lam, lambda_max=LAMBDA_MAX_PILAR, Nd_kn=Nd,
+        Nd_pouco_comprimido_kn=N_lim, pouco_comprimido=pouco, gama_n1=gn1,
+        exige_fluencia=lam > LAMBDA_FLUENCIA,
+        exige_metodo_geral=lam > LAMBDA_GAMA_N1,
+        pilar_padrao_permitido=lam <= LAMBDA_MAX_PILAR_PADRAO + _TOL_P25,
+        ok=ok, governante=governante, memoria=memoria,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 15.8.4 — Fluência: excentricidade adicional ecc (PDF p. 131)
+# ---------------------------------------------------------------------------
+def carga_euler_Ne_kn(Eci_mpa: float, Ic_cm4: float, le_cm: float) -> float:
+    """Ne = 10·Eci·Ic/ℓe², kN (15.8.4, PDF p. 131).
+
+    Eci em MPa (8.2.8; ``nucleo_nbr6118.Eci``), convertido para kN/cm² dentro
+    da função (÷ 10); Ic em cm⁴ (4.2.3, seção bruta); ℓe em cm (15.6).
+    """
+    Eci = nbr.mpa_para_kncm2(_positivo_p25(Eci_mpa, "Eci", "15.8.4"))
+    Ic = _positivo_p25(Ic_cm4, "Ic", "15.8.4")
+    le = _positivo_p25(le_cm, "ℓe", "15.8.4")
+    return 10.0 * Eci * Ic / (le * le)
+
+
+def ecc_fluencia_cm(Msg_kncm: float, Nsg_kn: float, ea_cm: float, phi: float,
+                    Eci_mpa: float, Ic_cm4: float, le_cm: float) -> float:
+    """Excentricidade adicional de fluência ecc, cm (15.8.4, PDF p. 131).
+
+        ecc = (Msg/Nsg + ea) · (2,718^(φ·Nsg/(Ne − Nsg)) − 1)
+        Ne  = 10·Eci·Ic/ℓe²
+
+    Msg (kN·cm) e Nsg (kN): esforços da combinação quase permanente; ea (cm):
+    excentricidade das imperfeições locais (Figura 11.2; ver
+    ``ea_acidental_cm``); φ: coeficiente de fluência (Tabela 8.1,
+    ``nucleo_nbr6118.phi_eps_cs_NBR``, ou Anexo A,
+    ``tempo_concreto_nbr6118.coeficiente_fluencia``); Eci em MPa (8.1/8.2.8);
+    Ic em cm⁴; ℓe em cm (15.6). A norma escreve a base 2,718 e diz que é o
+    número de Euler; usa-se ``math.e``.
+
+    Obrigatória para λ > 90 (15.8.4). O ecc se soma a e1, e o efeito de 2ª
+    ordem é calculado por 15.8.3 como se fosse imediato. Usa-se |Msg|: a
+    excentricidade de fluência amplifica a de 1ª ordem, no mesmo sentido.
+
+    Faixa: Nsg > 0 (pilar comprimido) e Nsg < Ne. Com Nsg >= Ne a carga
+    quase permanente passa da crítica de Euler e a expressão não tem
+    sentido físico (o expoente diverge): levanta ``FaixaNormativaError``.
+    """
+    Nsg = float(Nsg_kn)
+    if not (Nsg > 0.0):
+        raise nbr.FaixaNormativaError(
+            f"Nsg = {Nsg:g} kN: a excentricidade de fluência de 15.8.4 vale para pilar "
+            "comprimido (Nsg > 0)."
+        )
+    fi = float(phi)
+    if fi < 0.0 or math.isnan(fi) or math.isinf(fi):
+        raise nbr.FaixaNormativaError(f"φ = {fi:g} inválido: o coeficiente de fluência é >= 0 (15.8.4).")
+    ea = float(ea_cm)
+    if ea < 0.0 or math.isnan(ea) or math.isinf(ea):
+        raise nbr.FaixaNormativaError(f"ea = {ea:g} cm inválido: tem de ser >= 0 (15.8.4).")
+    Ne = carga_euler_Ne_kn(Eci_mpa, Ic_cm4, le_cm)
+    if Nsg >= Ne:
+        raise nbr.FaixaNormativaError(
+            f"Nsg = {Nsg:g} kN >= Ne = {Ne:g} kN: a força quase permanente atinge a carga "
+            "crítica de Euler e a expressão de ecc (15.8.4) diverge; o pilar é instável."
+        )
+    try:
+        fator = math.exp(fi * Nsg / (Ne - Nsg)) - 1.0
+    except OverflowError:
+        raise nbr.FaixaNormativaError(
+            f"Nsg = {Nsg:g} kN muito próximo de Ne = {Ne:g} kN: o fator de fluência de 15.8.4 "
+            "passa do maior número representável; o pilar é instável."
+        ) from None
+    return (abs(float(Msg_kncm)) / Nsg + ea) * fator
+
+
+# ---------------------------------------------------------------------------
+# 15.8.3.3.2 e 15.8.3.3.3 — Pilar-padrão numa direção, com λ1 de 15.8.2
+# ---------------------------------------------------------------------------
+METODOS_PILAR_PADRAO = ("curvatura", "rigidez")
+
+
+@dataclass(frozen=True)
+class ResultadoPilarPadraoDirecao:
+    """Momento total Md,tot numa direção pelo pilar-padrão (15.8.3.3.2/3)."""
+    direcao: str
+    metodo: str
+    h_cm: float
+    le_cm: float
+    lambda_: float
+    lambda1: float
+    dispensa_2a_ordem: bool         # λ < λ1 (15.8.2)
+    MA_kncm: float                  # momento de 1ª ordem de maior valor absoluto (com sinal)
+    MB_kncm: float                  # o outro extremo (com sinal)
+    alpha_b: float
+    M1d_min_kncm: float
+    M1d_A_ef_kncm: float            # |M1d,A|, ou M1d,mín quando aplicado e maior
+    nu: float
+    M2d_kncm: float                 # parcela de 2ª ordem (já com γn1)
+    gama_n1: float
+    kappa: float | None             # só no método da rigidez κ
+    Md_tot_kncm: float              # valor absoluto
+    sinal: float                    # sentido de Md,tot (o de MA)
+    memoria: tuple[str, ...]
+
+
+def _md_tot_rigidez_p25(Nd: float, le: float, h: float, ab: float, M1dA: float) -> float:
+    """Raiz positiva da formulação direta de 15.8.3.3.3 (PDF p. 130)."""
+    a = 5.0 * h
+    b = h * h * Nd - Nd * le * le / 320.0 - 5.0 * h * ab * M1dA
+    c = -Nd * h * h * ab * M1dA
+    disc = b * b - 4.0 * a * c
+    if disc < 0.0:
+        raise ValueError("Discriminante negativo no método da rigidez κ aproximada.")
+    return (-b + math.sqrt(disc)) / (2.0 * a)
+
+
+def pilar_padrao_direcao(
+    Nd_kn: float, le_cm: float, h_cm: float, Ac_cm2: float, fck_mpa: float,
+    MA_kncm: float, MB_kncm: float,
+    metodo: str = "curvatura",
+    tipo: str = "biapoiado",
+    aplicar_minimo: bool = True,
+    verificar_dispensa: bool = True,
+    direcao: str = "",
+    gama_c: float = GAMA_C,
+) -> ResultadoPilarPadraoDirecao:
+    """Md,tot numa direção pelo pilar-padrão (15.8.2, 15.8.3.3.2, 15.8.3.3.3; PDF p. 127-130).
+
+    MA e MB são os momentos de cálculo de 1ª ordem nos extremos (nós fixos)
+    ou os totais da análise global de 2ª ordem (nós móveis, 15.7.4), kN·cm,
+    com sinal: MB positivo se tracionar a mesma face que MA. A função toma
+    como MA o de maior valor absoluto.
+
+    - λ = 3,46·ℓe/h, limitado a 90 (``_validar_lambda_pilar_padrao``).
+    - αb por 15.8.2 (``alpha_b``), com o caso d) (momentos menores que o
+      mínimo -> αb = 1,0).
+    - ``aplicar_minimo=True`` (flexão composta normal): M1d,A >= M1d,mín =
+      Nd(1,5 + 0,03h) (11.3.3.4.3), como ``Mdtot_curvatura_aprox``.
+      ``aplicar_minimo=False``: M1d,A = |MA|, para a flexão oblíqua, em que o
+      mínimo é verificado à parte pela envoltória da Figura 15.2 (15.3.2).
+    - λ1 = (25 + 12,5·e1/h)/αb, 35 <= λ1 <= 90, com e1 = |MA|/Nd (15.8.2).
+      Com ``verificar_dispensa`` e λ < λ1, os efeitos de 2ª ordem são
+      desprezados e Md,tot = M1d,A.
+    - ``metodo="curvatura"`` (15.8.3.3.2): Md,tot = αb·M1d,A + Nd·(ℓe²/10)·(1/r)
+      >= M1d,A, 1/r = 0,005/[h(ν + 0,5)] <= 0,005/h.
+    - ``metodo="rigidez"`` (15.8.3.3.3): a·Md,tot² + b·Md,tot + c = 0, a = 5h,
+      b = h²Nd − Nd·ℓe²/320 − 5h·αb·M1d,A, c = −Nd·h²·αb·M1d,A; Md,tot >= M1d,A.
+
+    A parcela de 2ª ordem passa por ``aplicar_gama_n1`` (15.8.1), que vale
+    1,0 aqui porque λ <= 90. Unidades: kN, cm, kN·cm; fck em MPa.
+    """
+    if metodo not in METODOS_PILAR_PADRAO:
+        raise ValueError(f"metodo deve ser 'curvatura' ou 'rigidez', recebido {metodo!r}.")
+    Nd = float(Nd_kn)
+    if not (Nd > 0.0):
+        raise nbr.FaixaNormativaError(
+            f"Nd = {Nd:g} kN: o pilar-padrão vale para flexo-compressão (Nd > 0; 15.8.1)."
+        )
+    h = _positivo_p25(h_cm, "h", "15.8.2")
+    le = _positivo_p25(le_cm, "ℓe", "15.8.2")
+    Ac = _positivo_p25(Ac_cm2, "Ac", "15.8.3.3.2")
+    nome = "com curvatura aproximada" if metodo == "curvatura" else "com rigidez κ aproximada"
+    item = "15.8.3.3.2" if metodo == "curvatura" else "15.8.3.3.3"
+    lam = _validar_lambda_pilar_padrao(le, h, nome)
+
+    MA, MB = float(MA_kncm), float(MB_kncm)
+    if abs(MB) > abs(MA):
+        MA, MB = MB, MA
+    M1d_min = M1d_min_kncm(Nd, h)
+    ab = alpha_b(MA, MB, tipo=tipo, M1d_min_kncm=M1d_min)
+    if aplicar_minimo:
+        M1dA_ef, ab_ef, _ = M1d_A_efetivo(Nd, h, MA, ab)
+    else:
+        M1dA_ef, ab_ef = abs(MA), ab
+    e1 = abs(MA) / Nd
+    lam1 = lambda1_limite(e1, h, ab_ef)
+    dispensa = verificar_dispensa and lam < lam1
+    nu = nu_adimensional(Nd, Ac, fck_mpa, gama_c)
+    sinal = -1.0 if MA < 0.0 else 1.0
+
+    memoria = [
+        f"15.8.2 [{direcao or '-'}]: λ = 3,46·ℓe/h = 3,46 × {_fmt_p25(le)}/{_fmt_p25(h)} = {_fmt_p25(lam)} (<= 90).",
+        f"15.8.2: MA = {_fmt_p25(MA)} kN·cm, MB = {_fmt_p25(MB)} kN·cm, tipo = {tipo}; αb = {_fmt_p25(ab_ef)}.",
+        f"11.3.3.4.3: M1d,mín = Nd·(1,5 + 0,03h) = {_fmt_p25(Nd)} × (1,5 + 0,03 × {_fmt_p25(h)}) = {_fmt_p25(M1d_min)} kN·cm"
+        + ("; aplicado a M1d,A." if aplicar_minimo else "; verificado à parte pela envoltória mínima (15.3.2)."),
+        f"15.8.2: λ1 = (25 + 12,5·e1/h)/αb, 35 <= λ1 <= 90, e1 = {_fmt_p25(e1)} cm -> λ1 = {_fmt_p25(lam1)}.",
+    ]
+    kappa = None
+    if dispensa:
+        M2d, gn1 = 0.0, 1.0
+        Md_tot = M1dA_ef
+        memoria.append(f"15.8.2: λ = {_fmt_p25(lam)} < λ1 = {_fmt_p25(lam1)}: efeitos locais de 2ª ordem "
+                       f"desprezados; Md,tot = M1d,A = {_fmt_p25(Md_tot)} kN·cm.")
+    elif metodo == "curvatura":
+        cur = curvatura_aproximada(h, nu)
+        M2d_bruto = M2d_kncm(Nd, e2_cm(le, cur))
+        M2d, gn1 = aplicar_gama_n1(M2d_bruto, lam)
+        Md_tot = max(ab_ef * M1dA_ef + M2d, M1dA_ef)
+        memoria.append(f"{item}: ν = {_fmt_p25(nu)}; 1/r = mín[0,005/(h(ν + 0,5)); 0,005/h] = {_fmt_p25(cur)} 1/cm.")
+        memoria.append(f"{item}: Md,tot = αb·M1d,A + Nd·ℓe²/10·1/r = {_fmt_p25(ab_ef)} × {_fmt_p25(M1dA_ef)} + "
+                       f"{_fmt_p25(M2d)} = {_fmt_p25(Md_tot)} kN·cm (>= M1d,A = {_fmt_p25(M1dA_ef)}).")
+    else:
+        Md_tot = max(_md_tot_rigidez_p25(Nd, le, h, ab_ef, M1dA_ef), M1dA_ef)
+        M2d, gn1 = Md_tot - ab_ef * M1dA_ef, 1.0
+        kappa = 32.0 * (1.0 + 5.0 * Md_tot / (h * Nd)) * nu
+        memoria.append(f"{item}: a = 5h, b = h²Nd − Nd·ℓe²/320 − 5h·αb·M1d,A, c = −Nd·h²·αb·M1d,A; "
+                       f"Md,tot = {_fmt_p25(Md_tot)} kN·cm (>= M1d,A = {_fmt_p25(M1dA_ef)}); "
+                       f"κ = 32(1 + 5·Md,tot/(h·Nd))·ν = {_fmt_p25(kappa)}.")
+    return ResultadoPilarPadraoDirecao(
+        direcao=direcao, metodo=metodo, h_cm=h, le_cm=le, lambda_=lam, lambda1=lam1,
+        dispensa_2a_ordem=dispensa, MA_kncm=MA, MB_kncm=MB, alpha_b=ab_ef,
+        M1d_min_kncm=M1d_min, M1d_A_ef_kncm=M1dA_ef, nu=nu, M2d_kncm=M2d,
+        gama_n1=gn1, kappa=kappa, Md_tot_kncm=Md_tot, sinal=sinal,
+        memoria=tuple(memoria),
+    )
+
+
+# ---------------------------------------------------------------------------
+# 15.7.4 — Efeitos locais em estruturas de nós móveis (PDF p. 127)
+# ---------------------------------------------------------------------------
+def efeitos_locais_nos_moveis(
+    Nd_kn: float, le_cm: float, h_cm: float, Ac_cm2: float, fck_mpa: float,
+    MA_2a_ordem_global_kncm: float, MB_2a_ordem_global_kncm: float,
+    metodo: str = "curvatura",
+    tipo: str = "biapoiado",
+    gama_c: float = GAMA_C,
+) -> ResultadoPilarPadraoDirecao:
+    """Efeitos locais de 2ª ordem em estrutura de nós móveis (15.7.4, PDF p. 127).
+
+    "A análise global de 2ª ordem fornece apenas os esforços nas
+    extremidades das barras"; os elementos isolados são as barras
+    comprimidas retiradas da estrutura, com comprimento ℓe de 15.6
+    (``comprimento_equivalente_cm``), aplicando-se às suas extremidades os
+    esforços da análise global de 2ª ordem. MA e MB são, então, os momentos
+    totais (1ª ordem + 2ª ordem global) nos extremos (15.8.2 a), PDF
+    p. 128), vindos da análise da própria biblioteca (P46) ou de um
+    programa externo (por exemplo, os esforços finais do pórtico do TQS com
+    γz ou P-Δ). Com MA e MB de 1ª ordem, o resultado é o de uma estrutura
+    de nós fixos (15.6).
+
+    O cálculo local é o pilar-padrão de ``pilar_padrao_direcao``, com o
+    momento mínimo aplicado e a dispensa por λ1.
+    """
+    r = pilar_padrao_direcao(Nd_kn, le_cm, h_cm, Ac_cm2, fck_mpa,
+                             MA_2a_ordem_global_kncm, MB_2a_ordem_global_kncm,
+                             metodo=metodo, tipo=tipo, aplicar_minimo=True,
+                             verificar_dispensa=True, direcao="nós móveis", gama_c=gama_c)
+    linha = ("15.7.4: barra comprimida isolada com ℓe de 15.6 e, nos extremos, os momentos da "
+             f"análise global de 2ª ordem: MA = {_fmt_p25(r.MA_kncm)} kN·cm, MB = {_fmt_p25(r.MB_kncm)} kN·cm.")
+    return _replace_p25(r, memoria=(linha,) + r.memoria)
+
+
+# ---------------------------------------------------------------------------
+# 15.3.2 — Momentos totais mínimos para a envoltória da Figura 15.2 (PDF p. 122)
+# ---------------------------------------------------------------------------
+def momento_total_minimo_direcao(
+    Nd_kn: float, le_cm: float, h_cm: float, Ac_cm2: float, fck_mpa: float,
+    metodo: str = "curvatura", direcao: str = "", gama_c: float = GAMA_C,
+) -> ResultadoPilarPadraoDirecao:
+    """Md,tot,mín numa direção (15.3.2 e Figura 15.2, PDF p. 122).
+
+    "[...] envoltória mínima com 2ª ordem, cujos momentos totais são
+    calculados a partir dos momentos mínimos de 1ª ordem e de acordo com
+    15.8.3." M1d,A = M1d,mín = Nd(1,5 + 0,03h) (11.3.3.4.3), αb = 1,0
+    (15.8.2 d), e o pilar-padrão de 15.8.3.3.2 ou 15.8.3.3.3 na direção
+    (h e ℓe da direção), sem dispensa por λ1: a função é chamada quando há
+    necessidade de calcular os efeitos locais de 2ª ordem naquela direção.
+    """
+    return pilar_padrao_direcao(Nd_kn, le_cm, h_cm, Ac_cm2, fck_mpa, 0.0, 0.0,
+                                metodo=metodo, tipo="biapoiado", aplicar_minimo=True,
+                                verificar_dispensa=False, direcao=direcao, gama_c=gama_c)
+
+
 if __name__ == "__main__":
     if "--test" in sys.argv:
         sys.exit(run_tests())

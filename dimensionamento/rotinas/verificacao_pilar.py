@@ -260,3 +260,256 @@ def verificar_secao_pilar(
                                         n_grid, use_cpp)
     status = max((r_sol["status"], r_env["status"]), key=lambda s: _PRIORIDADE[s])
     return {"status": status, "solicitacao": r_sol, "envoltoria_minima": r_env}
+
+
+# === P25: envoltória mínima com 2ª ordem (15.3.2) e pilar-padrão em flexão oblíqua (15.8.3.3.5) ===
+from dataclasses import dataclass as _dataclass_p25
+
+try:  # importado como pacote (dimensionamento.rotinas.verificacao_pilar)
+    from dimensionamento import pilares_nbr6118 as _pil
+except ImportError:  # executado com dimensionamento/ no sys.path
+    import pilares_nbr6118 as _pil
+
+
+def _fmt_vp25(x: float) -> str:
+    """Número para a memória de cálculo, com vírgula decimal."""
+    return f"{x:.6g}".replace(".", ",")
+
+
+@_dataclass_p25(frozen=True)
+class ResultadoEnvoltoriaMinima2aOrdem:
+    """Envoltória mínima com 2ª ordem (15.3.2, Figura 15.2)."""
+    Nd_kn: float
+    Md_tot_min_xx_kncm: float
+    Md_tot_min_yy_kncm: float
+    direcao_xx: object | None       # ResultadoPilarPadraoDirecao, ou None sem 2ª ordem
+    direcao_yy: object | None
+    status: str
+    razao_min: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+    envoltoria: dict                # o dicionário de verificar_envoltoria_minima
+
+
+def _secao_retangular_p25(secao, concreto):
+    if not isinstance(secao, fco.SecaoRetangular):
+        raise TypeError(
+            "O pilar-padrão de 15.3.2 e 15.8.3.3.5 (NBR 6118:2026) é para seção "
+            "retangular: passe uma SecaoRetangular."
+        )
+    if concreto is None or not hasattr(concreto, "fck_mpa"):
+        raise TypeError("concreto deve ser um Concreto (com fck_mpa).")
+    return float(secao.base_cm), float(secao.altura_cm)
+
+
+def verificar_envoltoria_minima_2a_ordem(
+    secao,
+    concreto,
+    aco,
+    Nd_kn: float,
+    le_xx_cm: float,
+    le_yy_cm: float | None = None,
+    metodo: str = "curvatura",
+    segunda_ordem_xx: bool = True,
+    segunda_ordem_yy: bool = True,
+    n_pontos: int = 24,
+    n_grid: int = 80,
+    use_cpp: bool | None = None,
+    metodo_yy: str | None = None,
+) -> ResultadoEnvoltoriaMinima2aOrdem:
+    """Envoltória mínima com 2ª ordem, com Md,tot,mín calculados (15.3.2, PDF p. 122).
+
+    Para pilar de seção retangular com efeitos locais de 2ª ordem, a
+    verificação do momento mínimo é atendida quando a envoltória resistente
+    engloba a envoltória mínima com 2ª ordem (Figura 15.2):
+
+        (Md,tot,mín,x / Md,tot,mín,xx)² + (Md,tot,mín,y / Md,tot,mín,yy)² = 1,
+
+    com Md,tot,mín,xx e Md,tot,mín,yy calculados em cada direção, isolada, a
+    partir de M1d,mín = Nd(1,5 + 0,03h) (11.3.3.4.3) pelo pilar-padrão de
+    15.8.3 (``pilares_nbr6118.momento_total_minimo_direcao``, αb = 1,0 por
+    15.8.2 d).
+
+    Direções (convenção do kernel): xx é a flexão em torno de x, com
+    h = altura_cm e ℓe = ``le_xx_cm``; yy é em torno de y, com h = base_cm
+    e ℓe = ``le_yy_cm`` (padrão: o mesmo ℓe). ``segunda_ordem_xx/yy=False``
+    diz que naquela direção os efeitos de 2ª ordem são dispensados
+    (λ < λ1, 15.8.2); o semi-eixo fica com o mínimo de 1ª ordem. Nd em kN
+    (compressão positiva), ℓe em cm, momentos em kN·cm.
+
+    ``metodo``: "curvatura" (15.8.3.3.2) ou "rigidez" (15.8.3.3.3), nas duas
+    direções, salvo ``metodo_yy``; os dois só valem para λ <= 90 e levantam
+    ``FaixaNormativaError`` acima disso.
+    """
+    base, altura = _secao_retangular_p25(secao, concreto)
+    Nd = float(Nd_kn)
+    le_yy = le_xx_cm if le_yy_cm is None else le_yy_cm
+    Ac = secao.Ac_cm2
+    gc = concreto.gama_c
+    rx = (_pil.momento_total_minimo_direcao(Nd, le_xx_cm, altura, Ac, concreto.fck_mpa,
+                                            metodo, direcao="xx", gama_c=gc)
+          if segunda_ordem_xx else None)
+    ry = (_pil.momento_total_minimo_direcao(Nd, le_yy, base, Ac, concreto.fck_mpa,
+                                            metodo_yy or metodo, direcao="yy", gama_c=gc)
+          if segunda_ordem_yy else None)
+    m_xx, m_yy = momentos_minimos_1a_ordem(Nd, base, altura)
+    Mxx = rx.Md_tot_kncm if rx is not None else m_xx
+    Myy = ry.Md_tot_kncm if ry is not None else m_yy
+    env = verificar_envoltoria_minima(secao, concreto, aco, Nd, n_pontos,
+                                      Mxx, Myy, n_grid, use_cpp)
+    status = env["status"]
+    ok = status == "OK"
+    razao = env.get("razao_min", float("nan"))
+    memoria = [f"15.3.2: envoltória mínima com 2ª ordem (Figura 15.2), Nd = {_fmt_vp25(Nd)} kN."]
+    for nome, r, m1 in (("xx", rx, m_xx), ("yy", ry, m_yy)):
+        if r is None:
+            memoria.append(f"15.3.2 [{nome}]: sem 2ª ordem na direção; semi-eixo = M1d,mín = "
+                           f"{_fmt_vp25(m1)} kN·cm.")
+        else:
+            memoria.extend(r.memoria)
+            memoria.append(f"15.3.2 [{nome}]: Md,tot,mín,{nome} = {_fmt_vp25(r.Md_tot_kncm)} kN·cm.")
+    memoria.append(f"15.3.2: (Mx/{_fmt_vp25(Mxx)})² + (My/{_fmt_vp25(Myy)})² = 1; "
+                   f"razão mínima MR/MS = {_fmt_vp25(razao)} -> {status}.")
+    governante = (f"envoltória mínima com 2ª ordem: MR/MS = {_fmt_vp25(razao)}"
+                  + ("" if ok else f" — {status}"))
+    return ResultadoEnvoltoriaMinima2aOrdem(
+        Nd_kn=Nd, Md_tot_min_xx_kncm=Mxx, Md_tot_min_yy_kncm=Myy,
+        direcao_xx=rx, direcao_yy=ry, status=status, razao_min=razao, ok=ok,
+        governante=governante, memoria=tuple(memoria), envoltoria=env,
+    )
+
+
+@_dataclass_p25(frozen=True)
+class ResultadoPilarPadraoObliquo:
+    """Pilar-padrão em flexão composta oblíqua (15.8.3.3.5)."""
+    gama_n: float
+    Nd_kn: float                    # já multiplicado por γn
+    direcao_xx: object              # ResultadoPilarPadraoDirecao
+    direcao_yy: object
+    secoes: tuple[dict, ...]        # A (topo), intermediária, B (base)
+    envoltoria_minima: ResultadoEnvoltoriaMinima2aOrdem | None
+    status: str
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def pilar_padrao_obliquo(
+    secao,
+    concreto,
+    aco,
+    Nd_kn: float,
+    le_xx_cm: float,
+    le_yy_cm: float,
+    M_topo_xx_kncm: float,
+    M_base_xx_kncm: float,
+    M_topo_yy_kncm: float,
+    M_base_yy_kncm: float,
+    metodo: str = "curvatura",
+    tipo: str = "biapoiado",
+    metodo_yy: str | None = None,
+    tipo_yy: str | None = None,
+    verificar_minimo: bool = True,
+    aplicar_gama_n: bool = True,
+    n_pontos: int = 24,
+    n_grid: int = 80,
+    use_cpp: bool | None = None,
+) -> ResultadoPilarPadraoObliquo:
+    """Pilar-padrão em flexão composta oblíqua (15.8.3.3.5, PDF p. 131).
+
+    "Quando a esbeltez de um pilar de seção retangular submetido à flexão
+    composta oblíqua for menor ou igual que 90 (λ <= 90) nas duas direções
+    principais, podem ser aplicados os processos aproximados [...]
+    simultaneamente, em cada uma das duas direções." A verificação da
+    composição dos momentos totais contra a envoltória resistente da
+    armadura escolhida é feita em três seções: nas extremidades A (topo) e B
+    (base), com os momentos de 1ª ordem, e num ponto intermediário, onde
+    atuam juntos os Md,tot das duas direções (com o sentido de MA de cada
+    direção).
+
+    Entradas: Nd em kN (compressão positiva) e os momentos de cálculo de
+    1ª ordem nos extremos, em kN·cm, com sinal na convenção do kernel (xx
+    em torno de x, h = altura_cm, ℓe = ``le_xx_cm``; yy em torno de y,
+    h = base_cm, ℓe = ``le_yy_cm``). Em estrutura de nós móveis, passe os
+    momentos da análise global de 2ª ordem (15.7.4).
+
+    - γn de 13.2.3 (Tabela 13.1, ``limites_geometricos_nbr6118.gama_n_pilar``)
+      multiplica Nd e os momentos quando a menor dimensão é menor que 19 cm
+      (``aplicar_gama_n``; passe False se os esforços já vierem majorados).
+    - Em cada direção, ``pilares_nbr6118.pilar_padrao_direcao`` com
+      ``aplicar_minimo=False`` (αb, λ1, dispensa, Md,tot); ``metodo`` e
+      ``tipo`` valem para as duas direções, salvo ``metodo_yy``/``tipo_yy``.
+    - O momento mínimo é verificado pela envoltória mínima com 2ª ordem
+      (15.3.2, ``verificar_envoltoria_minima_2a_ordem``), com 2ª ordem só nas
+      direções em que ela não foi dispensada. ``verificar_minimo=False``
+      pula essa verificação (a memória registra).
+
+    O status final é o pior entre as três seções e a envoltória mínima
+    (FORA_RANGE > NAO_CONVERGIU > NAO_VERIFICA > OK).
+    """
+    base, altura = _secao_retangular_p25(secao, concreto)
+    gn = _pil._limites.gama_n_pilar(min(base, altura)) if aplicar_gama_n else 1.0
+    Nd = float(Nd_kn) * gn
+    Ac = secao.Ac_cm2
+    fck, gc = concreto.fck_mpa, concreto.gama_c
+    mt_x, mb_x = gn * float(M_topo_xx_kncm), gn * float(M_base_xx_kncm)
+    mt_y, mb_y = gn * float(M_topo_yy_kncm), gn * float(M_base_yy_kncm)
+    rx = _pil.pilar_padrao_direcao(Nd, le_xx_cm, altura, Ac, fck, mt_x, mb_x,
+                                   metodo=metodo, tipo=tipo, aplicar_minimo=False,
+                                   verificar_dispensa=True, direcao="xx", gama_c=gc)
+    ry = _pil.pilar_padrao_direcao(Nd, le_yy_cm, base, Ac, fck, mt_y, mb_y,
+                                   metodo=metodo_yy or metodo, tipo=tipo_yy or tipo,
+                                   aplicar_minimo=False, verificar_dispensa=True,
+                                   direcao="yy", gama_c=gc)
+
+    memoria = [f"15.8.3.3.5: pilar-padrão nas duas direções (λx = {_fmt_vp25(rx.lambda_)}, "
+               f"λy = {_fmt_vp25(ry.lambda_)}, ambos <= 90)."]
+    if aplicar_gama_n:
+        memoria.append(f"13.2.3: menor dimensão b = {_fmt_vp25(min(base, altura))} cm -> "
+                       f"γn = {_fmt_vp25(gn)}; Nd = {_fmt_vp25(Nd)} kN e momentos multiplicados por γn.")
+    memoria.extend(rx.memoria)
+    memoria.extend(ry.memoria)
+
+    alvo = (("A (topo)", mt_x, mt_y),
+            ("intermediária", rx.sinal * rx.Md_tot_kncm, ry.sinal * ry.Md_tot_kncm),
+            ("B (base)", mb_x, mb_y))
+    secoes = []
+    for nome, mx, my in alvo:
+        r = _verificar_direcao(secao, concreto, aco, Nd, mx, my, n_grid, use_cpp)
+        razao = r.get("razao", float("nan"))
+        secoes.append({"secao": nome, "Mx_kncm": mx, "My_kncm": my,
+                       "status": r["status"], "razao": razao, "mensagem": r.get("mensagem")})
+        memoria.append(f"15.8.3.3.5: seção {nome}: Mx = {_fmt_vp25(mx)}, My = {_fmt_vp25(my)} kN·cm; "
+                       f"MR/MS = {_fmt_vp25(razao)} -> {r['status']}.")
+
+    env = None
+    if verificar_minimo:
+        env = verificar_envoltoria_minima_2a_ordem(
+            secao, concreto, aco, Nd, le_xx_cm, le_yy_cm, metodo=metodo,
+            segunda_ordem_xx=not rx.dispensa_2a_ordem,
+            segunda_ordem_yy=not ry.dispensa_2a_ordem,
+            n_pontos=n_pontos, n_grid=n_grid, use_cpp=use_cpp,
+            metodo_yy=metodo_yy)
+        memoria.extend(env.memoria)
+    else:
+        memoria.append("15.3.2: envoltória mínima não verificada (verificar_minimo=False).")
+
+    estados = [s["status"] for s in secoes] + ([env.status] if env is not None else [])
+    status = max(estados, key=lambda s: _PRIORIDADE[s])
+    ok = status == "OK"
+    candidatos = [(s["razao"], f"seção {s['secao']}") for s in secoes]
+    if env is not None:
+        candidatos.append((env.razao_min, "envoltória mínima com 2ª ordem"))
+    validos = [c for c in candidatos if not math.isnan(c[0])]
+    if validos:
+        razao, onde = min(validos, key=lambda c: c[0])
+        governante = f"{onde}: MR/MS = {_fmt_vp25(razao)}" + ("" if ok else f" — {status}")
+    else:
+        governante = status
+    memoria.append(f"Resultado: {governante} -> {'ok' if ok else 'não ok'}.")
+    return ResultadoPilarPadraoObliquo(
+        gama_n=gn, Nd_kn=Nd, direcao_xx=rx, direcao_yy=ry, secoes=tuple(secoes),
+        envoltoria_minima=env, status=status, ok=ok, governante=governante,
+        memoria=tuple(memoria),
+    )

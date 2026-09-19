@@ -320,8 +320,8 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `15.3-principio-nao-linearidade` | 15.3 | 120 | Princípio básico de cálculo com efeitos de 2ª ordem | não computável | alta | P |  |
 | `15.3-combinacao-sdtot` | 15.3 | 121 | Formulação de segurança da combinação para 2ª ordem (Sd,tot) | implementado | média | P | P4 |
 | `15.3.1-rigidez-secante-ei-sec` | 15.3.1 | 121 | Rigidez secante (EI)sec pela relação momento-curvatura (Figura 15.1) | implementado | média | G |  |
-| `15.3.1-kappa-sec-adimensional` | 15.3.1 | 122 | Rigidez secante adimensional κsec | ausente | baixa | P | P25 |
-| `15.3.2-envoltoria-minima-2a-ordem` | 15.3.2 | 122 | Envoltória mínima com 2ª ordem (Figura 15.2) | parcial | alta | M | P25 |
+| `15.3.1-kappa-sec-adimensional` | 15.3.1 | 122 | Rigidez secante adimensional κsec | implementado | baixa | P | P25 |
+| `15.3.2-envoltoria-minima-2a-ordem` | 15.3.2 | 122 | Envoltória mínima com 2ª ordem (Figura 15.2) | implementado | alta | M | P25 |
 | `15.4.1-efeitos-globais-locais-localizados` | 15.4.1 | 122 | Definições de efeitos globais, locais e localizados de 2ª ordem | não computável | alta | P |  |
 | `15.4.2-classificacao-nos-fixos-moveis` | 15.4.2 | 123 | Classificação da estrutura em nós fixos ou nós móveis | implementado | alta | P | P26 |
 | `15.4.3-contraventamento` | 15.4.3 | 123 | Subestruturas de contraventamento e elementos contraventados | não computável | média | P |  |
@@ -331,14 +331,14 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `15.5.2-alfa1-limite` | 15.5.2 | 124 | Valor-limite α1 do parâmetro de instabilidade | implementado | alta | P | P26 |
 | `15.5.2-rigidez-pilar-equivalente` | 15.5.2 | 125 | Rigidez EcsIc de um pilar equivalente (para α e γz) | implementado | alta | G | P26 |
 | `15.5.3-coeficiente-gama-z` | 15.5.3 | 125 | Coeficiente γz de avaliação dos esforços globais de 2ª ordem | implementado | alta | P | P26 |
-| `15.6-comprimento-equivalente-nos-fixos` | 15.6 | 125 | Comprimento equivalente ℓe do pilar em estrutura de nós fixos | ausente | alta | P | P25 |
+| `15.6-comprimento-equivalente-nos-fixos` | 15.6 | 125 | Comprimento equivalente ℓe do pilar em estrutura de nós fixos | implementado | alta | P | P25 |
 | `15.7.1-nao-linearidade-nos-moveis` | 15.7.1 | 126 | Estruturas de nós móveis: não linearidade geométrica e física obrigatórias na análise | ausente | média | G | P46 |
 | `15.7.2-processo-aproximado-095-gamaz` | 15.7.2 | 126 | Processo aproximado de majoração das ações horizontais por 0,95 γz | implementado | alta | M | P26 |
 | `15.7.3-rigidez-aproximada-analise-global` | 15.7.3 | 126 | Rigidezes aproximadas para consideração da não linearidade física na análise global | implementado | alta | P | P26 |
-| `15.7.4-efeitos-locais-em-nos-moveis` | 15.7.4 | 127 | Encadeamento dos esforços globais de 2ª ordem para a análise local em nós móveis | ausente | alta | M | P25 |
-| `15.8.1-limite-esbeltez-200` | 15.8.1 | 127 | Limite geral de esbeltez para elementos isolados (λ ≤ 200) | ausente | alta | P | P25 |
-| `15.8.1-n1-majoracao-lambda140` | 15.8.1 | 127 | Coeficiente adicional γn1 para esbeltez > 140 | parcial | alta | P | P25 |
-| `15.8.2-lambda-esbeltez-basico` | 15.8.2 | 127 | Índice de esbeltez λ = ℓe/i | parcial | média | P | P25 |
+| `15.7.4-efeitos-locais-em-nos-moveis` | 15.7.4 | 127 | Encadeamento dos esforços globais de 2ª ordem para a análise local em nós móveis | implementado | alta | M | P25 |
+| `15.8.1-limite-esbeltez-200` | 15.8.1 | 127 | Limite geral de esbeltez para elementos isolados (λ ≤ 200) | implementado | alta | P | P25 |
+| `15.8.1-n1-majoracao-lambda140` | 15.8.1 | 127 | Coeficiente adicional γn1 para esbeltez > 140 | implementado | alta | P | P25 |
+| `15.8.2-lambda-esbeltez-basico` | 15.8.2 | 127 | Índice de esbeltez λ = ℓe/i | implementado | média | P | P25 |
 | `15.8.2-lambda1-limite-esbeltez` | 15.8.2 | 128 | Esbeltez-limite λ1 para dispensa dos efeitos locais de 2ª ordem | implementado | alta | P |  |
 | `15.8.2-alfa-b` | 15.8.2 | 128 | Coeficiente αb (forma do diagrama de momentos de 1ª ordem) | implementado | alta | M |  |
 | `15.8.3.1-escolha-metodo-fluencia-obrigatoria` | 15.8.3.1 | 129 | Escolha entre método geral e métodos aproximados; obrigatoriedade da fluência para λ>90 | não computável | alta | P |  |
@@ -346,8 +346,8 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `15.8.3.3.2-md-tot-curvatura-aprox` | 15.8.3.3.2 | 129 | Método do pilar-padrão com curvatura aproximada | implementado | alta | M |  |
 | `15.8.3.3.3-md-tot-rigidez-kappa-aprox` | 15.8.3.3.3 | 130 | Método do pilar-padrão com rigidez κ aproximada | implementado | alta | M |  |
 | `15.8.3.3.4-metodo-diagramas-mn1r` | 15.8.3.3.4 | 130 | Método do pilar-padrão acoplado a diagramas M, N, 1/r | ausente | média | G | P28 |
-| `15.8.3.3.5-pilar-padrao-flexao-obliqua` | 15.8.3.3.5 | 131 | Método do pilar-padrão para flexão composta oblíqua (duas direções simultâneas) | ausente | alta | G | P25 |
-| `15.8.4-fluencia-ecc` | 15.8.4 | 131 | Excentricidade adicional de fluência ecc para pilares esbeltos (λ>90) | ausente | média | M | P25 |
+| `15.8.3.3.5-pilar-padrao-flexao-obliqua` | 15.8.3.3.5 | 131 | Método do pilar-padrão para flexão composta oblíqua (duas direções simultâneas) | implementado | alta | G | P25 |
+| `15.8.4-fluencia-ecc` | 15.8.4 | 131 | Excentricidade adicional de fluência ecc para pilares esbeltos (λ>90) | implementado | média | M | P25 |
 | `15.9.1-pilar-parede-generalidades` | 15.9.1 | 131 | Condição para pilar-parede ser tratado como elemento linear | não computável | média | P |  |
 | `15.9.2-esbeltez-lamina-pilar-parede` | 15.9.2 | 132 | Esbeltez λi de cada lâmina do pilar-parede e dispensa dos efeitos localizados | ausente | média | P | P29 |
 | `15.9.2-comprimento-equivalente-lamina` | 15.9.2 | 132 | Comprimento equivalente ℓe de lâmina de pilar-parede por vinculação (Figura 15.4) | ausente | média | M | P29 |

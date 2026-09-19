@@ -189,7 +189,8 @@
    "nome": "Pilares: 2ª ordem local pelo pilar-padrão",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/pilares_nbr6118.py (extensão) + rotinas/verificacao_pilar.py"
+   "modulo": "dimensionamento/pilares_nbr6118.py (extensão) + rotinas/verificacao_pilar.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P26",
@@ -6669,7 +6670,7 @@
    "pagina_pdf": 122,
    "titulo": "Rigidez secante adimensional κsec",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P25",
@@ -6681,7 +6682,20 @@
     "15.3.1-rigidez-secante-ei-sec"
    ],
    "teste_sugerido": "κsec * Ac * h^2 * fcd deve reproduzir exatamente o (EI)sec já calculado por ei_secante (identidade).",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P25",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/pilares_nbr6118.py::kappa_sec"
+    ],
+    "testes": [
+     "tests/test_p25_pilar_padrao.py::test_1531_kappa_sec_conta_a_mao",
+     "test_1531_kappa_sec_reproduz_ei_secante",
+     "test_1531_kappa_sec_entrada_invalida"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "15.3.2-envoltoria-minima-2a-ordem",
@@ -6689,7 +6703,7 @@
    "pagina_pdf": 122,
    "titulo": "Envoltória mínima com 2ª ordem (Figura 15.2)",
    "tipo": "verificacao",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P25",
@@ -6705,7 +6719,23 @@
     "rotinas.flexao_composta_obliqua.verificar_fcn"
    ],
    "teste_sugerido": "Caso simétrico (Md,tot,min,xx = Md,tot,min,yy = Md,tot,min): a condição se reduz a Md,tot,min,x^2+Md,tot,min,y^2 <= 2*Md,tot,min^2, testável com valores fechados.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P25",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/pilares_nbr6118.py::momento_total_minimo_direcao",
+     "pilar_padrao_direcao"
+    ],
+    "testes": [
+     "test_1532_semi_eixos_calculados_pelo_pilar_padrao",
+     "test_1532_caso_simetrico",
+     "test_1532_direcao_sem_2a_ordem_fica_com_minimo",
+     "test_1532_nao_verifica_com_nd_alto",
+     "test_1532_secao_nao_retangular_recusada"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "15.4.1-efeitos-globais-locais-localizados",
@@ -6960,7 +6990,7 @@
    "pagina_pdf": 125,
    "titulo": "Comprimento equivalente ℓe do pilar em estrutura de nós fixos",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P25",
@@ -6970,7 +7000,22 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Caso ℓ0+h < ℓ -> le=ℓ0+h; caso ℓ0+h > ℓ -> le=ℓ (o menor sempre vence); casos triviais com valores redondos.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P25",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/pilares_nbr6118.py::comprimento_equivalente_cm"
+    ],
+    "testes": [
+     "test_156_le_l0_mais_h_menor_que_l",
+     "test_156_le_l_menor_que_l0_mais_h",
+     "test_156_le_igualdade",
+     "test_1582_le_engastado_livre_2l",
+     "test_156_le_entrada_invalida"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "15.7.1-nao-linearidade-nos-moveis",
@@ -7067,7 +7112,7 @@
    "pagina_pdf": 127,
    "titulo": "Encadeamento dos esforços globais de 2ª ordem para a análise local em nós móveis",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P25",
@@ -7079,7 +7124,19 @@
     "15.8.3.3.3-md-tot-rigidez-kappa-aprox"
    ],
    "teste_sugerido": "Teste de integração: para uma estrutura de nós fixos (onde MA/MB já são de 1ª ordem), o resultado deve coincidir com o caminho normal já testado em pilares_nbr6118.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P25",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/pilares_nbr6118.py::efeitos_locais_nos_moveis"
+    ],
+    "testes": [
+     "test_1574_nos_fixos_coincide_com_caminho_normal",
+     "test_1574_momentos_da_analise_global_entram_como_ma_mb"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "15.8.1-limite-esbeltez-200",
@@ -7087,7 +7144,7 @@
    "pagina_pdf": 127,
    "titulo": "Limite geral de esbeltez para elementos isolados (λ ≤ 200)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P25",
@@ -7099,7 +7156,25 @@
     "nucleo.fcd"
    ],
    "teste_sugerido": "λ=200 aceito; λ=200,01 recusado, salvo se Nd<0,10*fcd*Ac (então aceito mesmo acima de 200).",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P25",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/pilares_nbr6118.py::verificar_esbeltez_limite",
+     "ResultadoEsbeltezLimite"
+    ],
+    "testes": [
+     "test_1581_lambda_200_aceito",
+     "test_1581_lambda_acima_200_recusado",
+     "test_1581_lambda_acima_200_pouco_comprimido_aceito",
+     "test_1581_excecao_estrita_em_0_10_fcd_ac",
+     "test_1581_faixas_de_lambda",
+     "test_1581_entrada_invalida",
+     "test_1581_nd_nao_comprimido_recusado"
+    ],
+    "observacao": "Corrigido nesta volta: Nd <= 0, NaN ou inf agora levanta FaixaNormativaError (a exceção de 15.8.1, PDF p. 127, é só para elementos pouco comprimidos)."
+   }
   },
   {
    "id": "15.8.1-n1-majoracao-lambda140",
@@ -7107,7 +7182,7 @@
    "pagina_pdf": 127,
    "titulo": "Coeficiente adicional γn1 para esbeltez > 140",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P25",
@@ -7121,7 +7196,21 @@
     "15.8.3.3.4-metodo-diagramas-mn1r"
    ],
    "teste_sugerido": "Já coberto por teste unitário da própria função (λ=140->1,0; λ=280->2,0); falta teste de integração que confirme a aplicação ao momento final.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P25",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/pilares_nbr6118.py::gama_n1",
+     "aplicar_gama_n1"
+    ],
+    "testes": [
+     "test_1581_gama_n1",
+     "test_1581_aplicar_gama_n1_majora_so_a_2a_ordem",
+     "test_1581_gama_n1_integrado_ao_pilar_padrao"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "15.8.2-lambda-esbeltez-basico",
@@ -7129,7 +7218,7 @@
    "pagina_pdf": 127,
    "titulo": "Índice de esbeltez λ = ℓe/i",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P25",
@@ -7140,7 +7229,23 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Para seção circular de diâmetro D: i=D/4, λ=4*ℓe/D; comparar com o caso retangular já testado.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P25",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/pilares_nbr6118.py::raio_giracao_cm",
+     "esbeltez",
+     "pilar_padrao_direcao"
+    ],
+    "testes": [
+     "test_1582_lambda_circular",
+     "test_1582_lambda_retangular_bate_com_346",
+     "test_1582_lambda_entrada_invalida",
+     "test_1582_dispensa_pelos_dois_lados_de_lambda1"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "15.8.2-lambda1-limite-esbeltez",
@@ -7274,7 +7379,7 @@
    "pagina_pdf": 131,
    "titulo": "Método do pilar-padrão para flexão composta oblíqua (duas direções simultâneas)",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "G",
    "pacote": "P25",
@@ -7287,7 +7392,23 @@
     "rotinas.flexao_composta_obliqua.verificar_fcn"
    ],
    "teste_sugerido": "Caso pilar quadrado com carregamento simétrico nas duas direções: Md,tot,x deve ser igual a Md,tot,y, e a verificação de envoltória deve coincidir com duas verificações de flexão composta normal independentes.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P25",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/pilares_nbr6118.py::pilar_padrao_direcao",
+     "momento_total_minimo_direcao"
+    ],
+    "testes": [
+     "test_158335_simetrico_nas_duas_direcoes",
+     "test_158335_extremos_usam_momentos_de_1a_ordem",
+     "test_158335_gama_n_de_pilar_fino",
+     "test_158335_nao_verifica_com_momentos_altos",
+     "test_158335_lambda_acima_de_90_numa_direcao"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "15.8.4-fluencia-ecc",
@@ -7295,7 +7416,7 @@
    "pagina_pdf": 131,
    "titulo": "Excentricidade adicional de fluência ecc para pilares esbeltos (λ>90)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P25",
@@ -7309,7 +7430,25 @@
     "11.3.3.4-excentricidade-acidental-ea"
    ],
    "teste_sugerido": "Caso limite Nsg->Ne (denominador->0): ecc deve divergir (erro esperado / pilar instável, fora do domínio de validade); caso φ=0: ecc deve reduzir a zero (2,718^0-1=0).",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P25",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/pilares_nbr6118.py::carga_euler_Ne_kn",
+     "ecc_fluencia_cm"
+    ],
+    "testes": [
+     "test_1584_ne_conta_a_mao",
+     "test_1584_ecc_conta_a_mao",
+     "test_1584_ecc_phi_zero_e_nulo",
+     "test_1584_ecc_sinal_de_msg_nao_reduz",
+     "test_1584_ecc_diverge_perto_de_ne",
+     "test_1584_ecc_entrada_invalida",
+     "test_1584_ecc_com_phi_da_tabela_8_1"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "15.9.1-pilar-parede-generalidades",
