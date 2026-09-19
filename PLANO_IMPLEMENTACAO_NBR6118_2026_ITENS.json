@@ -13167,18 +13167,16 @@
    "teste_sugerido": "Gerar contornos sucessivos e conferir que o último cai a 2d de onde tSd<=tRd1.",
    "trecho": "lajes",
    "implementacao": {
-    "pacote": "P20",
+    "pacote": "P20 + F3",
     "data": "19/09/2026",
     "funcoes": [
-     "puncao_nbr6118.disposicao_armadura_puncao"
+     "dimensionamento/puncao_nbr6118.py:disposicao_armadura_puncao"
     ],
     "testes": [
-     "test_disposicao_ultimo_contorno_a_2d_de_c2l",
-     "test_disposicao_limites_s0_sr",
-     "test_disposicao_com_momento_wp_de_c2l",
-     "test_disposicao_espacamento_tangencial"
+     "tests/test_f3_fechamento.py:test_19_5_3_4_arranjo_em_cruz_continua_nao_tracado",
+     "tests/test_f3_fechamento.py:test_19_5_3_4_contorno_inteiro_quando_espacamento_ok"
     ],
-    "observacao": "Para pilar interno retangular, com ou sem momento, a função acha o menor número de contornos de armadura que satisfaz τSd <= τRd1 em C″, situado 2d além do último contorno. Confere s0 <= 0,50d e sr <= 0,75d (Figura 19.9) e o espaçamento tangencial < 2d (Figura 19.8). Falta traçar o perímetro reduzido do arranjo em cruz (Figura 19.8, à direita): nesse caso a função só sinaliza ok=False. Borda e canto também ficam de fora: u″ é calculado à parte e passado a verificar_puncao(u_C2l_cm)."
+    "observacao": "Não fechei o perímetro reduzido do arranjo em cruz (Figura 19.8, à direita) porque a Figura não dá regra numérica para ele — só ilustra \">2d\" no braço e \"d\" entre a última linha de conectores e o arco, sem dizer onde o trecho reto termina nem o raio do arco nos cantos entre braços, ao contrário da Figura 19.9 (<=0,75d, <=0,50d explícitos). Traçar isso seria inventar uma construção geométrica que a norma não dá, o que é o erro que este pacote existe para evitar. Reescrevi a docstring de disposicao_armadura_puncao explicando isso na primeira pessoa; a função continua sinalizando ok=False e apontando para calcular u\" à parte com verificar_puncao(u_C2l_cm=...). Item permanece parcial, com evidência de por quê."
    }
   },
   {
@@ -17925,7 +17923,7 @@
    "pagina_pdf": 230,
    "titulo": "Carga dentro do núcleo central de inércia (pilares sem ações laterais) e verificação com ações laterais (sem tração no concreto)",
    "tipo": "verificacao",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "G",
    "pacote": "P41",
@@ -17939,19 +17937,28 @@
    "teste_sugerido": "Seção retangular b x h: núcleo central é |e|<=h/6 (e |e|<=b/6 na outra direção) -- conferir contra a fórmula clássica de resistência dos materiais.",
    "trecho": "simples",
    "implementacao": {
-    "pacote": "P41",
+    "pacote": "P41 + F3",
     "data": "19/09/2026",
     "funcoes": [
-     "dentro_nucleo_central",
-     "verificar_pilar_simples",
-     "verificar_pilar_simples_acao_lateral"
+     "dimensionamento/concreto_simples_nbr6118.py:dentro_nucleo_central_poligono",
+     "dimensionamento/concreto_simples_nbr6118.py:nucleo_central_poligono_cm",
+     "dimensionamento/concreto_simples_nbr6118.py:verificar_secao_sem_tracao_poligono",
+     "dimensionamento/concreto_simples_nbr6118.py:_f3_propriedades_poligono_cm",
+     "dimensionamento/concreto_simples_nbr6118.py:_f3_base_principal",
+     "dimensionamento/concreto_simples_nbr6118.py:_f3_resultante_pq",
+     "dimensionamento/concreto_simples_nbr6118.py:_f3_resolver_eixo_neutro",
+     "dimensionamento/concreto_simples_nbr6118.py:_f3_clip_semiplano"
     ],
     "testes": [
-     "test_24_6_3_nucleo_central",
-     "test_24_6_3_acao_lateral",
-     "test_24_6_3_verificar_pilar"
+     "tests/test_f3_fechamento.py:test_24_6_3_nucleo_central_poligono_reproduz_retangulo",
+     "tests/test_f3_fechamento.py:test_24_6_3_nucleo_central_poligono_secao_qualquer_e_autoconsistente",
+     "tests/test_f3_fechamento.py:test_24_6_3_nucleo_central_poligono_erro_poligono_degenerado",
+     "tests/test_f3_fechamento.py:test_24_6_3_sem_tracao_poligono_reduz_ao_retangulo_uniaxial",
+     "tests/test_f3_fechamento.py:test_24_6_3_sem_tracao_poligono_biaxial_equilibrio",
+     "tests/test_f3_fechamento.py:test_24_6_3_sem_tracao_poligono_fora_da_regiao_admissivel",
+     "tests/test_f3_fechamento.py:test_24_6_3_sem_tracao_poligono_triangulo_dentro_e_fora_do_nucleo"
     ],
-    "observacao": "Sem ações laterais: núcleo central do retângulo, pela condição 6|ex|/hx + 6|ey|/hy <= 1 (losango). Com ações laterais: seção retangular em flexão reta, sem tração; a região comprimida tem de conter o centroide (e <= h/3) e σmax <= σcRd. Falta a flexão oblíqua com ação lateral e a seção não retangular."
+    "observacao": "Fechei os dois pontos que o P41 tinha deixado de fora: seção não retangular (dentro_nucleo_central_poligono, nucleo_central_poligono_cm, por eixos principais de inércia — Resistência dos Materiais, reduz exatamente ao retângulo b/6, h/6 e é autoconsistente numa seção sem simetria nenhuma) e flexão oblíqua com ações laterais (verificar_secao_sem_tracao_poligono, para qualquer seção poligonal convexa e excentricidade nas duas direções ao mesmo tempo). A norma só dá a condição física em 24.6.3 (parte comprimida contém o centroide; sigma_max <= sigma_cRd), não o método; resolvi por primeiros princípios (Newton amortecido na reta p*x+q*y=1, que já garante a condição de conter o centroide, com a tensão resultante pela analogia do centro de pressão hidrostático) e conferi por integração numérica independente (grade fina, sem usar nenhuma função da biblioteca) que a força e o momento resultantes batem com N, ex, ey no caso biaxial genuíno — não há fórmula fechada na norma para esse caso, e é exatamente o que a seção 3.1 do plano manda fazer. Limite numérico conhecido e documentado: a busca da reta neutra usa a parametrização (p,q) = (nx,ny)/a, que não representa uma reta passando exatamente pelo centroide (a=0 dá p,q infinitos); isso só aparece na fronteira exata em que a área comprimida seria metade da seção (o e=h/3 do caso retangular), onde a função converge arbitrariamente perto mas não exatamente nela, devolvendo ok=False num ponto que no limite matemático seria admissível — sem efeito prático de projeto."
    }
   },
   {

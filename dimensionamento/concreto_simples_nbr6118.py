@@ -1650,3 +1650,381 @@ def verificar_majoracao_2a_ordem_arco(M1d_kncm: float,
         f"M2d,max = 1,10·M1d = 1,10 × {_fmt(M1)} = {_fmt(Mmax)} kN·cm; M2d = {_fmt(M2)} kN·cm.",
     ) + r.memoria + (governante,)
     return ResultadoMajoracao2aOrdemArco(M1, M2, Mmax, maj, r.ok, governante, memoria)
+
+
+# === F3: núcleo central de inércia — seção poligonal genérica (24.6.3, fechamento do P41) ===
+# Fecha os dois pontos que ficaram de fora do P41 (ver observação do pacote):
+# "carga dentro do núcleo central" para uma seção QUALQUER (não só retangular)
+# e a verificação sem tração com excentricidade nas DUAS direções ao mesmo
+# tempo (flexão oblíqua com ações laterais). A 6118, em 24.6.3, só dá a
+# condição física (carga dentro do núcleo; ou parte comprimida contendo o
+# centroide e σc,max <= σcRd) — nenhuma das duas contas tem fórmula fechada
+# geral na norma para seção qualquer, e o método abaixo é da biblioteca,
+# resolvido por primeiros princípios de Resistência dos Materiais (como a
+# seção 3.1 do plano manda para análise sem valor tabelado: conferido contra
+# solução fechada e o equilíbrio checado nos testes). Tudo em cm e kN;
+# tensão em MPa (1 kN/cm² = 10 MPa, conversão dentro de cada função).
+import math as _f3_math
+
+_F3_TOL = 1e-9
+
+
+def _f3_propriedades_poligono_cm(poligono):
+    """(A_cm2, cx_cm, cy_cm, Ixx_cm4, Iyy_cm4, Ixy_cm4) de um polígono, pelo somatório de Green.
+
+    ``poligono``: sequência de (x, y) em cm, convexo, em qualquer sentido, sem
+    repetir o primeiro ponto no fim. Ixx = ∫y²dA, Iyy = ∫x²dA, Ixy = ∫xy dA,
+    todos já centrados no centroide do próprio polígono (translação pelo
+    teorema dos eixos paralelos). Sentido horário troca o sinal do somatório
+    inteiro (área e momentos); a área devolvida é sempre positiva porque o
+    sinal é corrigido no final, e o centroide não muda (numerador e
+    denominador trocam de sinal junto).
+    """
+    pts = [(float(x), float(y)) for x, y in poligono]
+    n = len(pts)
+    if n < 3:
+        raise ValueError("O polígono da seção precisa de pelo menos 3 vértices.")
+    A2 = Cx = Cy = Ixx_o = Iyy_o = Ixy_o = 0.0
+    for i in range(n):
+        x0, y0 = pts[i]
+        x1, y1 = pts[(i + 1) % n]
+        cr = x0 * y1 - x1 * y0
+        A2 += cr
+        Cx += (x0 + x1) * cr
+        Cy += (y0 + y1) * cr
+        Ixx_o += (y0 * y0 + y0 * y1 + y1 * y1) * cr
+        Iyy_o += (x0 * x0 + x0 * x1 + x1 * x1) * cr
+        Ixy_o += (x0 * y1 + 2.0 * x0 * y0 + 2.0 * x1 * y1 + x1 * y0) * cr
+    A = A2 / 2.0
+    if abs(A) < 1e-9:
+        raise ValueError("Polígono da seção degenerado: área nula.")
+    cx = Cx / (6.0 * A)
+    cy = Cy / (6.0 * A)
+    Ixx = Ixx_o / 12.0 - A * cy * cy
+    Iyy = Iyy_o / 12.0 - A * cx * cx
+    Ixy = Ixy_o / 24.0 - A * cx * cy
+    sinal = 1.0 if A >= 0.0 else -1.0
+    return abs(A), cx, cy, Ixx * sinal, Iyy * sinal, Ixy * sinal
+
+
+def _f3_girar(ponto, theta):
+    x, y = ponto
+    c, s = _f3_math.cos(theta), _f3_math.sin(theta)
+    return (c * x + s * y, -s * x + c * y)
+
+
+def _f3_girar_inv(ponto, theta):
+    return _f3_girar(ponto, -theta)
+
+
+def _f3_base_principal(poligono, A, cx, cy, Ixx, Iyy, Ixy):
+    """Ângulo principal (rad), o polígono centrado e girado para os eixos principais, e (Iu, Iv).
+
+    Iu = ∫v²dA (em torno do eixo u), Iv = ∫u²dA (em torno do eixo v) — depois
+    de girar, o produto de inércia sai ~0 (conferido nos testes).
+    """
+    if abs(Ixx - Iyy) < 1e-9 and abs(Ixy) < 1e-9:
+        theta = 0.0
+    else:
+        theta = 0.5 * _f3_math.atan2(-2.0 * Ixy, Ixx - Iyy)
+    centrado = [(float(x) - cx, float(y) - cy) for x, y in poligono]
+    girado = [_f3_girar(p, theta) for p in centrado]
+    _, _, _, Iu, Iv, _ = _f3_propriedades_poligono_cm(girado)
+    return theta, girado, Iu, Iv
+
+
+def dentro_nucleo_central_poligono(ex_cm: float, ey_cm: float, poligono) -> bool:
+    """Diz se a carga está dentro (ou no limite) do núcleo central de inércia de uma seção poligonal qualquer (24.6.3, PDF p. 230).
+
+    Generaliza ``dentro_nucleo_central`` (só retângulo) para qualquer seção
+    poligonal convexa: com N unitário aplicado em (ex, ey), a tensão em cada
+    ponto (u, v) nos eixos principais é σ = 1/A + eu·u/Iv + ev·v/Iu (flexão
+    composta oblíqua elástica); como σ é afim em (u, v), o mínimo sobre a
+    seção ocorre num vértice do polígono (convexo) — a carga está dentro do
+    núcleo sse σ >= 0 em todos os vértices. Para o retângulo, reproduz
+    exatamente 6·|ex|/hx + 6·|ey|/hy <= 1 (``dentro_nucleo_central``, conferido
+    nos testes). Excentricidades em cm, relativas ao centroide do polígono.
+    """
+    A, cx, cy, Ixx, Iyy, Ixy = _f3_propriedades_poligono_cm(poligono)
+    theta, girado, Iu, Iv = _f3_base_principal(poligono, A, cx, cy, Ixx, Iyy, Ixy)
+    eu, ev = _f3_girar((float(ex_cm), float(ey_cm)), theta)
+    tol = _F3_TOL / A
+    for (u, v) in girado:
+        if 1.0 / A + eu * u / Iv + ev * v / Iu < -tol:
+            return False
+    return True
+
+
+def nucleo_central_poligono_cm(poligono) -> tuple[tuple[float, float], ...]:
+    """Vértices do núcleo central de inércia de uma seção poligonal convexa qualquer, cm (24.6.3, PDF p. 230).
+
+    Para cada aresta do polígono (candidata a reta neutra que zera a tensão
+    ali), o ponto conjugado — a excentricidade que faz exatamente aquela reta
+    ser a de tensão nula, com a seção toda comprimida — é, nos eixos
+    principais (u, v): eu = −Iv·nu/(A·a), ev = −Iu·nv/(A·a), com (nu, nv) a
+    normal unitária da aresta apontando para fora e a a distância do
+    centroide à reta que contém a aresta (relação clássica de reciprocidade
+    entre reta neutra e núcleo central — Resistência dos Materiais; conferida
+    no retângulo contra h/6 e b/6 nos testes). Os vértices do núcleo saem na
+    mesma ordem das arestas, no referencial do polígono de entrada.
+
+    ``poligono``: sequência de (x, y) em cm, convexo, em qualquer sentido.
+    Levanta ``ValueError`` se alguma aresta passar pelo centroide (núcleo
+    central infinito, seção não fechada/convexa nesse ponto).
+    """
+    A, cx, cy, Ixx, Iyy, Ixy = _f3_propriedades_poligono_cm(poligono)
+    theta, girado, Iu, Iv = _f3_base_principal(poligono, A, cx, cy, Ixx, Iyy, Ixy)
+    n = len(girado)
+    pontos = []
+    for i in range(n):
+        x0, y0 = girado[i]
+        x1, y1 = girado[(i + 1) % n]
+        dx, dy = x1 - x0, y1 - y0
+        comp = _f3_math.hypot(dx, dy)
+        if comp < 1e-9:
+            continue
+        nx, ny = dy / comp, -dx / comp
+        a = x0 * nx + y0 * ny
+        if a < 0.0:
+            nx, ny, a = -nx, -ny, -a
+        if a < 1e-9 * max(1.0, comp):
+            raise ValueError("Aresta do polígono passa pelo centroide: núcleo central não definido "
+                             "para esta seção (24.6.3).")
+        eu = -Iv * nx / (A * a)
+        ev = -Iu * ny / (A * a)
+        pontos.append(_f3_girar_inv((eu, ev), theta))
+    return tuple((px + cx, py + cy) for px, py in pontos)
+
+
+def _f3_clip_semiplano(poligono, nx, ny, a, tol=1e-9):
+    """Recorta ``poligono`` (relativo ao centroide) no semiplano nx·x+ny·y >= a (Sutherland-Hodgman)."""
+    n = len(poligono)
+    saida = []
+
+    def valor(p):
+        return p[0] * nx + p[1] * ny - a
+
+    for i in range(n):
+        atual, prox = poligono[i], poligono[(i + 1) % n]
+        va, vp = valor(atual), valor(prox)
+        a_dentro, p_dentro = va >= -tol, vp >= -tol
+        if a_dentro:
+            saida.append(atual)
+        if a_dentro != p_dentro:
+            t = va / (va - vp)
+            saida.append((atual[0] + t * (prox[0] - atual[0]), atual[1] + t * (prox[1] - atual[1])))
+    return saida
+
+
+def _f3_resultante_pq(poligono_centrado, p, q):
+    """Ponto de aplicação (x, y), a área comprimida, a profundidade do centroide dela e a
+    profundidade máxima (fibra mais comprimida), tudo relativo ao centroide da seção, para
+    a distribuição linear de tensão nula na reta p·x+q·y=1 (lado comprimido: p·x+q·y <= 1,
+    que contém sempre a origem — a condição de 24.6.3 de a parte comprimida conter o
+    centroide vem de graça dessa forma da reta). ``None`` se a reta não deixa contorno
+    comprimido válido (fora do polígono, ou profundidade do centroide não positiva).
+
+    O ponto de aplicação sai por analogia com o centro de pressão hidrostático sobre uma
+    superfície plana submersa (mesma matemática: pressão proporcional à profundidade a
+    partir de uma "superfície livre", aqui a reta neutra): com (u, d) as coordenadas
+    tangencial e de profundidade da área comprimida, dR = dc + Idd/(dc·Ac) e
+    uR = uc + Iud/(dc·Ac) — Idd e Iud são os momentos de inércia e produto de inércia da
+    área comprimida em torno do próprio centroide dela (conferido contra a solução fechada
+    do retângulo nos testes).
+    """
+    norma = _f3_math.hypot(p, q)
+    if norma < 1e-13:
+        return None
+    nx, ny = p / norma, q / norma
+    a = 1.0 / norma
+    recorte = _f3_clip_semiplano(poligono_centrado, -nx, -ny, -a)
+    if len(recorte) < 3:
+        return None
+    tx, ty = -ny, nx
+    uv = [(px * tx + py * ty, a - (px * nx + py * ny)) for px, py in recorte]
+    Ac, uc, dc, Idd, _, Iud = _f3_propriedades_poligono_cm(uv)
+    if dc <= 1e-9 or Ac <= 1e-9:
+        return None
+    d_r = dc + Idd / (dc * Ac)
+    u_r = uc + Iud / (dc * Ac)
+    v_r = a - d_r
+    Rx = v_r * nx + u_r * tx
+    Ry = v_r * ny + u_r * ty
+    d_max = max(a - (px * nx + py * ny) for px, py in recorte)
+    return Rx, Ry, Ac, dc, d_max
+
+
+def _f3_resolver_eixo_neutro(poligono_centrado, A, Iu_Iv_theta, ex_cm, ey_cm,
+                             tol_cm=1e-7, max_iter=60):
+    """Newton amortecido em (p, q) até a resultante de ``_f3_resultante_pq`` cair em (ex, ey).
+
+    Chute inicial pela relação elástica de seção cheia (a mesma do núcleo
+    central, sem o recorte): serve mesmo fora do núcleo porque a reta que
+    ela indica já aponta na direção certa. ``RuntimeError`` quando não existe
+    reta com a parte comprimida contendo o centroide para essa excentricidade
+    (o Newton fica mal-condicionado bem nessa fronteira, e é isso que o
+    detecta — conferido contra e <= h/3 do retângulo nos testes).
+
+    Limite conhecido: (p, q) são os coeficientes da reta p·x+q·y=1, isto é,
+    (nx, ny)/a com a a distância do centroide à reta — essa forma não
+    representa uma reta que passe exatamente pelo centroide (a = 0 ⟹ p, q →
+    ∞). Isso só importa bem na fronteira em que a área comprimida é exatamente
+    metade da seção (o e = h/3 do retângulo, x = h/2): perto dela a função
+    ainda converge (testada até 0,01 cm da fronteira), mas exatamente nela
+    ``RuntimeError`` é levantado e o chamador vê ``ok = False`` — mesmo a
+    excentricidade sendo, no limite, admissível. Na prática de projeto isso
+    não é uma perda: ninguém dimensiona exatamente no limite matemático de
+    uma verificação sem tração, sempre com alguma folga.
+    """
+    theta, Iu, Iv = Iu_Iv_theta
+    eu, ev = _f3_girar((float(ex_cm), float(ey_cm)), theta)
+    pu = -eu * A / Iv if abs(Iv) > 1e-9 else 0.0
+    pv = -ev * A / Iu if abs(Iu) > 1e-9 else 0.0
+    p, q = _f3_girar_inv((pu, pv), theta)
+    h = 1e-6
+    for _ in range(max_iter):
+        r0 = _f3_resultante_pq(poligono_centrado, p, q)
+        if r0 is None:
+            raise RuntimeError("Reta neutra inicial fora do polígono.")
+        Rx, Ry = r0[0], r0[1]
+        Fx, Fy = Rx - float(ex_cm), Ry - float(ey_cm)
+        if abs(Fx) < tol_cm and abs(Fy) < tol_cm:
+            return p, q, r0
+        passo = h
+        rp = _f3_resultante_pq(poligono_centrado, p + passo, q)
+        rq = _f3_resultante_pq(poligono_centrado, p, q + passo)
+        if rp is None or rq is None:
+            passo = h * 10.0
+            rp = _f3_resultante_pq(poligono_centrado, p + passo, q)
+            rq = _f3_resultante_pq(poligono_centrado, p, q + passo)
+        if rp is None or rq is None:
+            raise RuntimeError("Não foi possível estimar a jacobiana perto da reta neutra: carga "
+                               "provavelmente fora da região onde a parte comprimida contém o "
+                               "centroide (24.6.3).")
+        dFxdp, dFydp = (rp[0] - Rx) / passo, (rp[1] - Ry) / passo
+        dFxdq, dFydq = (rq[0] - Rx) / passo, (rq[1] - Ry) / passo
+        det = dFxdp * dFydq - dFxdq * dFydp
+        if abs(det) < 1e-14:
+            raise RuntimeError("Sistema mal-condicionado perto da reta neutra: carga provavelmente "
+                               "fora da região onde a parte comprimida contém o centroide (24.6.3).")
+        dp = (Fx * dFydq - Fy * dFxdq) / det
+        dq = (Fy * dFxdp - Fx * dFydp) / det
+        amortecimento = 1.0
+        candidato = None
+        for _tentativa in range(30):
+            teste = (p - amortecimento * dp, q - amortecimento * dq)
+            if _f3_resultante_pq(poligono_centrado, *teste) is not None:
+                candidato = teste
+                break
+            amortecimento *= 0.5
+        if candidato is None:
+            raise RuntimeError("Iteração da reta neutra não convergiu: carga provavelmente fora da "
+                               "região onde a parte comprimida contém o centroide (24.6.3).")
+        p, q = candidato
+    raise RuntimeError("Iteração da reta neutra não convergiu no número máximo de passos (24.6.3).")
+
+
+@dataclass(frozen=True)
+class ResultadoSemTracaoPoligono:
+    """Resultado de ``verificar_secao_sem_tracao_poligono`` (24.6.3, seção poligonal qualquer)."""
+
+    Nsd_kn: float
+    ex_cm: float
+    ey_cm: float
+    dentro_nucleo: bool
+    area_bruta_cm2: float
+    area_comprimida_cm2: float
+    sigma_max_mpa: float
+    sigma_cRd_mpa: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_secao_sem_tracao_poligono(Nsd_kn: float, ex_cm: float, ey_cm: float, poligono,
+                                        fck_mpa: float) -> ResultadoSemTracaoPoligono:
+    """Verifica seção poligonal convexa qualquer, sem tração, com excentricidade em uma ou duas direções (24.6.3, PDF p. 230).
+
+    Generaliza, para **qualquer seção poligonal convexa** e **excentricidade
+    nas duas direções ao mesmo tempo** (flexão oblíqua), o que o P41 deixou de
+    fora: ``verificar_pilar_simples`` (só sem ações laterais) e
+    ``verificar_pilar_simples_acao_lateral`` (só retângulo, uma direção). A
+    6118 dá, em 24.6.3, só a condição física: "as seções devem ser
+    verificadas sem considerar a resistência à tração do concreto[...] a
+    parte comprimida da seção deve conter o centroide[...] a máxima tensão de
+    compressão[...] não pode ultrapassar o valor de σcRd." A norma não
+    prescreve o método para seção qualquer com as duas excentricidades — o
+    que segue é da biblioteca, por primeiros princípios (ver
+    ``_f3_resultante_pq`` e ``_f3_resolver_eixo_neutro``), do jeito que a
+    seção 3.1 do plano manda para análise sem valor tabelado: conferido
+    contra solução fechada (reduz a ``dentro_nucleo_central_poligono`` dentro
+    do núcleo, e ao caso uniaxial retangular de
+    ``verificar_pilar_simples_acao_lateral`` quando ex ou ey é zero — os dois
+    nos testes) e com o equilíbrio da reta neutra checado a cada chamada
+    (é exatamente o que ``_f3_resolver_eixo_neutro`` resolve).
+
+    - **Carga dentro do núcleo** (``dentro_nucleo_central_poligono``): seção
+      toda comprimida, σ = N·[1/A + eu·u/Iv + ev·v/Iu] nos eixos principais
+      (u, v); o máximo está num vértice do polígono.
+    - **Carga fora do núcleo**: só parte da seção resiste; a reta neutra é
+      achada por ``_f3_resolver_eixo_neutro`` e a tensão máxima (na fibra mais
+      comprimida) sai como no centro de pressão hidrostático: σc,max =
+      N·dmax/(Ac·dc), com dc a profundidade do centroide da área comprimida e
+      dmax a da fibra mais funda, ambas a partir da reta neutra. Sem reta
+      possível (excentricidade grande demais para a parte comprimida ainda
+      conter o centroide), ``ok = False``. Bem na fronteira exata em que a
+      área comprimida seria metade da seção (a reta neutra passando pelo
+      centroide), a busca da reta também devolve ``ok = False`` por limite
+      numérico do método (ver ``_f3_resolver_eixo_neutro``), mesmo sendo o
+      último ponto ainda admissível — não afeta o projeto na prática (ninguém
+      dimensiona exatamente nesse limite).
+
+    ``poligono``: sequência de (x, y) em cm, convexo, em qualquer sentido,
+    relativo a qualquer origem (a função acha o centroide). ``Nsd_kn`` de
+    compressão (> 0); ``ex_cm``/``ey_cm`` a excentricidade da força em torno
+    do centroide; ``fck_mpa`` para σcRd = 0,85·fcd (``sigma_cRd``).
+    """
+    N = _positivo(Nsd_kn, "A força normal de compressão NSd")
+    ex, ey = float(ex_cm), float(ey_cm)
+    A, cx, cy, Ixx, Iyy, Ixy = _f3_propriedades_poligono_cm(poligono)
+    s_cRd = sigma_cRd(fck_mpa)
+    theta, girado, Iu, Iv = _f3_base_principal(poligono, A, cx, cy, Ixx, Iyy, Ixy)
+    eu, ev = _f3_girar((ex, ey), theta)
+    dentro = dentro_nucleo_central_poligono(ex, ey, poligono)
+    if dentro:
+        smax_rel = max(1.0 / A + eu * u / Iv + ev * v / Iu for u, v in girado)
+        smax = N * smax_rel * 10.0
+        r = seg.verificar_seguranca(s_cRd, smax, "σc,max x σcRd", "24.6.3")
+        governante = ("Carga dentro do núcleo central: seção toda comprimida; "
+                      f"σc,max/σcRd = {_fmt(smax / s_cRd)}" + (" -> ok." if r.ok else " -> não passa."))
+        memoria = (
+            "24.6.3 — Seção poligonal, carga dentro do núcleo central: flexão composta oblíqua "
+            "elástica, seção toda comprimida (PDF p. 230).",
+            f"eu = {_fmt(eu)} cm, ev = {_fmt(ev)} cm (eixos principais); "
+            f"σc,max = N·max[1/A + eu·u/Iv + ev·v/Iu] = {_fmt(smax)} MPa.",
+        ) + r.memoria + (governante,)
+        return ResultadoSemTracaoPoligono(N, ex, ey, True, A, A, smax, s_cRd, r.ok, governante, memoria)
+    centrado = [(float(x) - cx, float(y) - cy) for x, y in poligono]
+    try:
+        _, _, r0 = _f3_resolver_eixo_neutro(centrado, A, (theta, Iu, Iv), ex, ey)
+    except RuntimeError:
+        governante = ("Não passa: não existe reta neutra para esta excentricidade com a parte "
+                      "comprimida contendo o centroide (24.6.3).")
+        memoria = (
+            "24.6.3 — Seção poligonal com ações laterais, sem tração no concreto (PDF p. 230).",
+            f"ex = {_fmt(ex)} cm, ey = {_fmt(ey)} cm: fora da região onde existe reta neutra com a "
+            "parte comprimida contendo o centroide.",
+            governante,
+        )
+        return ResultadoSemTracaoPoligono(N, ex, ey, False, A, 0.0, float("inf"), s_cRd, False,
+                                          governante, memoria)
+    _, _, area_c, dc, d_max = r0
+    smax = N * d_max / (area_c * dc) * 10.0
+    r = seg.verificar_seguranca(s_cRd, smax, "σc,max x σcRd", "24.6.3")
+    governante = f"σc,max/σcRd = {_fmt(smax / s_cRd)}" + (" -> ok." if r.ok else " -> não passa.")
+    memoria = (
+        "24.6.3 — Seção poligonal com ações laterais, sem tração no concreto (PDF p. 230); reta "
+        "neutra achada por iteração (método da biblioteca — ver docstring).",
+        f"Área comprimida = {_fmt(area_c)} cm² (bruta = {_fmt(A)} cm²); σc,max = {_fmt(smax)} MPa.",
+    ) + r.memoria + (governante,)
+    return ResultadoSemTracaoPoligono(N, ex, ey, False, A, area_c, smax, s_cRd, r.ok, governante, memoria)

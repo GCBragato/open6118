@@ -1471,8 +1471,21 @@ def disposicao_armadura_puncao(FSd_kn: float, c1_cm: float, c2_cm: float, d_cm: 
     ``n_linhas_radiais``, a função toma o espaçamento tangencial médio
     u(rn)/n_linhas (linhas distribuídas por igual ao longo do contorno de
     armadura) e, se não for menor que 2d, marca ``ok = False``: vale então o
-    perímetro reduzido da Figura 19.8 (direita), que a função não traça.
-    Pilar de borda e de canto: calcule u″ à parte e use
+    perímetro reduzido da Figura 19.8 (direita), que esta função **não**
+    traça (fechamento F3, 19/09/2026). Não traço porque a Figura 19.8 (à
+    direita) não dá uma regra analítica para esse contorno reduzido: as duas
+    cotas desenhadas (“> 2d” no braço, “d” entre a última linha de conectores
+    e o arco) são só ilustrativas — a Figura não diz onde ao longo de cada
+    braço o trecho reto termina nem onde exatamente entra o arco de
+    concordância nem qual é o raio dele nos cantos entre braços, ao contrário
+    da Figura 19.9, que dá ≤ 0,75d e ≤ 0,50d como regra numérica. Sem esses
+    dados, qualquer traçado seria uma construção geométrica inventada por
+    mim, não a da norma — o que é exatamente o erro que este pacote existe
+    para evitar. Por isso o item permanece **parcial** para o arranjo em
+    cruz: esta função sinaliza ``ok = False`` e diz, na ``memoria``, para
+    calcular u″ à parte (o perímetro reduzido da Figura 19.8) e usar
+    ``verificar_puncao(u_C2l_cm=...)``, mas não calcula esse perímetro.
+    Pilar de borda e de canto: mesma coisa — calcule u″ à parte e use
     ``verificar_puncao(u_C2l_cm=...)``.
     """
     F = _nao_negativo(FSd_kn, "FSd", "19.5.3.4")

@@ -737,7 +737,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `24.6.2-momento-secao-critica` | 24.6.2 | 230 | Momento fletor majorado na seção crítica de bloco de concreto simples | implementado | média | M | P41 |
 | `24.6.2-cortante-limite` | 24.6.2 | 230 | Força cortante majorada limite na seção crítica de bloco de concreto simples | implementado | média | P | P41 |
 | `24.6.3-remissao-pilar-parede` | 24.6.3 | 230 | Cálculo de pilares de concreto simples pelo mesmo método dos pilares-parede | implementado | média | P | P41 |
-| `24.6.3-nucleo-central-inercia` | 24.6.3 | 230 | Carga dentro do núcleo central de inércia (pilares sem ações laterais) e verificação com ações laterais (sem tração no concreto) | parcial | média | G | P41 |
+| `24.6.3-nucleo-central-inercia` | 24.6.3 | 230 | Carga dentro do núcleo central de inércia (pilares sem ações laterais) e verificação com ações laterais (sem tração no concreto) | implementado | média | G | P41 |
 | `24.6.3-dimensao-minima` | 24.6.3 | 230 | Dimensão mínima de pilar de concreto simples | implementado | média | P | P41 |
 | `24.6.4-sem-tracao` | 24.6.4 | 230 | Ausência de tração em qualquer seção de arco de concreto simples no ELU | implementado | baixa | M | P41 |
 | `24.6.4-majoracao-2a-ordem` | 24.6.4 | 230 | Majoração máxima de momento fletor por efeitos de 2ª ordem em arcos de concreto simples | implementado | baixa | P | P41 |
