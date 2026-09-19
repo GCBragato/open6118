@@ -83,9 +83,9 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `9.3.2.1-fbd` | 9.3.2.1 | 54 | Resistência de aderência de cálculo — armadura passiva (fbd) | implementado | alta | P |  |
 | `9.3.2.1-eta2` | 9.3.2.1 | 54 | Coeficiente η2 (situação de aderência) | implementado | alta | P |  |
 | `9.3.2.1-eta3` | 9.3.2.1 | 54 | Coeficiente η3 (diâmetro da barra) | implementado | alta | P |  |
-| `9.3.2.2-fbpd` | 9.3.2.2 | 54 | Resistência de aderência de cálculo — armadura ativa pré-tracionada (fbpd) | parcial | média | P | P31 |
+| `9.3.2.2-fbpd` | 9.3.2.2 | 54 | Resistência de aderência de cálculo — armadura ativa pré-tracionada (fbpd) | implementado | média | P | P31 |
 | `9.3.2.2-etap1` | 9.3.2.2 | 54 | Coeficiente ηp1 (tipo de fio/cordoalha) | implementado | média | P |  |
-| `9.3.2.2-etap2` | 9.3.2.2 | 54 | Coeficiente ηp2 (situação de aderência, armadura ativa) | parcial | baixa | P | P31 |
+| `9.3.2.2-etap2` | 9.3.2.2 | 54 | Coeficiente ηp2 (situação de aderência, armadura ativa) | implementado | baixa | P | P31 |
 | `9.3.2.3-fator-escorregamento` | 9.3.2.3 | 54 | Majoração de 1,75 na tensão de aderência para verificação de escorregamento em elementos fletidos | implementado | baixa | P | P21 |
 | `9.4.1.1-tipos-ancoragem-aderencia` | 9.4.1.1 | 55 | Tipos de ancoragem por aderência e confinamento | implementado | baixa | P | P21 |
 | `9.4.2.1-condicoes-ancoragem-reta` | 9.4.2.1 | 55 | Condições de ancoragem reta (com/sem gancho) por tipo de barra e solicitação | implementado | média | P | P21 |
@@ -100,9 +100,9 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `9.4.3-feixe-diametro-equivalente` | 9.4.3 | 58 | Diâmetro equivalente de feixe de barras (φn) | implementado | média | P | P27 |
 | `9.4.3-feixe-regras-ancoragem` | 9.4.3 | 58 | Regras de ancoragem de feixes (φn≤25mm / >25mm / caso construtivo) | implementado | média | M | P27 |
 | `9.4.4-tela-soldada-ancoragem` | 9.4.4 | 58 | Ancoragem de telas soldadas por aderência (nº de fios transversais) | implementado | média | P | P27 |
-| `9.4.5.1-lbp-basico` | 9.4.5.1 | 59 | Comprimento de ancoragem básico de armadura ativa (ℓbp) | parcial | média | P | P31 |
-| `9.4.5.2-lbpt-transferencia` | 9.4.5.2 | 59 | Comprimento de transferência ℓbpt | parcial | média | P | P31 |
-| `9.4.5.3-lbpd-necessario` | 9.4.5.3 | 59 | Comprimento de ancoragem necessário de armadura ativa (ℓbpd) | parcial | média | P | P31 |
+| `9.4.5.1-lbp-basico` | 9.4.5.1 | 59 | Comprimento de ancoragem básico de armadura ativa (ℓbp) | implementado | média | P | P31 |
+| `9.4.5.2-lbpt-transferencia` | 9.4.5.2 | 59 | Comprimento de transferência ℓbpt | implementado | média | P | P31 |
+| `9.4.5.3-lbpd-necessario` | 9.4.5.3 | 59 | Comprimento de ancoragem necessário de armadura ativa (ℓbpd) | implementado | média | P | P31 |
 | `9.4.5.4-armadura-transversal-zona-ancoragem-ativa` | 9.4.5.4 | 60 | Armadura transversal na zona de ancoragem de armadura ativa | não computável | média | P |  |
 | `9.4.6-ancoragem-estribos-obrigatoriedade` | 9.4.6 | 60 | Ancoragem de estribos deve ser por gancho ou barra longitudinal soldada | não computável | alta | P |  |
 | `9.4.6.1-ganchos-estribos-tipos` | 9.4.6.1 | 60 | Tipos de gancho de estribo e comprimento mínimo da ponta reta | implementado | alta | P | P21 |
@@ -130,8 +130,8 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `9.6.1.3-Pk-caracteristico` | 9.6.1.3 | 68 | Valores característicos superior/inferior da força de protensão | implementado | baixa | P | P30 |
 | `9.6.1.4-Pd-calculo` | 9.6.1.4 | 68 | Valor de cálculo da força de protensão | implementado | média | P | P30 |
 | `9.6.2.1-generalidades-qualitativo` | 9.6.2.1 | 68 | Distância de regularização - critério geral | não computável | baixa | P |  |
-| `9.6.2.2-angulo-beta-difusao` | 9.6.2.2 | 68 | Ângulo de difusão da protensão em pós-tração | ausente | média | P | P31 |
-| `9.6.2.3-lp-regularizacao` | 9.6.2.3 | 69 | Distância de regularização lp em elementos pré-tracionados | ausente | média | P | P31 |
+| `9.6.2.2-angulo-beta-difusao` | 9.6.2.2 | 68 | Ângulo de difusão da protensão em pós-tração | implementado | média | P | P31 |
+| `9.6.2.3-lp-regularizacao` | 9.6.2.3 | 69 | Distância de regularização lp em elementos pré-tracionados | implementado | média | P | P31 |
 | `9.6.3.1-generalidades-perdas-qualitativo` | 9.6.3.1 | 69 | Perdas de protensão a prever no projeto | não computável | baixa | P |  |
 | `9.6.3.2-perdas-iniciais-qualitativo` | 9.6.3.2 | 69 | Perdas iniciais da força de protensão (pré-tração) | não computável | baixa | P |  |
 | `9.6.3.3.1-encurtamento-pretracao` | 9.6.3.3.1 | 70 | Perda imediata por deformação do concreto na pré-tração | implementado | média | P |  |
@@ -503,19 +503,19 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `18.5-armadura-transversal-pilar-parede-25pct` | 18.5 | 174 | Armadura transversal mínima de pilar-parede (25% da longitudinal por metro de face, se flexão de placa não for calculada) | implementado | média | P | P29 |
 | `18.6.1.1-tracado-qualitativo` | 18.6.1.1 | 175 | Traçado admissível dos cabos de protensão | não computável | baixa | P |  |
 | `18.6.1.1-FSd-apoio-intermediario` | 18.6.1.1 | 175 | Força de tração da armadura em apoios intermediários | implementado | média | P | P22 |
-| `18.6.1.2-raio-minimo-curvatura` | 18.6.1.2 | 175 | Raio mínimo de curvatura dos cabos de protensão | ausente | média | P | P31 |
+| `18.6.1.2-raio-minimo-curvatura` | 18.6.1.2 | 175 | Raio mínimo de curvatura dos cabos de protensão | implementado | média | P | P31 |
 | `18.6.1.3-curvatura-ancoragens-qualitativo` | 18.6.1.3 | 175 | Curvatura nas proximidades das ancoragens | não computável | baixa | P |  |
 | `18.6.1.4-fixacao-execucao-qualitativo` | 18.6.1.4 | 175 | Fixação da armadura de protensão durante a execução | não computável | baixa | P |  |
-| `18.6.1.5-extremidade-reta-minima` | 18.6.1.5 | 175 | Comprimento mínimo dos trechos retos nas extremidades dos cabos | ausente | média | P | P31 |
+| `18.6.1.5-extremidade-reta-minima` | 18.6.1.5 | 175 | Comprimento mínimo dos trechos retos nas extremidades dos cabos | implementado | média | P | P31 |
 | `18.6.1.6-prolongamento-extremidade-qualitativo` | 18.6.1.6 | 176 | Prolongamento de extremidade dos cabos | não computável | baixa | P |  |
 | `18.6.1.7-emendas-qualitativo` | 18.6.1.7 | 176 | Emendas da armadura de protensão | não computável | baixa | P |  |
 | `18.6.1.8-ancoragens-remissao` | 18.6.1.8 | 176 | Ancoragens de protensão - remissão a 9.4.7 | não computável | baixa | P |  |
 | `18.6.2.1.1-bainha-metalica-aderente-qualitativo` | 18.6.2.1.1 | 176 | Bainhas para protensão interna com armadura aderente | não computável | baixa | P |  |
 | `18.6.2.1.2-bainha-plastica-nao-aderente-qualitativo` | 18.6.2.1.2 | 176 | Bainhas para protensão interna com armadura não aderente | não computável | baixa | P |  |
 | `18.6.2.1.3-bainha-protensao-externa-qualitativo` | 18.6.2.1.3 | 176 | Bainhas para protensão externa | não computável | baixa | P |  |
-| `18.6.2.2-agrupamento-cabos` | 18.6.2.2 | 176 | Regras de agrupamento de cabos em bainhas (pós-tração) | ausente | média | P | P31 |
-| `18.6.2.3-tabela18.1-espacamento-postracao` | 18.6.2.3 | 177 | Tabela 18.1 - Espaçamentos mínimos entre bainhas (pós-tração) | ausente | média | P | P31 |
-| `18.6.2.3-tabela18.2-espacamento-pretracao` | 18.6.2.3 | 177 | Tabela 18.2 - Espaçamentos mínimos entre fios/cordoalhas (pré-tração) | ausente | média | P | P31 |
+| `18.6.2.2-agrupamento-cabos` | 18.6.2.2 | 176 | Regras de agrupamento de cabos em bainhas (pós-tração) | implementado | média | P | P31 |
+| `18.6.2.3-tabela18.1-espacamento-postracao` | 18.6.2.3 | 177 | Tabela 18.1 - Espaçamentos mínimos entre bainhas (pós-tração) | implementado | média | P | P31 |
+| `18.6.2.3-tabela18.2-espacamento-pretracao` | 18.6.2.3 | 177 | Tabela 18.2 - Espaçamentos mínimos entre fios/cordoalhas (pré-tração) | implementado | média | P | P31 |
 
 ## Seção 19
 

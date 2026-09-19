@@ -985,3 +985,94 @@ def _acrescimo_distancia_livre_p27(phi_mm: float,
     if distancia_livre_cm > 4.0 * phi_mm / 10.0:
         return float(distancia_livre_cm)
     return 0.0
+
+
+# ---------------------------------------------------------------------------
+# === P31: Ancoragem de armadura ativa por aderência (9.3.2.2 e 9.4.5) ===
+#
+# Traz para o módulo "para projetos novos" a ancoragem de armadura ativa
+# pré-tracionada, hoje só no legado secoes_norma/sec9.py: fbpd e ηp2
+# (delegando ao núcleo), e os comprimentos básico, de transferência e
+# necessário de 9.4.5. sec9.py vira fachada sobre estas funções.
+# ---------------------------------------------------------------------------
+TIPOS_ARMADURA_ATIVA_ADERENCIA = ("fio liso", "fio dentado", "cordoalha")
+
+
+def fbpd_mpa(f_mpa: float, tipo: str = "cordoalha", boa_aderencia: bool = True,
+            gama_c: float = GAMA_C) -> float:
+    """fbpd = ηp1 * ηp2 * fctd, resistência de aderência de cálculo da
+    armadura ativa pré-tracionada, MPa (9.3.2.2, PDF p. 54).
+
+    ``f_mpa`` é o fckj na idade de aplicação da protensão (para o
+    comprimento de transferência, 9.4.5.2) ou o fck aos 28 dias (para o
+    comprimento de ancoragem, 9.4.5.1 e 9.4.5.3); fctd é calculado dentro
+    da função, na idade correspondente (delega a ``nucleo_nbr6118.fbpd``).
+    tipo: 'fio liso' (ηp1=1,0), 'cordoalha' (ηp1=1,2) ou 'fio dentado'
+    (ηp1=1,4).
+    """
+    return nbr.fbpd(f_mpa, tipo, boa_aderencia, gama_c)
+
+
+def eta_p2(boa_aderencia: bool = True) -> float:
+    """ηp2 (9.3.2.2, PDF p. 54): 1,0 em situação de boa aderência; 0,7 em má
+    aderência — mesma classificação da posição da barra durante a
+    concretagem de 9.3.1 (ver ``situacao_aderencia``). Exposta em separado
+    de ``fbpd_mpa`` para ficar auditável e reutilizável (delega a
+    ``nucleo_nbr6118.eta2``, a mesma função da armadura passiva: os valores
+    coincidem, 9.3.2.1 e 9.3.2.2)."""
+    return nbr.eta2(boa_aderencia)
+
+
+def lbp_cm(phi_mm: float, fpyd_mpa: float, fbpd_mpa_valor: float,
+          tipo: str = "cordoalha") -> float:
+    """ℓbp, comprimento de ancoragem básico da armadura ativa aderente, cm
+    (9.4.5.1, PDF p. 59).
+
+    ℓbp = (φ/4)*(fpyd/fbpd) para fios isolados (lisos ou dentados);
+    ℓbp = (7φ/36)*(fpyd/fbpd) para cordoalhas de três ou sete fios.
+    Com φ em mm e fpyd, fbpd em MPa, o resultado sai em mm; convertido para
+    cm. tipo: 'fio liso', 'fio dentado' ou 'cordoalha' (mesma classificação
+    de ``fbpd_mpa``/ηp1, 9.3.2.2).
+    """
+    if tipo not in TIPOS_ARMADURA_ATIVA_ADERENCIA:
+        raise ValueError(
+            f"tipo deve ser 'fio liso', 'fio dentado' ou 'cordoalha': {tipo!r}"
+        )
+    mult = 7.0 / 36.0 if tipo == "cordoalha" else 1.0 / 4.0
+    lbp_mm = mult * phi_mm * fpyd_mpa / fbpd_mpa_valor
+    return lbp_mm / 10.0
+
+
+def lbpt_cm(lbp_cm_valor: float, sigma_pi_mpa: float, fpyd_mpa: float,
+           tipo: str = "cordoalha", liberacao_gradual: bool = True) -> float:
+    """ℓbpt, comprimento de transferência da armadura ativa aderente, cm
+    (9.4.5.2, PDF p. 59).
+
+    ℓbpt = 0,7*ℓbp*(σpi/fpyd) para fios dentados ou lisos;
+    ℓbpt = 0,5*ℓbp*(σpi/fpyd) para cordoalhas de três ou sete fios.
+    Se, no ato da protensão, a liberação do dispositivo de tração não for
+    gradual (``liberacao_gradual=False``), o valor calculado é multiplicado
+    por 1,25 (9.4.5.2 b). tipo: 'fio liso', 'fio dentado' ou 'cordoalha'.
+    """
+    if tipo not in TIPOS_ARMADURA_ATIVA_ADERENCIA:
+        raise ValueError(
+            f"tipo deve ser 'fio liso', 'fio dentado' ou 'cordoalha': {tipo!r}"
+        )
+    mult = 0.5 if tipo == "cordoalha" else 0.7
+    lbpt = mult * lbp_cm_valor * sigma_pi_mpa / fpyd_mpa
+    if not liberacao_gradual:
+        lbpt *= 1.25
+    return lbpt
+
+
+def lbpd_cm(lbpt_cm_valor: float, lbp_cm_valor: float, fpyd_mpa: float,
+           sigma_p_inf_mpa: float) -> float:
+    """ℓbpd, comprimento de ancoragem necessário da armadura ativa aderente,
+    cm (9.4.5.3, PDF p. 59).
+
+    ℓbpd = ℓbpt + ℓbp*(fpyd - σp∞)/fpyd. No caso de se combinar com armadura
+    passiva, a norma permite considerar a capacidade de ancoragem dela; esta
+    função não trata dessa combinação (fica com quem chama, somando a
+    capacidade da armadura passiva ao resultado, conforme o texto da norma).
+    """
+    return lbpt_cm_valor + lbp_cm_valor * (fpyd_mpa - sigma_p_inf_mpa) / fpyd_mpa

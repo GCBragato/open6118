@@ -21,6 +21,7 @@ comp_transpasse_comp()
 
 import os
 import sys
+import warnings
 
 # Núcleo normativo único (nucleo_nbr6118.py mora em dimensionamento/, um
 # nível acima de secoes_norma/): usa eta1/eta2/eta3/fctd em vez de repetir
@@ -32,6 +33,7 @@ if _DIMENSIONAMENTO_DIR not in sys.path:
     sys.path.insert(0, _DIMENSIONAMENTO_DIR)
 
 import nucleo_nbr6118 as nbr
+import ancoragem_nbr6118 as anc  # P31: fachada da ancoragem de armadura ativa
 
 from sec8 import Concreto, Aco_Passivo
 
@@ -98,6 +100,9 @@ def res_ade_pass(tipo_barra, qual_ader, bitola, fctd, categoria=None):
     return fbd
 
 
+_TIPO_FIO_P31 = {'fio': 'fio liso', 'cordoalha': 'cordoalha', 'dentado': 'fio dentado'}
+
+
 def res_ade_ati(tipo_fio,qual_ader,fctd):
     """Retorna o valor da Resistência de aderência de cálculo
     da armadura ativa (fbpd) em MPa
@@ -107,17 +112,25 @@ def res_ade_ati(tipo_fio,qual_ader,fctd):
     fctd = Resistência de dimensionamento do concreto à tração direta em MPa
     calculada na idade de aplicação de protensão para o comprimento de
     transferência ou 28 dias para o comprimento de ancoragem
-    """
 
-    tipo_fio_origem = {'fio': 1, 'cordoalha': 1.2, 'dentado': 1.4}  # eta_p1, 9.3.2.2
-    if tipo_fio not in tipo_fio_origem:
+    P31 (19/09/2026): fachada sobre dimensionamento/ancoragem_nbr6118.py
+    (nbr.eta_p1 e anc.eta_p2, 9.3.2.2) -- ver eta_p2 lá, exposta em separado
+    para ser auditável.
+    """
+    warnings.warn(
+        "sec9.res_ade_ati é legado; use nucleo_nbr6118.eta_p1 e "
+        "ancoragem_nbr6118.eta_p2 (ou ancoragem_nbr6118.fbpd_mpa, quando "
+        "fctd ainda não estiver calculado).",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    if tipo_fio not in _TIPO_FIO_P31:
         raise ValueError(
             f"tipo_fio inválido: {tipo_fio!r}. Use 'fio', 'cordoalha' ou 'dentado'."
         )
-    n1 = tipo_fio_origem[tipo_fio]
-    n2 = nbr.eta2(_boa_aderencia(qual_ader))
-    fbpd = n1*n2*fctd
-    return fbpd
+    n1 = nbr.eta_p1(_TIPO_FIO_P31[tipo_fio])
+    n2 = anc.eta_p2(_boa_aderencia(qual_ader))
+    return n1*n2*fctd
 
 
 """
@@ -189,6 +202,9 @@ def comp_ancor_necessario(alfa, lb, as_calc, as_efet, bitola):
     return lb_nec
 
 
+_TIPO_ISOLADO_GRUPO_P31 = {'isolado': 'fio liso', 'grupo': 'cordoalha'}
+
+
 def comp_ancor_basico_ativo(bitola, fpyd, fbpd, tipo):
     """Retorna o comprimento de ancoragem básico para armaduras ativas por
     aderência em cm
@@ -201,22 +217,20 @@ def comp_ancor_basico_ativo(bitola, fpyd, fbpd, tipo):
     de ancoragem em MPa\n
     tipo = 'isolado' para fios isolados ou 'grupo' para cordoalhas de três ou
     sete fios
+
+    P31 (19/09/2026): fachada sobre ancoragem_nbr6118.lbp_cm (9.4.5.1).
+    'isolado' e 'grupo' viram 'fio liso' e 'cordoalha' lá (mesmo
+    multiplicador de fios lisos ou dentados; ver TIPOS_ARMADURA_ATIVA_ADERENCIA).
     """
-
-    # 9.4.5.1: lbp = (phi/4)(fpyd/fbpd) para fios; (7 phi/36)(fpyd/fbpd) para
-    # cordoalhas de 3 e 7 fios
-    if tipo == 'isolado':
-        mult = (1/4)
-    elif tipo == 'grupo':
-        mult = (7/36)
-    else:
+    warnings.warn(
+        "sec9.comp_ancor_basico_ativo é legado; use "
+        "ancoragem_nbr6118.lbp_cm.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    if tipo not in _TIPO_ISOLADO_GRUPO_P31:
         raise ValueError(f"tipo inválido: {tipo!r}. Use 'isolado' ou 'grupo'.")
-
-    # bitola entra em mm e o resultado sai em cm, como diz a docstring e como
-    # comp_ancor_basico (auditoria ANC-02: antes saía em mm com rótulo de cm)
-    lbp = mult*bitola*fpyd/fbpd/10.0
-
-    return lbp
+    return anc.lbp_cm(bitola, fpyd, fbpd, _TIPO_ISOLADO_GRUPO_P31[tipo])
 
 
 def comp_transferencia(lbp, opi, fpyd, tipo, liberacao_gradual=True):
@@ -233,24 +247,17 @@ def comp_transferencia(lbp, opi, fpyd, tipo, liberacao_gradual=True):
     tração, no ato da protensão, é gradual; False (liberação súbita)
     multiplica o resultado por 1,25 (9.4.5.2 b)
 
-    lbpt = 0,7*lbp*opi/fpyd (fios dentados ou lisos) ou 0,5*lbp*opi/fpyd
-    (cordoalhas de três ou sete fios). ANC-04: antes reusava os coeficientes
-    de lbp (1/4 e 7/36, de 9.4.5.1 — outra fórmula) em vez de 0,7 e 0,5, e
-    não havia o fator 1,25 da liberação súbita.
+    P31 (19/09/2026): fachada sobre ancoragem_nbr6118.lbpt_cm (9.4.5.2).
     """
-
-    if tipo == 'isolado':
-        mult = 0.7
-    elif tipo == 'grupo':
-        mult = 0.5
-    else:
+    warnings.warn(
+        "sec9.comp_transferencia é legado; use ancoragem_nbr6118.lbpt_cm.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    if tipo not in _TIPO_ISOLADO_GRUPO_P31:
         raise ValueError(f"tipo deve ser 'isolado' ou 'grupo': {tipo!r}")
-
-    lbpt = mult*lbp*opi/fpyd
-    if not liberacao_gradual:
-        lbpt = lbpt*1.25
-
-    return lbpt
+    return anc.lbpt_cm(lbp, opi, fpyd, _TIPO_ISOLADO_GRUPO_P31[tipo],
+                       liberacao_gradual)
 
 
 def comp_ancor_necessario_ativo(lbpt, lbp, fpyd, op_inf):
@@ -262,11 +269,16 @@ def comp_ancor_necessario_ativo(lbpt, lbp, fpyd, op_inf):
     fpyd = tensão de escoamento de cálculo do aço ativo em MPa\n
     op_inf = tensão na armadura ativa após todas as perdas ao longo do tempo em
     MPa
+
+    P31 (19/09/2026): fachada sobre ancoragem_nbr6118.lbpd_cm (9.4.5.3).
     """
-
-    lbpd = lbpt + lbp*(fpyd-op_inf)/fpyd
-
-    return lbpd
+    warnings.warn(
+        "sec9.comp_ancor_necessario_ativo é legado; use "
+        "ancoragem_nbr6118.lbpd_cm.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return anc.lbpd_cm(lbpt, lbp, fpyd, op_inf)
 
 
 _PINO_DOBRAMENTO_TAB_9_2 = {

@@ -246,7 +246,8 @@
    "nome": "Protensão: ancoragem ativa, introdução da força e cabos",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/protensao_detalhamento_nbr6118.py + ancoragem_nbr6118.py"
+   "modulo": "dimensionamento/protensao_detalhamento_nbr6118.py + ancoragem_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P32",
@@ -1592,7 +1593,7 @@
    "pagina_pdf": 54,
    "titulo": "Resistência de aderência de cálculo — armadura ativa pré-tracionada (fbpd)",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P31",
@@ -1607,7 +1608,20 @@
     "9.3.2.2-etap2"
    ],
    "teste_sugerido": "Cordoalha 3/7 fios (ηp1=1,2), boa aderência: fbpd = 1,2*1,0*fctd.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P31",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/ancoragem_nbr6118.py:fbpd_mpa"
+    ],
+    "testes": [
+     "test_9322_fbpd_cordoalha_boa_aderencia_28_dias",
+     "test_9322_fbpd_fio_liso_ma_aderencia",
+     "test_9322_fbpd_fio_dentado_maior_que_cordoalha"
+    ],
+    "observacao": "Exposto em ancoragem_nbr6118.py delegando ao núcleo, como o pacote pedia."
+   }
   },
   {
    "id": "9.3.2.2-etap1",
@@ -1632,7 +1646,7 @@
    "pagina_pdf": 54,
    "titulo": "Coeficiente ηp2 (situação de aderência, armadura ativa)",
    "tipo": "limite",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P31",
@@ -1644,7 +1658,18 @@
    "depende_de": [
     "9.3.1-posicao-barra-classificacao"
    ],
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P31",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/ancoragem_nbr6118.py:eta_p2"
+    ],
+    "testes": [
+     "test_9322_eta_p2_boa_ma_aderencia"
+    ],
+    "observacao": "Passou a existir como função separada e auditável, resolvendo o que faltava no plano."
+   }
   },
   {
    "id": "9.3.2.3-fator-escorregamento",
@@ -2087,7 +2112,7 @@
    "pagina_pdf": 59,
    "titulo": "Comprimento de ancoragem básico de armadura ativa (ℓbp)",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P31",
@@ -2100,7 +2125,22 @@
     "9.3.2.2-fbpd"
    ],
    "teste_sugerido": "Testes existentes de sec9/ancoragem_nbr6118 para protendido.",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P31",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/ancoragem_nbr6118.py:lbp_cm"
+    ],
+    "testes": [
+     "test_9451_lbp_fio_isolado",
+     "test_9451_lbp_fio_dentado_mesma_formula_que_liso",
+     "test_9451_lbp_cordoalha_3_7_fios",
+     "test_9451_lbp_cordoalha_menor_que_fio_isolado_mesmo_fbpd",
+     "test_9451_lbp_tipo_invalido"
+    ],
+    "observacao": ""
+   }
   },
   {
    "id": "9.4.5.2-lbpt-transferencia",
@@ -2108,7 +2148,7 @@
    "pagina_pdf": 59,
    "titulo": "Comprimento de transferência ℓbpt",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P31",
@@ -2121,7 +2161,21 @@
     "9.4.5.1-lbp-basico"
    ],
    "teste_sugerido": "Comparar liberação gradual vs súbita (fator 1,25).",
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P31",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/ancoragem_nbr6118.py:lbpt_cm"
+    ],
+    "testes": [
+     "test_9452_lbpt_fios_liberacao_gradual",
+     "test_9452_lbpt_cordoalha_liberacao_gradual",
+     "test_9452_lbpt_liberacao_subita_multiplica_por_1_25",
+     "test_9452_lbpt_fio_maior_que_cordoalha_mesmo_lbp"
+    ],
+    "observacao": "Cobre gradual x subita (fator 1,25) como o brief pedia."
+   }
   },
   {
    "id": "9.4.5.3-lbpd-necessario",
@@ -2129,7 +2183,7 @@
    "pagina_pdf": 59,
    "titulo": "Comprimento de ancoragem necessário de armadura ativa (ℓbpd)",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P31",
@@ -2142,7 +2196,19 @@
     "9.4.5.2-lbpt-transferencia",
     "9.4.5.1-lbp-basico"
    ],
-   "trecho": "ader"
+   "trecho": "ader",
+   "implementacao": {
+    "pacote": "P31",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/ancoragem_nbr6118.py:lbpd_cm"
+    ],
+    "testes": [
+     "test_9453_lbpd_formula",
+     "test_9453_lbpd_sem_perdas_reduz_ao_lbpt_mais_zero"
+    ],
+    "observacao": "sec9.py virou fachada (test_sec9_res_ade_ati_facade_mesmo_numero e demais facade tests confirmam mesmo número)."
+   }
   },
   {
    "id": "9.4.5.4-armadura-transversal-zona-ancoragem-ativa",
@@ -2935,7 +3001,7 @@
    "pagina_pdf": 68,
    "titulo": "Ângulo de difusão da protensão em pós-tração",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P31",
@@ -2943,7 +3009,18 @@
    "formula_ou_regra": "tg(beta) = 2/3",
    "conferido_na_imagem": true,
    "depende_de": [],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P31",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/protensao_detalhamento_nbr6118.py:angulo_difusao_beta_graus"
+    ],
+    "testes": [
+     "test_9622_angulo_beta_tangente_2_terços"
+    ],
+    "observacao": ""
+   }
   },
   {
    "id": "9.6.2.3-lp-regularizacao",
@@ -2951,7 +3028,7 @@
    "pagina_pdf": 69,
    "titulo": "Distância de regularização lp em elementos pré-tracionados",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P31",
@@ -2963,7 +3040,20 @@
     "sec9.comp_transferencia"
    ],
    "teste_sugerido": "Caso limite 0,6.lbpt pequeno frente a h: lp tende a h mas nunca cai abaixo de lbpt (o piso do max implicito na raiz).",
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P31",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/protensao_detalhamento_nbr6118.py:lp_regularizacao_cm"
+    ],
+    "testes": [
+     "test_9623_lp_formula_geral",
+     "test_9623_lp_nunca_menor_que_lbpt_h_pequeno",
+     "test_9623_lp_h_grande_domina_a_raiz"
+    ],
+    "observacao": "Caso-limite do piso lbpt coberto conforme sugerido no plano."
+   }
   },
   {
    "id": "9.6.3.1-generalidades-perdas-qualitativo",
@@ -11766,7 +11856,7 @@
    "pagina_pdf": 175,
    "titulo": "Raio mínimo de curvatura dos cabos de protensão",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P31",
@@ -11774,7 +11864,19 @@
    "formula_ou_regra": "R >= 4 m (fios); R >= 8 m (barras); R >= 12 m (cordoalhas) dispensam justificativa; valores menores exigem investigacao experimental documentada",
    "conferido_na_imagem": true,
    "depende_de": [],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P31",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/protensao_detalhamento_nbr6118.py:raio_minimo_curvatura_m"
+    ],
+    "testes": [
+     "test_18612_raio_minimo_por_tipo",
+     "test_18612_tipo_invalido"
+    ],
+    "observacao": ""
+   }
   },
   {
    "id": "18.6.1.3-curvatura-ancoragens-qualitativo",
@@ -11810,7 +11912,7 @@
    "pagina_pdf": 175,
    "titulo": "Comprimento mínimo dos trechos retos nas extremidades dos cabos",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P31",
@@ -11818,7 +11920,19 @@
    "formula_ou_regra": "comprimento reto >= 100 cm (geral); >= 50 cm (monocordoalhas engraxadas)",
    "conferido_na_imagem": true,
    "depende_de": [],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P31",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/protensao_detalhamento_nbr6118.py:trecho_reto_extremidade_min_cm"
+    ],
+    "testes": [
+     "test_18615_extremidade_reta_geral_100cm",
+     "test_18615_extremidade_reta_monocordoalha_engraxada_50cm"
+    ],
+    "observacao": ""
+   }
   },
   {
    "id": "18.6.1.6-prolongamento-extremidade-qualitativo",
@@ -11912,7 +12026,7 @@
    "pagina_pdf": 176,
    "titulo": "Regras de agrupamento de cabos em bainhas (pós-tração)",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P31",
@@ -11920,7 +12034,23 @@
    "formula_ou_regra": "grupos de ate 2, 3 ou 4 cabos por bainha em trechos retos, sem mais de 2 cabos adjacentes em linha; em trechos curvos, apenas pares, com curvaturas em planos paralelos (sem pressao transversal entre eles)",
    "conferido_na_imagem": true,
    "depende_de": [],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P31",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/protensao_detalhamento_nbr6118.py:verificar_agrupamento_cabos"
+    ],
+    "testes": [
+     "test_18622_trecho_reto_ate_4_cabos_ok",
+     "test_18622_trecho_reto_5_cabos_reprova",
+     "test_18622_trecho_reto_mais_de_2_adjacentes_em_linha_reprova",
+     "test_18622_trecho_curvo_so_pares",
+     "test_18622_trecho_curvo_planos_nao_paralelos_reprova",
+     "test_18622_trecho_invalido"
+    ],
+    "observacao": ""
+   }
   },
   {
    "id": "18.6.2.3-tabela18.1-espacamento-postracao",
@@ -11928,7 +12058,7 @@
    "pagina_pdf": 177,
    "titulo": "Tabela 18.1 - Espaçamentos mínimos entre bainhas (pós-tração)",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P31",
@@ -11938,7 +12068,22 @@
    "depende_de": [
     "18.6.2.2-agrupamento-cabos"
    ],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P31",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/protensao_detalhamento_nbr6118.py:espacamento_min_bainhas_cm"
+    ],
+    "testes": [
+     "test_18_1_isoladas_governa_diametro",
+     "test_18_1_isoladas_governa_piso",
+     "test_18_1_agrupadas_governa_diametro",
+     "test_18_1_agrupadas_governa_piso",
+     "test_18_1_disposicao_invalida"
+    ],
+    "observacao": "Achado da verificação (mensagem de erro sem acento em \"disposição\") corrigido nesta rodada; tabela inteira coberta."
+   }
   },
   {
    "id": "18.6.2.3-tabela18.2-espacamento-pretracao",
@@ -11946,7 +12091,7 @@
    "pagina_pdf": 177,
    "titulo": "Tabela 18.2 - Espaçamentos mínimos entre fios/cordoalhas (pré-tração)",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P31",
@@ -11956,7 +12101,25 @@
    "depende_de": [
     "protendido_nbr6118.propriedades_cordoalha"
    ],
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P31",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dimensionamento/protensao_detalhamento_nbr6118.py:espacamento_min_fios_cm"
+    ],
+    "testes": [
+     "test_18_2_isolados_governa_diametro",
+     "test_18_2_isolados_governa_dmax",
+     "test_18_2_isolados_governa_piso",
+     "test_18_2_pares_horizontal_governa_diametro",
+     "test_18_2_pares_horizontal_governa_piso_ah_2_5_av_2",
+     "test_18_2_pares_ambas_direcoes_governa_diametro",
+     "test_18_2_pares_ambas_direcoes_governa_piso_3cm",
+     "test_18_2_disposicao_invalida"
+    ],
+    "observacao": "Mesma correção de acentuação de mensagem de erro aplicada aqui (linha 293)."
+   }
   },
   {
    "id": "19.1-simbologia",
