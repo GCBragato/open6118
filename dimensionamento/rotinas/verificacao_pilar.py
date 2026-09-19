@@ -513,3 +513,451 @@ def pilar_padrao_obliquo(
         envoltoria_minima=env, status=status, ok=ok, governante=governante,
         memoria=tuple(memoria),
     )
+
+
+# === P28: pilar-padrão acoplado a diagramas M, N, 1/r (15.8.3.3.4) e método geral (15.8.3.2) ===
+from dataclasses import dataclass as _dataclass_p28
+
+import numpy as _np_p28
+from scipy.optimize import brentq as _brentq_p28
+
+try:  # importado como pacote (dimensionamento.rotinas.verificacao_pilar)
+    from . import momento_curvatura as _mc
+except ImportError:  # executado como script
+    from dimensionamento.rotinas import momento_curvatura as _mc
+
+try:
+    from dimensionamento import seguranca_nbr6118 as _seg_p28
+except ImportError:  # executado com dimensionamento/ no sys.path
+    import seguranca_nbr6118 as _seg_p28
+
+LAMBDA_MAX_MN1R = 140.0   # 15.8.3.3.4 (PDF p. 130)
+_ERROS_FAIXA_P28 = (nbr.FaixaNormativaError, _pil.nbr.FaixaNormativaError)
+
+
+def _fmt_p28(x: float) -> str:
+    """Número para a memória de cálculo, com vírgula decimal."""
+    return f"{x:.6g}".replace(".", ",")
+
+
+def _geometria_p28(secao, concreto, eixo: str) -> tuple[float, float, float]:
+    """(h, λ por unidade de ℓe, Ac) na direção do eixo: h = altura (x) ou base (y)."""
+    base, altura = _secao_retangular_p25(secao, concreto)
+    if eixo not in ("x", "y"):
+        raise ValueError(f"eixo deve ser 'x' ou 'y', recebido {eixo!r}.")
+    h, b = (altura, base) if eixo == "x" else (base, altura)
+    Ac = b * h
+    I = b * h ** 3 / 12.0
+    return h, _pil.esbeltez(1.0, I, Ac), Ac
+
+
+def _exigir_fluencia_p28(lam: float, ecc_cm, item: str) -> float:
+    """15.8.3.1 e 15.8.4: λ > 90 exige a excentricidade de fluência ecc."""
+    if ecc_cm is None:
+        if lam > _pil.LAMBDA_FLUENCIA + _pil._TOL_P25:
+            raise nbr.FaixaNormativaError(
+                f"λ = {lam:.1f} > 90: a consideração da fluência é obrigatória (15.8.3.1 e "
+                f"15.8.4). Passe ecc_cm, de pilares_nbr6118.ecc_fluencia_cm ({item})."
+            )
+        return 0.0
+    ecc = float(ecc_cm)
+    if ecc < 0.0 or math.isnan(ecc) or math.isinf(ecc):
+        raise nbr.FaixaNormativaError(f"ecc = {ecc:g} cm inválido: tem de ser >= 0 (15.8.4).")
+    return ecc
+
+
+@_dataclass_p28(frozen=True)
+class ResultadoPilarPadraoMN1r:
+    """Pilar-padrão acoplado a diagramas M, N, 1/r numa direção (15.8.3.3.4)."""
+    eixo: str
+    h_cm: float
+    le_cm: float
+    lambda_: float
+    lambda1: float
+    dispensa_2a_ordem: bool
+    MA_kncm: float
+    MB_kncm: float
+    alpha_b: float
+    M1d_min_kncm: float
+    ecc_cm: float
+    M1d_A_ef_kncm: float            # max(|MA|, M1d,mín) + Nd·ecc
+    curvatura_1_cm: float           # 1/r na seção crítica
+    M2d_kncm: float
+    gama_n1: float
+    Md_tot_kncm: float              # valor absoluto (nan se instável)
+    MRd_kncm: float
+    estavel: bool
+    diagrama: object                # DiagramaMNCurvatura
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def pilar_padrao_MN1r(
+    secao,
+    concreto,
+    aco,
+    Nd_kn: float,
+    le_cm: float,
+    MA_kncm: float,
+    MB_kncm: float,
+    eixo: str = "x",
+    tipo: str = "biapoiado",
+    ecc_cm: float | None = None,
+    aplicar_minimo: bool = True,
+    verificar_dispensa: bool = True,
+    linearizar: bool = False,
+    gama_f3: float = fco.GAMA_F3,
+    n_pontos: int = 40,
+    n_grid: int = 60,
+) -> ResultadoPilarPadraoMN1r:
+    """Pilar-padrão acoplado a diagramas M, N, 1/r (15.8.3.3.4, PDF p. 130).
+
+    "A determinação dos esforços locais de 2ª ordem em pilares com λ <= 140
+    pode ser feita pelo método do pilar-padrão [...], utilizando-se para a
+    curvatura da seção crítica os valores obtidos de diagramas M, N, 1/r
+    específicos para o caso." Mesma expressão de 15.8.3.3.2 (PDF p. 129):
+
+        Md,tot = αb·M1d,A + Nd·(ℓe²/10)·(1/r) >= M1d,A
+
+    com 1/r lido do diagrama M, N, 1/r da seção (``momento_curvatura``,
+    curva AB de 15.3.1, pico 1,10·fcd e N = Nd/γf3) para o momento Md,tot/γf3
+    (formulação Sd,tot = γf3·S(F/γf3) de 15.3.1). Como 1/r depende de
+    Md,tot, a equação é resolvida por busca de raiz: a primeira raiz de
+    f(M) = αb·M1d,A + Nd·ℓe²/10·(1/r)(M/γf3) − M é o equilíbrio estável.
+    Sem raiz no diagrama (o momento passa do máximo da curva AB), o pilar
+    é instável: ``estavel=False``, ``ok=False``.
+
+    ``linearizar=True`` usa a reta AB, (1/r) = M/(γf3·(EI)sec), que "a
+    favor da segurança pode ser linearizada" (15.3.1), e dá a forma fechada
+    Md,tot = αb·M1d,A/[1 − Nd·ℓe²/(10·γf3·(EI)sec)].
+
+    - λ = ℓe/i da seção bruta (15.8.2); λ > 140 levanta
+      ``FaixaNormativaError`` (use o método geral, 15.8.3.2).
+    - λ > 90: fluência obrigatória (15.8.4): ``ecc_cm`` (de
+      ``pilares_nbr6118.ecc_fluencia_cm``) soma-se à excentricidade de
+      1ª ordem, M1d,A = max(|MA|, M1d,mín) + Nd·ecc; sem ele, erro.
+    - αb e λ1 de 15.8.2 e M1d,mín de 11.3.3.4.3, como em
+      ``pilares_nbr6118.pilar_padrao_direcao`` (``aplicar_minimo`` e
+      ``verificar_dispensa`` iguais aos de lá).
+    - A seção crítica é verificada no ELU: Md,tot <= MRd (curva de
+      0,85·ηc·fcd com NRd = Nd), por ``seguranca_nbr6118.verificar_seguranca``.
+
+    Seção retangular (``SecaoRetangular``); ``eixo`` "x" (h = altura_cm) ou
+    "y" (h = base_cm); Nd em kN (compressão positiva), ℓe em cm, momentos
+    em kN·cm com sinal na convenção do kernel (MB positivo se tracionar a
+    mesma face que MA). γn1 (15.8.1) vale 1,0 porque λ <= 140.
+    """
+    h, lam_por_le, Ac = _geometria_p28(secao, concreto, eixo)
+    Nd = float(Nd_kn)
+    if not (Nd > 0.0):
+        raise nbr.FaixaNormativaError(
+            f"Nd = {Nd:g} kN: o pilar-padrão vale para flexo-compressão (Nd > 0; 15.8.3.3.4)."
+        )
+    le = _pil._positivo_p25(le_cm, "ℓe", "15.8.3.3.4")
+    lam = lam_por_le * le
+    if lam > LAMBDA_MAX_MN1R + _pil._TOL_P25:
+        raise nbr.FaixaNormativaError(
+            f"λ = {lam:.1f} > 140: o pilar-padrão acoplado a diagramas M, N, 1/r só vale para "
+            "λ <= 140 (15.8.3.3.4); acima disso o método geral é obrigatório (15.8.3.2)."
+        )
+    ecc = _exigir_fluencia_p28(lam, ecc_cm, "15.8.3.3.4")
+    gf3 = float(gama_f3)
+
+    MA, MB = float(MA_kncm), float(MB_kncm)
+    if abs(MB) > abs(MA):
+        MA, MB = MB, MA
+    M1d_min = _pil.M1d_min_kncm(Nd, h)
+    ab = _pil.alpha_b(MA, MB, tipo=tipo, M1d_min_kncm=M1d_min)
+    if aplicar_minimo:
+        M1dA, ab_ef, _ = _pil.M1d_A_efetivo(Nd, h, MA, ab)
+    else:
+        M1dA, ab_ef = abs(MA), ab
+    M1dA_ef = M1dA + Nd * ecc
+    e1 = abs(MA) / Nd
+    lam1 = _pil.lambda1_limite(e1, h, ab_ef)
+    dispensa = verificar_dispensa and lam < lam1
+    sinal = -1.0 if MA < 0.0 else 1.0
+
+    diag = _mc.diagrama_M_N_curvatura(secao, concreto, aco, Nd, n_pontos=n_pontos,
+                                      eixo=eixo, sentido=sinal, gama_f3=gf3, n_grid=n_grid)
+    memoria = [
+        f"15.8.3.3.4 [{eixo}]: λ = ℓe/i = {_fmt_p28(lam)} (<= 140); ℓe = {_fmt_p28(le)} cm, h = {_fmt_p28(h)} cm.",
+        f"15.8.2: MA = {_fmt_p28(MA)} kN·cm, MB = {_fmt_p28(MB)} kN·cm, tipo = {tipo}; αb = {_fmt_p28(ab_ef)}.",
+        f"11.3.3.4.3: M1d,mín = Nd·(1,5 + 0,03h) = {_fmt_p28(M1d_min)} kN·cm"
+        + ("; aplicado a M1d,A." if aplicar_minimo else "; não aplicado."),
+        (f"15.8.4: ecc = {_fmt_p28(ecc)} cm; M1d,A = {_fmt_p28(M1dA)} + Nd·ecc = {_fmt_p28(M1dA_ef)} kN·cm."
+         if ecc > 0.0 else f"15.8.4: sem excentricidade de fluência (λ = {_fmt_p28(lam)}); "
+                           f"M1d,A = {_fmt_p28(M1dA_ef)} kN·cm."),
+        f"15.8.2: λ1 = (25 + 12,5·e1/h)/αb, 35 <= λ1 <= 90, e1 = {_fmt_p28(e1)} cm -> λ1 = {_fmt_p28(lam1)}.",
+    ]
+    memoria.extend(diag.memoria)
+
+    c2 = Nd * le * le / 10.0
+    estavel = True
+    if dispensa:
+        cur, M2d, Md_tot = 0.0, 0.0, M1dA_ef
+        memoria.append(f"15.8.2: λ = {_fmt_p28(lam)} < λ1 = {_fmt_p28(lam1)}: efeitos locais de 2ª ordem "
+                       f"desprezados; Md,tot = M1d,A = {_fmt_p28(Md_tot)} kN·cm.")
+    elif linearizar:
+        den = 1.0 - c2 / (gf3 * diag.EI_sec_kncm2)
+        if den <= 0.0:
+            estavel = False
+            cur, M2d, Md_tot = float("nan"), float("nan"), float("nan")
+        else:
+            Md_tot = ab_ef * M1dA_ef / den
+            cur = Md_tot / (gf3 * diag.EI_sec_kncm2)
+            M2d = Md_tot - ab_ef * M1dA_ef
+        memoria.append("15.3.1: curva AB linearizada pela reta AB: 1/r = M/(γf3·(EI)sec); "
+                       f"Md,tot = αb·M1d,A/[1 − Nd·ℓe²/(10·γf3·(EI)sec)] = {_fmt_p28(Md_tot)} kN·cm.")
+    else:
+        def f(M):
+            return ab_ef * M1dA_ef + c2 * diag.curvatura(M / gf3) - M
+        M_lo = ab_ef * M1dA_ef
+        M_hi = gf3 * diag.M_max_curva_kncm
+        if M_lo >= M_hi:
+            estavel = False
+        else:
+            grade = _np_p28.linspace(M_lo, M_hi, 401)
+            valores = [f(m) for m in grade]
+            raiz = None
+            for i in range(1, len(grade)):
+                if valores[i - 1] >= 0.0 and valores[i] <= 0.0:
+                    raiz = (_brentq_p28(f, grade[i - 1], grade[i], xtol=1e-9, rtol=1e-12)
+                            if valores[i] < 0.0 else float(grade[i]))
+                    break
+            estavel = raiz is not None
+        if estavel:
+            Md_tot = raiz
+            cur = diag.curvatura(Md_tot / gf3)
+            M2d = c2 * cur
+        else:
+            cur, M2d, Md_tot = float("nan"), float("nan"), float("nan")
+        memoria.append("15.8.3.3.4: Md,tot = αb·M1d,A + Nd·ℓe²/10·(1/r), 1/r do diagrama M, N, 1/r "
+                       "para Md,tot/γf3 (15.3.1).")
+    if estavel and not dispensa:
+        M2d, gn1 = _pil.aplicar_gama_n1(M2d, lam)
+        Md_tot = max(ab_ef * M1dA_ef + M2d, M1dA_ef)
+        memoria.append(f"15.8.3.3.4: 1/r = {_fmt_p28(cur)} 1/cm; M2d = Nd·ℓe²/10·1/r = {_fmt_p28(M2d)} kN·cm; "
+                       f"Md,tot = {_fmt_p28(ab_ef)} × {_fmt_p28(M1dA_ef)} + {_fmt_p28(M2d)} = "
+                       f"{_fmt_p28(Md_tot)} kN·cm (>= M1d,A = {_fmt_p28(M1dA_ef)}).")
+    else:
+        gn1 = 1.0
+
+    if not estavel:
+        ok = False
+        governante = ("instabilidade ou esgotamento da seção: não há equilíbrio na curva "
+                      f"M, N, 1/r (Nd·ℓe²/10 = {_fmt_p28(c2)} kN·cm²)")
+        memoria.append(f"15.8.3.3.4: {governante} -> não ok.")
+    else:
+        seg = _seg_p28.verificar_seguranca(diag.MRd_kncm, Md_tot, rotulo="MRd x Md,tot",
+                                           item="15.8.3.3.4")
+        ok = seg.ok
+        governante = f"seção crítica: MRd = {_fmt_p28(diag.MRd_kncm)} kN·cm, Md,tot = {_fmt_p28(Md_tot)} kN·cm" + (
+            "" if ok else " — não passa")
+        memoria.extend(seg.memoria)
+    return ResultadoPilarPadraoMN1r(
+        eixo=eixo, h_cm=h, le_cm=le, lambda_=lam, lambda1=lam1, dispensa_2a_ordem=dispensa,
+        MA_kncm=MA, MB_kncm=MB, alpha_b=ab_ef, M1d_min_kncm=M1d_min, ecc_cm=ecc,
+        M1d_A_ef_kncm=M1dA_ef, curvatura_1_cm=cur, M2d_kncm=M2d, gama_n1=gn1,
+        Md_tot_kncm=Md_tot, MRd_kncm=diag.MRd_kncm, estavel=estavel, diagrama=diag,
+        ok=ok, governante=governante, memoria=tuple(memoria),
+    )
+
+
+@_dataclass_p28(frozen=True)
+class ResultadoMetodoGeral:
+    """Método geral de 2ª ordem de uma barra (15.8.3.2)."""
+    eixo: str
+    le_cm: float
+    lambda_: float
+    gama_n1: float
+    ecc_cm: float
+    n_segmentos: int
+    x_cm: tuple[float, ...]          # posição a partir do topo
+    y_cm: tuple[float, ...]          # deslocamento transversal (2ª ordem)
+    M1d_kncm: tuple[float, ...]      # 1ª ordem (com mínimo e fluência)
+    Md_tot_kncm: tuple[float, ...]   # M1d + γn1·Nd·y
+    Md_tot_max_kncm: float           # maior valor absoluto
+    x_Md_tot_max_cm: float
+    M2d_max_kncm: float              # γn1·Nd·|y| máximo
+    MRd_kncm: float                  # no sentido de Md,tot,máx
+    convergiu: bool
+    estavel: bool
+    n_iter: int
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def metodo_geral_pilar(
+    secao,
+    concreto,
+    aco,
+    le_cm: float,
+    Nd_kn: float,
+    M1_topo_kncm: float,
+    M1_base_kncm: float,
+    n_segmentos: int = 20,
+    eixo: str = "x",
+    ecc_cm: float | None = None,
+    aplicar_minimo: bool = True,
+    gama_f3: float = fco.GAMA_F3,
+    n_pontos: int = 40,
+    n_grid: int = 60,
+    tol_cm: float = 1e-7,
+    iter_max: int = 2000,
+    diagramas: tuple | None = None,
+) -> ResultadoMetodoGeral:
+    """Método geral: 2ª ordem local por discretização da barra (15.8.3.2, PDF p. 129).
+
+    "Consiste na análise não linear de 2ª ordem efetuada com discretização
+    adequada da barra, consideração da relação momento-curvatura real em
+    cada seção e consideração da não linearidade geométrica de maneira não
+    aproximada." Obrigatório para λ > 140.
+
+    Modelo: barra birrotulada de comprimento ℓe, força normal Nd constante
+    e momentos de 1ª ordem M1_topo (x = 0) e M1_base (x = ℓe), com variação
+    linear entre eles. A barra é dividida em ``n_segmentos`` trechos iguais;
+    em cada nó i:
+
+        Md(xi) = M1d(xi) + Nd·y(xi)
+        (1/r)i = curvatura do diagrama M, N, 1/r para Md(xi)/γf3 (15.3.1)
+        y'' = −1/r,  y(0) = y(ℓe) = 0   (diferenças finitas centradas)
+
+    A linha elástica é iterada (ponto fixo) até |Δy| < ``tol_cm``; o
+    equilíbrio é tomado na geometria deformada, sem a aproximação senoidal
+    do pilar-padrão. Se algum Md/γf3 passa do máximo da curva AB ou a
+    iteração não converge, o pilar é instável (``estavel=False``, ``ok=False``).
+
+    - Formulação de segurança de 15.3.1: curva AB com 1,10·fcd e Nd/γf3; os
+      esforços majorados por γf3 dão Md = M1d + Nd·y, com a curvatura lida
+      em Md/γf3.
+    - λ = ℓe/i (15.8.2); λ > 200 só com Nd < 0,10·fcd·Ac (15.8.1,
+      ``pilares_nbr6118.verificar_esbeltez_limite``); para λ > 140 a parcela
+      de 2ª ordem é majorada por γn1 = 1 + (λ − 140)/140 (15.8.1):
+      Md,tot = M1d + γn1·Nd·y.
+    - λ > 90: fluência obrigatória (15.8.4); ``ecc_cm`` soma-se à
+      excentricidade de 1ª ordem ao longo de toda a barra, no sentido do
+      maior momento de extremidade.
+    - ``aplicar_minimo``: se max(|M1_topo|, |M1_base|) < M1d,mín =
+      Nd(1,5 + 0,03h) (11.3.3.4.3), usa-se M1d,mín uniforme na barra, no
+      sentido do maior momento (equivale a αb = 1,0 de 15.8.2 d).
+    - ELU: max |Md,tot| <= MRd (curva de ELU com NRd = Nd), por
+      ``seguranca_nbr6118.verificar_seguranca``.
+
+    ``diagramas`` aceita um par (sentido +, sentido −) já construído, por
+    exemplo para reusar num laço; cada um precisa de ``curvatura(M)``,
+    ``M_max_curva_kncm`` e ``MRd_kncm``. Seção retangular; ``eixo`` "x"
+    (h = altura_cm) ou "y" (h = base_cm); kN, cm, kN·cm.
+    """
+    h, lam_por_le, Ac = _geometria_p28(secao, concreto, eixo)
+    Nd = float(Nd_kn)
+    if not (Nd > 0.0):
+        raise nbr.FaixaNormativaError(
+            f"Nd = {Nd:g} kN: o método geral de 15.8.3.2 é para barra comprimida (Nd > 0)."
+        )
+    le = _pil._positivo_p25(le_cm, "ℓe", "15.8.3.2")
+    n = int(n_segmentos)
+    if n < 4:
+        raise ValueError("n_segmentos deve ser pelo menos 4 (discretização adequada, 15.8.3.2).")
+    lam = lam_por_le * le
+    lim = _pil.verificar_esbeltez_limite(lam, Nd, concreto.fck_mpa, Ac, concreto.gama_c)
+    if not lim.ok:
+        raise nbr.FaixaNormativaError(f"15.8.1: {lim.governante}.")
+    ecc = _exigir_fluencia_p28(lam, ecc_cm, "15.8.3.2")
+    gn1 = _pil.gama_n1(lam)
+    gf3 = float(gama_f3)
+
+    Mt, Mb = float(M1_topo_kncm), float(M1_base_kncm)
+    MA = Mt if abs(Mt) >= abs(Mb) else Mb
+    sinal = -1.0 if MA < 0.0 else 1.0
+    M1d_min = _pil.M1d_min_kncm(Nd, h)
+    memoria = [
+        f"15.8.3.2 [{eixo}]: barra birrotulada de ℓe = {_fmt_p28(le)} cm em {n} trechos; "
+        f"Nd = {_fmt_p28(Nd)} kN; λ = {_fmt_p28(lam)}.",
+    ]
+    memoria.extend(lim.memoria[:-1])
+    if aplicar_minimo and abs(MA) < M1d_min:
+        Mt = Mb = sinal * M1d_min
+        memoria.append(f"11.3.3.4.3: max(|M1,topo|, |M1,base|) < M1d,mín = {_fmt_p28(M1d_min)} kN·cm: "
+                       "M1d,mín uniforme na barra (15.8.2 d).")
+    x = _np_p28.linspace(0.0, le, n + 1)
+    M1 = Mt + (Mb - Mt) * x / le + sinal * Nd * ecc
+    if ecc > 0.0:
+        memoria.append(f"15.8.4: ecc = {_fmt_p28(ecc)} cm; Nd·ecc = {_fmt_p28(Nd * ecc)} kN·cm somado a M1d.")
+
+    if diagramas is None:
+        dpos = _mc.diagrama_M_N_curvatura(secao, concreto, aco, Nd, n_pontos, eixo, 1.0, gf3, n_grid)
+        dneg = _mc.diagrama_M_N_curvatura(secao, concreto, aco, Nd, n_pontos, eixo, -1.0, gf3, n_grid)
+        memoria.extend(dpos.memoria)
+    else:
+        dpos, dneg = diagramas
+
+    # Operador de 2ª diferença nos nós internos: (y[i-1] − 2y[i] + y[i+1])/Δ² = −k[i].
+    dx = le / n
+    m = n - 1
+    A = (_np_p28.diag(-2.0 * _np_p28.ones(m)) + _np_p28.diag(_np_p28.ones(m - 1), 1)
+         + _np_p28.diag(_np_p28.ones(m - 1), -1)) / (dx * dx)
+    A_inv = _np_p28.linalg.inv(A)
+
+    def curvaturas(M):
+        k = _np_p28.empty_like(M)
+        for i, Mi in enumerate(M):
+            dg = dpos if Mi >= 0.0 else dneg
+            k[i] = (1.0 if Mi >= 0.0 else -1.0) * dg.curvatura(abs(Mi) / gf3)
+        return k
+
+    y = _np_p28.zeros(n + 1)
+    convergiu = estavel = False
+    passou_curva = False
+    it = 0
+    try:
+        for it in range(1, int(iter_max) + 1):
+            M = M1 + Nd * y
+            k = curvaturas(M)
+            y_novo = _np_p28.zeros(n + 1)
+            y_novo[1:-1] = A_inv @ (-k[1:-1])
+            dy = float(_np_p28.max(_np_p28.abs(y_novo - y)))
+            y = y_novo
+            if not _np_p28.all(_np_p28.isfinite(y)):
+                break
+            if dy < float(tol_cm):
+                convergiu = estavel = True
+                break
+    except _ERROS_FAIXA_P28:
+        convergiu = estavel = False
+        passou_curva = True
+
+    M2 = gn1 * Nd * y
+    Mtot = M1 + M2
+    i_max = int(_np_p28.argmax(_np_p28.abs(Mtot)))
+    Mmax = float(abs(Mtot[i_max]))
+    MRd = (dpos if Mtot[i_max] >= 0.0 else dneg).MRd_kncm
+    if gn1 > 1.0:
+        memoria.append(f"15.8.1: λ > 140: parcela de 2ª ordem majorada por γn1 = {_fmt_p28(gn1)}.")
+    if not estavel:
+        ok = False
+        governante = ("instabilidade ou esgotamento da seção: o momento passa do máximo "
+                      f"da curva M, N, 1/r na iteração {it}" if passou_curva else
+                      f"instabilidade: a linha elástica não converge em {it} iterações")
+        memoria.append(f"15.8.3.2: {governante} -> não ok.")
+    else:
+        memoria.append(f"15.8.3.2: convergência em {it} iterações (|Δy| < {_fmt_p28(tol_cm)} cm); "
+                       f"y,máx = {_fmt_p28(float(_np_p28.max(_np_p28.abs(y))))} cm.")
+        memoria.append(f"15.8.3.2: Md,tot,máx = {_fmt_p28(Mmax)} kN·cm em x = {_fmt_p28(float(x[i_max]))} cm "
+                       f"(M1d = {_fmt_p28(float(M1[i_max]))}, M2d = {_fmt_p28(float(M2[i_max]))} kN·cm).")
+        seg = _seg_p28.verificar_seguranca(MRd, Mmax, rotulo="MRd x Md,tot,máx", item="15.8.3.2")
+        ok = seg.ok
+        governante = (f"seção x = {_fmt_p28(float(x[i_max]))} cm: MRd = {_fmt_p28(MRd)} kN·cm, "
+                      f"Md,tot = {_fmt_p28(Mmax)} kN·cm" + ("" if ok else " — não passa"))
+        memoria.extend(seg.memoria)
+    return ResultadoMetodoGeral(
+        eixo=eixo, le_cm=le, lambda_=lam, gama_n1=gn1, ecc_cm=ecc, n_segmentos=n,
+        x_cm=tuple(float(v) for v in x), y_cm=tuple(float(v) for v in y),
+        M1d_kncm=tuple(float(v) for v in M1), Md_tot_kncm=tuple(float(v) for v in Mtot),
+        Md_tot_max_kncm=Mmax, x_Md_tot_max_cm=float(x[i_max]),
+        M2d_max_kncm=float(_np_p28.max(_np_p28.abs(M2))), MRd_kncm=MRd,
+        convergiu=convergiu, estavel=estavel, n_iter=it, ok=ok,
+        governante=governante, memoria=tuple(memoria),
+    )

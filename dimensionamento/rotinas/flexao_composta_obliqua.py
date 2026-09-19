@@ -2776,5 +2776,172 @@ def main(argv: list[str] | None = None) -> int:
     return 0 if r.get("status") in ("OK",) else 1
 
 
+# === P28: rótulo do domínio de deformação (17.2.2 g, Figura 17.1) ===
+DOMINIOS_FIGURA_17_1 = ("reta a", "1", "2", "3", "4", "4a", "5", "reta b")
+_TOL_EPS_P28 = 1e-9   # ‰, folga numérica nos limites de deformação
+
+
+def dominio_deformacao(
+    eps_topo_pmil: float,
+    eps_base_pmil: float,
+    fck_mpa: float,
+    h_cm: float,
+    d_cm: float,
+    fyk_mpa: float = 500.0,
+    gama_s: float = GAMA_S,
+    Es_mpa: float = nbr.ES_MPA,
+) -> str:
+    """Rótulo do domínio de deformação da seção (17.2.2 g e Figura 17.1, PDF p. 142).
+
+    Devolve "reta a", "1", "2", "3", "4", "4a", "5" ou "reta b". A deformada
+    é plana (17.2.2 a) e dada pelas deformações nas duas faces, em ‰, com
+    compressão positiva: ``eps_topo_pmil`` na face mais comprimida (de onde
+    se medem x e d) e ``eps_base_pmil`` na face oposta, a h da primeira.
+    ``d_cm`` é a profundidade da armadura mais tracionada (0 < d <= h).
+
+    Linha neutra: x = h·εtopo/(εtopo − εbase). Limites (Figura 17.1):
+
+        x23 = εcu/(εcu + 10‰)·d        x34 = εcu/(εcu + εyd)·d
+
+    e a partição, com os extremos decididos pelo texto da norma (PDF p. 142):
+
+    - reta a: tração uniforme (εtopo = εbase < 0);
+    - 1: x <= 0, tração não uniforme, sem compressão;
+    - 2: 0 < x < x23 (εc < εcu, com o máximo alongamento permitido);
+    - 3: x23 <= x <= x34 (εc = εcu e εs >= εyd);
+    - 4: x34 < x < d (aço tracionado sem escoamento, εs < εyd);
+    - 4a: d <= x < h (armaduras comprimidas; em x = d, εs = 0);
+    - 5: x >= h e não uniforme, compressão sem tração;
+    - reta b: compressão uniforme (εtopo = εbase > 0).
+
+    A deformada tem de caber na região da Figura 17.1: εtopo <= εcu,
+    εs >= −10 ‰ na armadura (pivô A), deformação no pivô C, a
+    (εcu − εc2)/εcu·h da face, <= εc2, e, na reta b, encurtamento <= εc2
+    (em C90, min(εc2, εcu), como ``nucleo_nbr6118.eps_compressao_uniforme``).
+    Fora dela levanta ``FaixaNormativaError``. Uma deformada que não atinge
+    pivô nenhum (estado interior) recebe o rótulo do domínio da deformada
+    última com a mesma x. εcu e εc2 vêm do núcleo (8.2.10.1) e εyd =
+    fyd/Es (``nucleo_nbr6118.eps_yd``); fck em MPa, h e d em cm.
+
+    ``eps_topo_pmil < eps_base_pmil`` levanta erro: a face de topo tem de ser
+    a mais comprimida (troque as faces e meça d a partir da outra).
+    """
+    et, eb = float(eps_topo_pmil), float(eps_base_pmil)
+    h, d = float(h_cm), float(d_cm)
+    for nome, v in (("εtopo", et), ("εbase", eb), ("h", h), ("d", d)):
+        if math.isnan(v) or math.isinf(v):
+            raise nbr.FaixaNormativaError(f"{nome} = {v:g} inválido (17.2.2 g).")
+    if not (h > 0.0) or not (0.0 < d <= h * (1.0 + 1e-12)):
+        raise nbr.FaixaNormativaError(
+            f"h = {h:g} cm e d = {d:g} cm inválidos: exige-se 0 < d <= h (Figura 17.1)."
+        )
+    ecu = nbr.eps_cu(fck_mpa)
+    ec2 = nbr.eps_c2(fck_mpa)
+    ec2_ef = nbr.eps_compressao_uniforme(fck_mpa)
+    rho_c = nbr.pivo_C_distancia_relativa(fck_mpa)
+    eyd = nbr.eps_yd(fyk_mpa, gama_s, Es_mpa)
+    tol = _TOL_EPS_P28
+
+    if abs(et - eb) <= tol:
+        e = 0.5 * (et + eb)
+        if e < -tol:
+            if e < -EPS_SU - tol:
+                raise nbr.FaixaNormativaError(
+                    f"Tração uniforme de {-e:g} ‰ além do alongamento-limite de 10 ‰ "
+                    "(reta a, Figura 17.1)."
+                )
+            return "reta a"
+        if e > tol:
+            if e > ec2_ef + tol:
+                raise nbr.FaixaNormativaError(
+                    f"Compressão uniforme de {e:g} ‰ além de εc2 = {ec2_ef:g} ‰ "
+                    "(reta b, Figura 17.1)."
+                )
+            return "reta b"
+        raise nbr.FaixaNormativaError(
+            "Deformação nula na seção inteira: não há domínio de estado-limite último (17.2.2 g)."
+        )
+    if et < eb:
+        raise nbr.FaixaNormativaError(
+            f"εtopo = {et:g} ‰ < εbase = {eb:g} ‰: a face de topo tem de ser a mais "
+            "comprimida (troque as faces e meça d a partir da outra; Figura 17.1)."
+        )
+    eps_s = et - (et - eb) * d / h
+    eps_C = et - (et - eb) * rho_c
+    if et > ecu + tol:
+        raise nbr.FaixaNormativaError(
+            f"εtopo = {et:g} ‰ > εcu = {ecu:g} ‰: a deformada passa do pivô B (Figura 17.1)."
+        )
+    if eps_s < -EPS_SU - tol:
+        raise nbr.FaixaNormativaError(
+            f"εs = {eps_s:g} ‰ < −10 ‰ na armadura: a deformada passa do pivô A (Figura 17.1)."
+        )
+    if eps_C > min(ec2, ecu) + tol:
+        raise nbr.FaixaNormativaError(
+            f"Deformação de {eps_C:g} ‰ no pivô C, acima de εc2 = {min(ec2, ecu):g} ‰ "
+            "(Figura 17.1)."
+        )
+    x = h * et / (et - eb)
+    tol_x = 1e-9 * h
+    x23 = nbr.x_lim_dominio_2_3(d, fck_mpa)
+    x34 = ecu / (ecu + eyd) * d
+    if x <= tol_x:
+        return "1"
+    if x < x23 - tol_x:
+        return "2"
+    if x <= x34 + tol_x:
+        return "3"
+    if x < d - tol_x:
+        return "4"
+    if x < h - tol_x:
+        return "4a"
+    return "5"
+
+
+def dominio_elu(
+    secao: "SecaoRetangular | Secao",
+    concreto: Concreto | None,
+    aco: Aco,
+    alpha_rad: float,
+    x_LN_cm: float,
+) -> str:
+    """Domínio (17.2.2 g, Figura 17.1) da deformada última do kernel (PDF p. 142).
+
+    Recebe o par (α, x_LN) que ``verificar_fco`` e ``momento_resistente_fco``
+    devolvem (``alpha_rad``, ``x_LN_cm``), refaz o plano de deformação pelos
+    pivôs A, B e C (``_strain``) e o rotula com ``dominio_deformacao``, com
+    h e d medidos perpendicularmente à linha neutra (h_inc e d_inc do
+    kernel). Aceita ``SecaoRetangular`` (com ``concreto``) e ``Secao``
+    poligonal de um concreto só (``concreto`` pode ser None); exige armadura
+    passiva, porque sem ela não há pivô A nem d.
+    """
+    if isinstance(secao, SecaoRetangular):
+        if concreto is None:
+            raise TypeError("SecaoRetangular exige o concreto.")
+        h_inc, yp_max = _h_inc_yp_max(secao, alpha_rad)
+        d_inc = _d_inc(secao, alpha_rad, yp_max)
+        conc = concreto
+    else:
+        zonas = {(p.concreto.eps_c2_pmilh, p.concreto.eps_cu_pmilh) for p in secao.partes}
+        if len(zonas) != 1:
+            raise nbr.FaixaNormativaError(
+                "Seção com concretos de limites de deformação diferentes: o rótulo da "
+                "Figura 17.1 pressupõe um εcu e um εc2 só."
+            )
+        h_inc, yp_max = _h_inc_yp_max_pol(secao, alpha_rad)
+        d_inc = _d_inc_pol(secao, alpha_rad, yp_max)
+        conc = secao.partes[0].concreto
+    if d_inc <= 0.0:
+        raise nbr.FaixaNormativaError(
+            "Seção sem armadura: sem pivô A nem d, os domínios 1 a 4a não se definem (Figura 17.1)."
+        )
+    x = float(x_LN_cm)
+    ec2, ecu, rho = conc.eps_c2_pmilh, conc.eps_cu_pmilh, conc.pivo_C_rel
+    e_topo = float(_strain(0.0, x, h_inc, d_inc, ec2, ecu, rho))
+    e_base = float(_strain(h_inc, x, h_inc, d_inc, ec2, ecu, rho))
+    return dominio_deformacao(e_topo, e_base, conc.fck_mpa, h_inc, d_inc,
+                              aco.fyk_mpa, aco.gama_s, aco.Es_kncm2 * 10.0)
+
+
 if __name__ == "__main__":
     sys.exit(main())

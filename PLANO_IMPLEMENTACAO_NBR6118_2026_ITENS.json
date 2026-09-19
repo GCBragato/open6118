@@ -216,7 +216,8 @@
    "nome": "Kernel de flexão: domínios, momento-curvatura e método geral",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/rotinas/momento_curvatura.py + flexao_composta_obliqua.py + verificacao_pilar.py"
+   "modulo": "dimensionamento/rotinas/momento_curvatura.py + flexao_composta_obliqua.py + verificacao_pilar.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P29",
@@ -7544,7 +7545,7 @@
    "pagina_pdf": 129,
    "titulo": "Método geral (análise não linear de 2ª ordem por discretização)",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "G",
    "pacote": "P28",
@@ -7557,7 +7558,29 @@
     "flexao_composta_obliqua (curvas M-N-1/r por seção)"
    ],
    "teste_sugerido": "Para λ<=90, o resultado do método geral deve convergir para valores próximos aos dos métodos aproximados (curvatura ou rigidez κ) já implementados e testados contra a apostila.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P28",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificacao_pilar.metodo_geral_pilar",
+     "verificacao_pilar.ResultadoMetodoGeral"
+    ],
+    "testes": [
+     "test_1583_2_solucao_fechada_elastica (fórmula da secante, erro 3e-5 com 20 trechos)",
+     "test_1583_2_momentos_opostos_maximo_na_ponta",
+     "test_1583_2_converge_para_pilar_padrao_com_lambda_pequeno (λ = 13,9 e 27,7; diferença < 2 %)",
+     "test_1583_2_equilibrio_nos_nos",
+     "test_1583_2_momento_minimo_e_fluencia",
+     "test_1583_2_gama_n1_acima_de_140",
+     "test_1583_2_lambda_acima_de_200",
+     "test_1583_2_fluencia_obrigatoria",
+     "test_1583_2_instavel",
+     "test_1583_2_entradas_invalidas",
+     "test_1583_2_memoria"
+    ],
+    "observacao": "Barra birrotulada de comprimento ℓe, com N constante e M1 linear entre topo e base, em n_segmentos trechos. Em cada nó, a curvatura vem do diagrama M, N, 1/r (em Md/γf3). A linha elástica sai por diferenças finitas e iteração de ponto fixo até |Δy| < tol. Regras aplicadas: λ <= 200 por verificar_esbeltez_limite; γn1 multiplica a parcela de 2ª ordem quando λ > 140 (15.8.1); ecc é obrigatório com λ > 90; M1d,mín entra uniforme quando o maior momento de extremidade fica abaixo dele. O parâmetro diagramas aceita um par pronto (ou um stub linear, como no teste da solução fechada). Só SecaoRetangular, flexão numa direção."
+   }
   },
   {
    "id": "15.8.3.3.2-md-tot-curvatura-aprox",
@@ -7599,7 +7622,7 @@
    "pagina_pdf": 130,
    "titulo": "Método do pilar-padrão acoplado a diagramas M, N, 1/r",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "G",
    "pacote": "P28",
@@ -7612,7 +7635,42 @@
     "flexao_composta_obliqua (curva momento-curvatura por seção)"
    ],
    "teste_sugerido": "Para uma seção e armadura tais que o diagrama M-N-1/r coincida com a curvatura aproximada de 15.8.3.3.2 (aproximação válida para ν próximo de 0,5-0,6), os dois métodos devem dar resultados próximos.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P28",
+    "data": "19/09/2026",
+    "funcoes": [
+     "momento_curvatura.diagrama_M_N_curvatura",
+     "momento_curvatura.DiagramaMNCurvatura (curvatura, momento)",
+     "verificacao_pilar.pilar_padrao_MN1r",
+     "verificacao_pilar.ResultadoPilarPadraoMN1r"
+    ],
+    "testes": [
+     "test_1531_diagrama_cruza_ei_secante_no_ponto_B",
+     "test_1531_ponto_B_e_MRd_sobre_gama_f3",
+     "test_1531_diagrama_comeca_em_zero_e_sobe",
+     "test_1531_ultimo_ponto_no_limite_da_figura_17_1",
+     "test_1531_inversa_curvatura_momento",
+     "test_1531_secao_simetrica_sentidos_iguais",
+     "test_1531_eixo_y_menos_rigido",
+     "test_1531_memoria_cita_itens",
+     "test_1531_secao_assimetrica_avisa",
+     "test_1531_secao_simetrica_nao_avisa",
+     "test_1531_parametros_invalidos",
+     "test_1531_entradas_fora_da_faixa",
+     "test_158334_forma_linearizada_conta_a_mao",
+     "test_158334_equacao_de_equilibrio",
+     "test_158334_mais_leve_que_curvatura_aproximada",
+     "test_158334_curvatura_aproximada_entre_B_e_elu (ν = 0,50; 0,55; 0,60)",
+     "test_158334_momento_minimo_e_dispensa",
+     "test_158334_limite_140_e_fluencia",
+     "test_158334_fluencia_dispensada_ate_90",
+     "test_158334_instavel",
+     "test_158334_elu_nao_passa",
+     "test_158334_entradas_invalidas"
+    ],
+    "observacao": "O diagrama segue a Figura 15.1: curva AB com pico 1,10·fcd e N = Nd/γf3, e o MRd tirado da curva de ELU. O ponto B entra como ponto do diagrama, e a (EI)sec bate com ei_secante a 1e-12. O diagrama vai até o primeiro limite de deformação da Figura 17.1. Md,tot = αb·M1d,A + Nd·ℓe²/10·(1/r), com 1/r lido em Md,tot/γf3, resolvido pela primeira raiz; se não há raiz, estavel=False. A opção linearizar=True usa a reta AB, em forma fechada. Com λ > 140 levanta erro; com λ > 90, exige ecc_cm (15.8.4). A seção crítica é verificada contra o MRd por verificar_seguranca. Só SecaoRetangular."
+   }
   },
   {
    "id": "15.8.3.3.5-pilar-padrao-flexao-obliqua",
@@ -8079,7 +8137,7 @@
    "pagina_pdf": 142,
    "titulo": "Classificação explícita do domínio de deformação (reta a, 1 a 5, 4a, reta b)",
    "tipo": "classificacao",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P28",
@@ -8089,7 +8147,32 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "x_LN -> 0 deve cair em dominio 1/reta a; x_LN -> h (ou alem) deve cair em dominio 5/reta b; casos intermediarios contra os limites ja implementados.",
-   "trecho": "flexao"
+   "trecho": "flexao",
+   "implementacao": {
+    "pacote": "P28",
+    "data": "19/09/2026",
+    "funcoes": [
+     "flexao_composta_obliqua.dominio_deformacao",
+     "flexao_composta_obliqua.dominio_elu",
+     "flexao_composta_obliqua.DOMINIOS_FIGURA_17_1"
+    ],
+    "testes": [
+     "test_1722g_limites_conta_a_mao",
+     "test_1722g_dominios_nas_fronteiras (14 casos: x<0, x=0, x23±, x34±, d±, h±, x grande)",
+     "test_1722g_retas_a_e_b",
+     "test_1722g_deformada_interior_recebe_rotulo_pela_ln",
+     "test_1722g_ca60_desloca_x34",
+     "test_1722g_c90_pivo_c_na_face",
+     "test_1722g_c60_pivo_c",
+     "test_1722g_fora_da_figura_17_1",
+     "test_1722g_geometria_invalida",
+     "test_1722g_fck_fora_da_faixa",
+     "test_1722g_dominio_elu_do_kernel",
+     "test_1722g_dominio_elu_flexao_simples_do_kernel",
+     "test_1722g_dominio_elu_sem_armadura"
+    ],
+    "observacao": "Rótulo pela posição da LN, com os extremos decididos pelo texto da p. 142: 1 para x <= 0; 2 para 0 < x < x23; 3 para x23 <= x <= x34 (εs >= εyd); 4 para x34 < x < d; 4a para d <= x < h; 5 para x >= h. Deformada fora da região da Figura 17.1 (além de εcu, de −10 ‰ na armadura, de εc2 no pivô C ou na reta b) levanta FaixaNormativaError. dominio_elu rotula o par (α, x_LN) que verificar_fco devolve, para SecaoRetangular e Secao de um concreto só. O dict de verificar_fco não foi alterado: o rótulo é obtido chamando dominio_elu sobre o resultado."
+   }
   },
   {
    "id": "17.2.3-dutilidade-vigas",

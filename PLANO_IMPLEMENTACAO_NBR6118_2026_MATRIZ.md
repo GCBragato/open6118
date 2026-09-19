@@ -342,10 +342,10 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `15.8.2-lambda1-limite-esbeltez` | 15.8.2 | 128 | Esbeltez-limite λ1 para dispensa dos efeitos locais de 2ª ordem | implementado | alta | P |  |
 | `15.8.2-alfa-b` | 15.8.2 | 128 | Coeficiente αb (forma do diagrama de momentos de 1ª ordem) | implementado | alta | M |  |
 | `15.8.3.1-escolha-metodo-fluencia-obrigatoria` | 15.8.3.1 | 129 | Escolha entre método geral e métodos aproximados; obrigatoriedade da fluência para λ>90 | não computável | alta | P |  |
-| `15.8.3.2-metodo-geral` | 15.8.3.2 | 129 | Método geral (análise não linear de 2ª ordem por discretização) | ausente | alta | G | P28 |
+| `15.8.3.2-metodo-geral` | 15.8.3.2 | 129 | Método geral (análise não linear de 2ª ordem por discretização) | implementado | alta | G | P28 |
 | `15.8.3.3.2-md-tot-curvatura-aprox` | 15.8.3.3.2 | 129 | Método do pilar-padrão com curvatura aproximada | implementado | alta | M |  |
 | `15.8.3.3.3-md-tot-rigidez-kappa-aprox` | 15.8.3.3.3 | 130 | Método do pilar-padrão com rigidez κ aproximada | implementado | alta | M |  |
-| `15.8.3.3.4-metodo-diagramas-mn1r` | 15.8.3.3.4 | 130 | Método do pilar-padrão acoplado a diagramas M, N, 1/r | ausente | média | G | P28 |
+| `15.8.3.3.4-metodo-diagramas-mn1r` | 15.8.3.3.4 | 130 | Método do pilar-padrão acoplado a diagramas M, N, 1/r | implementado | média | G | P28 |
 | `15.8.3.3.5-pilar-padrao-flexao-obliqua` | 15.8.3.3.5 | 131 | Método do pilar-padrão para flexão composta oblíqua (duas direções simultâneas) | implementado | alta | G | P25 |
 | `15.8.4-fluencia-ecc` | 15.8.4 | 131 | Excentricidade adicional de fluência ecc para pilares esbeltos (λ>90) | implementado | média | M | P25 |
 | `15.9.1-pilar-parede-generalidades` | 15.9.1 | 131 | Condição para pilar-parede ser tratado como elemento linear | não computável | média | P |  |
@@ -380,7 +380,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `17.2.2e-lambda-alfac-tensao-retangulo` | 17.2.2 e) | 141 | Bloco retangular equivalente: λ, αc e tensão constante | implementado | alta | P |  |
 | `17.2.2f-tensao-armaduras-diagramas` | 17.2.2 f) | 141 | Tensão nas armaduras pelos diagramas tensão-deformação (8.3.6/8.4.5) | não computável | alta | P |  |
 | `17.2.2g-limites-dominios` | 17.2.2 g) | 142 | Limites de linha neutra entre domínios e deformações da Figura 17.1 | implementado | alta | P |  |
-| `17.2.2g-classificacao-dominio` | 17.2.2 g) | 142 | Classificação explícita do domínio de deformação (reta a, 1 a 5, 4a, reta b) | parcial | média | M | P28 |
+| `17.2.2g-classificacao-dominio` | 17.2.2 g) | 142 | Classificação explícita do domínio de deformação (reta a, 1 a 5, 4a, reta b) | implementado | média | M | P28 |
 | `17.2.3-dutilidade-vigas` | 17.2.3 | 142 | Dutilidade em vigas: limite de x/d (remete a 14.6.4.3) | implementado | alta | P | P12 |
 | `17.2.4.1-forcas-concentradas-10pct-h` | 17.2.4.1 | 143 | Concentração das forças de armadura no centroide (critério 10% h) | implementado | baixa | P | P12 |
 | `17.2.4.1-armaduras-laterais-vigas` | 17.2.4.1 | 143 | Armaduras laterais de vigas podem entrar no cálculo dos esforços resistentes | não computável | média | P |  |
