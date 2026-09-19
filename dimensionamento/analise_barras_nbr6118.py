@@ -1430,3 +1430,706 @@ def alternancia_cargas(modelo: Modelo, caso_q: CasoCarga, caso_g: CasoCarga | No
                                 dispensada=dispensada, n_arranjos=len(parcelas), ok=True,
                                 governante="dispensa 14.6.6.3" if dispensada else "alternância 11.4.1.1",
                                 memoria=tuple(memoria))
+
+
+# === P46: redistribuição com reequilíbrio e 2ª ordem global (14.5.3, 14.6.4.2, 15.7.1) ===
+import dataclasses as _dc_p46
+import warnings as _warnings_p46
+
+
+class ErroConvergencia(RuntimeError):
+    """A análise iterativa de 2ª ordem não convergiu: a carga vertical está
+    perto ou além da carga crítica da estrutura (instabilidade global)."""
+
+
+def _eixo_vertical_p46(tipo: str) -> int | None:
+    """Índice do eixo global vertical: Y no pórtico plano, Z no pórtico
+    espacial. Na grelha (plano XY com carga em Z) não há pilar."""
+    if tipo in ("portico_plano", "trelica_plana"):
+        return 1
+    if tipo in ("portico_espacial", "trelica_espacial"):
+        return 2
+    return None
+
+
+def _eh_pilar_p46(modelo: Modelo, b: Barra) -> bool:
+    """Barra vertical (mais vertical que horizontal) é tratada como pilar."""
+    iv = _eixo_vertical_p46(modelo.tipo)
+    if iv is None:
+        return False
+    d = modelo.nos[b.no_j].xyz - modelo.nos[b.no_i].xyz
+    horiz = float(np.linalg.norm(np.delete(d, iv)))
+    return abs(float(d[iv])) > horiz
+
+
+def _copiar_modelo_p46(modelo: Modelo, barras: dict) -> Modelo:
+    m = Modelo(modelo.tipo)
+    m.nos = dict(modelo.nos)
+    m.barras = dict(barras)
+    m.apoios = {k: set(v) for k, v in modelo.apoios.items()}
+    m.molas = {k: dict(v) for k, v in modelo.molas.items()}
+    return m
+
+
+def caso_combinado(parcelas, nome: str = "combinação") -> CasoCarga:
+    """Caso de carga único com as parcelas já ponderadas: Σ fator·caso.
+
+    parcelas: iterável de pares (CasoCarga, fator). Serve para montar a
+    combinação de cálculo do P4 (``acoes_nbr6118``) como um só caso antes de
+    uma análise não linear, em que a superposição de resultados não vale
+    (15.7.1): a 2ª ordem se calcula com a combinação inteira aplicada de uma
+    vez. Cargas nodais, de barra, temperaturas e deslocamentos de apoio são
+    multiplicados pelo fator da sua parcela.
+    """
+    c = CasoCarga(nome)
+    n = 0
+    for caso, f in parcelas:
+        f = float(f)
+        n += 1
+        c.nodais += [(no, v * f) for no, v in caso.nodais]
+        for bid, tipo, dados in caso.barra_cargas:
+            if tipo == "dist":
+                d, a, bb, q1, q2 = dados
+                c.barra_cargas.append((bid, tipo, (d, a, bb, q1 * f, q2 * f)))
+            else:
+                d, a, v = dados
+                c.barra_cargas.append((bid, tipo, (d, a, v * f)))
+        c.temperaturas += [(bid, dtu * f, dtf * f, h, pl) for bid, dtu, dtf, h, pl in caso.temperaturas]
+        for no, d in caso.recalques.items():
+            alvo = c.recalques.setdefault(no, {})
+            for g, v in d.items():
+                alvo[g] = alvo.get(g, 0.0) + v * f
+    if n == 0:
+        raise ValueError("caso_combinado: nenhuma parcela informada.")
+    return c
+
+
+_TIPOS_NLF_P46 = {
+    "laje": ("laje", False), "lajes": ("laje", False),
+    "viga": ("viga", False), "vigas": ("viga", False),
+    "vigasimetrica": ("viga", True),
+    "pilar": ("pilar", False), "pilares": ("pilar", False),
+}
+
+
+def modelo_com_rigidez_nlf(modelo: Modelo, tipos: dict | None = None,
+                           n_andares: int | None = None,
+                           armadura_simetrica: bool = False) -> tuple:
+    """Cópia do modelo com a não linearidade física aproximada de 15.7.3
+    (PDF p. 126-127) aplicada às barras: (EI)sec = fator·Ec·Ic.
+
+    Fatores (``fator_rigidez_nlf_aproximada``): lajes 0,3; vigas 0,4 com
+    As' ≠ As e 0,5 com As' = As; pilares 0,8. O tipo de cada barra vem de
+    ``tipos`` ({barra: 'laje' | 'viga' | 'viga_simetrica' | 'pilar'}); sem
+    ele, barra vertical é pilar e as demais são vigas (com As' = As quando
+    ``armadura_simetrica``). O fator multiplica o ``fator_EI`` que a barra
+    já tiver (por exemplo, o ajuste de 14.8.1). Ec é o do material da barra:
+    para a majoração de 10 % de 15.5.1, use ``Material.concreto(...,
+    estabilidade_global=True)``.
+
+    Só vale para os esforços globais de 2ª ordem em estruturas reticuladas
+    com no mínimo quatro andares; ``n_andares`` < 4 levanta
+    ``FaixaNormativaError`` (a norma manda avaliar a redução de forma
+    específica). Os valores não servem para esforços locais de 2ª ordem.
+
+    Devolve (modelo novo, memória).
+    """
+    tipos = dict(tipos or {})
+    for bid in tipos:
+        if bid not in modelo.barras:
+            raise ValueError(f"tipos: barra {bid!r} não existe.")
+    novas = {}
+    contagem: dict = {}
+    for bid, b in modelo.barras.items():
+        if bid in tipos:
+            chave = nbr._chave(tipos[bid])
+            if chave not in _TIPOS_NLF_P46:
+                raise ValueError(f"Tipo {tipos[bid]!r} da barra {bid!r} desconhecido: use 'laje', "
+                                 "'viga', 'viga_simetrica' ou 'pilar' (15.7.3).")
+            elem, sim = _TIPOS_NLF_P46[chave]
+            sim = sim or (elem == "viga" and armadura_simetrica)
+        else:
+            elem = "pilar" if _eh_pilar_p46(modelo, b) else "viga"
+            sim = armadura_simetrica
+        f = fator_rigidez_nlf_aproximada(elem, sim, n_andares)
+        rot = f"{elem}{' (As’ = As)' if elem == 'viga' and sim else ''}"
+        contagem[rot] = (f, contagem.get(rot, (f, 0))[1] + 1)
+        novas[bid] = _dc_p46.replace(b, fator_EI=b.fator_EI * f)
+    memoria = ["15.7.3 (p. 126-127): não linearidade física aproximada, (EI)sec = fator·Ec·Ic: "
+               + "; ".join(f"{k}: {_fmt(f)} ({n} barra(s))" for k, (f, n) in sorted(contagem.items()))
+               + "."]
+    if n_andares is None:
+        memoria.append("15.7.3: os fatores valem para estruturas reticuladas com no mínimo quatro "
+                       "andares (número de andares não informado) e não servem para esforços locais.")
+    else:
+        memoria.append(f"15.7.3: {n_andares} andares (≥ 4); fatores só para os esforços globais.")
+    return _copiar_modelo_p46(modelo, novas), memoria
+
+
+# ---------------------------------------------------------------------------
+# 14.5.3 e 14.6.4.2 — Redistribuição com reequilíbrio (PDF p. 106 e 111)
+# ---------------------------------------------------------------------------
+def _grau_rotula_p46(tipo: str, extremidade: str) -> int:
+    """Grau local (0..11) da rotação do plano principal na extremidade."""
+    base = 5 if tipo == "portico_plano" else 4
+    return base if extremidade == "i" else base + 6
+
+
+def _momento_ext_p46(F: np.ndarray, tipo: str, extremidade: str) -> float:
+    """Momento do plano principal na extremidade, na convenção do módulo."""
+    if tipo == "portico_plano":
+        return float(-F[5] if extremidade == "i" else F[11])
+    return float(F[4] if extremidade == "i" else -F[10])
+
+
+def _resultado_barra_de_forcas(rb: ResultadoBarra, el: _Elemento, F_face: np.ndarray,
+                               f_rig: np.ndarray, corrigir_momentos: dict | None = None
+                               ) -> ResultadoBarra:
+    """ResultadoBarra com as forças de face F_face e as cargas da barra de rb.
+
+    corrigir_momentos: {'Mz': Mi, 'My': Mi} — momento que a face i deve ter;
+    a diferença para a estática a partir da face j entra como parcela linear
+    (nula na face j), com a cortante correspondente (2ª ordem pela corda).
+    """
+    cg = rb._cargas
+    Lf = el.Lf
+    x = np.asarray(rb.x_cm, dtype=float)
+    esf = _esforcos_em(x, Lf, F_face, cg)
+    ext_i = {"N": -F_face[0], "Vy": F_face[1], "Vz": F_face[2], "T": -F_face[3],
+             "My": F_face[4], "Mz": -F_face[5]}
+    ext_j = {"N": F_face[6], "Vy": -F_face[7], "Vz": -F_face[8], "T": F_face[9],
+             "My": -F_face[10], "Mz": F_face[11]}
+    corr = {"Mz": 0.0, "My": 0.0}
+    if corrigir_momentos:
+        e0 = _esforcos_em(np.array([0.0, Lf]), Lf, F_face, cg)
+        for chave_m in ("Mz", "My"):
+            if chave_m in corrigir_momentos:
+                corr[chave_m] = float(corrigir_momentos[chave_m] - e0[chave_m][0])
+        for chave_m, chave_v in (("Mz", "Vy"), ("My", "Vz")):
+            c0 = corr[chave_m]
+            if c0 != 0.0:
+                esf[chave_m] = esf[chave_m] + c0 * (1.0 - x / Lf)
+                esf[chave_v] = esf[chave_v] - c0 / Lf
+                ext_i[chave_m] = float(e0[chave_m][0] + c0)
+                ext_j[chave_m] = float(e0[chave_m][1])
+                ext_i[chave_v] = float(e0[chave_v][0] - c0 / Lf)
+                ext_j[chave_v] = float(e0[chave_v][1] - c0 / Lf)
+    F_no = el.T_off.T @ F_face + f_rig
+    return ResultadoBarraP46(
+        id=rb.id, L_cm=rb.L_cm, L_flexivel_cm=rb.L_flexivel_cm,
+        trecho_rigido_i_cm=rb.trecho_rigido_i_cm, x_cm=x, esforcos=esf,
+        extremidade_i={k: float(v) for k, v in ext_i.items()},
+        extremidade_j={k: float(v) for k, v in ext_j.items()},
+        forcas_nos_local=F_no, plano_principal=rb.plano_principal,
+        _Fj=np.array(F_face, dtype=float), _cargas=cg,
+        _corr_mz=corr["Mz"], _corr_my=corr["My"])
+
+
+@dataclass(frozen=True)
+class ResultadoBarraP46(ResultadoBarra):
+    """ResultadoBarra de redistribuição ou de 2ª ordem: ``em`` inclui a
+    parcela linear de momento que leva a face i ao valor da análise."""
+
+    _corr_mz: float = 0.0
+    _corr_my: float = 0.0
+
+    def em(self, x_cm: float) -> dict:
+        v = ResultadoBarra.em(self, x_cm)
+        x = float(x_cm)
+        Lf = self.L_flexivel_cm
+        v["Mz"] += self._corr_mz * (1.0 - x / Lf)
+        v["Vy"] -= self._corr_mz / Lf
+        v["My"] += self._corr_my * (1.0 - x / Lf)
+        v["Vz"] -= self._corr_my / Lf
+        return v
+
+
+def _f_rig_de(rb: ResultadoBarra, el: _Elemento) -> np.ndarray:
+    return np.asarray(rb.forcas_nos_local, dtype=float) - el.T_off.T @ np.asarray(rb._Fj, dtype=float)
+
+
+@dataclass(frozen=True)
+class ResultadoRedistribuicao:
+    """Esforços redistribuídos e reequilibrados (14.5.3, 14.6.4.2).
+
+    resultado: ResultadoAnalise com os esforços, as reações e os
+    deslocamentos depois da redistribuição (estado elástico somado ao estado
+    autoequilibrado das rotações plásticas). secoes: (nó, barra, extremidade)
+    de cada seção redistribuída. momentos_elasticos_kncm e
+    momentos_redistribuidos_kncm: {(nó, barra, extremidade): M}. delta:
+    {nó: δ}. rotacoes_plasticas_rad: {(nó, barra, extremidade): θ}.
+    xd_limite: {nó: limite de x/d de 14.6.4.3} quando fck é informado.
+    pilares_alterados: barras restritas (pilares, consolos, comprimidas) cujo
+    momento mudou em decorrência da redistribuição das vigas (14.6.4.2).
+    """
+
+    resultado: ResultadoAnalise
+    secoes: tuple
+    momentos_elasticos_kncm: dict
+    momentos_redistribuidos_kncm: dict
+    delta: dict
+    rotacoes_plasticas_rad: dict
+    xd_limite: dict
+    pilares_alterados: tuple
+    ok: bool
+    governante: str
+    memoria: tuple
+
+
+def redistribuir(modelo: Modelo, resultado: ResultadoAnalise, apoios, delta,
+                 caso: CasoCarga | None = None, fck_mpa: float | None = None,
+                 xd=None, pilares=(), consolos=(), comprimidos=(),
+                 estado_limite: str = "ELU") -> ResultadoRedistribuicao:
+    """Análise linear com redistribuição e reequilíbrio (14.5.3, PDF p. 106),
+    com as restrições de 14.6.4.2 (PDF p. 111) e os limites de 14.6.4.3
+    (PDF p. 112, P13).
+
+    O momento das vigas em cada nó de ``apoios`` passa de M (análise linear)
+    a δ·M. Todos os esforços internos são recalculados para manter o
+    equilíbrio de cada elemento e da estrutura como um todo (14.5.3): o
+    estado redistribuído é o elástico somado ao estado autoequilibrado de
+    rotações plásticas θ impostas nas extremidades das vigas que chegam ao
+    nó (rótulas plásticas). As θ saem do sistema A·θ = (δ − 1)·M, em que
+    A é o momento em cada seção por rotação unitária, calculado no próprio
+    modelo; o estado das rotações não tem carga, logo o total continua em
+    equilíbrio com as ações, e os vãos, as reações e os pilares recebem a
+    parte que lhes cabe.
+
+    14.6.4.2: pilares, elementos lineares com preponderância de compressão
+    e consolos não recebem rótula; o momento deles só muda em decorrência da
+    redistribuição das vigas que a eles se ligam (o que a norma permite).
+    São restritas as barras verticais (automático), e as de ``pilares``,
+    ``consolos`` e ``comprimidos``; nó sem viga não restrita levanta
+    ``FaixaNormativaError``.
+
+    Limites (P13): δ ≥ 0,75 (``redistribuicao_nbr6118.delta_minimo``) e
+    δ ≤ 1; com ``fck_mpa`` e ``xd`` (float, ou {nó: x/d} da seção com o
+    momento reduzido), confere x/d ≤ (δ − 0,44)/1,25 (fck ≤ 50 MPa) ou
+    (δ − 0,56)/1,25 (fck > 50 MPa); ``ok`` é False se algum x/d passar.
+
+    modelo e resultado: o modelo de barras e a análise linear dele
+    (``resolver``) na combinação do ELU. delta: float (todos os nós) ou
+    {nó: δ}. caso: o caso analisado, só para a memória. estado_limite:
+    'ELU' (padrão); 'ELS' ou 'fadiga' dão ``AvisoNBR6118``, porque 14.5.3
+    recomenda verificar essas combinações sem redistribuição.
+
+    Unidades: momentos em kN·cm; rotações em rad.
+    """
+    try:
+        import redistribuicao_nbr6118 as rd
+    except ModuleNotFoundError:  # importado como pacote
+        from dimensionamento import redistribuicao_nbr6118 as rd
+
+    if modelo.tipo in _TIPOS_TRELICA:
+        raise ValueError("Treliça não tem momento fletor a redistribuir.")
+    if resultado.tipo != modelo.tipo or set(resultado.barras) != set(modelo.barras):
+        raise ValueError("O resultado não é deste modelo.")
+    est = nbr._chave(estado_limite)
+    if est not in ("elu", "els", "fadiga"):
+        raise ValueError("estado_limite deve ser 'ELU', 'ELS' ou 'fadiga'.")
+    if est != "elu":
+        _warnings_p46.warn(
+            f"Redistribuição em combinação de {estado_limite}: 14.5.3 (p. 106) admite verificar ELS "
+            "e fadiga pela análise linear sem redistribuição, e é desejável não redistribuir "
+            "esforços nas verificações em serviço.", nbr.AvisoNBR6118, stacklevel=2)
+
+    apoios = list(apoios)
+    if not apoios:
+        raise ValueError("Informe ao menos um nó em apoios.")
+    deltas = {}
+    for no in apoios:
+        if no not in modelo.nos:
+            raise ValueError(f"Nó {no!r} não existe.")
+        d = float(delta[no]) if isinstance(delta, dict) else float(delta)
+        if not (rd.delta_minimo() - 1e-12 <= d <= 1.0):
+            raise FaixaNormativaError(
+                f"Nó {no!r}: δ = {_fmt(d)} fora da faixa de 14.6.4.3 (p. 112): 0,75 ≤ δ ≤ 1. "
+                "Redistribuição além disso exige análise não linear ou plástica com verificação "
+                "explícita da rotação das rótulas plásticas.")
+        deltas[no] = d
+
+    restritas = set(pilares) | set(consolos) | set(comprimidos)
+    for bid in restritas:
+        if bid not in modelo.barras:
+            raise ValueError(f"Barra {bid!r} não existe.")
+    restritas |= {bid for bid, b in modelo.barras.items() if _eh_pilar_p46(modelo, b)}
+
+    # seções com rótula: extremidades de vigas não restritas, não liberadas, com M ≠ 0
+    elementos = {bid: _montar_elemento(modelo, b) for bid, b in modelo.barras.items()}
+    escala_m = max((abs(v) for rb in resultado.barras.values()
+                    for v in (rb.extremidade_i["Mz"], rb.extremidade_i["My"],
+                              rb.extremidade_j["Mz"], rb.extremidade_j["My"])), default=0.0)
+    secoes = []
+    for no in apoios:
+        cand = []
+        for bid, b in modelo.barras.items():
+            for ext, n_ext in (("i", b.no_i), ("j", b.no_j)):
+                if n_ext != no or bid in restritas:
+                    continue
+                if _grau_rotula_p46(modelo.tipo, ext) in elementos[bid].lib:
+                    continue
+                cand.append((no, bid, ext))
+        if not cand:
+            raise FaixaNormativaError(
+                f"Nó {no!r}: não há viga contínua ligada a ele. 14.6.4.2 (p. 111) só admite "
+                "redistribuir momentos de pilares, de elementos com preponderância de compressão e "
+                "de consolos em decorrência da redistribuição das vigas que a eles se ligam.")
+        for s in cand:
+            M = _momento_ext_p46(resultado.barras[s[1]]._Fj, modelo.tipo, s[2])
+            if abs(M) > 1e-9 * max(escala_m, 1e-300):
+                secoes.append(s)
+        if not any(s[0] == no for s in secoes):
+            raise ValueError(f"Nó {no!r}: momento nulo nas vigas; não há o que redistribuir.")
+
+    # estados de rotação unitária
+    unit = []
+    for no, bid, ext in secoes:
+        el = elementos[bid]
+        g = _grau_rotula_p46(modelo.tipo, ext)
+        e = np.zeros(12)
+        e[g] = 1.0
+        f0c = _condensar_f(el.k_full, el.k_full @ e, el.lib)
+        fg = _T12(el.lam).T @ (el.T_off.T @ f0c)
+        c = CasoCarga(f"rotação unitária {bid}-{ext}")
+        b = modelo.barras[bid]
+        c.nodal(b.no_i, *(-fg[:6]))
+        c.nodal(b.no_j, *(-fg[6:]))
+        r = resolver(modelo, c, len(resultado.barras[bid].x_cm))
+        unit.append((bid, f0c, r))
+
+    M_el = np.array([_momento_ext_p46(resultado.barras[bid]._Fj, modelo.tipo, ext)
+                     for _, bid, ext in secoes])
+    A = np.zeros((len(secoes), len(secoes)))
+    for m, (bid_m, f0c, r) in enumerate(unit):
+        for k, (_, bid, ext) in enumerate(secoes):
+            F = np.array(r.barras[bid]._Fj, dtype=float)
+            if bid == bid_m:
+                F = F + f0c
+            A[k, m] = _momento_ext_p46(F, modelo.tipo, ext)
+    alvo = np.array([deltas[no] for no, _, _ in secoes]) * M_el
+    theta, *_ = np.linalg.lstsq(A, alvo - M_el, rcond=None)
+    obtido = M_el + A @ theta
+    if np.max(np.abs(obtido - alvo)) > 1e-7 * max(float(np.max(np.abs(M_el))), 1e-300):
+        raise ValueError(
+            "Os momentos pedidos são incompatíveis entre si: no nó sem pilar, as vigas têm o mesmo "
+            "momento e precisam do mesmo δ.")
+
+    # soma dos estados
+    barras = {}
+    for bid, rb in resultado.barras.items():
+        el = elementos[bid]
+        F = np.array(rb._Fj, dtype=float)
+        for t, (bid_m, f0c, r) in zip(theta, unit):
+            Fr = np.array(r.barras[bid]._Fj, dtype=float)
+            if bid == bid_m:
+                Fr = Fr + f0c
+            F = F + t * Fr
+        barras[bid] = _resultado_barra_de_forcas(rb, el, F, _f_rig_de(rb, el))
+    desloc = {no: {g: v + sum(t * r.deslocamentos[no][g] for t, (_, _, r) in zip(theta, unit))
+                   for g, v in d.items()} for no, d in resultado.deslocamentos.items()}
+    reacoes = {no: {g: v + sum(t * r.reacoes[no][g] for t, (_, _, r) in zip(theta, unit))
+                    for g, v in d.items()} for no, d in resultado.reacoes.items()}
+    soma_r = np.array(resultado.soma_reacoes) + sum(
+        t * np.array(r.soma_reacoes) for t, (_, _, r) in zip(theta, unit))
+    dim = max(max((float(np.max(np.abs(n.xyz))) for n in modelo.nos.values()), default=1.0),
+              max(el.L for el in elementos.values()))
+    escala_f = sum(abs(v) for d in reacoes.values() for g, v in d.items() if g in ("ux", "uy", "uz"))
+    escala_f += sum(abs(v) for d in reacoes.values() for g, v in d.items()
+                    if g in ("rx", "ry", "rz")) / dim
+    escala_f = max(escala_f, float(np.max(np.abs(resultado.soma_cargas[:3]))), 1e-300)
+    erro = _verificar_equilibrio(resultado.soma_cargas, soma_r, escala_f, escala_f * dim)
+
+    pilares_alt = []
+    for bid in sorted(restritas, key=str):
+        rb0, rb1 = resultado.barras[bid], barras[bid]
+        dif = max(abs(rb1.extremidade_i[k] - rb0.extremidade_i[k]) + abs(rb1.extremidade_j[k] - rb0.extremidade_j[k])
+                  for k in ("Mz", "My"))
+        if dif > 1e-9 * max(escala_m, 1e-300):
+            pilares_alt.append(bid)
+
+    # 14.6.4.3: x/d
+    xd_lim, ok = {}, True
+    memoria = [
+        "14.5.3 (p. 106): análise linear com redistribuição na combinação do ELU"
+        + (f" {caso.nome!r}" if caso is not None else "") + "; os esforços internos são "
+        "recalculados para o equilíbrio de cada elemento e da estrutura como um todo.",
+        "Reequilíbrio: estado elástico + estado autoequilibrado das rotações plásticas θ nas "
+        "extremidades das vigas, com A·θ = (δ − 1)·M no próprio modelo.",
+    ]
+    for (no, bid, ext), m0, m1, t in zip(secoes, M_el, obtido, theta):
+        memoria.append(f"Nó {no!r}, barra {bid!r} ({ext}): M = {_fmt(m0)} kN·cm → δ·M = "
+                       f"{_fmt(deltas[no])}·{_fmt(m0)} = {_fmt(m1)} kN·cm; θ = {_fmt(float(t))} rad.")
+    if xd is not None and fck_mpa is None:
+        raise ValueError("A verificação de x/d (14.6.4.3) exige fck_mpa.")
+    for no in apoios:
+        if fck_mpa is not None:
+            lim = rd.xd_limite_redistribuicao(deltas[no], fck_mpa)
+            xd_lim[no] = lim
+            formula = "(δ − 0,44)/1,25" if fck_mpa <= 50.0 else "(δ − 0,56)/1,25"
+            linha = (f"14.6.4.3 (p. 112), nó {no!r}: x/d ≤ {formula} = {_fmt(lim)} "
+                     f"(δ = {_fmt(deltas[no])}, fck = {_fmt(fck_mpa)} MPa)")
+            v = None
+            if xd is not None:
+                v = xd.get(no) if isinstance(xd, dict) else xd
+            if v is not None:
+                passa = float(v) <= lim + 1e-12
+                ok = ok and passa
+                linha += f"; x/d = {_fmt(float(v))}: {'atende' if passa else 'não atende'}."
+            else:
+                linha += "; x/d da seção não informado."
+            memoria.append(linha)
+    if fck_mpa is None:
+        memoria.append("14.6.4.3 (p. 112): x/d da seção com δ·M não conferido (fck não informado); "
+                       f"δ ≥ {_fmt(rd.delta_minimo())} atendido.")
+    if pilares_alt:
+        memoria.append(
+            "14.6.4.2 (p. 111): o momento de " + ", ".join(str(b) for b in pilares_alt)
+            + " mudou em decorrência da redistribuição das vigas ligadas a eles (permitido); os "
+            "efeitos da redistribuição na estabilidade global da edificação devem ser considerados.")
+    memoria.append("14.5.3: os efeitos da redistribuição valem em todo o projeto, inclusive na "
+                   "ancoragem, no corte das armaduras e nas forças a ancorar; cuidado especial com "
+                   "carregamentos de grande variabilidade.")
+    memoria.append(f"Equilíbrio global depois da redistribuição: resíduo relativo {_fmt(erro)}.")
+    novo = ResultadoAnalise(
+        tipo=resultado.tipo, caso=resultado.caso + " (redistribuído)", deslocamentos=desloc,
+        reacoes=reacoes, barras=barras, soma_cargas=resultado.soma_cargas,
+        soma_reacoes=tuple(float(v) for v in soma_r), erro_equilibrio=float(erro),
+        equilibrio_ok=True, memoria=tuple(memoria))
+    return ResultadoRedistribuicao(
+        resultado=novo, secoes=tuple(secoes),
+        momentos_elasticos_kncm={s: float(m) for s, m in zip(secoes, M_el)},
+        momentos_redistribuidos_kncm={s: float(m) for s, m in zip(secoes, obtido)},
+        delta=deltas, rotacoes_plasticas_rad={s: float(t) for s, t in zip(secoes, theta)},
+        xd_limite=xd_lim, pilares_alterados=tuple(pilares_alt), ok=ok,
+        governante="14.6.4.3 (x/d)" if not ok else "14.5.3", memoria=tuple(memoria))
+
+
+# ---------------------------------------------------------------------------
+# 15.7.1 — Análise de 2ª ordem de estruturas de nós móveis (PDF p. 126)
+# ---------------------------------------------------------------------------
+def _rigidez_geometrica_local(Lf: float, N: float, corda: bool) -> np.ndarray:
+    """Matriz de rigidez geométrica 12×12 (eixos locais, face a face) da
+    barra com força normal N (tração positiva). corda=True usa só o termo
+    de corda N/L (P-Δ), para barra articulada ou de treliça; senão, a matriz
+    consistente da viga de Euler-Bernoulli (P-Δ e P-δ)."""
+    kg = np.zeros((12, 12))
+    if corda:
+        c = N / Lf
+        for a, b in ((1, 7), (2, 8)):
+            kg[a, a] += c
+            kg[b, b] += c
+            kg[a, b] -= c
+            kg[b, a] -= c
+        return kg
+    L = Lf
+    c = N / (30.0 * L)
+    blk = c * np.array([[36, 3 * L, -36, 3 * L],
+                        [3 * L, 4 * L * L, -3 * L, -L * L],
+                        [-36, -3 * L, 36, -3 * L],
+                        [3 * L, -L * L, -3 * L, 4 * L * L]])
+    kg[np.ix_([1, 5, 7, 11], [1, 5, 7, 11])] += blk
+    blk = c * np.array([[36, -3 * L, -36, -3 * L],
+                        [-3 * L, 4 * L * L, 3 * L, -L * L],
+                        [-36, 3 * L, 36, 3 * L],
+                        [-3 * L, -L * L, 3 * L, 4 * L * L]])
+    kg[np.ix_([2, 4, 8, 10], [2, 4, 8, 10])] += blk
+    return kg
+
+
+def _vetor_u(modelo: Modelo, res: ResultadoAnalise) -> dict:
+    return {no: np.array([d.get(g, 0.0) for g in GRAUS]) for no, d in res.deslocamentos.items()}
+
+
+@dataclass(frozen=True)
+class ResultadoPDelta:
+    """Resultado de ``analise_p_delta`` (15.7.1).
+
+    resultado: esforços, reações e deslocamentos de 2ª ordem (equilíbrio na
+    posição deformada, linearizado). resultado_1a_ordem: a análise linear
+    com as mesmas rigidezes. iteracoes: número de iterações até convergir.
+    variacao_final: maior variação relativa dos deslocamentos na última
+    iteração. fator_deslocamento: deslocamento horizontal de 2ª ordem
+    dividido pelo de 1ª ordem, no nó de maior deslocamento de 1ª ordem.
+    """
+
+    resultado: ResultadoAnalise
+    resultado_1a_ordem: ResultadoAnalise
+    rigidez: str
+    iteracoes: int
+    tolerancia: float
+    variacao_final: float
+    fator_deslocamento: float
+    ok: bool
+    governante: str
+    memoria: tuple
+
+
+def analise_p_delta(modelo: Modelo, caso: CasoCarga, rigidez: str = "nlf_aproximada",
+                    tipos: dict | None = None, n_andares: int | None = None,
+                    armadura_simetrica: bool = False, tol: float = 1e-8,
+                    max_iter: int = 300, n_estacoes: int = 11) -> ResultadoPDelta:
+    """Análise global de 2ª ordem de estrutura de nós móveis, com não
+    linearidade geométrica e física (15.7.1, PDF p. 126).
+
+    15.7.1: na análise de estruturas de nós móveis, os efeitos da não
+    linearidade geométrica e da não linearidade física são obrigatórios.
+
+    Não linearidade física: ``rigidez='nlf_aproximada'`` (padrão) aplica as
+    rigidezes de 15.7.3 (PDF p. 126-127) às barras (``modelo_com_rigidez_nlf``:
+    lajes 0,3, vigas 0,4 ou 0,5, pilares 0,8 de Ec·Ic); ``'modelo'`` usa o
+    ``fator_EI`` que cada barra já declara (dá ``AvisoNBR6118`` se todos
+    forem 1, porque a análise fica sem não linearidade física).
+
+    Não linearidade geométrica: equilíbrio na posição deformada, pela matriz
+    de rigidez geométrica da barra com a força normal N (tração positiva):
+
+        (K + Kg(N))·u = P,
+
+    resolvido por iterações sucessivas: a cada iteração, −Kg(N)·u da
+    iteração anterior entra como carga nodal fictícia na análise linear
+    (``resolver``) e N é atualizado. Critério de convergência:
+    max|u(k) − u(k−1)| ≤ tol·max|u(k)|, separado para translações e
+    rotações. Kg é a matriz consistente de Euler-Bernoulli (efeitos P-Δ e
+    P-δ); em barra com extremidade articulada no plano, ou de treliça, só o
+    termo de corda N/L (P-Δ). Nas barras, os momentos de extremidade são os
+    de 2ª ordem; entre as extremidades, a parcela de 2ª ordem é a da corda
+    (linear). Os efeitos locais de 2ª ordem ao longo dos pilares são à parte
+    (15.7.4 e 15.8; P25).
+
+    caso: a combinação de cálculo inteira (ver ``caso_combinado``), porque a
+    superposição de resultados não vale na análise não linear. Tipos de
+    modelo: 'portico_plano' e 'portico_espacial'. Se a iteração não
+    convergir (carga próxima da crítica), levanta ``ErroConvergencia``.
+
+    Unidades: as do módulo (cm, kN, kN·cm).
+    """
+    if modelo.tipo not in ("portico_plano", "portico_espacial"):
+        raise ValueError("A análise de 2ª ordem global é para pórtico plano ou espacial.")
+    if tol <= 0.0 or max_iter < 1:
+        raise ValueError("tol tem de ser > 0 e max_iter ≥ 1.")
+    chave = nbr._chave(rigidez)
+    memoria = []
+    if chave in ("nlfaproximada", "nlf"):
+        m2, mem = modelo_com_rigidez_nlf(modelo, tipos, n_andares, armadura_simetrica)
+        memoria += mem
+        rig = "nlf_aproximada"
+    elif chave in ("modelo", "elastica"):
+        m2 = modelo
+        rig = "modelo"
+        if all(b.fator_EI == 1.0 for b in modelo.barras.values()):
+            _warnings_p46.warn(
+                "Análise de 2ª ordem sem não linearidade física (todas as barras com fator_EI = 1): "
+                "15.7.1 (p. 126) a exige em estrutura de nós móveis; use rigidez='nlf_aproximada' "
+                "(15.7.3) ou declare o fator_EI de cada barra.", nbr.AvisoNBR6118, stacklevel=2)
+            memoria.append("Rigidez: a declarada nas barras, sem redução (não linearidade física "
+                           "não considerada).")
+        else:
+            memoria.append("Rigidez: o fator_EI declarado em cada barra (não linearidade física "
+                           "a cargo do usuário).")
+    else:
+        raise ValueError("rigidez deve ser 'nlf_aproximada' ou 'modelo'.")
+
+    elementos = {bid: _montar_elemento(m2, b) for bid, b in m2.barras.items()}
+    res1 = resolver(m2, caso, n_estacoes)
+    res = res1
+    u_ant = _vetor_u(m2, res1)
+    trans = np.array([True, True, True, False, False, False])
+    variacao = float("inf")
+    hist = []
+    it = 0
+    kgs = {}
+    for it in range(1, max_iter + 1):
+        c = CasoCarga(caso.nome)
+        c.nodais = list(caso.nodais)
+        c.barra_cargas = list(caso.barra_cargas)
+        c.temperaturas = list(caso.temperaturas)
+        c.recalques = {k: dict(v) for k, v in caso.recalques.items()}
+        kgs = {}
+        for bid, el in elementos.items():
+            b = el.barra
+            rb = res.barras[bid]
+            N = 0.5 * (rb.extremidade_i["N"] + rb.extremidade_j["N"])
+            corda = b.trelica or any(g in el.lib for g in (4, 5, 10, 11))
+            kg = _rigidez_geometrica_local(el.Lf, N, corda)
+            T12 = _T12(el.lam)
+            u_no = np.r_[u_ant[b.no_i], u_ant[b.no_j]]
+            u_face = el.T_off @ (T12 @ u_no)
+            f_face = kg @ u_face
+            fg = T12.T @ (el.T_off.T @ f_face)
+            c.nodal(b.no_i, *(-fg[:6]))
+            c.nodal(b.no_j, *(-fg[6:]))
+            kgs[bid] = f_face
+        res = resolver(m2, c, n_estacoes)
+        u_nov = _vetor_u(m2, res)
+        U1 = np.array([u_nov[n] for n in m2.nos])
+        U0 = np.array([u_ant[n] for n in m2.nos])
+        var = 0.0
+        for msk in (trans, ~trans):
+            esc = float(np.max(np.abs(U1[:, msk])))
+            if esc > 0.0:
+                var = max(var, float(np.max(np.abs(U1[:, msk] - U0[:, msk]))) / esc)
+        u_ant = u_nov
+        hist.append(var)
+        variacao = var
+        if var <= tol:
+            break
+        if len(hist) >= 4 and hist[-1] > hist[-2] > hist[-3] > hist[-4]:
+            raise ErroConvergencia(
+                f"A análise de 2ª ordem diverge (variação {_fmt(var)} crescendo há 3 iterações): "
+                "a carga vertical está além da carga crítica da estrutura (instabilidade global).")
+    else:
+        raise ErroConvergencia(
+            f"A análise de 2ª ordem não convergiu em {max_iter} iterações (variação "
+            f"{_fmt(variacao)} > {_fmt(tol)}): carga próxima da crítica.")
+
+    # forças finais: as do último resolver + Kg·u com u e N finais
+    barras = {}
+    for bid, el in elementos.items():
+        b = el.barra
+        rb = res.barras[bid]
+        N = 0.5 * (rb.extremidade_i["N"] + rb.extremidade_j["N"])
+        corda = b.trelica or any(g in el.lib for g in (4, 5, 10, 11))
+        kg = _rigidez_geometrica_local(el.Lf, N, corda)
+        T12 = _T12(el.lam)
+        u_face = el.T_off @ (T12 @ np.r_[u_ant[b.no_i], u_ant[b.no_j]])
+        F = np.array(rb._Fj, dtype=float) + kg @ u_face
+        Mi = {"Mz": float(-F[5]), "My": float(F[4])}
+        barras[bid] = _resultado_barra_de_forcas(rb, el, F, _f_rig_de(rb, el), Mi)
+
+    # fator de amplificação dos deslocamentos horizontais
+    iv = _eixo_vertical_p46(m2.tipo)
+    hz = [g for g in (0, 1, 2) if g != iv]
+    U1a = {no: np.array([res1.deslocamentos[no].get(GRAUS[g], 0.0) for g in hz]) for no in m2.nos}
+    no_max = max(m2.nos, key=lambda n: float(np.linalg.norm(U1a[n])))
+    d1 = float(np.linalg.norm(U1a[no_max]))
+    d2 = float(np.linalg.norm([res.deslocamentos[no_max].get(GRAUS[g], 0.0) for g in hz]))
+    fator = d2 / d1 if d1 > 0.0 else 1.0
+
+    # equilíbrio de forças (os momentos incluem o de 2ª ordem ΣP·Δ)
+    sc, sr = np.array(res1.soma_cargas), np.array(res.soma_reacoes)
+    escala = max(float(np.sum(np.abs(sc[:3]))), float(np.sum(np.abs(sr[:3]))), 1e-300)
+    erro_f = float(np.max(np.abs(sc[:3] + sr[:3]))) / escala
+    if erro_f > 1e-6:
+        raise ErroEquilibrio(f"Equilíbrio de forças da 2ª ordem não fecha (resíduo {_fmt(erro_f)}).")
+    dM = sc[3:] + sr[3:]
+
+    memoria.insert(0, "15.7.1 (p. 126): estrutura de nós móveis; análise com não linearidade "
+                      "geométrica (equilíbrio na posição deformada, (K + Kg(N))·u = P) e física "
+                      "(rigidez abaixo).")
+    memoria.append(f"Iterações sucessivas com as cargas fictícias −Kg(N)·u: {it} iteração(ões); "
+                   f"critério max|Δu| ≤ {_fmt(tol)}·max|u| (translações e rotações), variação final "
+                   f"{_fmt(variacao)}.")
+    memoria.append(f"Deslocamento horizontal no nó {no_max!r}: 1ª ordem {_fmt(d1)} cm, 2ª ordem "
+                   f"{_fmt(d2)} cm; fator {_fmt(fator)}.")
+    memoria.append("Momento de 2ª ordem das cargas na posição deformada (ΣP·Δ, em torno da origem): ("
+                   + "; ".join(_fmt(float(v)) for v in dM) + ") kN·cm.")
+    memoria.append("15.7.1: no dimensionamento, somar os efeitos locais de 2ª ordem (15.7.4, 15.8).")
+    novo = ResultadoAnalise(
+        tipo=m2.tipo, caso=caso.nome + " (2ª ordem)", deslocamentos=res.deslocamentos,
+        reacoes=res.reacoes, barras=barras, soma_cargas=res1.soma_cargas,
+        soma_reacoes=res.soma_reacoes, erro_equilibrio=erro_f, equilibrio_ok=True,
+        memoria=tuple(memoria))
+    return ResultadoPDelta(resultado=novo, resultado_1a_ordem=res1, rigidez=rig, iteracoes=it,
+                           tolerancia=float(tol), variacao_final=float(variacao),
+                           fator_deslocamento=float(fator), ok=True, governante="15.7.1",
+                           memoria=tuple(memoria))

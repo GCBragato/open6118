@@ -349,7 +349,8 @@
    "nome": "Redistribuição com reequilíbrio e 2ª ordem global por análise não linear",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/analise_barras_nbr6118.py + estabilidade_global_nbr6118.py"
+   "modulo": "dimensionamento/analise_barras_nbr6118.py + estabilidade_global_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P47",
@@ -5573,7 +5574,7 @@
    "pagina_pdf": 106,
    "titulo": "Análise linear com redistribuição - condições gerais",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "o_que_calcula": "Exige recalculo de todos os esforcos internos para manter o equilibrio apos redistribuir momentos do ELU, considerando efeitos na ancoragem/corte de armaduras; ELS/fadiga preferencialmente sem redistribuicao.",
@@ -5585,7 +5586,28 @@
    "trecho": "analise",
    "pacote": "P46",
    "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
-   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Com o cálculo próprio, o reequilíbrio depois da redistribuição é calculável."
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Com o cálculo próprio, o reequilíbrio depois da redistribuição é calculável.",
+   "implementacao": {
+    "pacote": "P46",
+    "data": "19/09/2026",
+    "funcoes": [
+     "analise_barras_nbr6118.redistribuir",
+     "analise_barras_nbr6118.ResultadoRedistribuicao",
+     "analise_barras_nbr6118.ResultadoBarraP46"
+    ],
+    "testes": [
+     "test_viga_continua_redistribuida_momento_de_apoio_e_vao",
+     "test_viga_continua_redistribuida_continua_em_equilibrio",
+     "test_delta_unitario_reproduz_o_elastico",
+     "test_tres_vaos_dois_apoios_com_deltas_diferentes",
+     "test_delta_nas_bordas_da_faixa",
+     "test_delta_fora_da_faixa_levanta_erro",
+     "test_limite_xd_com_redistribuicao_dos_dois_lados",
+     "test_xd_sem_fck_levanta_erro",
+     "test_els_e_fadiga_dao_aviso"
+    ],
+    "observacao": "O estado redistribuído é o elástico somado ao estado autoequilibrado de rotações plásticas θ nas extremidades das vigas, com A·θ = (δ − 1)·M resolvido no próprio modelo. Assim, todos os esforços e reações são recalculados e o equilíbrio de cada barra e da estrutura é conferido. δ fica em [0,75; 1] e x/d segue o limite do P13. ELS e fadiga dão AvisoNBR6118. Os lembretes de ancoragem, corte de barras e carga de grande variabilidade entram só na memória de cálculo. Vale para pórtico plano, grelha e pórtico espacial (momento do plano principal); treliça é recusada."
+   }
   },
   {
    "id": "14.5.4-analise-plastica-restricoes",
@@ -5894,7 +5916,7 @@
    "pagina_pdf": 111,
    "titulo": "Restrições à redistribuição em pilares, elementos comprimidos e consolos",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "o_que_calcula": "So permite redistribuir momentos/torcao em pilares, elementos com preponderancia de compressao e consolos quando decorrente de redistribuicao de momentos de vigas ligadas a eles; exige avaliar efeito na estabilidade global.",
@@ -5902,7 +5924,21 @@
    "trecho": "analise",
    "pacote": "P46",
    "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
-   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira a restrição aplicada pela função de redistribuição do P46."
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira a restrição aplicada pela função de redistribuição do P46.",
+   "implementacao": {
+    "pacote": "P46",
+    "data": "19/09/2026",
+    "funcoes": [
+     "analise_barras_nbr6118.redistribuir"
+    ],
+    "testes": [
+     "test_portico_pilar_recebe_momento_so_em_decorrencia_da_viga",
+     "test_no_so_de_pilares_nao_admite_redistribuicao",
+     "test_consolo_declarado_nao_recebe_rotula",
+     "test_trelica_nao_tem_momento_a_redistribuir"
+    ],
+    "observacao": "Pilar (barra vertical, detectada automaticamente), consolo e barra comprimida (declarados em pilares=, consolos=, comprimidos=) não recebem rótula. O momento deles só muda em decorrência da viga ligada, e a lista vai em pilares_alterados. Nó sem viga levanta FaixaNormativaError. O efeito na estabilidade global e a regra de 2ª ordem da Seção 15 são só avisos na memória de cálculo: nada é calculado a partir deles. A norma não dá critério numérico de 'preponderância de compressão', por isso o usuário declara essas barras."
+   }
   },
   {
    "id": "14.6.4.3-xd-dutilidade",
@@ -7163,7 +7199,7 @@
    "pagina_pdf": 126,
    "titulo": "Estruturas de nós móveis: não linearidade geométrica e física obrigatórias na análise",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "G",
    "pacote": "P46",
@@ -7177,7 +7213,41 @@
    "teste_sugerido": "Pilar em balanço com carga vertical e horizontal: momento na base contra o fator de amplificação 1/(1 − P/Pcr), com tolerância declarada.",
    "trecho": "revisão 19/09/2026",
    "novo": true,
-   "revisao": "19/09/2026: item que o mapa não tinha; texto conferido na p. 126 do PDF."
+   "revisao": "19/09/2026: item que o mapa não tinha; texto conferido na p. 126 do PDF.",
+   "implementacao": {
+    "pacote": "P46",
+    "data": "19/09/2026",
+    "funcoes": [
+     "analise_barras_nbr6118.analise_p_delta",
+     "analise_barras_nbr6118.ResultadoPDelta",
+     "analise_barras_nbr6118.ErroConvergencia",
+     "analise_barras_nbr6118.modelo_com_rigidez_nlf",
+     "analise_barras_nbr6118.caso_combinado",
+     "estabilidade_global_nbr6118.gama_z_do_modelo",
+     "estabilidade_global_nbr6118.ResultadoGamaZModelo",
+     "estabilidade_global_nbr6118.classificar_nos"
+    ],
+    "testes": [
+     "test_balanco_momento_na_base_contra_solucao_fechada",
+     "test_balanco_contra_fator_de_amplificacao",
+     "test_balanco_equilibrio_na_posicao_deformada",
+     "test_sem_carga_vertical_a_2a_ordem_e_a_1a",
+     "test_carga_acima_da_critica_nao_converge",
+     "test_nlf_aproximada_reduz_a_rigidez_dos_pilares",
+     "test_nlf_com_menos_de_quatro_andares_levanta_erro",
+     "test_p_delta_so_para_porticos",
+     "test_modelo_com_rigidez_nlf_fatores",
+     "test_caso_combinado_igual_a_superposicao",
+     "test_balanco_portico_espacial_nas_duas_direcoes",
+     "test_gama_z_do_modelo_igual_ao_gama_z_do_p26",
+     "test_gama_z_do_modelo_independe_do_sentido",
+     "test_gama_z_do_modelo_carga_concentrada_na_viga_e_cota_base",
+     "test_gama_z_do_modelo_erros",
+     "test_classificar_nos_aceita_o_modelo",
+     "test_p_delta_e_095_gama_z_proximos"
+    ],
+    "observacao": "A não linearidade geométrica resolve (K + Kg(N))·u = P por iterações sucessivas: as cargas fictícias −Kg·u entram em resolver, e N é atualizado a cada passo. Kg é a matriz consistente de Euler-Bernoulli; em barra articulada ou de treliça, só o termo de corda. A não linearidade física usa as rigidezes de 15.7.3, e o critério de convergência e o número de iterações vão para a memória. Resultados: no balanço, o momento na base bate com H·tan(kL)/k a 1e-5, e o deslocamento bate com 1/(1 − P/Pcr) a 1 %. O γz do modelo é igual ao gama_z do P26 com as mesmas entradas. A P-Δ fica a 5 % do 0,95·γz e o fator de deslocamento a 2 % do γz."
+   }
   },
   {
    "id": "15.7.2-processo-aproximado-095-gamaz",

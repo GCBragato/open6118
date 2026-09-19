@@ -26,7 +26,7 @@ aplicado sobre esse valor.
 
 De onde vêm as entradas — cada função recebe o resultado de uma análise de
 pórtico/grelha, que pode vir do modelo próprio da biblioteca (pacote P46,
-ainda não implementado) ou de um programa externo (TQS, SAP2000): deslocamento
+``gama_z_do_modelo``) ou de um programa externo (TQS, SAP2000): deslocamento
 de topo, M1,tot,d, ΔMtot,d. A docstring de cada função diz explicitamente qual
 número é esperado e de onde ele normalmente sai.
 """
@@ -273,6 +273,9 @@ def classificar_nos(
     alfa1_valor: float | None = None,
     gama_z: float | None = None,
     gama_z_limite: float = GAMA_Z_LIMITE_NOS_FIXOS,
+    modelo=None,
+    combinacao=None,
+    opcoes_modelo: dict | None = None,
 ) -> ResultadoClassificacaoNos:
     """Classifica a estrutura em nós fixos ou nós móveis (15.4.2).
 
@@ -298,9 +301,22 @@ def classificar_nos(
     ordem mesmo sendo de nós móveis, não é avaliada aqui — é uma decisão de
     engenheiro sobre o caso concreto, fora do que este módulo automatiza.
 
+    Com ``modelo`` (P46), o γz é calculado no próprio modelo de barras por
+    ``gama_z_do_modelo(modelo, combinacao, **opcoes_modelo)``; nesse caso
+    ``combinacao`` é obrigatória e ``gama_z`` não pode ser informado junto.
+
     Fonte: NBR 6118:2026, 15.4.2 (PDF p. 123), com os limites de 15.5.2 e
     15.5.3 (PDF p. 124-125).
     """
+    memoria_modelo: tuple = ()
+    if modelo is not None:
+        if combinacao is None:
+            raise ValueError("combinacao é obrigatória quando modelo é informado.")
+        if gama_z is not None:
+            raise ValueError("Informe gama_z ou modelo, não os dois.")
+        r_modelo = gama_z_do_modelo(modelo, combinacao, **(opcoes_modelo or {}))
+        gama_z = r_modelo.gama_z
+        memoria_modelo = r_modelo.memoria
     if alfa is None and gama_z is None:
         raise ValueError(
             "Informe ao menos um dos dois critérios: (alfa, alfa1_valor) ou gama_z."
@@ -308,7 +324,7 @@ def classificar_nos(
     if alfa is not None and alfa1_valor is None:
         raise ValueError("alfa1_valor é obrigatório quando alfa é informado.")
 
-    memoria: list[str] = []
+    memoria: list[str] = list(memoria_modelo)
     veredictos: list[bool] = []
 
     if alfa is not None:
@@ -657,3 +673,158 @@ def combinar_vento_desaprumo(
         governante="11.3.3.4.1",
         memoria=tuple(memoria),
     )
+
+
+# === P46: γz calculado no próprio modelo de barras (15.5.3, 15.7.3) ===
+@dataclass(frozen=True)
+class ResultadoGamaZModelo:
+    """Resultado de ``gama_z_do_modelo`` (15.5.3 com as rigidezes de 15.7.3).
+
+    M1tot_d_knm: momento de tombamento das forças horizontais de cálculo em
+    relação à base, kN·m. delta_Mtot_d_knm: soma das forças verticais de
+    cálculo vezes os deslocamentos horizontais de 1ª ordem dos seus pontos
+    de aplicação, kN·m. nos_fixos: γz ≤ 1,1. processo_095_valido: γz ≤ 1,3
+    (15.7.2). resultado_1a_ordem: a análise linear usada.
+    """
+
+    M1tot_d_knm: float
+    delta_Mtot_d_knm: float
+    gama_z: float
+    nos_fixos: bool
+    processo_095_valido: bool
+    direcao: str
+    cota_base_cm: float
+    resultado_1a_ordem: object
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def gama_z_do_modelo(modelo, combinacao, rigidez: str = "nlf_aproximada",
+                     tipos: dict | None = None, n_andares: int | None = None,
+                     armadura_simetrica: bool = False, direcao: str = "X",
+                     cota_base_cm: float | None = None) -> ResultadoGamaZModelo:
+    """Coeficiente γz calculado no próprio modelo de barras (15.5.3, PDF p. 125).
+
+        γz = 1 / (1 − ΔMtot,d / M1,tot,d)      (``gama_z``, P26)
+
+    Faz a análise linear de 1ª ordem do modelo (``analise_barras_nbr6118``,
+    P44) na combinação ``combinacao`` (um ``CasoCarga`` com os valores de
+    cálculo; ver ``analise_barras_nbr6118.caso_combinado``), com as
+    rigidezes de 15.7.3 (``rigidez='nlf_aproximada'``, padrão: lajes 0,3,
+    vigas 0,4 ou 0,5, pilares 0,8 de Ec·Ic; ou ``'modelo'``, a rigidez que
+    as barras declaram), e soma no próprio modelo:
+
+        M1,tot,d = Σ Fh,d·(z − z_base)      (forças horizontais na direção)
+        ΔMtot,d  = Σ Fv,d·uh                (forças verticais × deslocamento
+                                             horizontal de 1ª ordem)
+
+    com z a cota do ponto de aplicação (Y no pórtico plano, Z no espacial) e
+    z_base = ``cota_base_cm`` (padrão: a menor cota dos nós). Cargas nodais
+    entram no nó; carga distribuída ou concentrada em barra entra no ponto
+    de aplicação, com o deslocamento horizontal interpolado linearmente
+    entre os nós da barra (aproximação declarada). Temperatura e
+    deslocamento de apoio não são forças e não entram. O sinal segue o
+    momento de tombamento: M1 é positivo e ΔM soma o deslocamento no sentido
+    das forças horizontais. Unidades: cm e kN no modelo, kN·m no resultado.
+
+    direcao: 'X' (pórtico plano e espacial) ou 'Y' (só espacial).
+    n_andares: 15.5.3 vale para estruturas reticuladas com no mínimo quatro
+    andares; < 4 levanta ``FaixaNormativaError``.
+
+    Os mesmos M1,tot,d e ΔMtot,d podem vir de programa externo (TQS,
+    SAP2000) e ir direto a ``gama_z``; esta função é a alternativa com o
+    modelo da biblioteca.
+    """
+    try:
+        import analise_barras_nbr6118 as ab
+    except ModuleNotFoundError:  # importado como pacote
+        from dimensionamento import analise_barras_nbr6118 as ab
+    import numpy as _np
+
+    if modelo.tipo not in ("portico_plano", "portico_espacial"):
+        raise ValueError("γz do modelo: use pórtico plano ou espacial.")
+    if n_andares is not None and int(n_andares) < 4:
+        raise FaixaNormativaError(
+            f"{n_andares} andar(es): o γz de 15.5.3 (p. 125) só vale para estruturas reticuladas "
+            "com no mínimo quatro andares.")
+    iv = 1 if modelo.tipo == "portico_plano" else 2
+    d = str(direcao).strip().upper()
+    if d not in ("X", "Y") or (modelo.tipo == "portico_plano" and d != "X"):
+        raise ValueError("direcao deve ser 'X' (ou 'Y' no pórtico espacial).")
+    ih = 0 if d == "X" else 1
+
+    chave = nbr._chave(rigidez)
+    memoria: list[str] = []
+    if chave in ("nlfaproximada", "nlf"):
+        m2, mem = ab.modelo_com_rigidez_nlf(modelo, tipos, n_andares, armadura_simetrica)
+        memoria += mem
+    elif chave in ("modelo", "elastica"):
+        m2 = modelo
+        memoria.append("Rigidez: o fator_EI declarado em cada barra (15.5.3 pede as rigidezes de 15.7.3).")
+    else:
+        raise ValueError("rigidez deve ser 'nlf_aproximada' ou 'modelo'.")
+
+    res = ab.resolver(m2, combinacao)
+    zb = (min(float(n.xyz[iv]) for n in m2.nos.values()) if cota_base_cm is None
+          else float(cota_base_cm))
+    uh = {no: res.deslocamentos[no][ab.GRAUS[ih]] for no in m2.nos}
+
+    M1_raw = 0.0
+    dM_raw = 0.0   # Σ Fv·uh, com Fv positivo para cima
+    for no, v in combinacao.nodais:
+        z = float(m2.nos[no].xyz[iv])
+        M1_raw += float(v[ih]) * (z - zb)
+        dM_raw += float(v[iv]) * uh[no]
+    for bid, tipo, dados in combinacao.barra_cargas:
+        if tipo == "mom":
+            continue
+        b = m2.barras[bid]
+        el = ab._montar_elemento(m2, b)
+        xi = m2.nos[b.no_i].xyz
+        ex = el.lam[0]
+        L = el.L
+        if tipo == "dist":
+            direc, a, bb, q1, q2 = dados
+            bb = L if bb is None else min(bb, L)
+            I0 = (q1 + q2) / 2.0 * (bb - a)
+            I1 = float(ab._integrais_trapezio(_np.array([0.0]), a, bb, q1, q2)[1][0])
+        else:
+            direc, s, P = dados
+            I0, I1 = P, P * s
+        dg = el.lam.T @ ab._carga_local(el, direc, 1.0)
+        M1_raw += dg[ih] * ((xi[iv] - zb) * I0 + ex[iv] * I1)
+        ui, uj = uh[b.no_i], uh[b.no_j]
+        dM_raw += dg[iv] * (ui * I0 + (uj - ui) / L * I1)
+
+    if abs(M1_raw) <= 0.0:
+        raise ValueError(f"A combinação não tem força horizontal na direção {d}: M1,tot,d = 0.")
+    s = 1.0 if M1_raw > 0.0 else -1.0
+    M1 = abs(M1_raw) / 100.0                  # kN·cm → kN·m
+    dM = -s * dM_raw / 100.0                   # vertical para baixo × deslocamento no sentido de M1
+    if dM >= M1:
+        raise FaixaNormativaError(
+            f"ΔMtot,d = {_fmt4(dM)} kN·m ≥ M1,tot,d = {_fmt4(M1)} kN·m: γz não é definido "
+            "(estrutura instável sob a combinação).")
+    gz = gama_z(M1, dM)
+    nos_fixos = gz <= GAMA_Z_LIMITE_NOS_FIXOS + 1e-9
+    memoria.insert(0, f"15.5.3 (p. 125): análise linear de 1ª ordem do modelo na combinação "
+                      f"{combinacao.nome!r}, direção {d}, base na cota {_fmt4(zb)} cm.")
+    memoria += [
+        f"M1,tot,d = Σ Fh,d·(z − z_base) = {_fmt4(M1)} kN·m.",
+        f"ΔMtot,d = Σ Fv,d·uh (1ª ordem) = {_fmt4(dM)} kN·m.",
+        f"γz = 1/(1 − {_fmt4(dM)}/{_fmt4(M1)}) = {_fmt4(gz)}: "
+        + ("nós fixos (γz ≤ 1,1)." if nos_fixos else "nós móveis (γz > 1,1)."),
+    ]
+    if not nos_fixos:
+        memoria.append("15.7.2 (p. 126): majoração 0,95·γz " + (
+            "admitida (γz ≤ 1,3)." if gz <= GAMA_Z_LIMITE_PROCESSO_095 + 1e-9
+            else "não admitida (γz > 1,3); use a análise de 2ª ordem (15.7.1)."))
+    if n_andares is None:
+        memoria.append("15.5.3: válido para estruturas reticuladas com no mínimo quatro andares "
+                       "(número de andares não informado).")
+    return ResultadoGamaZModelo(
+        M1tot_d_knm=M1, delta_Mtot_d_knm=dM, gama_z=gz, nos_fixos=nos_fixos,
+        processo_095_valido=gz <= GAMA_Z_LIMITE_PROCESSO_095 + 1e-9, direcao=d,
+        cota_base_cm=zb, resultado_1a_ordem=res, ok=True, governante="15.5.3",
+        memoria=tuple(memoria))

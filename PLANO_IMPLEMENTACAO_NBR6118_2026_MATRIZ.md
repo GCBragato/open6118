@@ -269,7 +269,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.4.2.4-pilar-parede-classif` | 14.4.2.4 | 105 | Critério de classificação de pilar-parede (menor dimensão menor que 1/5 da maior, na seção transversal) | implementado | média | P | P11 |
 | `14.5.1-metodos-generalidades` | 14.5.1 | 105 | Generalidades sobre os métodos de análise estrutural (14.5.2 a 14.5.6) | não computável | baixa | P |  |
 | `14.5.2-analise-linear` | 14.5.2 | 105 | Análise linear - hipóteses (comportamento elástico-linear, seção bruta, Ecs) | implementado | alta | P | P44 |
-| `14.5.3-analise-redistrib-geral` | 14.5.3 | 106 | Análise linear com redistribuição - condições gerais | ausente | média | P | P46 |
+| `14.5.3-analise-redistrib-geral` | 14.5.3 | 106 | Análise linear com redistribuição - condições gerais | implementado | média | P | P46 |
 | `14.5.4-analise-plastica-restricoes` | 14.5.4 | 106 | Restrições ao uso de análise plástica em estruturas reticuladas | implementado | média | P | P11 |
 | `14.5.5-analise-nao-linear-geral` | 14.5.5 | 106 | Análise não linear - condições gerais (geometria e armaduras completas, equilíbrio/compatibilidade/dutilidade) | não computável | baixa | P |  |
 | `14.5.6-modelos-fisicos` | 14.5.6 | 106 | Análise por modelos físicos (ensaios) - condições e margens de segurança | não computável | baixa | P |  |
@@ -282,7 +282,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.6.2.4-vao-efetivo-viga` | 14.6.2.4 | 110 | Vão efetivo de vigas (lef = l0 + a1 + a2) | implementado | alta | P |  |
 | `14.6.3-arredondamento-momentos` | 14.6.3 | 111 | Arredondamento do diagrama de momentos fletores sobre apoios/cargas concentradas (Figura 14.6) | implementado | alta | P | P14 |
 | `14.6.4.1-rigidez-vigas-pilares` | 14.6.4.1 | 111 | Valores de rigidez para análise linear (Ecs, momento de inércia bruto; flechas com fissuração/fluência) | implementado | alta | P | P44 |
-| `14.6.4.2-restricoes-redistribuicao` | 14.6.4.2 | 111 | Restrições à redistribuição em pilares, elementos comprimidos e consolos | ausente | média | P | P46 |
+| `14.6.4.2-restricoes-redistribuicao` | 14.6.4.2 | 111 | Restrições à redistribuição em pilares, elementos comprimidos e consolos | implementado | média | P | P46 |
 | `14.6.4.3-xd-dutilidade` | 14.6.4.3 | 112 | Limite de x/d para dutilidade sem redistribuição (0,45 / 0,35) | implementado | alta | P |  |
 | `14.6.4.3-xd-redistribuicao` | 14.6.4.3 | 112 | Limite de x/d quando há redistribuição de momento (função do coeficiente δ) | implementado | alta | P | P13 |
 | `14.6.4.3-delta-min` | 14.6.4.3 | 112 | Limite mínimo do coeficiente de redistribuição (δ ≥ 0,75) | implementado | alta | P | P13 |
@@ -332,7 +332,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `15.5.2-rigidez-pilar-equivalente` | 15.5.2 | 125 | Rigidez EcsIc de um pilar equivalente (para α e γz) | implementado | alta | G | P26 |
 | `15.5.3-coeficiente-gama-z` | 15.5.3 | 125 | Coeficiente γz de avaliação dos esforços globais de 2ª ordem | implementado | alta | P | P26 |
 | `15.6-comprimento-equivalente-nos-fixos` | 15.6 | 125 | Comprimento equivalente ℓe do pilar em estrutura de nós fixos | implementado | alta | P | P25 |
-| `15.7.1-nao-linearidade-nos-moveis` | 15.7.1 | 126 | Estruturas de nós móveis: não linearidade geométrica e física obrigatórias na análise | ausente | média | G | P46 |
+| `15.7.1-nao-linearidade-nos-moveis` | 15.7.1 | 126 | Estruturas de nós móveis: não linearidade geométrica e física obrigatórias na análise | implementado | média | G | P46 |
 | `15.7.2-processo-aproximado-095-gamaz` | 15.7.2 | 126 | Processo aproximado de majoração das ações horizontais por 0,95 γz | implementado | alta | M | P26 |
 | `15.7.3-rigidez-aproximada-analise-global` | 15.7.3 | 126 | Rigidezes aproximadas para consideração da não linearidade física na análise global | implementado | alta | P | P26 |
 | `15.7.4-efeitos-locais-em-nos-moveis` | 15.7.4 | 127 | Encadeamento dos esforços globais de 2ª ordem para a análise local em nós móveis | implementado | alta | M | P25 |
