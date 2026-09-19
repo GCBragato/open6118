@@ -30,7 +30,8 @@
    "nome": "Ações e combinações",
    "onda": 1,
    "prioridade": "alta",
-   "modulo": "dimensionamento/acoes_nbr6118.py"
+   "modulo": "dimensionamento/acoes_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P5",
@@ -2793,7 +2794,7 @@
    "pagina_pdf": 76,
    "titulo": "Classificação das ações (permanentes, variáveis, excepcionais)",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P4",
@@ -2802,7 +2803,23 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Criar uma acao de teste (peso proprio) e conferir classificacao correta.",
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "Acao",
+     "classificar_acao"
+    ],
+    "testes": [
+     "test_peso_proprio_classificado_como_permanente",
+     "test_classificacao_das_naturezas",
+     "test_tipo_incompativel_com_natureza_levanta",
+     "test_variavel_sem_categoria_psi_levanta_e_temperatura_assume_a_sua",
+     "test_fk_inf_so_em_permanente"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "11.3.2.1-peso-proprio",
@@ -3062,7 +3079,7 @@
    "pagina_pdf": 82,
    "titulo": "Ação da água em reservatórios/tanques e água de chuva retida",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P4",
@@ -3073,7 +3090,19 @@
    "depende_de": [
     "11.7-coeficientes-ponderacao-acoes-ELU (Tabela 11.1)"
    ],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "acao_agua",
+     "GAMA_F_AGUA"
+    ],
+    "testes": [
+     "test_acao_agua"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "11.4.1.4-acoes-fase-construtiva",
@@ -3095,7 +3124,7 @@
    "pagina_pdf": 82,
    "titulo": "Variação uniforme de temperatura - faixas por dimensão do elemento",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P4",
@@ -3105,7 +3134,23 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "dimensao=50->10-15; dimensao=70->5-10; dimensao=60->interpolar (checar continuidade nos extremos).",
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "variacao_temperatura_uniforme",
+     "variacao_temperatura_adotada_c"
+    ],
+    "testes": [
+     "test_temperatura_uniforme",
+     "test_temperatura_uniforme_continua_perto_de_50",
+     "test_temperatura_uniforme_elemento_nao_macico_fica_na_alinea_a",
+     "test_temperatura_uniforme_dimensao_invalida",
+     "test_temperatura_adotada"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "11.4.2.2-temperatura-nao-uniforme",
@@ -3113,7 +3158,7 @@
    "pagina_pdf": 83,
    "titulo": "Variação não uniforme de temperatura (gradiente entre faces)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P4",
@@ -3122,7 +3167,20 @@
    "formula_ou_regra": "delta_T_faces >= 5C",
    "conferido_na_imagem": false,
    "depende_de": [],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "diferenca_temperatura_faces_c",
+     "temperatura_linear_c"
+    ],
+    "testes": [
+     "test_gradiente_minimo",
+     "test_temperatura_linear_entre_faces"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "11.4.2.3-acoes-dinamicas",
@@ -3146,7 +3204,7 @@
    "pagina_pdf": 83,
    "titulo": "Ações excepcionais (valores por normas específicas)",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P4",
@@ -3156,7 +3214,21 @@
    "depende_de": [
     "11.8.2.3-combinacoes-ultimas-excepcionais"
    ],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "Acao",
+     "combinacao_ultima"
+    ],
+    "testes": [
+     "test_combinacao_excepcional",
+     "test_excepcionais_uma_de_cada_vez",
+     "test_excepcional_fora_da_combinacao_normal"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "11.6.1.1-valores-caracteristicos-permanentes",
@@ -3192,7 +3264,7 @@
    "pagina_pdf": 84,
    "titulo": "Valores representativos das ações (característicos, convencionais excepcionais, reduzidos)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P4",
@@ -3204,7 +3276,18 @@
     "11.7.1-tabela-11.2-psi"
    ],
    "teste_sugerido": "Fqk=100kN, psi0=0,5 -> Frep=50kN.",
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "valor_representativo"
+    ],
+    "testes": [
+     "test_valor_representativo"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "11.6.3-valores-calculo",
@@ -3212,7 +3295,7 @@
    "pagina_pdf": 84,
    "titulo": "Valores de cálculo das ações Fd = γf·Frep",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P4",
@@ -3224,7 +3307,18 @@
     "11.7-tabela-11.1-gamma_f"
    ],
    "teste_sugerido": "Fgk=100kN, gamma_f=1,4 -> Fd=140kN.",
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "valor_calculo"
+    ],
+    "testes": [
+     "test_valor_calculo"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "11.7-gamma_f-decomposicao",
@@ -3232,7 +3326,7 @@
    "pagina_pdf": 84,
    "titulo": "Decomposição γf = γf1·γf2·γf3",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P4",
@@ -3242,7 +3336,22 @@
    "formula_ou_regra": "gamma_f = gamma_f1 * gamma_f2 * gamma_f3",
    "conferido_na_imagem": true,
    "depende_de": [],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "gama_f_composto",
+     "gama_f1",
+     "GAMA_F3",
+     "GAMA_F2_PRINCIPAL"
+    ],
+    "testes": [
+     "test_gama_f_composto_e_gama_f1",
+     "test_gama_f2_principal_governa_a_principal_da_combinacao_rara"
+    ],
+    "observacao": "GAMA_F2_PRINCIPAL agora é usada em _combinar_els (principal da combinação rara)."
+   }
   },
   {
    "id": "11.7.1-gamma_n-esbeltos-remissao",
@@ -3271,7 +3380,7 @@
    "pagina_pdf": 85,
    "titulo": "Tabela 11.1 - Coeficiente γf = γf1·γf3 por tipo de ação e combinação",
    "tipo": "tabela",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P4",
@@ -3282,7 +3391,29 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Montar a tabela como dict aninhado e conferir celula a celula contra a imagem da p085.",
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "TABELA_11_1",
+     "gama_f_tabela_11_1",
+     "gama_f",
+     "gama_g_configurado"
+    ],
+    "testes": [
+     "test_tabela_11_1_celula",
+     "test_tabela_11_1_construcao_e_a_mesma_linha_de_especial",
+     "test_tabela_11_1_subcoluna_inexistente_levanta",
+     "test_gama_g_padrao_lido_do_nucleo",
+     "test_gama_g_lido_na_hora_da_chamada",
+     "test_gama_g_fora_da_nota_a_levanta",
+     "test_gama_g_dentro_da_nota_a",
+     "test_gama_f_dos_modulos_vem_do_nucleo",
+     "test_gama_f_por_tipo_de_acao"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "11.7.1-tabela-11.2-gamma_f2-psi",
@@ -3290,7 +3421,7 @@
    "pagina_pdf": 85,
    "titulo": "Tabela 11.2 - Valores de γf2 (ψ0, ψ1, ψ2) por tipo de ação variável",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P4",
@@ -3300,7 +3431,21 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Comparar celula a celula com a imagem da p085.",
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "TABELA_11_2_PSI",
+     "psi"
+    ],
+    "testes": [
+     "test_tabela_11_2_linha",
+     "test_tabela_11_2_apelidos_das_notas",
+     "test_psi_explicito_e_invalido"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "11.7.1-mesmo-gamma-carga-permanente",
@@ -3322,7 +3467,7 @@
    "pagina_pdf": 86,
    "titulo": "Coeficiente de ponderação das ações para ELS: γf = γf2",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P4",
@@ -3333,7 +3478,18 @@
    "depende_de": [
     "11.7.1-tabela-11.2-gamma_f2-psi"
    ],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "gama_f_els"
+    ],
+    "testes": [
+     "test_gama_f_els"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "11.8.2.1-combinacao-ultima-normal",
@@ -3341,7 +3497,7 @@
    "pagina_pdf": 87,
    "titulo": "Combinação última normal para concreto armado - Fd",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P4",
@@ -3355,7 +3511,29 @@
     "11.2.2-classificacao-acoes"
    ],
    "teste_sugerido": "1 permanente + 1 variavel principal + 1 secundaria: comparar Fd da funcao com calculo manual.",
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "combinacao_ultima",
+     "ResultadoCombinacao",
+     "Parcela"
+    ],
+    "testes": [
+     "test_combinacao_normal_duas_variaveis_a_mao",
+     "test_combinacao_normal_principal_explicito",
+     "test_combinacao_normal_com_indiretas",
+     "test_gama_g_1_3_no_comeco_do_script_muda_a_combinacao",
+     "test_gama_g_explicito_prevalece_e_fica_na_memoria",
+     "test_combinacao_normal_so_permanente",
+     "test_combinacao_minima_permanente_favoravel_usa_fk_inf",
+     "test_protensao_pkmax_pkmin",
+     "test_favoravel_explicito",
+     "test_resultados_de_combinacao_documentam_ausencia_de_ok"
+    ],
+    "observacao": "A docstring de ResultadoCombinacao explica por que não há campo ok."
+   }
   },
   {
    "id": "11.8.2.1-perda-equilibrio-corpo-rigido",
@@ -3399,7 +3577,7 @@
    "pagina_pdf": 87,
    "titulo": "Combinação última especial ou de construção - Fd",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P4",
@@ -3411,7 +3589,19 @@
     "11.8.2.1-combinacao-ultima-normal",
     "11.7.1-tabela-11.1-gamma_f"
    ],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "combinacao_ultima"
+    ],
+    "testes": [
+     "test_combinacao_especial",
+     "test_nota_b_nao_vale_na_normal"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "11.8.2.3-combinacao-ultima-excepcional",
@@ -3419,7 +3609,7 @@
    "pagina_pdf": 87,
    "titulo": "Combinação última excepcional - Fd",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "M",
    "pacote": "P4",
@@ -3431,7 +3621,19 @@
     "11.5-acoes-excepcionais",
     "11.8.2.1-combinacao-ultima-normal"
    ],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "combinacao_ultima"
+    ],
+    "testes": [
+     "test_combinacao_excepcional",
+     "test_excepcionais_uma_de_cada_vez"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "11.8.3.1-classificacao-combinacoes-servico",
@@ -3453,7 +3655,7 @@
    "pagina_pdf": 89,
    "titulo": "Combinação quase permanente de serviço (CQP) - Fd,ser",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P4",
@@ -3465,7 +3667,19 @@
     "11.7.1-tabela-11.2-gamma_f2-psi"
    ],
    "teste_sugerido": "1 permanente + 2 variaveis com psi2 conhecidos: conferir soma.",
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "combinacao_servico"
+    ],
+    "testes": [
+     "test_combinacao_quase_permanente",
+     "test_servico_permanentes_com_gama_1_e_temperatura_reduzida"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "11.8.3.2-combinacao-frequente-servico",
@@ -3473,7 +3687,7 @@
    "pagina_pdf": 89,
    "titulo": "Combinação frequente de serviço (CF) - Fd,ser",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P4",
@@ -3484,7 +3698,18 @@
    "depende_de": [
     "11.7.1-tabela-11.2-gamma_f2-psi"
    ],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "combinacao_servico"
+    ],
+    "testes": [
+     "test_combinacao_frequente"
+    ],
+    "observacao": "Sem mudança nesta volta."
+   }
   },
   {
    "id": "11.8.3.2-combinacao-rara-servico",
@@ -3492,7 +3717,7 @@
    "pagina_pdf": 89,
    "titulo": "Combinação rara de serviço (CR) - Fd,ser",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P4",
@@ -3503,7 +3728,20 @@
    "depende_de": [
     "11.7.1-tabela-11.2-gamma_f2-psi"
    ],
-   "trecho": "acoes"
+   "trecho": "acoes",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "combinacao_servico",
+     "GAMA_F2_PRINCIPAL"
+    ],
+    "testes": [
+     "test_combinacao_rara_governa_o_vento",
+     "test_gama_f2_principal_governa_a_principal_da_combinacao_rara"
+    ],
+    "observacao": "Na combinação rara, a ação principal passa a sair de GAMA_F2_PRINCIPAL."
+   }
   },
   {
    "id": "12.2-resistencia-caracteristica-conceito",
@@ -5160,7 +5398,7 @@
    "pagina_pdf": 121,
    "titulo": "Formulação de segurança da combinação para 2ª ordem (Sd,tot)",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P4",
@@ -5173,7 +5411,23 @@
     "11-combinacoes-de-acoes"
    ],
    "teste_sugerido": "Caso com uma única ação variável (ψ0j=0): Sd,tot deve coincidir com γf3*(γf/γf3)*(Fgk+Fq1k) = γf*(Fgk+Fq1k).",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P4",
+    "data": "19/09/2026",
+    "funcoes": [
+     "combinacao_2a_ordem_sdtot",
+     "sd_tot_2a_ordem",
+     "ResultadoSdTot"
+    ],
+    "testes": [
+     "test_sdtot_uma_variavel_linear",
+     "test_sdtot_com_analise_nao_linear",
+     "test_sdtot_varre_a_principal",
+     "test_sdtot_com_acoes_indiretas_divide_cada_termo_pelo_proprio_gama"
+    ],
+    "observacao": "O cálculo não mudou. A docstring passou a explicar F = Σ(γf,i/γf3)·ψi·Fik e a remissão de 15.3.1 à Seção 11 (p. 121). Há agora um teste com ações indiretas."
+   }
   },
   {
    "id": "15.3.1-rigidez-secante-ei-sec",

@@ -1167,3 +1167,22 @@ def sigma_p(eps_p_pmil: float, fpyk_mpa: float, fptk_mpa: float,
             f"diagrama desconhecido: {diagrama!r}. Use 'nbr_fig_8_6' ou 'patamar'."
         )
     return math.copysign(val, eps) if eps != 0.0 else 0.0
+
+
+# === P4: Ações e combinações — parâmetros configuráveis ===
+# Coeficientes que o engenheiro pode mudar no começo do script, antes de
+# chamar as funções (plano, 3.3, item 9; decisão 3). As funções de
+# acoes_nbr6118 leem GAMA_G na hora da chamada, e a memória registra o valor.
+#
+#     import nucleo_nbr6118 as nbr
+#     nbr.GAMA_G = 1.3   # obra enquadrada na nota a da Tabela 11.1
+#
+# GAMA_F: γf das ações permanentes e variáveis diretas desfavoráveis na
+# combinação normal (Tabela 11.1, PDF p. 85). Os módulos que usam um γf único
+# (blocos, cortante, lajes, sapatas, vigas) importam daqui; eles o leem no
+# import, como valor padrão de argumento.
+# GAMA_G: γg das ações permanentes diretas desfavoráveis na combinação normal
+# (Tabela 11.1, nota a): 1,4, ou 1,3 para as ações permanentes de pequena
+# variabilidade, com o critério da NBR 8681.
+GAMA_F = 1.4
+GAMA_G = 1.4

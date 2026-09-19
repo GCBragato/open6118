@@ -55,7 +55,7 @@ except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
 # ---------------------------------------------------------------------------
 GAMA_C = 1.4
 GAMA_S = 1.15
-GAMA_F = 1.4
+GAMA_F = nbr.GAMA_F  # Tabela 11.1 — lido do núcleo (P4)
 
 E_S = 21000.0          # kN/cm2 (210 GPa).
 GAMA_CONC = 25.0       # kN/m3 (concreto armado).

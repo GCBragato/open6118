@@ -161,7 +161,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 
 | Id | Item | Pág. | O que é | Situação | Prior. | Compl. | Pacote |
 |---|---|---|---|---|---|---|---|
-| `11.2.2-classificacao-acoes` | 11.2.2 | 76 | Classificação das ações (permanentes, variáveis, excepcionais) | ausente | alta | M | P4 |
+| `11.2.2-classificacao-acoes` | 11.2.2 | 76 | Classificação das ações (permanentes, variáveis, excepcionais) | implementado | alta | M | P4 |
 | `11.3.2.1-peso-proprio` | 11.3.2.1 | 76 | Peso próprio da estrutura (remissão a 8.2.2) | não computável | alta | P |  |
 | `11.3.2.2-peso-elementos-fixos` | 11.3.2.2 | 77 | Peso de elementos construtivos fixos e instalações (remissão a NBR 6120) | não computável | alta | P |  |
 | `11.3.2.3-empuxos-permanentes` | 11.3.2.3 | 77 | Empuxos permanentes de terra e materiais granulosos não removíveis | não computável | média | P |  |
@@ -176,31 +176,31 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `11.3.3.5-protensao-acao` | 11.3.3.5 | 81 | Ação da protensão como ação permanente indireta | parcial | média | G | P47 |
 | `11.4.1.1-cargas-utilizacao` | 11.4.1.1 | 81 | Cargas variáveis de utilização (verticais, móveis, impacto, frenagem, força centrífuga) | ausente | alta | P | P44 |
 | `11.4.1.2-acao-vento` | 11.4.1.2 | 82 | Ação do vento (remissão a NBR 6123) | ausente | alta | G | fora: O vento é da NBR 6123. A biblioteca recebe os esforços de vento prontos, combina-os (P4) e os compara com o desaprumo (P26). |
-| `11.4.1.3-acao-agua` | 11.4.1.3 | 82 | Ação da água em reservatórios/tanques e água de chuva retida | ausente | baixa | P | P4 |
+| `11.4.1.3-acao-agua` | 11.4.1.3 | 82 | Ação da água em reservatórios/tanques e água de chuva retida | implementado | baixa | P | P4 |
 | `11.4.1.4-acoes-fase-construtiva` | 11.4.1.4 | 82 | Ações variáveis durante a construção (fases construtivas) | não computável | média | P |  |
-| `11.4.2.1-temperatura-uniforme` | 11.4.2.1 | 82 | Variação uniforme de temperatura - faixas por dimensão do elemento | ausente | média | P | P4 |
-| `11.4.2.2-temperatura-nao-uniforme` | 11.4.2.2 | 83 | Variação não uniforme de temperatura (gradiente entre faces) | ausente | baixa | P | P4 |
+| `11.4.2.1-temperatura-uniforme` | 11.4.2.1 | 82 | Variação uniforme de temperatura - faixas por dimensão do elemento | implementado | média | P | P4 |
+| `11.4.2.2-temperatura-nao-uniforme` | 11.4.2.2 | 83 | Variação não uniforme de temperatura (gradiente entre faces) | implementado | baixa | P | P4 |
 | `11.4.2.3-acoes-dinamicas` | 11.4.2.3 | 83 | Ações dinâmicas (choques, vibrações, fadiga - remissão a Seção 23) | não computável | baixa | P |  |
-| `11.5-acoes-excepcionais` | 11.5 | 83 | Ações excepcionais (valores por normas específicas) | ausente | baixa | P | P4 |
+| `11.5-acoes-excepcionais` | 11.5 | 83 | Ações excepcionais (valores por normas específicas) | implementado | baixa | P | P4 |
 | `11.6.1.1-valores-caracteristicos-permanentes` | 11.6.1.1 | 83 | Valores característicos de ações permanentes = valores médios | não computável | média | P |  |
 | `11.6.1.2-valores-caracteristicos-variaveis` | 11.6.1.2 | 83 | Valores característicos de ações variáveis (25%-35% de probabilidade de ultrapassagem) | não computável | baixa | P |  |
-| `11.6.2-valores-representativos` | 11.6.2 | 84 | Valores representativos das ações (característicos, convencionais excepcionais, reduzidos) | ausente | alta | P | P4 |
-| `11.6.3-valores-calculo` | 11.6.3 | 84 | Valores de cálculo das ações Fd = γf·Frep | ausente | alta | P | P4 |
-| `11.7-gamma_f-decomposicao` | 11.7 | 84 | Decomposição γf = γf1·γf2·γf3 | parcial | alta | P | P4 |
+| `11.6.2-valores-representativos` | 11.6.2 | 84 | Valores representativos das ações (característicos, convencionais excepcionais, reduzidos) | implementado | alta | P | P4 |
+| `11.6.3-valores-calculo` | 11.6.3 | 84 | Valores de cálculo das ações Fd = γf·Frep | implementado | alta | P | P4 |
+| `11.7-gamma_f-decomposicao` | 11.7 | 84 | Decomposição γf = γf1·γf2·γf3 | implementado | alta | P | P4 |
 | `11.7.1-gamma_n-esbeltos-remissao` | 11.7.1 | 84 | Remissão ao γn para elementos esbeltos críticos (pilares/pilares-parede/lajes em balanço < 19 cm) | parcial | alta | P | P10 |
-| `11.7.1-tabela-11.1-gamma_f` | 11.7.1 | 85 | Tabela 11.1 - Coeficiente γf = γf1·γf3 por tipo de ação e combinação | parcial | alta | P | P4 |
-| `11.7.1-tabela-11.2-gamma_f2-psi` | 11.7.1 | 85 | Tabela 11.2 - Valores de γf2 (ψ0, ψ1, ψ2) por tipo de ação variável | ausente | alta | P | P4 |
+| `11.7.1-tabela-11.1-gamma_f` | 11.7.1 | 85 | Tabela 11.1 - Coeficiente γf = γf1·γf3 por tipo de ação e combinação | implementado | alta | P | P4 |
+| `11.7.1-tabela-11.2-gamma_f2-psi` | 11.7.1 | 85 | Tabela 11.2 - Valores de γf2 (ψ0, ψ1, ψ2) por tipo de ação variável | implementado | alta | P | P4 |
 | `11.7.1-mesmo-gamma-carga-permanente` | 11.7.1 | 86 | Regra: mesmo γf para cargas permanentes de mesma origem em toda a estrutura | não computável | média | P |  |
-| `11.7.2-gamma_f-els` | 11.7.2 | 86 | Coeficiente de ponderação das ações para ELS: γf = γf2 | ausente | alta | P | P4 |
-| `11.8.2.1-combinacao-ultima-normal` | 11.8.2.1 / 11.8.2.4 (Tabela 11.3) | 87 | Combinação última normal para concreto armado - Fd | ausente | alta | M | P4 |
+| `11.7.2-gamma_f-els` | 11.7.2 | 86 | Coeficiente de ponderação das ações para ELS: γf = γf2 | implementado | alta | P | P4 |
+| `11.8.2.1-combinacao-ultima-normal` | 11.8.2.1 / 11.8.2.4 (Tabela 11.3) | 87 | Combinação última normal para concreto armado - Fd | implementado | alta | M | P4 |
 | `11.8.2.1-perda-equilibrio-corpo-rigido` | 11.8.2.1 (Tabela 11.3) | 87 | Verificação de perda de equilíbrio como corpo rígido (Fsd ≥ Fnd) | ausente | média | M | P5 |
 | `11.8.2.1-combinacao-ultima-protendido` | 11.8.2.1 (Tabela 11.3) | 87 | Força de protensão como carregamento externo na combinação última (Pk,máx/Pk,mín) | não computável | média | P |  |
-| `11.8.2.2-combinacao-ultima-especial-construcao` | 11.8.2.2 / 11.8.2.4 (Tabela 11.3) | 87 | Combinação última especial ou de construção - Fd | ausente | média | M | P4 |
-| `11.8.2.3-combinacao-ultima-excepcional` | 11.8.2.3 / 11.8.2.4 (Tabela 11.3) | 87 | Combinação última excepcional - Fd | ausente | baixa | M | P4 |
+| `11.8.2.2-combinacao-ultima-especial-construcao` | 11.8.2.2 / 11.8.2.4 (Tabela 11.3) | 87 | Combinação última especial ou de construção - Fd | implementado | média | M | P4 |
+| `11.8.2.3-combinacao-ultima-excepcional` | 11.8.2.3 / 11.8.2.4 (Tabela 11.3) | 87 | Combinação última excepcional - Fd | implementado | baixa | M | P4 |
 | `11.8.3.1-classificacao-combinacoes-servico` | 11.8.3.1 | 88 | Classificação das combinações de serviço (quase permanentes, frequentes, raras) e seu uso | não computável | alta | P |  |
-| `11.8.3.2-combinacao-quase-permanente-servico` | 11.8.3.2 (Tabela 11.4) | 89 | Combinação quase permanente de serviço (CQP) - Fd,ser | ausente | alta | P | P4 |
-| `11.8.3.2-combinacao-frequente-servico` | 11.8.3.2 (Tabela 11.4) | 89 | Combinação frequente de serviço (CF) - Fd,ser | ausente | alta | P | P4 |
-| `11.8.3.2-combinacao-rara-servico` | 11.8.3.2 (Tabela 11.4) | 89 | Combinação rara de serviço (CR) - Fd,ser | ausente | alta | P | P4 |
+| `11.8.3.2-combinacao-quase-permanente-servico` | 11.8.3.2 (Tabela 11.4) | 89 | Combinação quase permanente de serviço (CQP) - Fd,ser | implementado | alta | P | P4 |
+| `11.8.3.2-combinacao-frequente-servico` | 11.8.3.2 (Tabela 11.4) | 89 | Combinação frequente de serviço (CF) - Fd,ser | implementado | alta | P | P4 |
+| `11.8.3.2-combinacao-rara-servico` | 11.8.3.2 (Tabela 11.4) | 89 | Combinação rara de serviço (CR) - Fd,ser | implementado | alta | P | P4 |
 
 ## Seção 12
 
@@ -318,7 +318,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 |---|---|---|---|---|---|---|---|
 | `15.2-conceitos-2a-ordem` | 15.2 | 120 | Conceitos fundamentais de instabilidade e efeitos de 2ª ordem | não computável | alta | P |  |
 | `15.3-principio-nao-linearidade` | 15.3 | 120 | Princípio básico de cálculo com efeitos de 2ª ordem | não computável | alta | P |  |
-| `15.3-combinacao-sdtot` | 15.3 | 121 | Formulação de segurança da combinação para 2ª ordem (Sd,tot) | parcial | média | P | P4 |
+| `15.3-combinacao-sdtot` | 15.3 | 121 | Formulação de segurança da combinação para 2ª ordem (Sd,tot) | implementado | média | P | P4 |
 | `15.3.1-rigidez-secante-ei-sec` | 15.3.1 | 121 | Rigidez secante (EI)sec pela relação momento-curvatura (Figura 15.1) | implementado | média | G |  |
 | `15.3.1-kappa-sec-adimensional` | 15.3.1 | 122 | Rigidez secante adimensional κsec | ausente | baixa | P | P25 |
 | `15.3.2-envoltoria-minima-2a-ordem` | 15.3.2 | 122 | Envoltória mínima com 2ª ordem (Figura 15.2) | parcial | alta | M | P25 |

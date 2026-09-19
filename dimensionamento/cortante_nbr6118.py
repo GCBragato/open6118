@@ -45,7 +45,7 @@ except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
 # ---------------------------------------------------------------------------
 GAMA_C = nbr.GAMA_C
 GAMA_S = nbr.GAMA_S
-GAMA_F = 1.4
+GAMA_F = nbr.GAMA_F  # Tabela 11.1 — lido do núcleo (P4)
 
 FYWD_MAX_KNCM2 = 43.5    # 435 MPa (NBR 6118 17.4.2.2 b)
 

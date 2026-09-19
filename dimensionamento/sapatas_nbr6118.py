@@ -34,7 +34,7 @@ except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
 
 GAMA_C = 1.4
 GAMA_S = 1.15
-GAMA_F = 1.4
+GAMA_F = nbr.GAMA_F  # Tabela 11.1 — lido do núcleo (P4)
 
 
 def fcd_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
