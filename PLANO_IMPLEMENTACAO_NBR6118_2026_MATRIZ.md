@@ -167,14 +167,14 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `11.3.2.3-empuxos-permanentes` | 11.3.2.3 | 77 | Empuxos permanentes de terra e materiais granulosos não removíveis | não computável | média | P |  |
 | `11.3.3.1-retracao-valor-simplificado` | 11.3.3.1 | 77 | Retração do concreto - valor simplificado εcs(t∞,t0) = −15·10⁻⁵ | implementado | média | P | P7 |
 | `11.3.3.2-fluencia-deformacao-total` | 11.3.3.2 | 78 | Deformação total do concreto por fluência (processo simplificado) | implementado | média | P | P7 |
-| `11.3.3.3-deslocamentos-apoio` | 11.3.3.3 | 78 | Deslocamentos de apoio como ação permanente indireta | ausente | alta | P | P44 |
+| `11.3.3.3-deslocamentos-apoio` | 11.3.3.3 | 78 | Deslocamentos de apoio como ação permanente indireta | implementado | alta | P | P44 |
 | `11.3.3.4.1-desaprumo-global` | 11.3.3.4.1 | 79 | Imperfeições geométricas globais - desaprumo (θ1, θa) | ausente | alta | M | P26 |
 | `11.3.3.4.1-combinacao-vento-desaprumo` | 11.3.3.4.1 | 79 | Regra de combinação entre vento e desaprumo global (30%) | ausente | alta | M | P26 |
 | `11.3.3.4.2-imperfeicao-local` | 11.3.3.4.2 | 80 | Imperfeições geométricas locais (falta de retilineidade / desaprumo do lance de pilar) | implementado | alta | P |  |
 | `11.3.3.4.3-m1d-min-uniaxial` | 11.3.3.4.3 | 80 | Momento mínimo de 1a ordem para substituir imperfeições locais (uniaxial) | implementado | alta | P |  |
 | `11.3.3.4.3-envoltoria-minima-1a-ordem` | 11.3.3.4.3 | 81 | Envoltória mínima de 1a ordem (flexão composta oblíqua, Figura 11.3) | implementado | alta | G |  |
 | `11.3.3.5-protensao-acao` | 11.3.3.5 | 81 | Ação da protensão como ação permanente indireta | parcial | média | G | P47 |
-| `11.4.1.1-cargas-utilizacao` | 11.4.1.1 | 81 | Cargas variáveis de utilização (verticais, móveis, impacto, frenagem, força centrífuga) | ausente | alta | P | P44 |
+| `11.4.1.1-cargas-utilizacao` | 11.4.1.1 | 81 | Cargas variáveis de utilização (verticais, móveis, impacto, frenagem, força centrífuga) | implementado | alta | P | P44 |
 | `11.4.1.2-acao-vento` | 11.4.1.2 | 82 | Ação do vento (remissão a NBR 6123) | ausente | alta | G | fora: O vento é da NBR 6123. A biblioteca recebe os esforços de vento prontos, combina-os (P4) e os compara com o desaprumo (P26). |
 | `11.4.1.3-acao-agua` | 11.4.1.3 | 82 | Ação da água em reservatórios/tanques e água de chuva retida | implementado | baixa | P | P4 |
 | `11.4.1.4-acoes-fase-construtiva` | 11.4.1.4 | 82 | Ações variáveis durante a construção (fases construtivas) | não computável | média | P |  |
@@ -268,7 +268,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.4.2.3-cascas-definicao` | 14.4.2.3 | 105 | Definição de casca (elemento de superfície não plana) | não computável | baixa | P |  |
 | `14.4.2.4-pilar-parede-classif` | 14.4.2.4 | 105 | Critério de classificação de pilar-parede (menor dimensão menor que 1/5 da maior, na seção transversal) | implementado | média | P | P11 |
 | `14.5.1-metodos-generalidades` | 14.5.1 | 105 | Generalidades sobre os métodos de análise estrutural (14.5.2 a 14.5.6) | não computável | baixa | P |  |
-| `14.5.2-analise-linear` | 14.5.2 | 105 | Análise linear - hipóteses (comportamento elástico-linear, seção bruta, Ecs) | ausente | alta | P | P44 |
+| `14.5.2-analise-linear` | 14.5.2 | 105 | Análise linear - hipóteses (comportamento elástico-linear, seção bruta, Ecs) | implementado | alta | P | P44 |
 | `14.5.3-analise-redistrib-geral` | 14.5.3 | 106 | Análise linear com redistribuição - condições gerais | ausente | média | P | P46 |
 | `14.5.4-analise-plastica-restricoes` | 14.5.4 | 106 | Restrições ao uso de análise plástica em estruturas reticuladas | implementado | média | P | P11 |
 | `14.5.5-analise-nao-linear-geral` | 14.5.5 | 106 | Análise não linear - condições gerais (geometria e armaduras completas, equilíbrio/compatibilidade/dutilidade) | não computável | baixa | P |  |
@@ -281,7 +281,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.6.2.3-misulas-secao-efetiva` | 14.6.2.3 | 109 | Seção efetiva em mísulas e variações bruscas de seção (Figura 14.4) | parcial | alta | M | P14 |
 | `14.6.2.4-vao-efetivo-viga` | 14.6.2.4 | 110 | Vão efetivo de vigas (lef = l0 + a1 + a2) | implementado | alta | P |  |
 | `14.6.3-arredondamento-momentos` | 14.6.3 | 111 | Arredondamento do diagrama de momentos fletores sobre apoios/cargas concentradas (Figura 14.6) | implementado | alta | P | P14 |
-| `14.6.4.1-rigidez-vigas-pilares` | 14.6.4.1 | 111 | Valores de rigidez para análise linear (Ecs, momento de inércia bruto; flechas com fissuração/fluência) | ausente | alta | P | P44 |
+| `14.6.4.1-rigidez-vigas-pilares` | 14.6.4.1 | 111 | Valores de rigidez para análise linear (Ecs, momento de inércia bruto; flechas com fissuração/fluência) | implementado | alta | P | P44 |
 | `14.6.4.2-restricoes-redistribuicao` | 14.6.4.2 | 111 | Restrições à redistribuição em pilares, elementos comprimidos e consolos | ausente | média | P | P46 |
 | `14.6.4.3-xd-dutilidade` | 14.6.4.3 | 112 | Limite de x/d para dutilidade sem redistribuição (0,45 / 0,35) | implementado | alta | P |  |
 | `14.6.4.3-xd-redistribuicao` | 14.6.4.3 | 112 | Limite de x/d quando há redistribuição de momento (função do coeficiente δ) | implementado | alta | P | P13 |
@@ -309,7 +309,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.7.8-analise-numerica-lajes-lisas` | 14.7.8 | 118 | Exigência de procedimento numérico para análise de lajes lisas e lajes-cogumelo | ausente | alta | P | P45 |
 | `14.7.8-portico-equivalente` | 14.7.8 | 118 | Processo elástico aproximado (pórticos múltiplos com redistribuição) para lajes lisas/cogumelo com pilares em filas regulares | ausente | alta | G | P45 |
 | `14.7.8-faixas-distribuicao-momento` | 14.7.8 | 118 | Distribuição percentual dos momentos do pórtico equivalente entre faixas internas e externas (Figura 14.9) | ausente | alta | P | P17 |
-| `14.8.1-vigas-parede-pilares-parede-analise` | 14.8.1 | 119 | Método de análise de vigas-parede e pilares-parede (linear/não linear; representação como elemento linear equivalente) | ausente | alta | P | P44 |
+| `14.8.1-vigas-parede-pilares-parede-analise` | 14.8.1 | 119 | Método de análise de vigas-parede e pilares-parede (linear/não linear; representação como elemento linear equivalente) | implementado | alta | P | P44 |
 | `14.8.2-blocos-analise` | 14.8.2 | 119 | Método de análise de blocos de fundação (linear, plástica ou não linear) | não computável | média | P |  |
 
 ## Seção 15

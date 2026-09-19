@@ -321,7 +321,8 @@
    "nome": "Análise de barras: pórtico plano, pórtico espacial, grelha e treliça",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/analise_barras_nbr6118.py"
+   "modulo": "dimensionamento/analise_barras_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P45",
@@ -3145,7 +3146,7 @@
    "pagina_pdf": 78,
    "titulo": "Deslocamentos de apoio como ação permanente indireta",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "So considerar quando geram esforcos significativos; usar dk,sup pessimista (quantil 5%); inferior nulo; unica acao com mesmo coeficiente.",
@@ -3154,7 +3155,22 @@
    "trecho": "acoes",
    "pacote": "P44",
    "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
-   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira o caso de carga de deslocamento imposto de apoio no P44."
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira o caso de carga de deslocamento imposto de apoio no P44.",
+   "implementacao": {
+    "pacote": "P44",
+    "data": "19/09/2026",
+    "funcoes": [
+     "CasoCarga.deslocamento_apoio",
+     "resolver",
+     "acao_deslocamentos_apoio"
+    ],
+    "testes": [
+     "test_recalque_apoio_central_viga_continua_11_3_3_3",
+     "test_recalque_em_grau_livre_levanta_erro",
+     "test_acao_deslocamentos_apoio_inferior_nulo"
+    ],
+    "observacao": "O caso de carga recebe o deslocamento imposto delta_k,sup em grau restrito; se o grau não for restrito, levanta erro. acao_deslocamentos_apoio gera uma única Acao permanente indireta, na coluna de recalques da Tabela 11.1 (P4), com Fk_inf = 0: é o inferior nulo, com um só coeficiente para o conjunto. O critério de só considerar quando os esforços forem significativos é qualitativo e fica com o projetista, como diz a docstring."
+   }
   },
   {
    "id": "11.3.3.4.1-desaprumo-global",
@@ -3276,7 +3292,7 @@
    "pagina_pdf": 81,
    "titulo": "Cargas variáveis de utilização (verticais, móveis, impacto, frenagem, força centrífuga)",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "Tipos de carga variavel direta de utilizacao a considerar, nas posicoes mais desfavoraveis.",
@@ -3285,7 +3301,23 @@
    "trecho": "acoes",
    "pacote": "P44",
    "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
-   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. As posições mais desfavoráveis viram a alternância de cargas do P44."
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. As posições mais desfavoráveis viram a alternância de cargas do P44.",
+   "implementacao": {
+    "pacote": "P44",
+    "data": "19/09/2026",
+    "funcoes": [
+     "alternancia_cargas",
+     "ResultadoAlternancia",
+     "EnvoltoriaBarra"
+    ],
+    "testes": [
+     "test_alternancia_viga_continua_dois_vaos_11_4_1_1",
+     "test_alternancia_com_permanente_e_grupos",
+     "test_alternancia_dispensada_14_6_6_3",
+     "test_alternancia_cargas_nodais_e_erros"
+    ],
+    "observacao": "Posições mais desfavoráveis por superposição: cada grupo de barras (vão a vão por padrão) e cada carga nodal é uma parcela; o máximo soma as parcelas positivas e o mínimo as negativas, em cada estação e em cada reação. Aceita caso permanente somado. A dispensa de 14.6.6.3 vem de analise_linear_nbr6118.dispensa_alternancia_cargas (P14) e é testada dos dois lados do limite. Cargas móveis, impacto, frenagem e força centrífuga não têm modelo próprio: entram como cargas nodais ou de barra do caso."
+   }
   },
   {
    "id": "11.4.1.2-acao-vento",
@@ -5283,7 +5315,7 @@
    "pagina_pdf": 105,
    "titulo": "Análise linear - hipóteses (comportamento elástico-linear, seção bruta, Ecs)",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "Admite comportamento elastico-linear dos materiais, secao bruta de concreto na analise global e modulo de elasticidade secante Ecs (8.2.8/8.2.9); resultados usados sobretudo para ELS.",
@@ -5294,7 +5326,33 @@
    "trecho": "analise",
    "pacote": "P44",
    "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
-   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. É a própria análise linear que o P44 implementa."
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. É a própria análise linear que o P44 implementa.",
+   "implementacao": {
+    "pacote": "P44",
+    "data": "19/09/2026",
+    "funcoes": [
+     "resolver",
+     "Material.concreto",
+     "Secao",
+     "Secao.retangular",
+     "Modelo",
+     "Barra",
+     "ResultadoAnalise",
+     "ResultadoBarra"
+    ],
+    "testes": [
+     "test_material_concreto_usa_ecs_e_gc_do_nucleo",
+     "test_viga_biapoiada_carga_uniforme",
+     "test_viga_continua_dois_vaos_tres_momentos",
+     "test_portico_biarticulado_carga_vertical",
+     "test_grelha_duas_vigas_cruzadas",
+     "test_trelica_plana_isostatica_metodo_dos_nos",
+     "test_portico_espacial_balanco_em_L",
+     "test_espacial_barra_inclinada_igual_a_barra_dividida",
+     "test_reciprocidade_maxwell_portico_espacial"
+    ],
+    "observacao": "Análise elástico-linear pelo método dos deslocamentos, com matriz esparsa (scipy.sparse, splu). Material.concreto tira Ecs (8.2.8), Gc = Ecs/2,4 (8.2.9) e alfa do núcleo. Tipos: pórtico plano, grelha, pórtico espacial e treliça 2D e 3D. Tem molas, liberações, trechos rígidos e cargas nodal, uniforme, trapezoidal, concentrada, momento concentrado, temperatura uniforme e gradiente. As forças de engastamento saem da flexibilidade exata. Todo resultado confere o equilíbrio global e o resíduo do sistema; se não fechar, levanta ErroEquilibrio. Estrutura hipostática levanta EstruturaHipostatica."
+   }
   },
   {
    "id": "14.5.3-analise-redistrib-geral",
@@ -5583,7 +5641,7 @@
    "pagina_pdf": 111,
    "titulo": "Valores de rigidez para análise linear (Ecs, momento de inércia bruto; flechas com fissuração/fluência)",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "Permite tomar Ecs e momento de inercia da secao bruta para a rigidez na analise; para flechas exige obrigatoriamente considerar fissuracao e fluencia (remete a 17.3.2.1).",
@@ -5595,7 +5653,27 @@
    "trecho": "analise",
    "pacote": "P44",
    "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
-   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira a rigidez padrão das barras no P44."
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira a rigidez padrão das barras no P44.",
+   "implementacao": {
+    "pacote": "P44",
+    "data": "19/09/2026",
+    "funcoes": [
+     "Material.concreto",
+     "Secao.retangular",
+     "Modelo.barra (fator_EI, fator_GJ)",
+     "fator_rigidez_nlf_aproximada",
+     "fator_rigidez_torcao"
+    ],
+    "testes": [
+     "test_viga_biapoiada_usa_ecs_e_inercia_bruta",
+     "test_secao_retangular_bruta",
+     "test_fatores_15_7_3_todas_as_linhas",
+     "test_fator_torcao_14_6_6_2",
+     "test_material_estabilidade_global_majorado_10pct_15_5_1",
+     "test_resultado_memoria_e_imutavel"
+    ],
+    "observacao": "A rigidez padrão é Ecs vezes a inércia bruta. A memória de cálculo avisa que a flecha de verificação exige fissuração e fluência (17.3.2.1, P8). Opções: 14.6.6.2 delega a rigidez_torcao_reduzida (P14); 15.7.3 cobre 0,3, 0,4, 0,5 e 0,8 e levanta erro com menos de 4 andares; 15.5.1 majora Ecs em 10 % na estabilidade global."
+   }
   },
   {
    "id": "14.6.4.2-restricoes-redistribuicao",
@@ -6256,7 +6334,7 @@
    "pagina_pdf": 119,
    "titulo": "Método de análise de vigas-parede e pilares-parede (linear/não linear; representação como elemento linear equivalente)",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "o_que_calcula": "Permite analise linear (em geral por procedimento numerico) ou nao linear de vigas-parede/pilares-parede; permite representa-los por elemento linear equivalente considerando deformacao por cisalhamento e ajuste de rigidez a flexao.",
@@ -6264,7 +6342,24 @@
    "trecho": "analise",
    "pacote": "P44",
    "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
-   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira a barra com deformação por cisalhamento do P44."
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira a barra com deformação por cisalhamento do P44.",
+   "implementacao": {
+    "pacote": "P44",
+    "data": "19/09/2026",
+    "funcoes": [
+     "Modelo.barra (cisalhamento, elemento_parede, fator_EI)",
+     "_rigidez_local",
+     "_forcas_engastamento"
+    ],
+    "testes": [
+     "test_balanco_timoshenko_viga_parede_14_8_1",
+     "test_biapoiada_timoshenko_carga_concentrada_meio",
+     "test_parede_sem_cisalhamento_levanta_erro_14_8_1",
+     "test_ajuste_rigidez_flexao_fator_EI",
+     "test_espacial_barra_inclinada_igual_a_barra_dividida"
+    ],
+    "observacao": "Elemento de Timoshenko (Phi = 12EI/(G·Av·L²)), com as forças de engastamento exatas também com cisalhamento. Uma barra marcada elemento_parede sem cisalhamento levanta FaixaNormativaError, porque 14.8.1 exige a deformação por cisalhamento. O ajuste da rigidez à flexão entra por fator_EI. A análise da parede por elementos finitos está fora do escopo (decisão 1)."
+   }
   },
   {
    "id": "14.8.2-blocos-analise",
