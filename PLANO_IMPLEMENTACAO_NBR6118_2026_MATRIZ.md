@@ -143,7 +143,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `9.6.3.4.2-deformacoes-aco-concreto` | 9.6.3.4.2 | 72 | Variação de deformação do aço e do concreto entre t0 e t | implementado | baixa | P | P30 |
 | `9.6.3.4.3-processo-aproximado-RN` | 9.6.3.4.3 | 73 | Perda progressiva - processo aproximado, aço de relaxação normal (RN) | implementado | média | P | P30 |
 | `9.6.3.4.3-processo-aproximado-RB` | 9.6.3.4.3 | 73 | Perda progressiva - processo aproximado, aço de relaxação baixa (RB) | implementado | média | P | P30 |
-| `9.6.3.4.4-metodo-geral` | 9.6.3.4.4 | 73 | Método geral de cálculo das perdas progressivas (fases diferentes) | ausente | baixa | G | P43 |
+| `9.6.3.4.4-metodo-geral` | 9.6.3.4.4 | 73 | Método geral de cálculo das perdas progressivas (fases diferentes) | implementado | baixa | G | P43 |
 | `9.6.3.4.5-psi-t` | 9.6.3.4.5 | 74 | Coeficiente de relaxação do aço no tempo ψ(t,t0) | implementado | média | P |  |
 | `9.6.3.4.5-psi-infinito` | 9.6.3.4.5 | 74 | Relaxação no tempo infinito ψ(t∞, t0) | implementado | média | P |  |
 | `9.6.3.4.5-psi-limite-tensao-minima` | 9.6.3.4.5 | 74 | Isenção de relaxação para tensões inferiores a 0,5 fptk | implementado | média | P | P30 |
@@ -776,7 +776,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `tabelaA.2-alpha-idade` | A.2.4.1 (Tabela A.2) | 239 | Tabela A.2 - α por tipo de cimento (para a idade fictícia) | implementado | alta | P | P6 |
 | `A.2.4.1-idade-ficticia` | A.2.4.1 | 239 | Idade fictícia do concreto t | implementado | alta | M | P6 |
 | `A.2.4.2-hfic` | A.2.4.2 | 240 | Espessura fictícia da peça hfic | implementado | alta | P |  |
-| `A.2.5-formula-integral` | A.2.5 | 240 | Deformação total do concreto - forma integral (caso geral, tensão variável) | ausente | baixa | G | P43 |
+| `A.2.5-formula-integral` | A.2.5 | 240 | Deformação total do concreto - forma integral (caso geral, tensão variável) | implementado | baixa | G | P43 |
 | `A.2.5-formula-simplificada` | A.2.5 | 240 | Deformação total do concreto - forma prática simplificada (φ como função única) | implementado | média | M | P7 |
 | `A.2.5-alfa-decisao` | A.2.5 | 240 | Escolha do coeficiente α (0,5 ou 0,8) na fórmula simplificada de εc(t) | implementado | média | P | P7 |
 | `A.2.5-qualitativo-fundacao-deformavel` | A.2.5 | 241 | Alerta - fundações deformáveis e elementos sem deformação lenta (tirantes metálicos) | não computável | baixa | P |  |

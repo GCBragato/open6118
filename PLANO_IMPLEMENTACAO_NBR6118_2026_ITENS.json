@@ -327,7 +327,8 @@
    "nome": "Método geral de perdas e fluência com tensão variável",
    "onda": 4,
    "prioridade": "baixa",
-   "modulo": "dimensionamento/tempo_concreto_nbr6118.py + protendido_nbr6118.py"
+   "modulo": "dimensionamento/tempo_concreto_nbr6118.py + protendido_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P44",
@@ -3011,7 +3012,7 @@
    "pagina_pdf": 73,
    "titulo": "Método geral de cálculo das perdas progressivas (fases diferentes)",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "G",
    "pacote": "P43",
@@ -3022,7 +3023,23 @@
     "9.6.3.4.5-psi-t"
    ],
    "teste_sugerido": "Degenerar para uma unica fase e comparar com o resultado do processo simplificado (9.6.3.4.2).",
-   "trecho": "prot"
+   "trecho": "prot",
+   "implementacao": {
+    "pacote": "P43",
+    "data": "19/09/2026",
+    "funcoes": [
+     "protendido_nbr6118.perdas_metodo_geral",
+     "protendido_nbr6118.CamadaConcreto",
+     "protendido_nbr6118.CaboProtensao",
+     "protendido_nbr6118.ArmaduraPassivaMetodoGeral",
+     "protendido_nbr6118.FaseCarga",
+     "protendido_nbr6118.ResultadoPerdasMetodoGeral"
+    ],
+    "testes": [
+     "tests/test_p43_metodo_geral_perdas.py (testes test_9634_4_*)"
+    ],
+    "observacao": "Não foi alterado nesta volta. A comparação com a forma integral (test_9634_4_passos_curtos_convergem_para_a_forma_integral) agora passa integrando='superposicao' de forma explícita, porque o método por passos integra φ(t,τ)."
+   }
   },
   {
    "id": "9.6.3.4.5-psi-t",
@@ -16220,7 +16237,7 @@
    "pagina_pdf": 240,
    "titulo": "Deformação total do concreto - forma integral (caso geral, tensão variável)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "G",
    "pacote": "P43",
@@ -16233,7 +16250,23 @@
     "nucleo.Eci"
    ],
    "teste_sugerido": "com Delta_sigma_c constante ao longo do intervalo, o resultado da integral deve aproximar a forma simplificada de A.2.5 (comparar os dois resultados numericamente, por integracao numerica simples tipo trapezio).",
-   "trecho": "tempo"
+   "trecho": "tempo",
+   "implementacao": {
+    "pacote": "P43",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tempo_concreto_nbr6118.eps_c_integral",
+     "tempo_concreto_nbr6118.eps_c_integral_pmil",
+     "tempo_concreto_nbr6118.ResultadoDeformacaoIntegral"
+    ],
+    "testes": [
+     "tests/test_p43_metodo_geral_perdas.py::test_a25_padrao_e_o_integrando_impresso_na_pagina_240",
+     "tests/test_p43_metodo_geral_perdas.py::test_a25_integrando_impresso_phi_tau_t0",
+     "tests/test_p43_metodo_geral_perdas.py::test_a25_memoria",
+     "tests/test_p43_metodo_geral_perdas.py (demais test_a25_*)"
+    ],
+    "observacao": "O padrão agora é a letra da p. 240: α·φ(τ,t0). A leitura por superposição, φ(t,τ), é opt-in, e a memória de cálculo registra a divergência quando ela é usada."
+   }
   },
   {
    "id": "A.2.5-formula-simplificada",

@@ -2432,6 +2432,474 @@ def combinar_protensao_elu(M_hiperestatico_kncm, gama_p: float | None = None,
     return Mo + g * Mh
 
 
+# === P43: Método geral de cálculo das perdas progressivas (9.6.3.4.4, p. 73) ===
+#
+# 9.6.3.4.4 (PDF p. 73) não dá fórmula fechada: quando as ações permanentes
+# (carga permanente ou protensão) são aplicadas parceladamente em idades
+# diferentes, considera-se a fluência de cada camada de concreto e a relaxação
+# de cada cabo separadamente; a relaxação de cada cabo pode ser considerada
+# isolada, independentemente das ações permanentes aplicadas depois.
+#
+# O procedimento daqui é uma análise da seção no tempo, passo a passo:
+#   - seção plana, ε(y) = ε0 + κ·y, estádio I e aderência (9.6.3.4.1);
+#   - cada camada de concreto tem a sua fluência φ(t,τ), o seu Ec(τ) e a sua
+#     retração, contadas na idade dela, e trabalha solidária a partir de
+#     ``t_ativacao_dias``; a tensão na camada é linear (N/A e M/I próprios);
+#   - concreto (A.2.5): o acréscimo súbito de tensão na idade τ tem
+#     flexibilidade 1/Ec(τ) + φ(t,τ)/Eci (superposição); o acréscimo gradual
+#     de um passo (t_{i−1}, t_i] tem, no fim do passo, 1/Ec(t_{i−1}) +
+#     α·φ(t_i,t_{i−1})/Eci, com o α de A.2.5, e depois dele continua a fluir
+#     com φ(t,t_{i−1}) − φ(t_i,t_{i−1}) (o α só vale dentro do próprio passo,
+#     de modo que, com passos curtos, o resultado tende à forma integral);
+#   - cabo (9.6.3.4.2 e 9.6.3.4.5): Δεp = σp0/Ep·χ(t,tp) + Σ Δσp/Ep·[1 + χ(t,tp)
+#     − χ(τ,tp)], com χ = −ln(1 − ψ) e ψ do próprio cabo, contado da sua
+#     protensão tp (relaxação isolada de cada cabo);
+#   - com uma fase só, um passo e α = 0,5 com Ec(t0) = Eci, as equações são
+#     exatamente as de 9.6.3.4.2 (Δεpt + Δεct = 0 no cabo resultante).
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import tempo_concreto_nbr6118 as _tc_p43
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import tempo_concreto_nbr6118 as _tc_p43
+
+from typing import Callable as _Callable_p43, Sequence as _Sequence_p43
+
+ALFA_METODO_GERAL_PADRAO = 0.8   # A.2.5 (p. 240): "nos outros casos usuais, α = 0,8"
+PSI_INFINITO_SOBRE_PSI_1000 = 2.5   # 9.6.3.4.5 (p. 74): ψ(t∞,t0) ≅ 2,5·ψ1000
+DT_INTERIOR_INFINITO_DIAS = 1.0e5   # subpassos até t0 + 10^5 dias quando t = ∞
+
+
+@dataclass(frozen=True)
+class CamadaConcreto:
+    """Camada de concreto do método geral (9.6.3.4.4).
+
+    Ac_cm2, Ic_cm4: área e inércia própria (em torno do centroide da camada).
+    y_cm: ordenada do centroide no eixo de referência da seção (y cresce no
+        sentido em que M positivo traciona: ε(y) = ε0 + κ·y).
+    t_concretagem_dias, t_ativacao_dias: instantes, no eixo de tempo comum da
+        obra, da concretagem e do início do trabalho solidário da camada
+        (t_ativacao >= t_concretagem).
+    phi_func: (idade_t, idade_τ) → φ(t,τ) da camada, com as idades contadas
+        da concretagem dela (dias); φ(t,t) não entra (a resposta no instante
+        do acréscimo é só elástica, 1/Ec).
+    Eci_mpa: Eci de 8.2.8 aos 28 dias da camada.
+    Ec_mpa: Ec(τ) em MPa, número ou função idade → Ec; None usa Eci.
+    eps_cs_func: (idade_t, idade_t0) → εcs(t,t0) em ‰ (negativa); None, sem
+        retração.
+    """
+
+    Ac_cm2: float
+    Ic_cm4: float
+    y_cm: float
+    phi_func: _Callable_p43[[float, float], float]
+    Eci_mpa: float
+    t_concretagem_dias: float = 0.0
+    t_ativacao_dias: float = 0.0
+    Ec_mpa: object = None
+    eps_cs_func: _Callable_p43[[float, float], float] | None = None
+    nome: str = ""
+
+
+@dataclass(frozen=True)
+class CaboProtensao:
+    """Cabo do método geral (9.6.3.4.4), aderente a partir da protensão.
+
+    Ap_cm2, y_cm: área e ordenada do cabo (mesmo eixo das camadas).
+    t_protensao_dias: instante da protensão no eixo de tempo comum.
+    sigma_p0_mpa: σp0, tensão no cabo após as perdas imediatas dele (atrito,
+        acomodação), positiva; a força Ap·σp0 é aplicada à seção ativa no
+        instante (sem o próprio cabo) e o cabo passa a aderir em seguida.
+    psi_1000_pct: ψ1000 da Tabela 8.3 (``psi_1000``), em %; ψ(t,tp) =
+        ψ1000·[(t − tp)/41,67]^0,15, limitado a 2,5·ψ1000 (9.6.3.4.5).
+    psi_func: alternativa, (t − tp em dias) → ψ(t,tp) em %; substitui a regra
+        acima.
+    """
+
+    Ap_cm2: float
+    y_cm: float
+    t_protensao_dias: float
+    sigma_p0_mpa: float
+    psi_1000_pct: float = 0.0
+    Ep_mpa: float = E_P_MPA
+    psi_func: _Callable_p43[[float], float] | None = None
+    nome: str = ""
+
+
+@dataclass(frozen=True)
+class ArmaduraPassivaMetodoGeral:
+    """Armadura passiva aderente do método geral: elástica, a partir de t_ativacao_dias."""
+
+    As_cm2: float
+    y_cm: float
+    t_ativacao_dias: float = 0.0
+    Es_mpa: float = E_S_MPA
+    nome: str = ""
+
+
+@dataclass(frozen=True)
+class FaseCarga:
+    """Ação externa aplicada de uma vez no instante t_dias (N em kN, M em kN·cm).
+
+    N positivo é tração; M em torno do eixo y = 0, positivo quando traciona
+    as fibras de y positivo. A protensão não entra aqui: ela vem dos cabos.
+    """
+
+    t_dias: float
+    N_kn: float = 0.0
+    M_kncm: float = 0.0
+    descricao: str = ""
+
+
+@dataclass(frozen=True)
+class ResultadoPerdasMetodoGeral:
+    """Resultado do método geral de perdas progressivas (9.6.3.4.4)."""
+
+    tempos_dias: tuple[float, ...]
+    sigma_p_mpa: tuple[tuple[float, ...], ...]         # [cabo][nó]; nan antes da protensão
+    sigma_c_n_mpa: tuple[tuple[float, ...], ...]       # [camada][nó]: N/A da camada
+    sigma_c_m_mpa_por_cm: tuple[tuple[float, ...], ...]  # [camada][nó]: M/I próprio
+    eps0_pmil: tuple[float, ...]
+    kappa_pmil_por_cm: tuple[float, ...]
+    sigma_p_final_mpa: tuple[float, ...]
+    perda_progressiva_mpa: tuple[float, ...]   # soma dos acréscimos graduais (fluência, retração, relaxação)
+    variacao_imediata_mpa: tuple[float, ...]   # soma dos acréscimos súbitos depois da protensão
+    perda_total_mpa: tuple[float, ...]         # σp0 − σp(t_final)
+    alfa: float
+    n_subpassos: int
+    memoria: tuple[str, ...]
+
+    y_camadas_cm: tuple[float, ...] = ()
+
+    def sigma_c_mpa(self, camada: int, y_cm: float, no: int = -1) -> float:
+        """Tensão no concreto da camada na ordenada y (MPa), no nó pedido (último por padrão).
+
+            σc(y) = N/A + (M/I)·(y − y_camada)
+        """
+        return (self.sigma_c_n_mpa[camada][no]
+                + self.sigma_c_m_mpa_por_cm[camada][no] * (float(y_cm) - self.y_camadas_cm[camada]))
+
+
+def _psi_cabo_p43(cabo: CaboProtensao, dt: float) -> float:
+    """ψ(t,tp) do cabo em %, com dt = t − tp em dias (9.6.3.4.5, p. 74)."""
+    if dt <= 0.0:
+        return 0.0
+    if cabo.psi_func is not None:
+        psi = float(cabo.psi_func(dt))
+    else:
+        p1000 = float(cabo.psi_1000_pct)
+        teto = PSI_INFINITO_SOBRE_PSI_1000 * p1000
+        psi = teto if math.isinf(dt) else min(p1000 * (dt / 41.67) ** 0.15, teto)
+    if not 0.0 <= psi < 100.0:
+        raise nbr.FaixaNormativaError(f"ψ = {psi:g} %: tem de estar em [0, 100).")
+    return psi
+
+
+def _chi_cabo_p43(cabo: CaboProtensao, t: float) -> float:
+    """χ(t,tp) = −ln[1 − ψ(t,tp)] (9.6.3.4.2, p. 72)."""
+    return -math.log(1.0 - _psi_cabo_p43(cabo, t - float(cabo.t_protensao_dias)) / 100.0)
+
+
+class _ElementoP43:
+    """Estado de um elemento da seção: acréscimos de tensão com a idade de aplicação."""
+
+    def __init__(self, tipo: str, obj, A: float, y: float, I: float = 0.0):
+        self.tipo, self.obj, self.A, self.y, self.I = tipo, obj, A, y, I
+        # (Δσ, τ, t_fim): t_fim é o fim do passo do acréscimo gradual; None se súbito.
+        self.inc_n: list[tuple[float, float, float | None]] = []
+        self.inc_m: list[tuple[float, float, float | None]] = []   # só camadas: Δ(M/I)
+        self.sigma_n = 0.0
+        self.sigma_m = 0.0
+
+    # Flexibilidade J(t) de um acréscimo aplicado em τ (MPa⁻¹).
+    def J(self, t: float, tau: float, t_fim: float | None, alfa: float) -> float:
+        if self.tipo == "camada":
+            c = self.obj
+            idade_tau = tau - c.t_concretagem_dias
+            Ec = _tc_p43._modulo_idade_p43(c.Ec_mpa if c.Ec_mpa is not None else c.Eci_mpa,
+                                            idade_tau)
+            if t <= tau:
+                return 1.0 / Ec
+            p = float(c.phi_func(t - c.t_concretagem_dias, idade_tau))
+            if t_fim is None:            # acréscimo súbito: superposição
+                return 1.0 / Ec + p / c.Eci_mpa
+            if t <= t_fim:               # dentro do próprio passo: α de A.2.5
+                return 1.0 / Ec + alfa * p / c.Eci_mpa
+            p_fim = float(c.phi_func(t_fim - c.t_concretagem_dias, idade_tau))
+            return 1.0 / Ec + (alfa * p_fim + p - p_fim) / c.Eci_mpa
+        if self.tipo == "cabo":
+            c = self.obj
+            return (1.0 + _chi_cabo_p43(c, t) - _chi_cabo_p43(c, tau)) / c.Ep_mpa
+        return 1.0 / self.obj.Es_mpa
+
+    def historia(self, t_a: float, t_b: float, alfa: float) -> tuple[float, float]:
+        """Deformação (e curvatura) diferida de t_a a t_b dos acréscimos já aplicados."""
+        dn = sum(ds * (self.J(t_b, tau, g, alfa) - self.J(t_a, tau, g, alfa))
+                 for ds, tau, g in self.inc_n)
+        dm = sum(ds * (self.J(t_b, tau, g, alfa) - self.J(t_a, tau, g, alfa))
+                 for ds, tau, g in self.inc_m)
+        if self.tipo == "camada" and self.obj.eps_cs_func is not None:
+            c = self.obj
+            i0 = c.t_ativacao_dias - c.t_concretagem_dias
+            ecs = (float(c.eps_cs_func(t_b - c.t_concretagem_dias, i0))
+                   - (0.0 if t_a <= c.t_ativacao_dias
+                      else float(c.eps_cs_func(t_a - c.t_concretagem_dias, i0))))
+            dn += ecs / 1000.0
+        return dn, dm
+
+
+def _validar_p43(fases, camadas, cabos, armaduras, t_final: float) -> None:
+    if not camadas:
+        raise nbr.FaixaNormativaError("Informe ao menos uma camada de concreto.")
+    for k, c in enumerate(camadas):
+        if not (float(c.Ac_cm2) > 0.0 and float(c.Ic_cm4) >= 0.0 and float(c.Eci_mpa) > 0.0):
+            raise nbr.FaixaNormativaError(
+                f"Camada {k + 1}: Ac e Eci têm de ser positivos e Ic, não negativo.")
+        if float(c.t_ativacao_dias) < float(c.t_concretagem_dias):
+            raise nbr.FaixaNormativaError(
+                f"Camada {k + 1}: t_ativacao = {c.t_ativacao_dias:g} dias anterior à "
+                f"concretagem ({c.t_concretagem_dias:g} dias).")
+    for k, c in enumerate(cabos):
+        if not (float(c.Ap_cm2) > 0.0 and float(c.sigma_p0_mpa) > 0.0 and float(c.Ep_mpa) > 0.0):
+            raise nbr.FaixaNormativaError(
+                f"Cabo {k + 1}: Ap, σp0 e Ep têm de ser positivos.")
+        if float(c.psi_1000_pct) < 0.0:
+            raise nbr.FaixaNormativaError(f"Cabo {k + 1}: ψ1000 negativo.")
+    for k, a in enumerate(armaduras):
+        if not (float(a.As_cm2) > 0.0 and float(a.Es_mpa) > 0.0):
+            raise nbr.FaixaNormativaError(f"Armadura passiva {k + 1}: As e Es têm de ser positivos.")
+    instantes = ([float(f.t_dias) for f in fases] + [float(c.t_ativacao_dias) for c in camadas]
+                 + [float(c.t_protensao_dias) for c in cabos]
+                 + [float(a.t_ativacao_dias) for a in armaduras])
+    if any(math.isinf(x) or math.isnan(x) for x in instantes):
+        raise nbr.FaixaNormativaError("Os instantes das fases, camadas e cabos têm de ser finitos.")
+    if max(instantes) > t_final:
+        raise nbr.FaixaNormativaError(
+            f"t_final = {t_final:g} dias anterior a uma fase ({max(instantes):g} dias).")
+
+
+def _subnos_p43(t_a: float, t_b: float, n: int) -> list[float]:
+    """Nós interiores de (t_a, t_b), em progressão geométrica de (t − t_a + 1)."""
+    if n <= 1:
+        return []
+    fim = DT_INTERIOR_INFINITO_DIAS if math.isinf(t_b) else t_b - t_a
+    return [t_a + (1.0 + fim) ** (k / n) - 1.0 for k in range(1, n)]
+
+
+def perdas_metodo_geral(
+    fases: _Sequence_p43[FaseCarga],
+    camadas: _Sequence_p43[CamadaConcreto],
+    cabos: _Sequence_p43[CaboProtensao],
+    t_final_dias: float,
+    armaduras: _Sequence_p43[ArmaduraPassivaMetodoGeral] = (),
+    alfa: float = ALFA_METODO_GERAL_PADRAO,
+    n_subpassos: int = 1,
+    tempos_saida_dias: _Sequence_p43[float] = (),
+) -> ResultadoPerdasMetodoGeral:
+    """Perdas progressivas pelo método geral, fases em idades diferentes (9.6.3.4.4, PDF p. 73).
+
+    Texto da norma: quando as ações permanentes (carga permanente ou
+    protensão) são aplicadas parceladamente em idades diferentes (não
+    satisfeitas as condições de 9.6.3.4.2), considera-se a fluência de cada
+    camada de concreto e a relaxação de cada cabo separadamente; a relaxação
+    de cada cabo pode ser considerada isolada, independentemente da aplicação
+    posterior de outras ações permanentes. A norma não dá fórmula fechada;
+    o procedimento adotado (análise da seção passo a passo no tempo) está
+    descrito no comentário do bloco P43 deste módulo:
+
+        concreto (A.2.5, p. 240): ε(t) = Σ Δσ(τ)·[1/Ec(τ) + α'·φ(t,τ)/Eci] + εcs
+            α' = 1 para acréscimo súbito (fase) e α para o acréscimo gradual
+            de cada passo, aplicado no início do passo τ = t_{i−1}; depois do
+            fim do passo t_i, esse acréscimo continua a fluir com
+            φ(t,t_{i−1}) − φ(t_i,t_{i−1});
+        cabo (9.6.3.4.2 e 9.6.3.4.5, p. 72 e 74):
+            ε(t) = σp0·[1 + χ(t,tp)]/Ep + Σ Δσp·[1 + χ(t,tp) − χ(τ,tp)]/Ep,
+            χ = −ln(1 − ψ), ψ do próprio cabo desde a sua protensão tp;
+        armadura passiva: elástica (Es);
+        seção plana ε(y) = ε0 + κ·y e equilíbrio de N e M em cada nó.
+
+    Entradas:
+        fases: ações externas súbitas (``FaseCarga``: t, N em kN, M em kN·cm).
+        camadas: ``CamadaConcreto`` (ao menos uma).
+        cabos: ``CaboProtensao``.
+        t_final_dias: fim da análise, no eixo de tempo comum (pode ser
+            ``math.inf`` se as funções φ e εcs das camadas aceitarem).
+        armaduras: ``ArmaduraPassivaMetodoGeral`` (opcional).
+        alfa: α de A.2.5 para os acréscimos graduais, em (0; 1]; padrão 0,8
+            ("outros casos usuais"). Com uma fase só, use 0,5 e Ec(t0) = Eci
+            para reproduzir 9.6.3.4.2.
+        n_subpassos: passos em cada intervalo entre instantes de fase, em
+            progressão geométrica de (t − t_a + 1). Com muitos passos e
+            α = 1, o resultado tende à forma integral de A.2.5 (superposição);
+            α < 1 é a aproximação de passo longo e, com φ do Anexo A (que já
+            tem φa e parte de φd logo após o carregamento), continua a pesar
+            dentro de cada passo curto.
+        tempos_saida_dias: instantes extras onde se quer o estado.
+
+    Ordem no mesmo instante: ativam-se as camadas e as armaduras passivas,
+    aplicam-se as fases de carga e depois protendem-se os cabos, um a um, na
+    ordem da lista (cada cabo já aderente sofre o encurtamento imediato dos
+    seguintes). Tensões em MPa (cabo positivo em tração; concreto com
+    compressão negativa).
+
+    Devolve ``ResultadoPerdasMetodoGeral``: por cabo, σp em cada nó, a perda
+    progressiva (acréscimos graduais: fluência, retração e relaxação), a
+    variação imediata por ações posteriores e a perda total σp0 − σp(t).
+    """
+    import numpy as _np
+
+    t_final = float(t_final_dias)
+    a = float(alfa)
+    if not 0.0 < a <= 1.0:
+        raise nbr.FaixaNormativaError(f"α = {a:g}: tem de estar em (0; 1] (A.2.5).")
+    n_sub = int(n_subpassos)
+    if n_sub < 1:
+        raise nbr.FaixaNormativaError(f"n_subpassos = {n_sub}: tem de ser >= 1.")
+    fases, camadas, cabos, armaduras = list(fases), list(camadas), list(cabos), list(armaduras)
+    _validar_p43(fases, camadas, cabos, armaduras, t_final)
+    saidas = [float(x) for x in tempos_saida_dias]
+    if any(not (math.isfinite(x) and x <= t_final) for x in saidas):
+        raise nbr.FaixaNormativaError("tempos_saida_dias têm de ser finitos e <= t_final.")
+
+    el_cam = [_ElementoP43("camada", c, float(c.Ac_cm2), float(c.y_cm), float(c.Ic_cm4))
+              for c in camadas]
+    el_cab = [_ElementoP43("cabo", c, float(c.Ap_cm2), float(c.y_cm)) for c in cabos]
+    el_arm = [_ElementoP43("passiva", c, float(c.As_cm2), float(c.y_cm)) for c in armaduras]
+    ativos: list[_ElementoP43] = []
+
+    eventos = sorted({float(f.t_dias) for f in fases}
+                     | {float(c.t_ativacao_dias) for c in camadas}
+                     | {float(c.t_protensao_dias) for c in cabos}
+                     | {float(c.t_ativacao_dias) for c in armaduras})
+    principais = sorted(set(eventos) | set(saidas) | {t_final})
+    nos: list[float] = [principais[0]]
+    for ta, tb in zip(principais, principais[1:]):
+        nos.extend(_subnos_p43(ta, tb, n_sub) if ta >= eventos[0] else [])
+        nos.append(tb)
+
+    eps0 = 0.0
+    kappa = 0.0
+    residuo_max = 0.0
+
+    def resolver(dN: float, dM: float, t: float, tau: float, t_fim: float | None,
+                 t_ant: float | None) -> None:
+        """Um passo: acha Δε0 e Δκ e aplica os acréscimos a cada elemento ativo."""
+        nonlocal eps0, kappa, residuo_max
+        if not ativos:
+            raise nbr.FaixaNormativaError(
+                f"Ação em t = {t:g} dias sem camada de concreto ativa na seção.")
+        dados = []
+        K = _np.zeros((2, 2))
+        r = _np.array([dN, dM], dtype=float)
+        for e in ativos:
+            Jn = e.J(t, tau, t_fim, a)
+            hn, hm = e.historia(t_ant, t, a) if t_ant is not None else (0.0, 0.0)
+            k = e.A / Jn
+            km = e.I / Jn
+            K += _np.array([[k, k * e.y], [k * e.y, k * e.y * e.y + km]])
+            r += _np.array([k * hn, k * e.y * hn + km * hm])
+            dados.append((e, Jn, hn, hm))
+        if abs(_np.linalg.det(K)) <= 1e-12 * max(1.0, float(_np.abs(K).max()) ** 2):
+            raise nbr.FaixaNormativaError(
+                f"Seção sem rigidez à flexão em t = {t:g} dias (verifique Ic das camadas).")
+        de0, dk = _np.linalg.solve(K, r)
+        sN = sM = 0.0
+        for e, Jn, hn, hm in dados:
+            dsn = (de0 + dk * e.y - hn) / Jn
+            e.inc_n.append((float(dsn), tau, t_fim))
+            e.sigma_n += float(dsn)
+            sN += e.A * dsn
+            sM += e.A * dsn * e.y
+            if e.tipo == "camada":
+                dsm = (dk - hm) / Jn
+                e.inc_m.append((float(dsm), tau, t_fim))
+                e.sigma_m += float(dsm)
+                sM += e.I * dsm
+        residuo_max = max(residuo_max, abs(sN - dN), abs(sM - dM))
+        eps0 += float(de0)
+        kappa += float(dk)
+
+    hist_t: list[float] = []
+    hist_p: list[list[float]] = [[] for _ in cabos]
+    hist_cn: list[list[float]] = [[] for _ in camadas]
+    hist_cm: list[list[float]] = [[] for _ in camadas]
+    hist_e0: list[float] = []
+    hist_k: list[float] = []
+    gradual_p = [0.0] * len(cabos)
+    subito_p = [0.0] * len(cabos)
+
+    t_ant: float | None = None
+    for t in nos:
+        # 1) passo gradual de t_ant a t (fluência, retração, relaxação)
+        if t_ant is not None and ativos:
+            antes = [e.sigma_n for e in el_cab]
+            resolver(0.0, 0.0, t, t_ant, t, t_ant)
+            for i, e in enumerate(el_cab):
+                gradual_p[i] += e.sigma_n - antes[i]
+        # 2) eventos súbitos no instante t
+        for e, obj in zip(el_cam + el_arm, camadas + armaduras):
+            if float(obj.t_ativacao_dias) == t:
+                ativos.append(e)
+        dN = sum(float(f.N_kn) for f in fases if float(f.t_dias) == t) * 10.0   # kN → MPa·cm²
+        dM = sum(float(f.M_kncm) for f in fases if float(f.t_dias) == t) * 10.0  # kN·cm → MPa·cm³
+        if dN != 0.0 or dM != 0.0:
+            antes = [e.sigma_n for e in el_cab]
+            resolver(dN, dM, t, t, None, None)
+            for i, e in enumerate(el_cab):
+                subito_p[i] += e.sigma_n - antes[i]
+        for i, (e, cabo) in enumerate(zip(el_cab, cabos)):
+            if float(cabo.t_protensao_dias) != t:
+                continue
+            P = float(cabo.Ap_cm2) * float(cabo.sigma_p0_mpa)
+            antes = [x.sigma_n for x in el_cab]
+            resolver(-P, -P * float(cabo.y_cm), t, t, None, None)
+            for j, x in enumerate(el_cab):
+                subito_p[j] += x.sigma_n - antes[j]
+            e.inc_n.append((float(cabo.sigma_p0_mpa), t, None))
+            e.sigma_n = float(cabo.sigma_p0_mpa)
+            ativos.append(e)
+        hist_t.append(t)
+        for i, (e, cabo) in enumerate(zip(el_cab, cabos)):
+            hist_p[i].append(e.sigma_n if t >= float(cabo.t_protensao_dias) else math.nan)
+        for i, e in enumerate(el_cam):
+            hist_cn[i].append(e.sigma_n)
+            hist_cm[i].append(e.sigma_m)
+        hist_e0.append(eps0 * 1000.0)
+        hist_k.append(kappa * 1000.0)
+        t_ant = t
+
+    sig_fin = tuple(e.sigma_n for e in el_cab)
+    perda_prog = tuple(-g for g in gradual_p)
+    perda_tot = tuple(float(c.sigma_p0_mpa) - s for c, s in zip(cabos, sig_fin))
+    t_txt = "∞" if math.isinf(t_final) else f"{t_final:g}"
+    memoria = [
+        "9.6.3.4.4 (p. 73) — método geral: fluência de cada camada e relaxação de cada cabo "
+        "consideradas separadamente, seção analisada passo a passo no tempo.",
+        f"{len(camadas)} camada(s), {len(cabos)} cabo(s), {len(armaduras)} armadura(s) passiva(s), "
+        f"{len(fases)} fase(s) de carga; {len(nos)} nós até t = {t_txt} dias, "
+        f"{n_sub} subpasso(s) por intervalo; α = {_fmt_p30(a)} (A.2.5, p. 240).",
+        f"Resíduo máximo de equilíbrio: {_fmt_p30(residuo_max / 10.0)} kN ou kN·cm.",
+    ]
+    for i, c in enumerate(cabos):
+        nome = c.nome or f"cabo {i + 1}"
+        memoria.append(
+            f"{nome}: σp0 = {_fmt_p30(float(c.sigma_p0_mpa))} MPa em t = "
+            f"{_fmt_p30(float(c.t_protensao_dias))} dias; perda progressiva = "
+            f"{_fmt_p30(perda_prog[i])} MPa; variação imediata por ações posteriores = "
+            f"{_fmt_p30(subito_p[i])} MPa; σp(t) = {_fmt_p30(sig_fin[i])} MPa; perda total = "
+            f"{_fmt_p30(perda_tot[i])} MPa ({_fmt_p30(100.0 * perda_tot[i] / float(c.sigma_p0_mpa))} % de σp0).")
+    res = ResultadoPerdasMetodoGeral(
+        tempos_dias=tuple(hist_t),
+        sigma_p_mpa=tuple(tuple(h) for h in hist_p),
+        sigma_c_n_mpa=tuple(tuple(h) for h in hist_cn),
+        sigma_c_m_mpa_por_cm=tuple(tuple(h) for h in hist_cm),
+        eps0_pmil=tuple(hist_e0), kappa_pmil_por_cm=tuple(hist_k),
+        sigma_p_final_mpa=sig_fin, perda_progressiva_mpa=perda_prog,
+        variacao_imediata_mpa=tuple(subito_p), perda_total_mpa=perda_tot,
+        alfa=a, n_subpassos=n_sub, memoria=tuple(memoria),
+        y_camadas_cm=tuple(float(c.y_cm) for c in camadas),
+    )
+    return res
+
+
 if __name__ == "__main__":
     if "--test" in sys.argv:
         sys.exit(run_tests())

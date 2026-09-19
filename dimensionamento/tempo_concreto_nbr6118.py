@@ -980,3 +980,200 @@ def eps_s_impedida_pmil(sigma_s_t0_mpa: float, Es_mpa: float, chi: float,
     base = sigma_s_t0 / Es * (1.0 + chi_ef)
     termo_delta = float(delta_sigma_s_mpa) / Es * (1.0 + chi_ef)
     return (base + termo_delta) * 1000.0
+
+
+# === P43: Forma integral de εc(t) com tensão variável (A.2.5) ===
+#
+# A.2.5 (PDF p. 240): quando a tensão no concreto varia no intervalo (ações
+# externas, armadura, concretos de idades diferentes etc.), a deformação total
+# é a soma dos três termos da deformação não impedida com uma integral dos
+# acréscimos de tensão. A integral é feita por passos: o histórico de tensão é
+# linear por trechos, cada trecho é integrado por Gauss-Legendre e os saltos
+# (dois pares na mesma idade) entram como integral de Stieltjes exata.
+from typing import Callable as _Callable_p43, Sequence as _Sequence_p43
+
+INTEGRANDOS_A_2_5 = ("impresso", "superposicao")
+
+
+@dataclass(frozen=True)
+class ResultadoDeformacaoIntegral:
+    """εc(t) pela forma integral de A.2.5, com as parcelas e a memória de cálculo."""
+
+    eps_c_pmil: float
+    eps_imediata_pmil: float
+    eps_fluencia_pmil: float
+    eps_cs_pmil: float
+    eps_integral_pmil: float
+    delta_sigma_c_mpa: float
+    t_dias: float
+    t0_dias: float
+    memoria: tuple[str, ...]
+
+
+def _modulo_idade_p43(Ec_mpa, tau: float) -> float:
+    """Ec(τ) de um número (módulo constante) ou de uma função τ → Ec(τ), em MPa."""
+    E = float(Ec_mpa(tau)) if callable(Ec_mpa) else float(Ec_mpa)
+    if not E > 0.0:
+        raise FaixaNormativaError(f"Ec(τ = {tau:g} dias) = {E:g} MPa: tem de ser positivo.")
+    return E
+
+
+def _historico_p43(historico_sigma, t: float) -> list[tuple[float, float]]:
+    """Valida o histórico (τ, σc) e o corta em t, interpolando no corte."""
+    pontos = [(float(tau), float(s)) for tau, s in historico_sigma]
+    if not pontos:
+        raise FaixaNormativaError("Histórico de tensão vazio: informe ao menos (t0, σc(t0)).")
+    if any(math.isinf(tau) or math.isnan(tau) for tau, _ in pontos):
+        raise FaixaNormativaError("As idades do histórico de tensão têm de ser finitas.")
+    for (ta, _), (tb, _) in zip(pontos, pontos[1:]):
+        if tb < ta:
+            raise FaixaNormativaError(
+                f"Histórico de tensão fora de ordem: τ = {tb:g} dias depois de τ = {ta:g} dias.")
+    t0 = pontos[0][0]
+    if not t >= t0:
+        raise FaixaNormativaError(f"t = {t:g} dias anterior a t0 = {t0:g} dias.")
+    cortado = [pontos[0]]
+    for (ta, sa), (tb, sb) in zip(pontos, pontos[1:]):
+        if tb <= t:
+            cortado.append((tb, sb))
+        else:
+            if ta < t:
+                cortado.append((t, sa + (sb - sa) * (t - ta) / (tb - ta)))
+            break
+    return cortado
+
+
+def eps_c_integral(historico_sigma: _Sequence_p43[tuple[float, float]],
+                   t_dias: float,
+                   phi_func: _Callable_p43[[float, float], float],
+                   Ec_mpa,
+                   Eci_mpa: float,
+                   eps_cs_pmil: float = 0.0,
+                   alfa: float = 1.0,
+                   integrando: str = "impresso",
+                   n_pontos: int = 8) -> ResultadoDeformacaoIntegral:
+    """Deformação total do concreto εc(t) pela forma integral, com tensão variável (A.2.5, PDF p. 240).
+
+        εc(t) = σc(t0)/Ec(t0) + [σc(t0)/Eci]·φ(t,t0) + εcs(t,t0)
+                + ∫ de τ=t0 a t de ∂σc/∂τ · [1/Ec(τ) + α·φ(·)/Eci] dτ
+
+    Os três primeiros termos são a deformação não impedida; a integral, o
+    efeito da variação de tensão ocorrida no intervalo.
+
+    **Argumento de φ na integral.** A imagem da página traz α·φ(τ,t0) no
+    integrando, e o padrão desta função é essa letra da norma:
+        integrando='impresso' (padrão): 1/Ec(τ) + α·φ(τ,t0)/Eci, literal da
+            página 240;
+        integrando='superposicao' (opção explícita, fora da letra da norma):
+            1/Ec(τ) + α·φ(t,τ)/Eci. É a leitura pelo princípio da
+            superposição, em que o acréscimo de tensão aplicado na idade τ
+            flui até t com φ(t,τ); com α = 1 é o que a forma simplificada de
+            A.2.5 (Δσc·α·φ(t,t0)) aproxima e o que o método geral de
+            9.6.3.4.4 integra passo a passo. Quem a escolhe assume a
+            divergência em relação ao texto impresso, e a memória de cálculo
+            registra isso.
+
+    Entradas:
+        historico_sigma: sequência de pares (τ em dias, σc(τ) em MPa), com τ
+            finito e não decrescente; o primeiro par é (t0, σc(t0)). Entre
+            dois pares a tensão varia linearmente; dois pares na mesma idade
+            são um salto (acréscimo instantâneo). O histórico depois de t é
+            cortado em t. Compressão negativa, como no resto do módulo.
+        t_dias: idade em que se quer εc (t >= t0; pode ser ``math.inf`` se
+            ``phi_func`` aceitar).
+        phi_func: função (t, τ) → φ(t,τ), coeficiente de fluência para carga
+            aplicada na idade τ e observada em t (por exemplo, um ``lambda``
+            sobre ``phi`` do Anexo A; a conversão da idade real em idade
+            fictícia fica com o chamador).
+        Ec_mpa: Ec(τ) em MPa, número (módulo constante) ou função τ → Ec(τ)
+            (sobre ``nucleo_nbr6118.Eci_idade``, por exemplo). Ec(t0) é o seu
+            valor em t0.
+        Eci_mpa: Eci de 8.2.8 aos 28 dias, em MPa.
+        eps_cs_pmil: εcs(t,t0), retração no intervalo, em ‰ (``eps_cs_pmil``
+            do Anexo A ou ``retracao_simplificada_pmil``).
+        alfa: α do integrando, em (0; 1].
+        n_pontos: pontos de Gauss-Legendre por trecho linear (1 a 64).
+
+    Devolve ``ResultadoDeformacaoIntegral`` com εc(t) em ‰ e as parcelas.
+    Com σc constante a integral é nula e εc(t) é a decomposição de A.2.1; com
+    φ(t,τ) independente de τ, a integral é exatamente o último termo da forma
+    simplificada de A.2.5 (``eps_c_total_simplificada_pmil``).
+    """
+    t = float(t_dias)
+    modo = nbr._chave(integrando)
+    if modo not in INTEGRANDOS_A_2_5:
+        raise ValueError(
+            f"integrando desconhecido: {integrando!r}. Use 'impresso' (padrão, literal "
+            "da página 240) ou 'superposicao' (φ(t,τ), fora da letra da norma).")
+    a = float(alfa)
+    if not 0.0 < a <= 1.0:
+        raise FaixaNormativaError(f"α = {a:g}: tem de estar em (0; 1] (A.2.5).")
+    Eci = float(Eci_mpa)
+    if not Eci > 0.0:
+        raise FaixaNormativaError("Eci deve ser positivo (MPa).")
+    n = int(n_pontos)
+    if not 1 <= n <= 64:
+        raise FaixaNormativaError(f"n_pontos = {n}: use de 1 a 64 pontos de Gauss por trecho.")
+    pontos = _historico_p43(historico_sigma, t)
+    t0, s0 = pontos[0]
+
+    def kernel(tau: float) -> float:
+        p = phi_func(t, tau) if modo == "superposicao" else phi_func(tau, t0)
+        return 1.0 / _modulo_idade_p43(Ec_mpa, tau) + a * float(p) / Eci
+
+    import numpy as _np
+    xg, wg = _np.polynomial.legendre.leggauss(n)
+    integral = 0.0
+    n_saltos = 0
+    n_trechos = 0
+    for (ta, sa), (tb, sb) in zip(pontos, pontos[1:]):
+        ds = sb - sa
+        if ds == 0.0:
+            continue
+        if tb == ta:  # salto: a integral de Stieltjes vale Δσ·k(τ)
+            integral += ds * kernel(ta)
+            n_saltos += 1
+            continue
+        taxa = ds / (tb - ta)
+        meio, semi = 0.5 * (ta + tb), 0.5 * (tb - ta)
+        integral += taxa * semi * sum(float(w) * kernel(meio + semi * float(x))
+                                      for x, w in zip(xg, wg))
+        n_trechos += 1
+    Ec_t0 = _modulo_idade_p43(Ec_mpa, t0)
+    phi_t_t0 = float(phi_func(t, t0))
+    e_imed = s0 / Ec_t0 * 1000.0
+    e_flu = s0 / Eci * phi_t_t0 * 1000.0
+    e_cs = float(eps_cs_pmil)
+    e_int = integral * 1000.0
+    total = e_imed + e_flu + e_cs + e_int
+    t_txt = "∞" if math.isinf(t) else _n(t, "g")
+    arg = "φ(t,τ)" if modo == "superposicao" else "φ(τ,t0)"
+    nota_integrando = (
+        "Integrando com φ(t,τ) (superposição), por escolha do chamador: diverge da "
+        "letra da página 240, que traz α·φ(τ,t0)."
+        if modo == "superposicao" else
+        "Integrando com α·φ(τ,t0), como impresso na página 240.")
+    memoria = (
+        f"A.2.5 (p. 240) — forma integral de εc(t), t0 = {_n(t0, 'g')} dias, t = {t_txt} dias.",
+        f"σc(t0)/Ec(t0) = {_n(s0)}/{_n(Ec_t0)} = {_n(e_imed)} ‰.",
+        f"[σc(t0)/Eci]·φ(t,t0) = {_n(s0)}/{_n(Eci)}·{_n(phi_t_t0)} = {_n(e_flu)} ‰.",
+        f"εcs(t,t0) = {_n(e_cs)} ‰.",
+        f"∫ ∂σc/∂τ·[1/Ec(τ) + α·{arg}/Eci] dτ, com α = {_n(a, 'g')}: {n_trechos} trecho(s) "
+        f"linear(es) com {n} ponto(s) de Gauss e {n_saltos} salto(s), "
+        f"Δσc = {_n(pontos[-1][1] - s0)} MPa, resulta {_n(e_int)} ‰.",
+        nota_integrando,
+        f"εc(t) = {_n(e_imed)} + {_n(e_flu)} + {_n(e_cs)} + {_n(e_int)} = {_n(total)} ‰.",
+    )
+    return ResultadoDeformacaoIntegral(
+        eps_c_pmil=total, eps_imediata_pmil=e_imed, eps_fluencia_pmil=e_flu,
+        eps_cs_pmil=e_cs, eps_integral_pmil=e_int,
+        delta_sigma_c_mpa=pontos[-1][1] - s0, t_dias=t, t0_dias=t0, memoria=memoria,
+    )
+
+
+def eps_c_integral_pmil(historico_sigma, t_dias: float, phi_func, Ec_mpa, Eci_mpa: float,
+                        eps_cs_pmil: float = 0.0, alfa: float = 1.0,
+                        integrando: str = "impresso", n_pontos: int = 8) -> float:
+    """εc(t) em ‰ pela forma integral (A.2.5, PDF p. 240); atalho de ``eps_c_integral``."""
+    return eps_c_integral(historico_sigma, t_dias, phi_func, Ec_mpa, Eci_mpa, eps_cs_pmil,
+                          alfa, integrando, n_pontos).eps_c_pmil
