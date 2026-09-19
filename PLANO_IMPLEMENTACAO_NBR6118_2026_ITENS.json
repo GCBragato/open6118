@@ -293,7 +293,8 @@
    "nome": "Concreto simples: núcleo e seções",
    "onda": 4,
    "prioridade": "baixa",
-   "modulo": "dimensionamento/concreto_simples_nbr6118.py"
+   "modulo": "dimensionamento/concreto_simples_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P41",
@@ -12791,7 +12792,7 @@
    "pagina_pdf": 224,
    "titulo": "Condições básicas de aplicabilidade do concreto simples",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P40",
@@ -12800,7 +12801,23 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Casos de uso típicos do texto (pilar-parede apoiado no solo = ok; viga simplesmente fletida sem apoio contínuo = não ok).",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P40",
+    "data": "19/09/2026",
+    "funcoes": [
+     "concreto_simples_aplicavel",
+     "ResultadoAplicabilidade"
+    ],
+    "testes": [
+     "test_aplicavel_pilar_parede_apoiado_no_solo",
+     "test_aplicavel_cada_condicao_basica",
+     "test_viga_fletida_sem_condicao_basica_nao_aplicavel",
+     "test_outra_condicao_basica_declarada",
+     "test_impedimentos_reprovam"
+    ],
+    "observacao": "Exige ao menos uma condição básica (confinamento lateral, compressão em toda a seção, apoio vertical contínuo ou outra declarada em texto, porque a lista da norma é exemplificativa: 'como'). Sismo, explosão e dutilidade importante reprovam. Também inclui a restrição de 24.5.2.5 (peça curva, torção de equilíbrio)."
+   }
   },
   {
    "id": "24.2-proibicao-sismo-dutilidade",
@@ -12822,7 +12839,7 @@
    "pagina_pdf": 224,
    "titulo": "Faixa de classes de concreto permitida em concreto simples",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P40",
@@ -12834,7 +12851,23 @@
     "nucleo.validar_fck"
    ],
    "teste_sugerido": "fck=15 e fck=40 devem passar; fck=10 e fck=45 devem ser rejeitados para uso em concreto simples.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P40",
+    "data": "19/09/2026",
+    "funcoes": [
+     "validar_fck_simples",
+     "FCK_MIN_SIMPLES",
+     "FCK_MAX_SIMPLES"
+    ],
+    "testes": [
+     "test_validar_fck_simples_aceita",
+     "test_validar_fck_simples_rejeita",
+     "test_funcoes_rejeitam_fck_fora_de_c15_c40",
+     "test_c15_aceito_embora_o_nucleo_rejeite"
+    ],
+    "observacao": "Faixa C15 a C40. Todas as funções de resistência validam por ela, e não pela faixa C20 a C90 do núcleo."
+   }
   },
   {
    "id": "24.4-junta-dilatacao-espacamento",
@@ -12842,7 +12875,7 @@
    "pagina_pdf": 224,
    "titulo": "Espaçamento máximo de juntas de dilatação em concreto simples",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P40",
@@ -12852,7 +12885,24 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "espaçamento=15 m -> ok sem exigência adicional; espaçamento=20 m -> exigir consideração de efeitos térmicos.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P40",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_juntas",
+     "JUNTA_MAX_M",
+     "ResultadoJuntas"
+    ],
+    "testes": [
+     "test_juntas_constantes",
+     "test_juntas_15_m_ok_sem_exigencia",
+     "test_juntas_20_m_exige_efeitos",
+     "test_juntas_logo_acima_de_15_m",
+     "test_juntas_espacamento_invalido"
+    ],
+    "observacao": "Acima de 15 m, exige_efeitos_termicos_retracao=True, e a verificação só passa com efeitos_considerados=True."
+   }
   },
   {
    "id": "24.4-distancia-armadura-junta",
@@ -12860,7 +12910,7 @@
    "pagina_pdf": 224,
    "titulo": "Distância mínima da armadura de distribuição até a junta",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P40",
@@ -12870,7 +12920,19 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "distância=6 cm -> ok; distância=5 cm -> reprovado.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P40",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_juntas",
+     "DIST_ARMADURA_JUNTA_CM"
+    ],
+    "testes": [
+     "test_armadura_6_cm_ok_5_cm_reprova"
+    ],
+    "observacao": "Com dist_armadura_junta_cm=None (sem armadura), a regra não se aplica."
+   }
   },
   {
    "id": "24.4-qualitativo",
@@ -12906,7 +12968,7 @@
    "pagina_pdf": 225,
    "titulo": "Resistência de cálculo à tração do concreto simples (γc = 1,68)",
    "tipo": "formula",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P40",
@@ -12920,7 +12982,27 @@
     "nucleo.fctk_inf"
    ],
    "teste_sugerido": "fctd_simples(fck=25) deve dar fctk_inf(25)/1.68, não fctk_inf(25)/1.4.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P40",
+    "data": "19/09/2026",
+    "funcoes": [
+     "GAMA_C_SIMPLES",
+     "fctk_inf_simples",
+     "fctd_simples",
+     "fcd_simples"
+    ],
+    "testes": [
+     "test_gama_c_simples_e_1_2_vezes_1_4",
+     "test_nenhuma_funcao_herda_gama_c_do_nucleo",
+     "test_fctd_simples_usa_1_68_e_nao_1_4",
+     "test_fctd_simples_bordas_e_interior",
+     "test_fctd_simples_c15_valor",
+     "test_fcd_simples",
+     "test_fcd_simples_idade_menor_que_28_dias"
+    ],
+    "observacao": "γc = 1,2 × 1,4 = 1,68 é constante local. nucleo.fctk_inf/fctd/fcd rejeitam o C15 (validam C20 a C90), por isso fct,m vem de nucleo._fct_m (expressões de 8.2.5) e β1 de nucleo.beta1. O fator 0,7 de fctk,inf foi reescrito localmente, o que é o único trecho de fórmula de material repetido. O teste de aceite troca nucleo.fctd/fcd/fctk_inf por funções que falham e muda nucleo.GAMA_C para 99, e todas as funções continuam iguais."
+   }
   },
   {
    "id": "24.5.2.2-tensoes-resistentes-fibra-extrema",
@@ -12928,7 +13010,7 @@
    "pagina_pdf": 225,
    "titulo": "Tensões resistentes de cálculo nas fibras extremas (compressão e tração)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P40",
@@ -12941,7 +13023,21 @@
     "24.5.2.1-fctd-simples"
    ],
    "teste_sugerido": "Para fck=20: sigma_cRd = 0,85*fcd(20,gama_c=1.68); comparar com cálculo manual.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P40",
+    "data": "19/09/2026",
+    "funcoes": [
+     "sigma_cRd",
+     "sigma_ctRd"
+    ],
+    "testes": [
+     "test_sigma_cRd_085_fcd",
+     "test_sigma_cRd_c20_valor",
+     "test_sigma_ctRd_085_fctd"
+    ],
+    "observacao": "0,85·fcd e 0,85·fctd com γc = 1,68."
+   }
   },
   {
    "id": "24.5.2.3-tau-wRd-flexao",
@@ -12949,7 +13045,7 @@
    "pagina_pdf": 225,
    "titulo": "Tensão de cisalhamento resistente de cálculo em peças lineares de concreto simples",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P40",
@@ -12961,7 +13057,22 @@
     "24.5.2.1-fctd-simples"
    ],
    "teste_sugerido": "sigma_cmd=0 -> tau_wRd = 0,30*fctd (caso flexão simples); sigma_cmd alto que faça o fator estourar 2 -> truncar em 2.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P40",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tau_wRd",
+     "fator_compressao_cisalhamento"
+    ],
+    "testes": [
+     "test_tau_wRd_flexao_simples",
+     "test_tau_wRd_flexo_compressao_interior",
+     "test_tau_wRd_fator_no_teto_exato_e_acima",
+     "test_tau_wRd_sigma_negativo_rejeitado"
+    ],
+    "observacao": "O fator (1 + 3·σcmd/fck) é limitado a 2 (o teto começa em σcmd = fck/3). σcmd é positiva na compressão; na flexão simples e na flexo-tração usa-se 0, e valor negativo levanta FaixaNormativaError."
+   }
   },
   {
    "id": "24.5.2.4-6-tau-Rd-limitado",
@@ -12969,7 +13080,7 @@
    "pagina_pdf": 225,
    "titulo": "Tensão de cisalhamento resistente de cálculo em lajes, torção simples e punção de concreto simples",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P40",
@@ -12981,7 +13092,21 @@
     "24.5.2.1-fctd-simples"
    ],
    "teste_sugerido": "fctd tal que 0,30*fctd > 1,0 MPa (fck alto) deve saturar em 1,0 MPa; fctd baixo deve ficar sem o teto.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P40",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tau_Rd_laje_torcao_puncao"
+    ],
+    "testes": [
+     "test_tau_Rd_tres_casos_mesma_expressao",
+     "test_tau_Rd_c40_nao_atinge_teto",
+     "test_tau_Rd_teto_de_1_mpa",
+     "test_tau_Rd_caso_desconhecido"
+    ],
+    "observacao": "caso = 'laje' (24.5.2.4), 'torcao' (24.5.2.5) ou 'puncao' (24.5.2.6). Com C15 a C40 e γc = 1,68, 0,30·fctd vai de 0,228 a 0,439 MPa, então o teto de 1,0 MPa nunca governa dentro da faixa. O teto foi testado forçando fctd alto com monkeypatch. A restrição de 24.5.2.5 sobre peças curvas e torção de equilíbrio está em concreto_simples_aplicavel."
+   }
   },
   {
    "id": "24.5.3-altura-concreto-contra-solo",
@@ -12989,7 +13114,7 @@
    "pagina_pdf": 226,
    "titulo": "Redução de altura útil para concreto simples lançado contra o solo",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P40",
@@ -13001,7 +13126,22 @@
     "24.6.2-espessura-bloco"
    ],
    "teste_sugerido": "h_real=60cm contra o solo -> h_calculo=55cm; h_real=60cm com fundo formado -> h_calculo=60cm.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P40",
+    "data": "19/09/2026",
+    "funcoes": [
+     "altura_contra_solo_cm",
+     "tau_wd_retangular_mpa (lancado_contra_solo)",
+     "verificar_cisalhamento (lancado_contra_solo)"
+    ],
+    "testes": [
+     "test_altura_contra_solo",
+     "test_altura_contra_solo_invalida",
+     "test_tau_wd_contra_solo_usa_h_menos_5"
+    ],
+    "observacao": "h − 5 cm quando o concreto é lançado contra o solo; h <= 5 cm levanta erro. O restante de 24.5.3 (armadura menor que a mínima tratada como concreto simples) não foi implementado; não era item do pacote."
+   }
   },
   {
    "id": "24.5.3-qualitativo",
@@ -13023,7 +13163,7 @@
    "pagina_pdf": 226,
    "titulo": "Limites de deformação nas fibras extremas do concreto simples à flexão",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P40",
@@ -13033,7 +13173,24 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Checar que os limites batem com os do concreto armado em compressão (mesmo 0,0035) mas que o ramo de tração ect,lim=0,00035 é exclusivo do concreto simples.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P40",
+    "data": "19/09/2026",
+    "funcoes": [
+     "EPS_C_LIM_PMIL",
+     "EPS_CT_LIM_PMIL",
+     "verificar_deformacoes_extremas",
+     "sigma_c_simples"
+    ],
+    "testes": [
+     "test_limites_deformacao_constantes",
+     "test_deformacoes_extremas_nos_limites_e_acima",
+     "test_deformacao_negativa_rejeitada",
+     "test_diagrama_simples_pontos_da_figura_24_1"
+    ],
+    "observacao": "3,5 ‰ e 0,35 ‰. O diagrama parábola-retângulo da Figura 24.1 é a função sigma_c_simples. Duas escolhas não estão na norma: expoente 2 nas duas parábolas e patamar de tração em 0,85·fctd, porque a figura não cota a ordenada da tração. A fluência não entra na função: a deformação informada já deve incluí-la."
+   }
   },
   {
    "id": "24.5.4.2-limites-deformacao-media",
@@ -13041,7 +13198,7 @@
    "pagina_pdf": 227,
    "titulo": "Limites de deformação média a 0,43h da fibra extrema",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P40",
@@ -13051,7 +13208,24 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Verificar continuidade/coerência com os limites de 24.5.4.1 (deformação média sempre menor que a de fibra extrema).",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P40",
+    "data": "19/09/2026",
+    "funcoes": [
+     "EPS_C_MEDIA_PMIL",
+     "EPS_CT_MEDIA_PMIL",
+     "DIST_FIBRA_MEDIA_REL",
+     "verificar_deformacoes_medias",
+     "fibra_deformacao_media_cm"
+    ],
+    "testes": [
+     "test_deformacoes_medias_nos_limites_e_acima",
+     "test_fibra_deformacao_media",
+     "test_limites_deformacao_constantes"
+    ],
+    "observacao": "2,0 ‰ e 0,2 ‰ nas fibras a 0,43·h."
+   }
   },
   {
    "id": "24.5.4.3-tensoes-resistentes-flexao-simplificada",
@@ -13059,7 +13233,7 @@
    "pagina_pdf": 227,
    "titulo": "Tensões resistentes de cálculo simplificadas para flexão (região tracionada e comprimida)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P40",
@@ -13072,7 +13246,22 @@
     "nucleo.fcd"
    ],
    "teste_sugerido": "Comparar contra a fórmula geral de 24.5.2.2 e documentar a diferença (0,8 vs 0,85) para não confundir as duas no código.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P40",
+    "data": "19/09/2026",
+    "funcoes": [
+     "sigma_ctRd_flexao_simplificada",
+     "tensoes_flexao_simplificada",
+     "TensoesFlexaoSimplificada"
+    ],
+    "testes": [
+     "test_sigma_ctRd_flexao_simplificada_0_8",
+     "test_0_85_e_0_8_em_funcoes_diferentes",
+     "test_tensoes_flexao_simplificada"
+    ],
+    "observacao": "0,8·fctd fica numa função separada do 0,85·fctd de 24.5.2.2 (sigma_ctRd). O pico de compressão é 0,85·fcd."
+   }
   },
   {
    "id": "24.5.5.1-tau-wd-secao-retangular",
@@ -13080,7 +13269,7 @@
    "pagina_pdf": 227,
    "titulo": "Tensão de cisalhamento atuante em seção retangular de concreto simples",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P40",
@@ -13092,7 +13281,23 @@
     "24.5.2.3-tau-wRd-flexao"
    ],
    "teste_sugerido": "Para VSd, b, h dados, conferir a fórmula fechada e comparar com o caso limite do concreto armado (razão 1,5x maior para mesma área bh).",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P40",
+    "data": "19/09/2026",
+    "funcoes": [
+     "tau_wd_retangular_mpa",
+     "verificar_cisalhamento",
+     "ResultadoCisalhamentoSimples"
+    ],
+    "testes": [
+     "test_tau_wd_retangular",
+     "test_tau_wd_1_5_vez_a_media",
+     "test_verificar_cisalhamento_peca_linear_na_fronteira",
+     "test_verificar_cisalhamento_laje"
+    ],
+    "observacao": "τwd = 3·VSd/(2·b·h), com h total; kN/cm² convertido para MPa (× 10). A verificação usa τwRd em peça linear e τRd de 24.5.2.4 em laje, sempre por seguranca.verificar_seguranca."
+   }
   },
   {
    "id": "24.5.5.2-3-secao-critica-lajes",
@@ -13100,7 +13305,7 @@
    "pagina_pdf": 227,
    "titulo": "Seção crítica para cisalhamento e regra especial de lajes (sem redução no apoio)",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P40",
@@ -13112,7 +13317,21 @@
     "24.5.2.4-6-tau-Rd-limitado"
    ],
    "teste_sugerido": "Comparar com a regra de seção crítica a d do concreto armado (aqui é h, não d).",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P40",
+    "data": "19/09/2026",
+    "funcoes": [
+     "secao_critica_cisalhamento",
+     "cortante_de_calculo_kn",
+     "SecaoCriticaCisalhamento"
+    ],
+    "testes": [
+     "test_secao_critica_peca_linear_a_h_e_laje_na_face",
+     "test_cortante_de_calculo"
+    ],
+    "observacao": "Em peça linear, a seção é x = h da face do apoio, e o mesmo valor serve para as seções mais próximas. Em laje, x = 0: sem redução da cortante no apoio."
+   }
   },
   {
    "id": "24.5.6-torcao-cisalhamento-interacao",
@@ -13120,7 +13339,7 @@
    "pagina_pdf": 227,
    "titulo": "Verificação de torção e interação torção-cortante em concreto simples",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P40",
@@ -13133,7 +13352,21 @@
     "24.5.2.4-6-tau-Rd-limitado"
    ],
    "teste_sugerido": "Caso limite: interação = 1 exatamente na fronteira; tau_Td=0 deve reduzir a verificação de cortante pura.",
-   "trecho": "simples"
+   "trecho": "simples",
+   "implementacao": {
+    "pacote": "P40",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_torcao_cortante",
+     "ResultadoTorcaoCortante"
+    ],
+    "testes": [
+     "test_torcao_cortante_interacao_exatamente_1",
+     "test_torcao_nula_reduz_a_cortante_pura",
+     "test_torcao_isolada_acima_de_tTRd"
+    ],
+    "observacao": "τTd entra como dado (teoria da elasticidade; a norma não dá fórmula). Verifica as três condições e aponta a que governa."
+   }
   },
   {
    "id": "24.5.7.2-secao-comprimida-excentrica",

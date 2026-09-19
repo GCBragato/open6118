@@ -704,25 +704,25 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 
 | Id | Item | Pág. | O que é | Situação | Prior. | Compl. | Pacote |
 |---|---|---|---|---|---|---|---|
-| `24.2-condicoes-uso` | 24.2 | 224 | Condições básicas de aplicabilidade do concreto simples | ausente | baixa | P | P40 |
+| `24.2-condicoes-uso` | 24.2 | 224 | Condições básicas de aplicabilidade do concreto simples | implementado | baixa | P | P40 |
 | `24.2-proibicao-sismo-dutilidade` | 24.2 | 224 | Proibição de concreto simples em sismo, explosão ou onde dutilidade for relevante | não computável | baixa | P |  |
-| `24.3-classe-concreto` | 24.3 | 224 | Faixa de classes de concreto permitida em concreto simples | ausente | baixa | P | P40 |
-| `24.4-junta-dilatacao-espacamento` | 24.4 | 224 | Espaçamento máximo de juntas de dilatação em concreto simples | ausente | baixa | P | P40 |
-| `24.4-distancia-armadura-junta` | 24.4 | 224 | Distância mínima da armadura de distribuição até a junta | ausente | baixa | P | P40 |
+| `24.3-classe-concreto` | 24.3 | 224 | Faixa de classes de concreto permitida em concreto simples | implementado | baixa | P | P40 |
+| `24.4-junta-dilatacao-espacamento` | 24.4 | 224 | Espaçamento máximo de juntas de dilatação em concreto simples | implementado | baixa | P | P40 |
+| `24.4-distancia-armadura-junta` | 24.4 | 224 | Distância mínima da armadura de distribuição até a junta | implementado | baixa | P | P40 |
 | `24.4-qualitativo` | 24.4 | 224 | Interrupções de concretagem e contraventamento em concreto simples | não computável | baixa | P |  |
 | `24.5.1-generalidades` | 24.5.1 | 225 | Método dos estados-limites e coeficientes de ponderação do concreto armado para concreto simples | não computável | baixa | P |  |
-| `24.5.2.1-fctd-simples` | 24.5.2.1 | 225 | Resistência de cálculo à tração do concreto simples (γc = 1,68) | parcial | média | P | P40 |
-| `24.5.2.2-tensoes-resistentes-fibra-extrema` | 24.5.2.2 | 225 | Tensões resistentes de cálculo nas fibras extremas (compressão e tração) | ausente | média | P | P40 |
-| `24.5.2.3-tau-wRd-flexao` | 24.5.2.3 | 225 | Tensão de cisalhamento resistente de cálculo em peças lineares de concreto simples | ausente | média | P | P40 |
-| `24.5.2.4-6-tau-Rd-limitado` | 24.5.2.4/24.5.2.5/24.5.2.6 | 225 | Tensão de cisalhamento resistente de cálculo em lajes, torção simples e punção de concreto simples | ausente | baixa | P | P40 |
-| `24.5.3-altura-concreto-contra-solo` | 24.5.3 | 226 | Redução de altura útil para concreto simples lançado contra o solo | ausente | média | P | P40 |
+| `24.5.2.1-fctd-simples` | 24.5.2.1 | 225 | Resistência de cálculo à tração do concreto simples (γc = 1,68) | implementado | média | P | P40 |
+| `24.5.2.2-tensoes-resistentes-fibra-extrema` | 24.5.2.2 | 225 | Tensões resistentes de cálculo nas fibras extremas (compressão e tração) | implementado | média | P | P40 |
+| `24.5.2.3-tau-wRd-flexao` | 24.5.2.3 | 225 | Tensão de cisalhamento resistente de cálculo em peças lineares de concreto simples | implementado | média | P | P40 |
+| `24.5.2.4-6-tau-Rd-limitado` | 24.5.2.4/24.5.2.5/24.5.2.6 | 225 | Tensão de cisalhamento resistente de cálculo em lajes, torção simples e punção de concreto simples | implementado | baixa | P | P40 |
+| `24.5.3-altura-concreto-contra-solo` | 24.5.3 | 226 | Redução de altura útil para concreto simples lançado contra o solo | implementado | média | P | P40 |
 | `24.5.3-qualitativo` | 24.5.3 | 226 | Critérios de dimensionamento como concreto simples (armadura de distribuição, As menor que o mínimo, durabilidade) | não computável | baixa | P |  |
-| `24.5.4.1-limites-deformacao-extrema` | 24.5.4.1 | 226 | Limites de deformação nas fibras extremas do concreto simples à flexão | ausente | média | P | P40 |
-| `24.5.4.2-limites-deformacao-media` | 24.5.4.2 | 227 | Limites de deformação média a 0,43h da fibra extrema | ausente | baixa | P | P40 |
-| `24.5.4.3-tensoes-resistentes-flexao-simplificada` | 24.5.4.3 | 227 | Tensões resistentes de cálculo simplificadas para flexão (região tracionada e comprimida) | ausente | média | M | P40 |
-| `24.5.5.1-tau-wd-secao-retangular` | 24.5.5.1 | 227 | Tensão de cisalhamento atuante em seção retangular de concreto simples | ausente | média | P | P40 |
-| `24.5.5.2-3-secao-critica-lajes` | 24.5.5.2/24.5.5.3 | 227 | Seção crítica para cisalhamento e regra especial de lajes (sem redução no apoio) | ausente | baixa | P | P40 |
-| `24.5.6-torcao-cisalhamento-interacao` | 24.5.6 | 227 | Verificação de torção e interação torção-cortante em concreto simples | ausente | baixa | P | P40 |
+| `24.5.4.1-limites-deformacao-extrema` | 24.5.4.1 | 226 | Limites de deformação nas fibras extremas do concreto simples à flexão | implementado | média | P | P40 |
+| `24.5.4.2-limites-deformacao-media` | 24.5.4.2 | 227 | Limites de deformação média a 0,43h da fibra extrema | implementado | baixa | P | P40 |
+| `24.5.4.3-tensoes-resistentes-flexao-simplificada` | 24.5.4.3 | 227 | Tensões resistentes de cálculo simplificadas para flexão (região tracionada e comprimida) | implementado | média | M | P40 |
+| `24.5.5.1-tau-wd-secao-retangular` | 24.5.5.1 | 227 | Tensão de cisalhamento atuante em seção retangular de concreto simples | implementado | média | P | P40 |
+| `24.5.5.2-3-secao-critica-lajes` | 24.5.5.2/24.5.5.3 | 227 | Seção crítica para cisalhamento e regra especial de lajes (sem redução no apoio) | implementado | baixa | P | P40 |
+| `24.5.6-torcao-cisalhamento-interacao` | 24.5.6 | 227 | Verificação de torção e interação torção-cortante em concreto simples | implementado | baixa | P | P40 |
 | `24.5.7.2-secao-comprimida-excentrica` | 24.5.7.2 | 228 | Cálculo simplificado de seção comprimida excêntrica de concreto simples (ponto virtual G1 e área eficaz triangular) | ausente | média | G | P41 |
 | `24.5.7.3-secao-comprimida-cortante` | 24.5.7.3 | 229 | Verificação combinada de seção a compressão inclinada (normal + cortante) em concreto simples | ausente | baixa | M | P41 |
 | `24.5.8-estabilidade-global` | 24.5.8 | 229 | Verificação de estabilidade global em estrutura de concreto simples | não computável | baixa | P |  |
