@@ -284,10 +284,10 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.6.4.1-rigidez-vigas-pilares` | 14.6.4.1 | 111 | Valores de rigidez para análise linear (Ecs, momento de inércia bruto; flechas com fissuração/fluência) | ausente | alta | P | P44 |
 | `14.6.4.2-restricoes-redistribuicao` | 14.6.4.2 | 111 | Restrições à redistribuição em pilares, elementos comprimidos e consolos | ausente | média | P | P46 |
 | `14.6.4.3-xd-dutilidade` | 14.6.4.3 | 112 | Limite de x/d para dutilidade sem redistribuição (0,45 / 0,35) | implementado | alta | P |  |
-| `14.6.4.3-xd-redistribuicao` | 14.6.4.3 | 112 | Limite de x/d quando há redistribuição de momento (função do coeficiente δ) | ausente | alta | P | P13 |
-| `14.6.4.3-delta-min` | 14.6.4.3 | 112 | Limite mínimo do coeficiente de redistribuição (δ ≥ 0,75) | ausente | alta | P | P13 |
-| `14.6.4.4-rotacao-plastica` | 14.6.4.4 | 112 | Capacidade de rotação plástica admissível (Figura 14.7) e fator de correção a/d | ausente | média | G | P13 |
-| `14.6.4.4-dispensa-verificacao-rotacao` | 14.6.4.4 | 113 | Dispensa da verificação explícita de rotação plástica (x/d ≤ 0,25 / 0,15) | ausente | média | P | P13 |
+| `14.6.4.3-xd-redistribuicao` | 14.6.4.3 | 112 | Limite de x/d quando há redistribuição de momento (função do coeficiente δ) | implementado | alta | P | P13 |
+| `14.6.4.3-delta-min` | 14.6.4.3 | 112 | Limite mínimo do coeficiente de redistribuição (δ ≥ 0,75) | implementado | alta | P | P13 |
+| `14.6.4.4-rotacao-plastica` | 14.6.4.4 | 112 | Capacidade de rotação plástica admissível (Figura 14.7) e fator de correção a/d | implementado | média | G | P13 |
+| `14.6.4.4-dispensa-verificacao-rotacao` | 14.6.4.4 | 113 | Dispensa da verificação explícita de rotação plástica (x/d ≤ 0,25 / 0,15) | implementado | média | P | P13 |
 | `14.6.5-analise-nao-linear-elementos-lineares` | 14.6.5 | 113 | Análise não linear de elementos lineares - aplicabilidade a ELU e ELS | não computável | baixa | P |  |
 | `14.6.6.1-vigas-continuas-momento-minimo` | 14.6.6.1 | 113 | Correções de momento mínimo no modelo de viga contínua simplesmente apoiada nos pilares | ausente | alta | M | P14 |
 | `14.6.6.1-coeficientes-engastamento-apoio-extremo` | 14.6.6.1 | 114 | Coeficientes de momento de engastamento perfeito nos apoios extremos (rigidez de pilares/viga, Figura 14.8) | ausente | alta | M | P14 |
@@ -298,9 +298,9 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.7.2.2-vao-efetivo-laje` | 14.7.2.2 | 116 | Vão efetivo de lajes/placas (mesma fórmula lef = l0+a1+a2 de 14.6.2.4) | implementado | alta | P |  |
 | `14.7.3-poisson-placas` | 14.7.3 | 116 | Coeficiente de Poisson para análise elástica de placas (ν = 0,2) | implementado | baixa | P | P2 |
 | `14.7.3.1-rigidez-estadio-I-placas` | 14.7.3.1 | 116 | Rigidez do Estádio I para verificação de flecha em placas (momento fletor menor que o de fissuração) | ausente | alta | P | P45 |
-| `14.7.3.2-redistribuicao-lajes` | 14.7.3.2 | 116 | Limites de x/d para redistribuição de momentos em placas (mesmas fórmulas de 14.6.4.3) | ausente | alta | P | P13 |
-| `14.7.4-xd-limite-plastico-laje` | 14.7.4 | 116 | Limite de x/d para dispensa de verificação de rotação na análise plástica de lajes (charneiras) | ausente | média | P | P13 |
-| `14.7.4-razao-momentos-borda-vao` | 14.7.4 | 116 | Razão mínima entre momentos de borda e de vão na análise plástica de lajes retangulares (1,5:1) | ausente | média | P | P13 |
+| `14.7.3.2-redistribuicao-lajes` | 14.7.3.2 | 116 | Limites de x/d para redistribuição de momentos em placas (mesmas fórmulas de 14.6.4.3) | implementado | alta | P | P13 |
+| `14.7.4-xd-limite-plastico-laje` | 14.7.4 | 116 | Limite de x/d para dispensa de verificação de rotação na análise plástica de lajes (charneiras) | implementado | média | P | P13 |
+| `14.7.4-razao-momentos-borda-vao` | 14.7.4 | 116 | Razão mínima entre momentos de borda e de vão na análise plástica de lajes retangulares (1,5:1) | implementado | média | P | P13 |
 | `14.7.5-analise-nao-linear-placas` | 14.7.5 | 117 | Análise não linear de placas - aplicabilidade a ELU e ELS | não computável | baixa | P |  |
 | `14.7.6.1-reacoes-apoio-charneiras` | 14.7.6.1 | 117 | Reações de apoio de lajes maciças retangulares pelo método das charneiras plásticas (triângulos/trapézios) | parcial | alta | G | P17 |
 | `14.7.6.2-compatibilizacao-momentos` | 14.7.6.2 | 117 | Compatibilização de momentos negativos entre lajes vizinhas | parcial | alta | P | P17 |

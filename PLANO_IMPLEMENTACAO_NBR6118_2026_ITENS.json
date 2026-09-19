@@ -101,7 +101,8 @@
    "nome": "Redistribuição de momentos e dutilidade",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/redistribuicao_nbr6118.py"
+   "modulo": "dimensionamento/redistribuicao_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P14",
@@ -5372,7 +5373,7 @@
    "pagina_pdf": 112,
    "titulo": "Limite de x/d quando há redistribuição de momento (função do coeficiente δ)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P13",
@@ -5385,7 +5386,27 @@
     "14.6.4.3-delta-min"
    ],
    "teste_sugerido": "delta=0,75 (limite minimo) deve dar o menor x/d admissivel; comparar a continuidade com o limite sem redistribuicao quando delta->1.",
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P13",
+    "data": "19/09/2026",
+    "funcoes": [
+     "xd_limite_redistribuicao"
+    ],
+    "testes": [
+     "test_xd_limite_redistribuicao_delta_1_reproduz_limite_sem_redistribuicao_fck_baixo",
+     "test_xd_limite_redistribuicao_delta_1_reproduz_limite_sem_redistribuicao_fck_alto",
+     "test_xd_limite_redistribuicao_delta_075_fck_baixo_p112",
+     "test_xd_limite_redistribuicao_delta_075_fck_alto_p112",
+     "test_xd_limite_redistribuicao_ponto_interior_p112",
+     "test_xd_limite_redistribuicao_fronteira_fck_50_usa_formula_fck_baixo",
+     "test_xd_limite_redistribuicao_fronteira_fck_acima_de_50_usa_formula_fck_alto",
+     "test_xd_limite_redistribuicao_delta_abaixo_do_minimo_levanta_erro",
+     "test_xd_limite_redistribuicao_delta_acima_de_1_levanta_erro",
+     "test_xd_limite_redistribuicao_fck_fora_da_faixa_levanta_erro"
+    ],
+    "observacao": "Sem alteracao nesta rodada; ja estava correto e sem achados."
+   }
   },
   {
    "id": "14.6.4.3-delta-min",
@@ -5393,7 +5414,7 @@
    "pagina_pdf": 112,
    "titulo": "Limite mínimo do coeficiente de redistribuição (δ ≥ 0,75)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P13",
@@ -5401,7 +5422,18 @@
    "o_que_calcula": "Limite inferior do coeficiente de redistribuicao de momentos delta (M_redistribuido/M_elastico), valido para qualquer classe de concreto.",
    "formula_ou_regra": "delta >= 0,75, para qualquer caso",
    "conferido_na_imagem": true,
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P13",
+    "data": "19/09/2026",
+    "funcoes": [
+     "delta_minimo"
+    ],
+    "testes": [
+     "test_delta_minimo_p112"
+    ],
+    "observacao": "Sem alteracao nesta rodada; ja estava correto e sem achados."
+   }
   },
   {
    "id": "14.6.4.4-rotacao-plastica",
@@ -5409,7 +5441,7 @@
    "pagina_pdf": 112,
    "titulo": "Capacidade de rotação plástica admissível (Figura 14.7) e fator de correção a/d",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "G",
    "pacote": "P13",
@@ -5418,7 +5450,27 @@
    "formula_ou_regra": "theta_pl_admissivel(x/d) lido em 4 curvas da Figura 14.7 (I: fck 20-50 MPa CA-50; II: fck=90 MPa CA-50; III: fck 20-50 MPa CA-60; IV: fck=90 MPa CA-60), com interpolacao linear entre C50 e C90; fator de correcao para a/d != 3 (a = MSd/VSd): raiz((a/d)/3).",
    "conferido_na_imagem": true,
    "teste_sugerido": "Extrair alguns pontos (x/d, theta_pl) diretamente do grafico (ex.: pico da curva I ~31 mrad perto de x/d=0,10; ~5 mrad em x/d=0,45) e comparar com a curva digitalizada.",
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P13",
+    "data": "19/09/2026",
+    "funcoes": [
+     "rotacao_plastica_admissivel_mrad"
+    ],
+    "testes": [
+     "test_rotacao_plastica_pico_curva_i_ca50_c20_c50_p112",
+     "test_rotacao_plastica_curva_i_ponto_final_p112",
+     "test_rotacao_plastica_curva_iii_ca60_menor_que_curva_i_ca50",
+     "test_rotacao_plastica_c90_menor_ou_igual_que_c50_mesma_classe_aco",
+     "test_rotacao_plastica_interpolacao_linear_c50_c90_p113",
+     "test_rotacao_plastica_fator_a_d_diferente_de_3_p113",
+     "test_rotacao_plastica_fator_a_d_contra_valor_de_referencia_independente_p112",
+     "test_rotacao_plastica_xd_fora_da_faixa_levanta_erro",
+     "test_rotacao_plastica_aco_fora_do_escopo_levanta_erro",
+     "test_rotacao_plastica_a_d_nao_positivo_levanta_erro"
+    ],
+    "observacao": "Corrigido: docstring agora registra explicitamente a checagem da ambiguidade do radical (p. 112, confirmado sqrt((a/d)/3) por recorte ampliado) e o teste com valor de referencia independente foi adicionado."
+   }
   },
   {
    "id": "14.6.4.4-dispensa-verificacao-rotacao",
@@ -5426,7 +5478,7 @@
    "pagina_pdf": 113,
    "titulo": "Dispensa da verificação explícita de rotação plástica (x/d ≤ 0,25 / 0,15)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P13",
@@ -5437,7 +5489,21 @@
    "depende_de": [
     "14.6.4.4-rotacao-plastica"
    ],
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P13",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dispensa_verificacao_rotacao"
+    ],
+    "testes": [
+     "test_dispensa_rotacao_fck_baixo_no_limite_p113",
+     "test_dispensa_rotacao_fck_baixo_acima_do_limite_p113",
+     "test_dispensa_rotacao_fck_alto_no_limite_p113",
+     "test_dispensa_rotacao_fck_alto_acima_do_limite_p113"
+    ],
+    "observacao": "Sem alteracao nesta rodada; ja estava correto e sem achados."
+   }
   },
   {
    "id": "14.6.5-analise-nao-linear-elementos-lineares",
@@ -5624,7 +5690,7 @@
    "pagina_pdf": 116,
    "titulo": "Limites de x/d para redistribuição de momentos em placas (mesmas fórmulas de 14.6.4.3)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P13",
@@ -5636,7 +5702,19 @@
     "14.6.4.3-xd-redistribuicao",
     "14.6.4.3-delta-min"
    ],
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P13",
+    "data": "19/09/2026",
+    "funcoes": [
+     "xd_limite_redistribuicao_laje"
+    ],
+    "testes": [
+     "test_xd_limite_redistribuicao_laje_reproduz_formula_de_vigas_p116",
+     "test_xd_limite_redistribuicao_laje_delta_minimo_tambem_vale_p116"
+    ],
+    "observacao": "Sem alteracao nesta rodada; ja estava correto e sem achados."
+   }
   },
   {
    "id": "14.7.4-xd-limite-plastico-laje",
@@ -5644,7 +5722,7 @@
    "pagina_pdf": 116,
    "titulo": "Limite de x/d para dispensa de verificação de rotação na análise plástica de lajes (charneiras)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P13",
@@ -5655,7 +5733,19 @@
    "depende_de": [
     "14.6.4.4-dispensa-verificacao-rotacao"
    ],
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P13",
+    "data": "19/09/2026",
+    "funcoes": [
+     "dispensa_verificacao_rotacao"
+    ],
+    "testes": [
+     "test_dispensa_rotacao_laje_fck_baixo_p116",
+     "test_dispensa_rotacao_laje_fck_alto_p116"
+    ],
+    "observacao": "Corrigido: o teste tautologico (comparava a funcao com outra chamada identica a si mesma) foi substituido por dois testes que exercitam os valores do enunciado de 14.7.4 (fck<=50 e fck>50) diretamente, com asserçoes sobre ok e xd_limite."
+   }
   },
   {
    "id": "14.7.4-razao-momentos-borda-vao",
@@ -5663,7 +5753,7 @@
    "pagina_pdf": 116,
    "titulo": "Razão mínima entre momentos de borda e de vão na análise plástica de lajes retangulares (1,5:1)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P13",
@@ -5672,7 +5762,21 @@
    "formula_ou_regra": "M_borda_negativo / M_vao_positivo >= 1,5 (lajes retangulares, borda continua e apoio indeslocavel, analise plastica)",
    "conferido_na_imagem": true,
    "teste_sugerido": "Gerar um caso com razao calculada abaixo de 1,5 (ex.: a partir das tabelas de Bares) e conferir que a funcao aponta a nao conformidade.",
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P13",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_razao_momentos_borda_vao"
+    ],
+    "testes": [
+     "test_razao_momentos_borda_vao_no_limite_p116",
+     "test_razao_momentos_borda_vao_abaixo_do_limite_p116",
+     "test_razao_momentos_borda_vao_acima_do_limite_p116",
+     "test_razao_momentos_borda_vao_nao_positivo_levanta_erro"
+    ],
+    "observacao": "Sem alteracao nesta rodada; ja estava correto e sem achados."
+   }
   },
   {
    "id": "14.7.5-analise-nao-linear-placas",
