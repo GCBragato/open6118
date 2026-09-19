@@ -357,7 +357,8 @@
    "nome": "Esforços hiperestáticos de protensão",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/protendido_nbr6118.py + analise_barras_nbr6118.py"
+   "modulo": "dimensionamento/protendido_nbr6118.py + analise_barras_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P48",
@@ -3484,7 +3485,7 @@
    "pagina_pdf": 81,
    "titulo": "Ação da protensão como ação permanente indireta",
    "tipo": "qualitativo",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "G",
    "onde_no_codigo": "dimensionamento/protendido_nbr6118.py: forca_protensao_axial/excentrica, perda_progressiva_simplificada, omega_perfil",
@@ -3498,7 +3499,37 @@
    "trecho": "acoes",
    "pacote": "P47",
    "fora_do_escopo_ate_18_09": "Os esforços hiperestáticos de protensão exigem a análise da estrutura contínua, que é do TQS. A parcela isostática já existe, e o P30 entrega Pd,t.",
-   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras)."
+   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras).",
+   "implementacao": {
+    "pacote": "P47",
+    "data": "19/09/2026",
+    "funcoes": [
+     "protendido_nbr6118.TrechoCabo (dataclass, geometria parabólica do cabo por barra)",
+     "protendido_nbr6118.PerfilCabo (dataclass, sequência de trechos do cabo)",
+     "protendido_nbr6118.Cabo (dataclass, perfil + força P)",
+     "protendido_nbr6118.cargas_equivalentes_cabo(perfil, P_kn) -> CasoCarga",
+     "protendido_nbr6118.momento_isostatico_cabo_kncm(trecho, P_kn, x_cm)",
+     "protendido_nbr6118.esforcos_hiperestaticos_protensao(modelo, cabo, n_estacoes=11) -> ResultadoHiperestaticoProtensao",
+     "protendido_nbr6118.EsforcosCaboBarra / ResultadoHiperestaticoProtensao (dataclasses de resultado)"
+    ],
+    "testes": [
+     "tests/test_p47_protensao_hiperestatica.py::test_trecho_cabo_comprimento_nao_positivo_levanta_erro",
+     "tests/test_p47_protensao_hiperestatica.py::test_perfil_cabo_sem_trecho_levanta_erro",
+     "tests/test_p47_protensao_hiperestatica.py::test_trecho_cabo_excentricidade_parabola",
+     "tests/test_p47_protensao_hiperestatica.py::test_trecho_cabo_excentricidade_fora_do_trecho_levanta_erro",
+     "tests/test_p47_protensao_hiperestatica.py::test_momento_isostatico_cabo",
+     "tests/test_p47_protensao_hiperestatica.py::test_momento_isostatico_cabo_P_nao_positivo_levanta_erro",
+     "tests/test_p47_protensao_hiperestatica.py::test_cargas_equivalentes_cabo_conteudo",
+     "tests/test_p47_protensao_hiperestatica.py::test_cargas_equivalentes_cabo_P_por_trecho_tamanho_errado",
+     "tests/test_p47_protensao_hiperestatica.py::test_cargas_equivalentes_cabo_P_nao_positivo_levanta_erro",
+     "tests/test_p47_protensao_hiperestatica.py::test_hiperestatico_zero_em_viga_biapoiada",
+     "tests/test_p47_protensao_hiperestatica.py::test_hiperestatico_zero_em_viga_biapoiada_sem_excentricidade_nas_pontas",
+     "tests/test_p47_protensao_hiperestatica.py::test_hiperestatico_viga_continua_2_vaos_contra_equacao_dos_3_momentos",
+     "tests/test_p47_protensao_hiperestatica.py::test_hiperestatico_viga_continua_com_excentricidades_diferentes_no_apoio",
+     "tests/test_p47_protensao_hiperestatica.py::test_esforcos_hiperestaticos_protensao_exige_portico_plano"
+    ],
+    "observacao": "O acerto de sinal da parcela de momento concentrado nas pontas (-P*e_i em x=0 e +P*e_j em x=L) e da carga distribuida w = -8*P*flecha/L^2 foi obtido numericamente contra o proprio resolver do P44 (nao havia formula pronta no plano para essas parcelas) e depois confirmado por deducao fechada: para a viga biapoiada, essas cargas equivalentes reproduzem exatamente M1(x) = P*e(x) em todo ponto (demonstracao classica do metodo das cargas equivalentes, Lin/Naaman). O caso da viga continua de 2 vaos com excentricidade nula nos tres apoios foi conferido contra a equacao dos tres momentos resolvida a mao (M_apoio = -P*flecha), com a conta escrita no comentario do teste, e cruzado com uma segunda montagem independente usando so analise_barras_nbr6118 com uma carga distribuida generica equivalente (sem importar protendido_nbr6118). Escopo restrito a portico plano (modelo.tipo == 'portico_plano'), que cobre exatamente 'viga continua e portico' do objetivo do pacote; grelha e portico espacial (outra convencao de sinal/eixo) ficam fora e levantam ValueError com mensagem explicita. Foi corrigido, só dentro do código novo do P47 (sem tocar analise_barras_nbr6118.py), um efeito de borda do resolver do P44: a consulta pontual em x exatamente igual a 0 ou ao comprimento da barra não enxerga uma carga concentrada aplicada exatamente ali (soma só o que está estritamente à direita da seção); o código do P47 substitui as duas estações extremas pelo valor a um deslocamento desprezível (1e-9·L) para dentro da barra antes de montar M_total e N."
+   }
   },
   {
    "id": "11.4.1.1-cargas-utilizacao",
@@ -8138,7 +8169,7 @@
    "pagina_pdf": 143,
    "titulo": "Protensão no ELU: só hiperestáticos e pré-alongamento com perdas",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "o_que_calcula": "No ELU so entram os esforcos hiperestaticos de protensao (isostaticos ficam de fora); a armadura ativa entra pelos diagramas de 8.4.5 considerando o pre-alongamento calculado com a tensao inicial de calculo e as perdas ate o instante t.",
@@ -8152,7 +8183,26 @@
    "trecho": "flexao",
    "pacote": "P47",
    "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
-   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Com o hiperestático calculado no P47, a regra do ELU é aplicável."
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Com o hiperestático calculado no P47, a regra do ELU é aplicável.",
+   "implementacao": {
+    "pacote": "P47",
+    "data": "19/09/2026",
+    "funcoes": [
+     "protendido_nbr6118.pre_alongamento_protensao_pmil(sigma_pi_mpa, perdas_mpa=0.0, Ep_mpa=E_P_MPA)",
+     "protendido_nbr6118.combinar_protensao_elu(M_hiperestatico_kncm, gama_p=None, combinacao='normal', favoravel=False, M_outras_acoes_kncm=0.0)"
+    ],
+    "testes": [
+     "tests/test_p47_protensao_hiperestatica.py::test_pre_alongamento_protensao",
+     "tests/test_p47_protensao_hiperestatica.py::test_pre_alongamento_protensao_sem_perdas",
+     "tests/test_p47_protensao_hiperestatica.py::test_pre_alongamento_protensao_perdas_maiores_que_sigma_levanta_erro",
+     "tests/test_p47_protensao_hiperestatica.py::test_combinar_protensao_elu_gama_padrao_desfavoravel",
+     "tests/test_p47_protensao_hiperestatica.py::test_combinar_protensao_elu_gama_padrao_favoravel",
+     "tests/test_p47_protensao_hiperestatica.py::test_combinar_protensao_elu_gama_explicito",
+     "tests/test_p47_protensao_hiperestatica.py::test_combinar_protensao_elu_aceita_array",
+     "tests/test_p47_protensao_hiperestatica.py::test_combinar_protensao_elu_nao_soma_isostatico"
+    ],
+    "observacao": "combinar_protensao_elu reusa acoes_nbr6118.gama_f_tabela_11_1('protensao', ...) do P30 para o gama_p padrao (1,2 desfavoravel / 0,9 favoravel), com gama_p explicito disponivel para os casos com gama proprio (ato da protensao, 17.2.4.3.1). pre_alongamento_protensao_pmil devolve so o valor de epsilon_p0 (per mil) a somar a deformacao de flexao da secao; a chamada ao diagrama de 8.4.5 (nucleo_nbr6118.sigma_p, ja existente do P3) para obter a tensao final do aco ativo no ELU e a integracao com o solver de flexao obliqua sao do kernel do P28, fora da dependencia declarada deste pacote (P44, P30, P3) e nao foram tocadas."
+   }
   },
   {
    "id": "17.2.4.3.1-fckj-especificado",

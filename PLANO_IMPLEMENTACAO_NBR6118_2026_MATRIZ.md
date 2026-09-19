@@ -173,7 +173,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `11.3.3.4.2-imperfeicao-local` | 11.3.3.4.2 | 80 | Imperfeições geométricas locais (falta de retilineidade / desaprumo do lance de pilar) | implementado | alta | P |  |
 | `11.3.3.4.3-m1d-min-uniaxial` | 11.3.3.4.3 | 80 | Momento mínimo de 1a ordem para substituir imperfeições locais (uniaxial) | implementado | alta | P |  |
 | `11.3.3.4.3-envoltoria-minima-1a-ordem` | 11.3.3.4.3 | 81 | Envoltória mínima de 1a ordem (flexão composta oblíqua, Figura 11.3) | implementado | alta | G |  |
-| `11.3.3.5-protensao-acao` | 11.3.3.5 | 81 | Ação da protensão como ação permanente indireta | parcial | média | G | P47 |
+| `11.3.3.5-protensao-acao` | 11.3.3.5 | 81 | Ação da protensão como ação permanente indireta | implementado | média | G | P47 |
 | `11.4.1.1-cargas-utilizacao` | 11.4.1.1 | 81 | Cargas variáveis de utilização (verticais, móveis, impacto, frenagem, força centrífuga) | implementado | alta | P | P44 |
 | `11.4.1.2-acao-vento` | 11.4.1.2 | 82 | Ação do vento (remissão a NBR 6123) | ausente | alta | G | fora: O vento é da NBR 6123. A biblioteca recebe os esforços de vento prontos, combina-os (P4) e os compara com o desaprumo (P26). |
 | `11.4.1.3-acao-agua` | 11.4.1.3 | 82 | Ação da água em reservatórios/tanques e água de chuva retida | implementado | baixa | P | P4 |
@@ -384,7 +384,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `17.2.3-dutilidade-vigas` | 17.2.3 | 142 | Dutilidade em vigas: limite de x/d (remete a 14.6.4.3) | implementado | alta | P | P12 |
 | `17.2.4.1-forcas-concentradas-10pct-h` | 17.2.4.1 | 143 | Concentração das forças de armadura no centroide (critério 10% h) | implementado | baixa | P | P12 |
 | `17.2.4.1-armaduras-laterais-vigas` | 17.2.4.1 | 143 | Armaduras laterais de vigas podem entrar no cálculo dos esforços resistentes | não computável | média | P |  |
-| `17.2.4.2.1-protensao-hiperestatica-pre-alongamento` | 17.2.4.2.1 | 143 | Protensão no ELU: só hiperestáticos e pré-alongamento com perdas | ausente | média | P | P47 |
+| `17.2.4.2.1-protensao-hiperestatica-pre-alongamento` | 17.2.4.2.1 | 143 | Protensão no ELU: só hiperestáticos e pré-alongamento com perdas | implementado | média | P | P47 |
 | `17.2.4.3.1-fckj-especificado` | 17.2.4.3.1 | 143 | Especificação de fckj no projeto para o ato da protensão | não computável | baixa | P |  |
 | `17.2.4.3.1-coeficientes-ato-protensao` | 17.2.4.3.1-b | 143 | Coeficientes de ponderação para o ELU no ato da protensão | ausente | média | P | P32 |
 | `17.2.4.3.2-tensao-max-compressao` | 17.2.4.3.2-a | 144 | Tensão máxima de compressão no concreto no ato da protensão | ausente | média | P | P32 |

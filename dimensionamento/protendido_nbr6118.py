@@ -2099,6 +2099,339 @@ def perda_progressiva_aproximada_pct(
     return a + alpha_p / b * phi ** c * (3.0 + float(sigma_c_p0g_mpa))
 
 
+# === P47: Esforços hiperestáticos de protensão (11.3.3.5 e 17.2.4.2.1, p. 81 e 143) ===
+# "A ação da protensão deve ser considerada em todas as estruturas protendidas,
+# incluindo... esforços hiperestáticos de protensão... Os esforços solicitantes
+# gerados por essa protensão podem ser calculados diretamente a partir da
+# excentricidade do cabo... e da força de protensão ou através de um conjunto
+# de cargas externas equivalentes" (11.3.3.5, PDF p. 81). No ELU, "devem ser
+# considerados... apenas os esforços solicitantes hiperestáticos de protensão.
+# Os isostáticos de protensão não podem ser incluídos" (17.2.4.2.1, PDF p. 143).
+import numpy as np
+
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import analise_barras_nbr6118 as _ab_p47
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import analise_barras_nbr6118 as _ab_p47
+
+
+@dataclass(frozen=True)
+class TrechoCabo:
+    """Um trecho do cabo de protensão sobre uma barra do modelo de análise
+    (P44), do nó i ao nó j dela (11.3.3.5, PDF p. 81).
+
+    barra: id da barra do modelo (``analise_barras_nbr6118.Modelo``) em que
+    este trecho do cabo está lançado; o cabo percorre a barra inteira,
+    do nó i ao nó j. L_cm: comprimento do trecho (o da barra).
+    e_i_cm, e_j_cm: excentricidade do cabo nos nós i e j, cm, no eixo
+    transversal do pórtico plano (local y, a mesma convenção de sinal de Mz:
+    e(x) entra em M1 = P·e diretamente, sem troca de sinal — ver
+    ``momento_isostatico_cabo_kncm``). flecha_cm: desvio do cabo em relação à
+    corda que liga e_i a e_j, na seção média do trecho, na mesma convenção.
+    Perfil parabólico do 2º grau entre e_i, a flecha no meio e e_j (a mesma
+    forma que 9.6.3.3.2.2, PDF p. 71, admite para o ângulo de desvio do
+    cabo).
+    """
+
+    barra: object
+    L_cm: float
+    e_i_cm: float
+    e_j_cm: float
+    flecha_cm: float = 0.0
+
+    def __post_init__(self):
+        if self.L_cm <= 0.0:
+            raise nbr.FaixaNormativaError(f"L = {_fmt_p30(self.L_cm)} cm: tem de ser positivo.")
+
+    def excentricidade_cm(self, x_cm: float) -> float:
+        """e(x), cm, a x_cm do nó i (0 <= x_cm <= L_cm), pela parábola do trecho."""
+        x = float(x_cm)
+        if not (-1e-9 <= x <= self.L_cm + 1e-9):
+            raise ValueError(
+                f"x = {_fmt_p30(x)} cm fora do trecho (0 a {_fmt_p30(self.L_cm)} cm).")
+        u = min(max(x / self.L_cm, 0.0), 1.0)
+        return self.e_i_cm * (1.0 - u) + self.e_j_cm * u + 4.0 * self.flecha_cm * u * (1.0 - u)
+
+
+@dataclass(frozen=True)
+class PerfilCabo:
+    """Perfil do cabo de protensão ao longo de uma sequência de barras do
+    modelo de análise, do início ao fim do cabo (11.3.3.5, PDF p. 81).
+
+    trechos: tupla de ``TrechoCabo``, na ordem do percurso do cabo, de uma
+    ancoragem (ou ponta) à outra. Quando dois trechos vizinhos compartilham o
+    nó (barras emendadas em sequência) e têm a mesma excentricidade e a mesma
+    inclinação nesse nó, o traçado é contínuo e as parcelas concentradas se
+    cancelam; quando a excentricidade ou a inclinação mudam de um trecho para
+    o outro, ``cargas_equivalentes_cabo`` já representa a força concentrada
+    correspondente à mudança de traçado, sem precisar de um marcador à parte.
+    """
+
+    trechos: tuple
+
+    def __post_init__(self):
+        if not self.trechos:
+            raise ValueError("PerfilCabo precisa de pelo menos um trecho.")
+
+
+def _forcas_por_trecho_p47(n: int, P_kn) -> tuple:
+    """P_kn normalizado para uma tupla de n forças positivas, kN."""
+    if isinstance(P_kn, (int, float)):
+        Ps = tuple(float(P_kn) for _ in range(n))
+    else:
+        Ps = tuple(float(p) for p in P_kn)
+        if len(Ps) != n:
+            raise ValueError(f"P: {len(Ps)} valor(es) para {n} trecho(s) do perfil do cabo.")
+    for p in Ps:
+        _positivo_p30(p, "P")
+    return Ps
+
+
+def cargas_equivalentes_cabo(perfil: PerfilCabo, P_kn) -> "_ab_p47.CasoCarga":
+    """Cargas equivalentes do cabo de protensão sobre o concreto (11.3.3.5, PDF p. 81).
+
+    Substitui o cabo, trecho a trecho (``TrechoCabo``, parábola do 2º grau),
+    por três parcelas estaticamente equivalentes sobre a barra do modelo de
+    análise (P44), em eixos locais:
+
+        - força axial P nas duas extremidades do trecho (comprime o
+          concreto; num nó compartilhado por dois trechos colineares com o
+          mesmo P, as duas parcelas se cancelam e só sobra a força líquida
+          nas ancoragens, nas pontas do cabo);
+        - momento concentrado P·e em cada extremidade, pela excentricidade
+          ali — a ancoragem (ponta do cabo) ou uma mudança de traçado entre
+          trechos vizinhos com excentricidades diferentes no mesmo nó;
+        - carga distribuída w = −8·P·flecha/L² ao longo do trecho, pela
+          curvatura da parábola.
+
+    Dedução (conferida no teste da viga biapoiada): para uma barra isostática
+    (biapoiada), o momento fletor sob essas três parcelas reproduz, em cada
+    ponto, exatamente M1(x) = P·e(x) — o momento isostático de protensão
+    (``momento_isostatico_cabo_kncm``). É esse fato, e não um valor tabelado
+    pela norma, que confere as parcelas e os sinais adotados aqui.
+
+    P_kn: força de protensão, kN, positiva — um número (constante ao longo
+    do cabo) ou uma sequência com um valor por trecho de ``perfil.trechos``
+    (o P30, ``forca_media_kn``/``Pk_sup_inf_kn``/``Pd_kn``, entrega Pt(x),
+    que varia ao longo do cabo pelas perdas). Devolve um
+    ``analise_barras_nbr6118.CasoCarga``, pronto para ``resolver`` (P44).
+
+    Só para modelo de pórtico plano (vigas contínuas e pórticos planos, o
+    objetivo do pacote); o eixo transversal usado é o y local, o de Mz.
+    """
+    Ps = _forcas_por_trecho_p47(len(perfil.trechos), P_kn)
+    caso = _ab_p47.CasoCarga("Cabo de protensão (11.3.3.5)")
+    for trecho, P in zip(perfil.trechos, Ps):
+        L = trecho.L_cm
+        caso.concentrada(trecho.barra, 0.0, P, direcao="x")
+        caso.concentrada(trecho.barra, L, -P, direcao="x")
+        if trecho.e_i_cm != 0.0:
+            caso.momento_concentrado(trecho.barra, 0.0, -P * trecho.e_i_cm, eixo="z")
+        if trecho.e_j_cm != 0.0:
+            caso.momento_concentrado(trecho.barra, L, P * trecho.e_j_cm, eixo="z")
+        if trecho.flecha_cm != 0.0:
+            w_kn_m = -8.0 * P * trecho.flecha_cm / (L * L) * 100.0
+            caso.distribuida(trecho.barra, w_kn_m, direcao="y")
+    return caso
+
+
+def momento_isostatico_cabo_kncm(trecho: TrechoCabo, P_kn: float, x_cm: float) -> float:
+    """Momento isostático de protensão M1(x) = P·e(x), kN·cm (11.3.3.5, PDF p. 81).
+
+    O momento que a força P produziria pela excentricidade sozinha, sem os
+    efeitos de continuidade da estrutura — o que 17.2.4.2.1 (PDF p. 143)
+    proíbe considerar no ELU ("os isostáticos de protensão não podem ser
+    incluídos"). x_cm a partir do nó i do trecho.
+    """
+    _positivo_p30(P_kn, "P")
+    return float(P_kn) * trecho.excentricidade_cm(x_cm)
+
+
+@dataclass(frozen=True)
+class Cabo:
+    """Cabo de protensão para ``esforcos_hiperestaticos_protensao``: o
+    perfil (``PerfilCabo``) e a força P ao longo dele, kN (do P30 —
+    ``forca_media_kn``, ``Pk_sup_inf_kn`` ou ``Pd_kn``), um número (constante)
+    ou uma sequência com um valor por trecho do perfil."""
+
+    perfil: PerfilCabo
+    P_kn: object
+
+
+@dataclass(frozen=True)
+class EsforcosCaboBarra:
+    """Esforços de protensão de uma barra com trecho de cabo (11.3.3.5, PDF p. 81).
+
+    x_cm: estações ao longo da barra (as de ``ResultadoBarra.x_cm``).
+    M_total_kncm: momento fletor total sob as cargas equivalentes do cabo (o
+    que a estrutura real, com a sua continuidade, sente).
+    M_isostatico_kncm: P·e(x) local (``momento_isostatico_cabo_kncm``).
+    M_hiperestatico_kncm: total − isostático (11.3.3.5). N_kn: força normal
+    total sob as cargas equivalentes (inclui a parcela axial do cabo).
+    """
+
+    x_cm: object
+    M_total_kncm: object
+    M_isostatico_kncm: object
+    M_hiperestatico_kncm: object
+    N_kn: object
+
+
+@dataclass(frozen=True)
+class ResultadoHiperestaticoProtensao:
+    """Resultado de ``esforcos_hiperestaticos_protensao`` (11.3.3.5, PDF p. 81).
+
+    barras: {id da barra: ``EsforcosCaboBarra``}, só as barras com trecho de
+    cabo. resultado_analise: o ``ResultadoAnalise`` bruto da resolução (P44),
+    com reações, deslocamentos e o equilíbrio já conferido (ver
+    ``ResultadoAnalise.equilibrio_ok``). memoria: linhas da memória de
+    cálculo.
+    """
+
+    barras: dict
+    resultado_analise: object
+    memoria: tuple
+
+
+def esforcos_hiperestaticos_protensao(modelo, cabo: Cabo, n_estacoes: int = 11) -> ResultadoHiperestaticoProtensao:
+    """Esforços hiperestáticos de protensão em viga contínua ou pórtico (11.3.3.5, PDF p. 81).
+
+    Resolve as cargas equivalentes do cabo (``cargas_equivalentes_cabo``) no
+    modelo de análise de barras (P44, ``analise_barras_nbr6118.resolver``) e,
+    em cada barra com trecho de cabo, separa o momento fletor total (o da
+    estrutura real) do isostático (P·e local,
+    ``momento_isostatico_cabo_kncm``) e do hiperestático (a diferença):
+
+        M_hiperestático(x) = M_total(x) − P·e(x)
+
+    Numa estrutura isostática (viga biapoiada), M_total(x) = P·e(x) em todo
+    ponto e o hiperestático é identicamente zero — a análise reproduz a
+    demonstração do método das cargas equivalentes (ver
+    ``cargas_equivalentes_cabo``). Numa estrutura hiperestática (viga
+    contínua, pórtico), M_hiperestático(x) é, em geral, diferente de zero e
+    varia linearmente entre apoios (por ser gerado só por reações de apoio,
+    sem carga aplicada entre eles).
+
+    Só cobre modelo de pórtico plano (``modelo.tipo == 'portico_plano'``):
+    vigas contínuas e pórticos planos, como o objetivo do pacote pede; grelha
+    e pórtico espacial ficam para quando o P45/P48 precisarem (o eixo
+    transversal usado aqui é sempre o y local, o de Mz).
+    """
+    if modelo.tipo != "portico_plano":
+        raise ValueError(
+            "esforcos_hiperestaticos_protensao só cobre pórtico plano (vigas contínuas e "
+            f"pórticos planos); modelo.tipo = {modelo.tipo!r}.")
+    Ps = _forcas_por_trecho_p47(len(cabo.perfil.trechos), cabo.P_kn)
+    caso = cargas_equivalentes_cabo(cabo.perfil, Ps)
+    resultado = _ab_p47.resolver(modelo, caso, n_estacoes=n_estacoes)
+
+    por_barra: dict = {}
+    for trecho, P in zip(cabo.perfil.trechos, Ps):
+        por_barra.setdefault(trecho.barra, []).append((trecho, P))
+
+    barras = {}
+    for bid, trechos_p in por_barra.items():
+        rb = resultado.barras[bid]
+        x = rb.x_cm
+        m_iso = np.zeros_like(x)
+        for trecho, P in trechos_p:
+            m_iso = m_iso + np.array([momento_isostatico_cabo_kncm(trecho, P, xx) for xx in x])
+        m_total = rb.esforcos["Mz"].copy()
+        n_total = rb.esforcos["N"].copy()
+        # As cargas do cabo (força axial e momento) entram nas duas pontas exatas da
+        # barra (x = 0 e x = L). O extremo da barra não tem "lado direito" (nada além
+        # dele), então a consulta pontual de analise_barras_nbr6118 (.em/esforcos, que
+        # soma só o que está estritamente à direita da seção) não enxerga, exatamente
+        # nesses dois pontos, a própria carga aplicada ali — o mesmo valor logo antes
+        # (dentro da barra) já reflete corretamente essa carga. Corrige-se aqui, sem
+        # mexer em analise_barras_nbr6118.py, substituindo as duas estações extremas
+        # pelo valor a um deslocamento desprezível para dentro da barra.
+        Lf = rb.L_flexivel_cm
+        if x.size and Lf > 0.0:
+            eps = max(Lf * 1e-9, 1e-9)
+            if abs(x[0] - 0.0) <= 1e-9:
+                v = rb.em(min(eps, Lf))
+                m_total[0], n_total[0] = v["Mz"], v["N"]
+            if abs(x[-1] - Lf) <= 1e-9:
+                v = rb.em(max(Lf - eps, 0.0))
+                m_total[-1], n_total[-1] = v["Mz"], v["N"]
+        barras[bid] = EsforcosCaboBarra(
+            x_cm=x.copy(), M_total_kncm=m_total, M_isostatico_kncm=m_iso,
+            M_hiperestatico_kncm=m_total - m_iso, N_kn=n_total)
+
+    memoria = (
+        "11.3.3.5 (p. 81): esforços da protensão pelas cargas equivalentes do cabo, resolvidas "
+        "na estrutura real (P44); M_hiperestático = M_total − P·e (isostático).",
+        f"{len(por_barra)} barra(s) com trecho de cabo.",
+    ) + resultado.memoria
+    return ResultadoHiperestaticoProtensao(barras=barras, resultado_analise=resultado, memoria=memoria)
+
+
+def pre_alongamento_protensao_pmil(sigma_pi_mpa: float, perdas_mpa=0.0,
+                                   Ep_mpa: float = E_P_MPA) -> float:
+    """Pré-alongamento da armadura ativa para o ELU (17.2.4.2.1, PDF p. 143).
+
+        εp0 = [σpi,d − Σ perdas até t] / Ep
+
+    "A consideração das armaduras ativas nos esforços resistentes deve ser
+    feita a partir dos diagramas tensão-deformação especificados em 8.4.5 e
+    da consideração dos pré-alongamentos delas. Esses pré-alongamentos devem
+    ser calculados com base nas tensões iniciais de protensão com valores de
+    cálculo (ver 11.7.1) e com a consideração de perdas na idade t em exame
+    (ver 9.6.3)." sigma_pi_mpa: σpi(d), a tensão inicial de protensão com
+    valor de cálculo (11.7.1). perdas_mpa: a soma das perdas até o instante t
+    (9.6.3), em módulo — um número ou uma sequência de parcelas
+    (perda_relaxacao_kncm2, perda_retracao_kncm2, perda_fluencia_kncm2 ou
+    perda_progressiva_simplificada/perda_progressiva_aproximada_pct, todas
+    convertidas para MPa antes de somar). O resultado (‰) entra como
+    deformação inicial no diagrama de 8.4.5 (P3, ``nucleo_nbr6118.sigma_p``),
+    somado à deformação de flexão da seção, para achar a tensão do aço ativo
+    no ELU (fora do escopo deste pacote: P28, kernel de flexão).
+    """
+    sigma = _positivo_p30(sigma_pi_mpa, "σpi,d")
+    dsigma = _soma_perdas_p30(perdas_mpa, "perdas até t")
+    eps = (sigma - dsigma) / Ep_mpa * 1000.0
+    if eps <= 0.0:
+        raise nbr.FaixaNormativaError(
+            f"εp0 = ({_fmt_p30(sigma)} − {_fmt_p30(dsigma)})/{_fmt_p30(Ep_mpa)} = {_fmt_p30(eps)} ‰: "
+            "as perdas não podem igualar ou superar σpi,d.")
+    return eps
+
+
+def combinar_protensao_elu(M_hiperestatico_kncm, gama_p: float | None = None,
+                           combinacao: str = "normal", favoravel: bool = False,
+                           M_outras_acoes_kncm=0.0):
+    """Momento de cálculo no ELU com a protensão (17.2.4.2.1, PDF p. 143).
+
+    "Na verificação do ELU devem ser considerados, além do efeito de outras
+    ações, apenas os esforços solicitantes hiperestáticos de protensão. Os
+    isostáticos de protensão não podem ser incluídos": só o hiperestático
+    entra, com o γp da Tabela 11.1 (coluna p, P30 — ``gama_f_tabela_11_1``),
+    salvo valor explícito em gama_p (por exemplo, o ato da protensão,
+    17.2.4.3.1, com γp = 1,0 na pré-tração ou 1,1 na pós-tração).
+
+        Md = M_outras_ações,d + γp·M_hiperestático
+
+    M_outras_acoes_kncm já deve vir com os γf das outras ações aplicados
+    (P4/P5); o efeito isostático da protensão nunca entra aqui — ele já está
+    incluído nas tensões da seção pela força de protensão diretamente, não
+    pela combinação de esforços do ELU. A armadura ativa, à parte, entra
+    pelos diagramas de 8.4.5 com o pré-alongamento
+    (``pre_alongamento_protensao_pmil``). Aceita número ou sequência/array
+    (para combinar ao longo de uma barra) em M_hiperestatico_kncm e em
+    M_outras_acoes_kncm.
+    """
+    if gama_p is None:
+        g = _acoes_p30.gama_f_tabela_11_1(combinacao, "protensao", "F" if favoravel else "D")
+    else:
+        g = _positivo_p30(gama_p, "γp")
+    Mh = (float(M_hiperestatico_kncm) if isinstance(M_hiperestatico_kncm, (int, float))
+          else np.asarray(M_hiperestatico_kncm, dtype=float))
+    Mo = (float(M_outras_acoes_kncm) if isinstance(M_outras_acoes_kncm, (int, float))
+          else np.asarray(M_outras_acoes_kncm, dtype=float))
+    return Mo + g * Mh
+
+
 if __name__ == "__main__":
     if "--test" in sys.argv:
         sys.exit(run_tests())
