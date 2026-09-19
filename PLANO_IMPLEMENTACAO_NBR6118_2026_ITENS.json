@@ -259,7 +259,8 @@
    "nome": "Bielas e tirantes e vigas-parede",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/bielas_tirantes_nbr6118.py + vigas_parede_nbr6118.py"
+   "modulo": "dimensionamento/bielas_tirantes_nbr6118.py + vigas_parede_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P36",
@@ -11630,7 +11631,7 @@
    "pagina_pdf": 204,
    "titulo": "Faixa de inclinação admissível das bielas inclinadas",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P35",
@@ -11639,7 +11640,25 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "theta=45 graus (tan=1, dentro); theta=30 graus (tan~0,577, no limite inferior); theta=63,43 graus (tan=2, limite superior).",
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P35",
+    "data": "19/09/2026",
+    "funcoes": [
+     "bielas_tirantes_nbr6118.verificar_inclinacao_biela",
+     "bielas_tirantes_nbr6118.ResultadoInclinacaoBiela"
+    ],
+    "testes": [
+     "test_inclinacao_biela_dentro_da_faixa",
+     "test_inclinacao_biela_limite_inferior_exato",
+     "test_inclinacao_biela_abaixo_do_limite_inferior",
+     "test_inclinacao_biela_limite_superior_exato",
+     "test_inclinacao_biela_acima_do_limite_superior",
+     "test_memoria_inclinacao_biela_admissivel_tem_acentuacao",
+     "test_memoria_inclinacao_biela_nao_admissivel_tem_acentuacao"
+    ],
+    "observacao": "Faixa 0,57 <= tan(theta) <= 2 conferida na imagem (p. 204). Memoria de calculo corrigida nesta rodada (acentuacao)."
+   }
   },
   {
    "id": "22.3.2-fcd1",
@@ -11667,7 +11686,7 @@
    "pagina_pdf": 204,
    "titulo": "Resistência de cálculo da biela/nó CTT ou TTT (fcd2)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P35",
@@ -11679,7 +11698,20 @@
     "nucleo.fcd"
    ],
    "teste_sugerido": "C25: fcd2 = 0,60*0,9*17,857 = 9,64 MPa (comparar com fcd1 da mesma classe: deve ser o menor dos tres).",
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P35",
+    "data": "19/09/2026",
+    "funcoes": [
+     "bielas_tirantes_nbr6118.fcd2_kncm2"
+    ],
+    "testes": [
+     "test_fcd2_c25",
+     "test_fcd1_fcd3_menor_que_fcd2_relacao_de_ordem",
+     "test_verificar_no_ctt_ttt_usam_fcd2"
+    ],
+    "observacao": "fcd2 = 0,60 * alpha_v2 * fcd, conferida na imagem (p. 204). Sem alteracoes nesta rodada."
+   }
   },
   {
    "id": "22.3.2-fcd3",
@@ -11707,7 +11739,7 @@
    "pagina_pdf": 204,
    "titulo": "Área de aço de um tirante genérico do modelo biela-tirante",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P35",
@@ -11719,7 +11751,19 @@
     "nucleo.fyd"
    ],
    "teste_sugerido": "FSd=500 kN, CA-50 (fyd=500/1,15=434,8 MPa=43,48 kN/cm2): As=11,5 cm2.",
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P35",
+    "data": "19/09/2026",
+    "funcoes": [
+     "bielas_tirantes_nbr6118.As_tirante_cm2"
+    ],
+    "testes": [
+     "test_as_tirante_ca50",
+     "test_as_tirante_fyd_nao_positivo_levanta"
+    ],
+    "observacao": "As = FSd/fyd conferida na imagem (p. 204). Docstring corrigida nesta rodada (acentuacao); sem mudanca de comportamento."
+   }
   },
   {
    "id": "22.4.1-classificacao-viga-parede",
@@ -11793,7 +11837,7 @@
    "pagina_pdf": 205,
    "titulo": "Distribuição da armadura negativa em viga-parede contínua (3 faixas)",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P35",
@@ -11804,7 +11848,21 @@
     "22.4.1-classificacao-viga-parede"
    ],
    "teste_sugerido": "l/h=1: As1=0, As2=1,0*As, As3=0 (tudo na faixa central). l/h=3: As1=1,0*As, As2=0, As3=0 (tudo na faixa superior). Soma As1+As2+As3=As nos dois casos.",
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P35",
+    "data": "19/09/2026",
+    "funcoes": [
+     "vigas_parede_nbr6118.repartir_As_negativa"
+    ],
+    "testes": [
+     "test_repartir_As_negativa_l_h_igual_1",
+     "test_repartir_As_negativa_l_h_igual_3",
+     "test_repartir_As_negativa_l_h_igual_2_ponto_interior",
+     "test_repartir_As_negativa_fora_da_faixa_levanta"
+    ],
+    "observacao": "Reparticao em 3 faixas conferida na imagem (p. 205), fronteiras l/h=1 e l/h=3 e ponto interior l/h=2 testados. Docstring/comentarios corrigidos nesta rodada (acentuacao); sem mudanca de comportamento."
+   }
   },
   {
    "id": "22.4.4.1-armadura-horizontal-minima-viga-parede",
@@ -11812,7 +11870,7 @@
    "pagina_pdf": 205,
    "titulo": "Armadura horizontal mínima de viga-parede",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P35",
@@ -11821,7 +11879,19 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "b=20 cm: As,h,min = 0,00075*20*100 = 1,5 cm2/m por face.",
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P35",
+    "data": "19/09/2026",
+    "funcoes": [
+     "vigas_parede_nbr6118.As_horizontal_min_cm2_por_m"
+    ],
+    "testes": [
+     "test_as_horizontal_min_b_20",
+     "test_as_min_b_nao_positivo_levanta"
+    ],
+    "observacao": "Taxa 0,075% conferida na imagem (p. 187/205 do PDF numerado). Sem alteracoes de fundo nesta rodada."
+   }
   },
   {
    "id": "22.4.4.2-ancoragem-flexao-positiva-viga-parede",
@@ -11843,7 +11913,7 @@
    "pagina_pdf": 206,
    "titulo": "Armadura vertical mínima de viga-parede",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P35",
@@ -11852,7 +11922,19 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Mesmo valor numerico da armadura horizontal minima (22.4.4.1): b=20 cm -> 1,5 cm2/m por face.",
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P35",
+    "data": "19/09/2026",
+    "funcoes": [
+     "vigas_parede_nbr6118.As_vertical_min_cm2_por_m"
+    ],
+    "testes": [
+     "test_as_vertical_min_b_20_mesmo_valor_da_horizontal",
+     "test_as_min_b_nao_positivo_levanta"
+    ],
+    "observacao": "Mesma taxa de 22.4.4.1 (p. 188/206), confirmada na imagem. Docstring corrigida nesta rodada (acentuacao)."
+   }
   },
   {
    "id": "22.4.4.3-verificacao-suspensao-carga-inferior",
@@ -11860,7 +11942,7 @@
    "pagina_pdf": 206,
    "titulo": "Armadura vertical de suspensão em viga-parede com carregamento inferior",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P35",
@@ -11870,7 +11952,23 @@
    "depende_de": [
     "22.3.3-as-tirante"
    ],
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P35",
+    "data": "19/09/2026",
+    "funcoes": [
+     "vigas_parede_nbr6118.suspensao_carga_inferior",
+     "vigas_parede_nbr6118.verificar_suspensao_carga_inferior",
+     "vigas_parede_nbr6118.ResultadoSuspensaoCargaInferior"
+    ],
+    "testes": [
+     "test_suspensao_carga_inferior_mesma_relacao_de_tirante",
+     "test_verificar_suspensao_carga_inferior_ok_e_reprovado",
+     "test_verificar_suspensao_carga_inferior_sem_as_disponivel",
+     "test_memoria_suspensao_carga_inferior_tem_acentuacao"
+    ],
+    "observacao": "Norma so exige texto qualitativo (sem formula fechada, p. 206); modulo aplica por decisao propria a relacao generica de tirante de 22.3.3, agora documentada de forma explicita na docstring como convencao do escritorio (achado da lente norma). Memoria de calculo corrigida nesta rodada (acentuacao, achado da lente diff)."
+   }
   },
   {
    "id": "22.5.1.1-classificacao-consolo",

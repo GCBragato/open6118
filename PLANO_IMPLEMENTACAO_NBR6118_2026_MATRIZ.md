@@ -619,19 +619,19 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `22.2-limite-regiao-bd` | 22.2 | 202 | Limite convencional entre regiões B e D | ausente | média | P | P48 |
 | `22.2-gamma-n-consolo-gerber` | 22.2 | 203 | Coeficiente adicional γn para consolos e dentes Gerber | implementado | alta | P | P10 |
 | `22.3.1-procedimento-bielas-tirantes` | 22.3.1 | 203 | Procedimento geral do método de bielas e tirantes | ausente | média | G | P48 |
-| `22.3.1-limite-inclinacao-biela` | 22.3.1 | 204 | Faixa de inclinação admissível das bielas inclinadas | ausente | média | P | P35 |
+| `22.3.1-limite-inclinacao-biela` | 22.3.1 | 204 | Faixa de inclinação admissível das bielas inclinadas | implementado | média | P | P35 |
 | `22.3.2-fcd1` | 22.3.2 | 204 | Resistência de cálculo da biela/nó CCC (fcd1) | implementado | alta | P |  |
-| `22.3.2-fcd2` | 22.3.2 | 204 | Resistência de cálculo da biela/nó CTT ou TTT (fcd2) | ausente | média | P | P35 |
+| `22.3.2-fcd2` | 22.3.2 | 204 | Resistência de cálculo da biela/nó CTT ou TTT (fcd2) | implementado | média | P | P35 |
 | `22.3.2-fcd3` | 22.3.2 | 204 | Resistência de cálculo da biela/nó CCT (fcd3) | implementado | alta | P |  |
-| `22.3.3-as-tirante` | 22.3.3 | 204 | Área de aço de um tirante genérico do modelo biela-tirante | ausente | alta | P | P35 |
+| `22.3.3-as-tirante` | 22.3.3 | 204 | Área de aço de um tirante genérico do modelo biela-tirante | implementado | alta | P | P35 |
 | `22.4.1-classificacao-viga-parede` | 22.4.1 | 204 | Classificação de viga como viga-parede | implementado | média | P | P11 |
 | `22.4.2-comportamento-viga-parede` | 22.4.2 | 204 | Comportamento estrutural das vigas-parede | não computável | média | P |  |
 | `22.4.3-modelo-calculo-viga-parede` | 22.4.3 | 205 | Modelos de cálculo para viga-parede no ELU | ausente | média | G | P48 |
-| `22.4.4.1-as-viga-parede-continua` | 22.4.4.1 | 205 | Distribuição da armadura negativa em viga-parede contínua (3 faixas) | ausente | média | M | P35 |
-| `22.4.4.1-armadura-horizontal-minima-viga-parede` | 22.4.4.1 | 205 | Armadura horizontal mínima de viga-parede | ausente | média | P | P35 |
+| `22.4.4.1-as-viga-parede-continua` | 22.4.4.1 | 205 | Distribuição da armadura negativa em viga-parede contínua (3 faixas) | implementado | média | M | P35 |
+| `22.4.4.1-armadura-horizontal-minima-viga-parede` | 22.4.4.1 | 205 | Armadura horizontal mínima de viga-parede | implementado | média | P | P35 |
 | `22.4.4.2-ancoragem-flexao-positiva-viga-parede` | 22.4.4.2 | 205 | Ancoragem da armadura de flexão positiva nos apoios de viga-parede | não computável | média | P |  |
-| `22.4.4.3-armadura-vertical-minima-viga-parede` | 22.4.4.3 | 206 | Armadura vertical mínima de viga-parede | ausente | média | P | P35 |
-| `22.4.4.3-verificacao-suspensao-carga-inferior` | 22.4.4.3 | 206 | Armadura vertical de suspensão em viga-parede com carregamento inferior | ausente | média | P | P35 |
+| `22.4.4.3-armadura-vertical-minima-viga-parede` | 22.4.4.3 | 206 | Armadura vertical mínima de viga-parede | implementado | média | P | P35 |
+| `22.4.4.3-verificacao-suspensao-carga-inferior` | 22.4.4.3 | 206 | Armadura vertical de suspensão em viga-parede com carregamento inferior | implementado | média | P | P35 |
 | `22.5.1.1-classificacao-consolo` | 22.5.1.1 | 206 | Classificação de consolo (curto / muito curto / viga em balanço) | ausente | alta | P | P36 |
 | `22.5.1.2-limite-inclinacao-biela-consolo` | 22.5.1.2 | 207 | Inclinação máxima da abertura de carga na biela do consolo | ausente | alta | P | P36 |
 | `22.5.1.2-limite-taxa-tirante-ductil` | 22.5.1.2 | 207 | Limitação superior da taxa de armadura do tirante do consolo | não computável | média | P |  |

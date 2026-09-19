@@ -62,6 +62,12 @@ def fyd_kncm2(fyk_mpa: float = 500.0,
 
 # ---------------------------------------------------------------------------
 # 22.3.2 -- parametros de resistencia das bielas e nos (informativo, FUN-01)
+#
+# fcd1_no_pilar_kncm2 e fcd3_na_estaca_kncm2 foram promovidas (P35) para
+# bielas_tirantes_nbr6118.py (fcd1_kncm2 / fcd3_kncm2, junto com fcd2_kncm2,
+# que este módulo não usava): são fórmulas de 22.3.2 em geral, não só de
+# blocos. As duas funções abaixo viram reexportação fina, para não quebrar
+# quem já as chama por este nome.
 # ---------------------------------------------------------------------------
 def alpha_v2(fck_mpa: float) -> float:
     """alpha_v2 = 1 - fck/250, fck em MPa (17.4.2.2, 19.5.3.1, 22.3.2).
@@ -74,15 +80,29 @@ def fcd1_no_pilar_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
     pilar (22.3.2, PDF p. 204). NAO e o criterio adotado por este modulo
     (Blevot, ver sigma_lim_2/3/4_estacas etc.); e a verificacao
     equivalente da propria NBR, calculada aqui so como informacao
-    (decisao 2 do plano de correcao / achado FUN-01)."""
-    return 0.85 * alpha_v2(fck_mpa) * fcd_kncm2(fck_mpa, gama_c)
+    (decisao 2 do plano de correcao / achado FUN-01).
+
+    Reexportação fina de bielas_tirantes_nbr6118.fcd1_kncm2 (P35): a fórmula
+    mora lá agora, fonte única do método de bielas e tirantes."""
+    try:  # executado como script, ou com dimensionamento/ no sys.path
+        import bielas_tirantes_nbr6118 as bt
+    except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+        from dimensionamento import bielas_tirantes_nbr6118 as bt
+    return bt.fcd1_kncm2(fck_mpa, gama_c)
 
 
 def fcd3_na_estaca_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
     """fcd3 = 0,72 * alpha_v2 * fcd -- no CCT, atravessado por tirante
     unico, sobre a estaca (22.3.2, PDF p. 204). Mesma ressalva de
-    fcd1_no_pilar_kncm2: informativo, nao substitui ok_bielas (Blevot)."""
-    return 0.72 * alpha_v2(fck_mpa) * fcd_kncm2(fck_mpa, gama_c)
+    fcd1_no_pilar_kncm2: informativo, nao substitui ok_bielas (Blevot).
+
+    Reexportação fina de bielas_tirantes_nbr6118.fcd3_kncm2 (P35): a fórmula
+    mora lá agora, fonte única do método de bielas e tirantes."""
+    try:  # executado como script, ou com dimensionamento/ no sys.path
+        import bielas_tirantes_nbr6118 as bt
+    except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+        from dimensionamento import bielas_tirantes_nbr6118 as bt
+    return bt.fcd3_kncm2(fck_mpa, gama_c)
 
 
 def verifica_bielas_22_3_2(sigma_pil_kncm2: float, sigma_est_kncm2: float,
