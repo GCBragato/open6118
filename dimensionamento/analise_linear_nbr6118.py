@@ -250,6 +250,20 @@ def largura_efetiva_com_abertura(bf_cm: float, bef_geometrico_cm: float) -> floa
     o bef já obtido graficamente (bef_geometrico_cm, pelo desenho da Figura
     14.3 do caso concreto) e apenas aplica o limite normativo bf.
 
+    Revisão do pacote F1 (fechamento), com a Figura 14.3 relida em zoom alto:
+    em cada vértice da abertura há um pequeno triângulo retângulo, com o
+    ângulo reto marcado entre a reta 1 (perpendicular à linha de bef,
+    isto é, vertical - a projeção do vértice da abertura) e a reta 2 (a
+    hipotenusa, inclinada, que vai da reta 1 até a borda bf). O ângulo da
+    reta 2 não tem valor numérico nem proporção indicados no desenho ou no
+    texto: ele depende de onde a abertura está em relação à viga em cada
+    projeto, e por isso não dá para generalizar um ângulo fixo (nem os 45°
+    que o desenho sugere a olho nu) como fórmula da norma. Confirma-se assim
+    que 14.6.2.2 (parte de abertura) permanece uma regra gráfica sem base
+    para uma equação fechada; esta função continua limitada a aplicar
+    bef <= bf sobre o valor que o engenheiro já tirou do desenho do caso
+    concreto.
+
     bf_cm: largura colaborante sem abertura (14.6.2.2, largura_colaborante_cm
     ou largura_efetiva_mesa).
     bef_geometrico_cm: largura efetiva obtida da construção gráfica da
@@ -293,6 +307,29 @@ def secao_efetiva_misula(h_menor_cm: float, h_maior_cm: float) -> float:
     dois sentidos: a dimensão efetiva no trecho de mísula ou variação
     brusca é o MENOR dos dois trechos de seção constante que ela liga - o
     acréscimo de seção dado pela mísula nunca é contado.
+
+    Revisão do pacote F1 (fechamento), com a Figura 14.4 relida em zoom alto
+    nos dois traçados (1 e 2) de cada uma das duas transições desenhadas:
+    o traçado 1 (variação brusca) é vertical e fica encostado no trecho de
+    seção MAIOR, subindo de uma vez até o nível maior logo na extremidade da
+    cunha; o traçado 2 (mísula) é a diagonal que liga o pé do traçado 1 (no
+    nível do trecho menor) até o nível do trecho maior, percorrendo uma
+    certa extensão ao longo do vão sem que a norma diga o comprimento dessa
+    extensão nem a inclinação da diagonal. Ou seja, dentro da própria cunha
+    de transição a altura (ou largura) efetiva realmente varia entre
+    h_menor_cm (no pé da mísula) e h_maior_cm (na extremidade oposta,
+    inclusive imediatamente após a variação brusca), mas como função de uma
+    posição ao longo do vão que a norma não parametriza - não há régua nem
+    proporção na figura, só o desenho qualitativo. Sem um parâmetro de
+    posição (e sem base normativa para inventar um), a única resposta que
+    esta função pode devolver sem superestimar a seção em nenhum ponto da
+    cunha é o valor garantido em TODO o trecho de transição: h_menor_cm, o
+    piso da variação (é exatamente o valor no pé da mísula, antes de
+    qualquer contribuição do traçado 1 ou 2). Continua sendo uma
+    simplificação a favor da segurança, não uma leitura literal e completa
+    da Figura 14.4 - por isso o item permanece "parcial": a biblioteca não
+    calcula hef(x) ao longo da cunha porque a norma não dá com o que fazer
+    isso, e devolve apenas o limite inferior seguro.
 
     h_menor_cm, h_maior_cm: alturas (ou larguras) dos dois trechos de seção
     constante ligados pela mísula ou variação brusca, com h_menor_cm <=

@@ -6149,16 +6149,19 @@
    "conferido_na_imagem": true,
    "trecho": "analise",
    "implementacao": {
-    "pacote": "P14",
+    "pacote": "P14 + F1",
     "data": "19/09/2026",
     "funcoes": [
      "largura_efetiva_com_abertura"
     ],
     "testes": [
-     "test_largura_efetiva_com_abertura",
-     "test_largura_efetiva_com_abertura_invalida"
+     "test_largura_efetiva_com_abertura (P14, já existente)",
+     "test_largura_efetiva_com_abertura_invalida (P14, já existente)",
+     "test_largura_efetiva_com_abertura_corte_total_da_mesa (F1)",
+     "test_largura_efetiva_com_abertura_bef_intermediario_nao_e_alterado (F1)",
+     "test_largura_efetiva_com_abertura_bf_minimo_valido (F1)"
     ],
-    "observacao": "A norma so da uma regra grafica (retas 1 e 2 tracadas a partir dos vertices da abertura ate a viga, sem angulo nem formula definidos); a funcao recebe o bef ja obtido graficamente pelo desenho do caso concreto e so aplica o limite normativo bef<=bf. Nao reconstroi a geometria da abertura. Sem mudanca nesta correcao alem da reacentuacao."
+    "observacao": "Releitura em zoom alto da Figura 14.3 (p. 109) confirmou que é regra gráfica pura: os dois pequenos triângulos retângulos nos vértices da abertura mostram uma reta 1 (perpendicular à linha de bef, isto é, vertical) e uma reta 2 (hipotenusa, inclinada) cujo ângulo não tem valor numérico nem proporção indicados no texto ou no desenho — depende de onde a abertura fica em relação à viga em cada projeto. Não há base normativa para reconstruir a geometria da abertura a partir de coordenadas; a função continua recebendo o bef já lido no desenho do caso concreto (bef_geometrico_cm) e só aplica o teto bef<=bf. Nenhuma fórmula nem assinatura mudou nesta revisão, só a docstring (evidência da releitura) e testes novos de fronteira (corte total bef=0, bf mínimo válido, bef intermediário preservado)."
    }
   },
   {
@@ -6177,16 +6180,20 @@
    "conferido_na_imagem": true,
    "trecho": "analise",
    "implementacao": {
-    "pacote": "P14",
+    "pacote": "P14 + F1",
     "data": "19/09/2026",
     "funcoes": [
      "secao_efetiva_misula"
     ],
     "testes": [
-     "test_secao_efetiva_misula_usa_o_menor",
-     "test_secao_efetiva_misula_invalida"
+     "test_secao_efetiva_misula_usa_o_menor (P14, já existente)",
+     "test_secao_efetiva_misula_invalida (P14, já existente)",
+     "test_secao_efetiva_misula_sem_parametro_de_posicao (F1)",
+     "test_secao_efetiva_misula_viga_com_misula_de_apoio (F1)",
+     "test_secao_efetiva_misula_variacao_pequena (F1)",
+     "test_secao_efetiva_misula_negativo_invalido (F1)"
     ],
-    "observacao": "Formula mantida (hef = MENOR dos dois trechos constantes) apos reler a Figura 14.4 em zoom alto: o segmento hef/bef desenhado liga o nivel do trecho maior ao do trecho menor, confirmando a leitura adotada. Docstring ampliada com essa evidencia (ver resposta ao achado 14.6.2.3-misulas-secao-efetiva). Continua 'parcial' porque a norma e so uma regra grafica, sem equacao fechada nem tratamento do valor dentro da propria cunha de transicao."
+    "observacao": "Releitura em zoom alto da Figura 14.4 (p. 109-110), nos dois traçados de cada uma das duas transições desenhadas: o traçado 1 (variação brusca) é vertical e encostado no trecho de seção MAIOR; o traçado 2 (mísula) é a diagonal que liga o pé do traçado 1 (no nível do trecho menor) até o nível do trecho maior, percorrendo uma extensão ao longo do vão que a norma não dimensiona nem inclina numericamente. Ou seja, dentro da cunha a altura/largura efetiva de fato varia entre h_menor e h_maior como função de uma posição que a norma não parametriza (sem régua, sem proporção, só desenho qualitativo). Sem parâmetro de posição — e sem base normativa para inventar um comprimento ou ângulo de cunha — a única resposta que não superestima a seção em nenhum ponto da transição é o piso garantido em toda a cunha: h_menor_cm. A interpretação já usada no P14 foi confirmada, não alterada; a docstring foi ampliada com essa evidência específica (o que a função calcula e por que não vai além) e a assinatura pública (só h_menor_cm, h_maior_cm, sem posição) foi verificada por teste como intencional. Item continua parcial: a biblioteca não calcula hef(x) ao longo da mísula, só o limite inferior seguro."
    }
   },
   {
