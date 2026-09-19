@@ -1,6 +1,8 @@
-"""Detalhamento de vigas: armadura longitudinal — ABNT NBR 6118:2026.
+"""Detalhamento de vigas — ABNT NBR 6118:2026.
 
-Cobre (P22 do plano de implementação):
+Parte 1, armadura longitudinal (P22 do plano de implementação).
+
+Cobre:
 
 - 18.2.2 — diâmetro interno mínimo de curvatura de barra longitudinal dobrada
   (para força cortante ou em nó de pórtico), PDF p. 166;
@@ -23,6 +25,39 @@ núcleo). Os insumos que são de outros pacotes entram como parâmetro: aℓ
 (9.4.2.5, ``ancoragem_nbr6118.comprimento_ancoragem``), o pino da Tabela 9.1
 (``ancoragem_nbr6118.diametro_pino_gancho``, P21) e φn de feixe
 (``nucleo_nbr6118.phi_n_feixe``, P24).
+
+Parte 2, estribos, torção e suspensão (P23 do plano de implementação).
+
+Cobre:
+
+- 18.2.4 — proteção contra flambagem das barras longitudinais junto à
+  superfície (trecho de 20·φt a partir do canto do estribo poligonal);
+- 18.3.3.2 — estribos para força cortante: diâmetro mínimo e máximo, barra
+  de amarração ou de canto, espaçamento longitudinal máximo (degrau em
+  Vd/VRd2 = 0,67), espaçamento transversal máximo entre ramos (degrau em
+  Vd/VRd2 = 0,20) e emenda por traspasse;
+- 18.3.3.3.2 — espaçamento longitudinal máximo entre barras dobradas;
+- 18.3.4 — armadura para torção: estribo fechado com ganchos a 135°,
+  espaçamento de 350 mm das barras longitudinais, relação ΔAsl/Δu e uma
+  barra em cada vértice;
+- 18.3.6 — armadura de suspensão de viga apoiada em viga (75 % / 25 %,
+  extensões h/2, fator de redução com faces superiores coincidentes e a
+  classificação de viga pendurada);
+- 18.3.7 — armadura mínima de ligação mesa-alma ou talão-alma (1,5 cm²/m).
+
+A suspensão aqui é a de **viga apoiando viga** (18.3.6). A suspensão de
+bloco sobre estacas é outra coisa e está em ``blocos_nbr6118`` (plano,
+seção 8, risco 3): os nomes são diferentes de propósito.
+
+Convenções: geometria em cm; diâmetro em mm; esforço em kN; área em cm² e
+taxa em cm²/m; tensão em MPa. Página do PDF citada em cada função (impressa =
+PDF - 18). Fora da faixa de validade, as funções levantam
+``FaixaNormativaError`` (subclasse de ``ValueError``, do núcleo). Função de
+verificação devolve ``@dataclass(frozen=True)`` com ``ok``, ``governante`` e
+``memoria`` (a memória de cálculo). VRd2 vem de ``cortante_nbr6118``
+(``modelo_calculo_I``/``modelo_calculo_II``, P15) e é recebido como
+parâmetro; As,long/ue da torção vem de
+``torcao_nbr6118.As_long_torcao_cm2_por_m``.
 """
 
 from __future__ import annotations
@@ -825,4 +860,886 @@ def _linha_memoria(c: CorteBarra, barra: BarraCorte, R_rest, R_cheio, xs) -> str
         f"B em x = {_fmt(c.x_B_cm)} cm ({txt_B}); "
         f"{'início do dobramento' if c.dobrada else 'ponta'} em x = "
         f"{_fmt(c.x_fim_cm)} cm ({c.governante})."
+    )
+
+
+# === P23: estribos, torção e suspensão (18.2.4, 18.3.3, 18.3.4, 18.3.6 e 18.3.7) ===
+import math
+from dataclasses import dataclass
+from typing import Sequence
+
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import nucleo_nbr6118 as nbr
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import nucleo_nbr6118 as nbr
+
+
+_TOL = 1e-9
+
+
+
+
+def _positivo(valor: float, nome: str) -> float:
+    v = float(valor)
+    if not v > 0.0:
+        raise ValueError(f"{nome} deve ser positivo (recebido {valor!r}).")
+    return v
+
+
+# ---------------------------------------------------------------------------
+# Tipos de barra do estribo (18.3.3.2)
+# ---------------------------------------------------------------------------
+TIPOS_ESTRIBO = ("alta_aderencia", "lisa", "tela")
+
+_TIPO_ALIAS = {
+    "alta_aderencia": "alta_aderencia", "altaaderencia": "alta_aderencia",
+    "nervurada": "alta_aderencia", "ca50": "alta_aderencia", "ca60": "alta_aderencia",
+    "lisa": "lisa", "ca25": "lisa",
+    "tela": "tela", "tela_soldada": "tela", "telasoldada": "tela",
+}
+
+
+def _tipo_estribo(tipo: str) -> str:
+    chave = str(tipo).strip().lower().replace("-", "").replace(" ", "_")
+    if chave not in _TIPO_ALIAS:
+        chave = chave.replace("_", "")
+    if chave not in _TIPO_ALIAS:
+        raise ValueError(
+            f"tipo de estribo desconhecido: {tipo!r}. Use 'alta_aderencia', "
+            "'lisa' ou 'tela'."
+        )
+    return _TIPO_ALIAS[chave]
+
+
+# ---------------------------------------------------------------------------
+# 18.2.4 — Proteção contra flambagem das barras (PDF p. 167)
+# ---------------------------------------------------------------------------
+FATOR_TRECHO_PROTEGIDO_PHI_T = 20.0   # 20·φt a partir do canto
+N_MAX_BARRAS_TRECHO_PROTEGIDO = 2     # sem contar a barra de canto
+
+
+def trecho_protegido_flambagem_cm(phi_t_mm: float) -> float:
+    """Comprimento do trecho protegido pelo canto do estribo poligonal (18.2.4, p. 167).
+
+    L = 20·φt, com φt o diâmetro do estribo em mm; devolve em cm
+    (20·φt/10).
+    """
+    return FATOR_TRECHO_PROTEGIDO_PHI_T * _positivo(phi_t_mm, "phi_t_mm") / 10.0
+
+
+@dataclass(frozen=True)
+class ResultadoProtecaoFlambagem:
+    phi_t_mm: float
+    trecho_protegido_cm: float
+    distancias_canto_a_cm: tuple[float, ...]
+    distancias_canto_b_cm: tuple[float, ...] | None
+    n_barras_trecho_a: int
+    n_barras_trecho_b: int
+    barras_desprotegidas: tuple[int, ...]
+    exige_estribo_suplementar: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def protecao_flambagem(posicoes_barras_cm: Sequence[float], phi_t_mm: float,
+                       comprimento_face_cm: float | None = None) -> ResultadoProtecaoFlambagem:
+    """Verifica se as barras de uma face estão protegidas contra a flambagem
+    pelos cantos do estribo poligonal (18.2.4, p. 167, Figura 18.2).
+
+    Regra da norma: o estribo poligonal protege as barras dos cantos e as
+    situadas no máximo a 20·φt do canto, **se nesse trecho de 20·φt não
+    houver mais de duas barras, não contando a de canto**. Com mais de duas
+    barras no trecho, ou com barra fora dele, deve haver estribo
+    suplementar (grampo com ganchos, de preferência de 135° a 180°, que
+    atravesse a seção e envolva a barra, ou que envolva o estribo principal
+    junto a uma barra — Figura 18.2).
+
+    Parâmetros:
+        posicoes_barras_cm: posição de cada barra **intermediária** da face
+            (as de canto não entram), medida a partir do canto A ao longo da
+            face, em cm (na Figura 18.2 a cota ≤ 20·φt parte do canto do
+            estribo).
+        phi_t_mm: diâmetro do estribo principal, mm.
+        comprimento_face_cm: distância entre os cantos A e B da face, em cm.
+            Quando informado, cada barra é confrontada com os dois cantos
+            (Figura 18.2-b); quando omitido, só com o canto A.
+
+    Critério adotado quando uma barra está a menos de 20·φt dos dois cantos:
+    ela está protegida se estiver no trecho de algum canto que tenha até 2
+    barras. O caso de estribo curvilíneo (último parágrafo de 18.2.4) não é
+    tratado aqui.
+    """
+    phi_t = _positivo(phi_t_mm, "phi_t_mm")
+    L = trecho_protegido_flambagem_cm(phi_t)
+    pos = tuple(float(p) for p in posicoes_barras_cm)
+    if any(p < 0.0 for p in pos):
+        raise ValueError("posicoes_barras_cm devem ser >= 0 (medidas a partir do canto A).")
+    dist_b: tuple[float, ...] | None = None
+    if comprimento_face_cm is not None:
+        face = _positivo(comprimento_face_cm, "comprimento_face_cm")
+        if any(p > face + _TOL for p in pos):
+            raise ValueError("Há barra além do canto B (posição > comprimento_face_cm).")
+        dist_b = tuple(face - p for p in pos)
+
+    no_a = [d <= L + _TOL for d in pos]
+    no_b = [d <= L + _TOL for d in dist_b] if dist_b is not None else [False] * len(pos)
+    n_a = sum(no_a)
+    n_b = sum(no_b)
+    canto_a_protege = n_a <= N_MAX_BARRAS_TRECHO_PROTEGIDO
+    canto_b_protege = n_b <= N_MAX_BARRAS_TRECHO_PROTEGIDO
+
+    desprotegidas = tuple(
+        i for i in range(len(pos))
+        if not ((no_a[i] and canto_a_protege) or (no_b[i] and canto_b_protege))
+    )
+    exige = bool(desprotegidas)
+
+    memoria = [
+        f"18.2.4: trecho protegido pelo canto = 20·φt = 20 × {_fmt(phi_t)} mm = {_fmt(L)} cm.",
+        f"18.2.4: barras intermediárias a até {_fmt(L)} cm do canto A: {n_a} "
+        f"(máximo {N_MAX_BARRAS_TRECHO_PROTEGIDO}, sem contar a de canto).",
+    ]
+    if dist_b is not None:
+        memoria.append(
+            f"18.2.4: barras intermediárias a até {_fmt(L)} cm do canto B: {n_b} "
+            f"(máximo {N_MAX_BARRAS_TRECHO_PROTEGIDO}, sem contar a de canto)."
+        )
+    if exige:
+        memoria.append(
+            "18.2.4: barras sem proteção (índices "
+            + ", ".join(str(i) for i in desprotegidas)
+            + "): deve haver estribo suplementar (grampo), com ganchos de "
+              "preferência de 135° a 180°."
+        )
+        governante = "18.2.4: barra fora do trecho de 20·φt ou mais de duas barras no trecho"
+    else:
+        memoria.append("18.2.4: todas as barras protegidas pelos cantos do estribo; "
+                       "dispensa estribo suplementar.")
+        governante = "18.2.4: barras protegidas pelos cantos do estribo"
+    return ResultadoProtecaoFlambagem(
+        phi_t_mm=phi_t, trecho_protegido_cm=L,
+        distancias_canto_a_cm=pos, distancias_canto_b_cm=dist_b,
+        n_barras_trecho_a=n_a, n_barras_trecho_b=n_b,
+        barras_desprotegidas=desprotegidas, exige_estribo_suplementar=exige,
+        ok=not exige, governante=governante, memoria=tuple(memoria),
+    )
+
+
+# ---------------------------------------------------------------------------
+# 18.3.3.2 — Diâmetro do estribo (PDF p. 170)
+# ---------------------------------------------------------------------------
+PHI_ESTRIBO_MIN_MM = 5.0
+PHI_ESTRIBO_MIN_TELA_MM = 4.2          # tela soldada, com precaução contra corrosão
+PHI_ESTRIBO_MAX_LISA_MM = 12.0
+FATOR_PHI_ESTRIBO_MAX_BW = 1.0 / 10.0  # 1/10 da largura da alma
+
+
+def phi_estribo_limites_mm(bw_cm: float, tipo: str = "alta_aderencia",
+                           protecao_corrosao: bool = False) -> tuple[float, float]:
+    """Faixa admissível do diâmetro do estribo de viga (18.3.3.2, p. 170).
+
+    5 mm <= φt <= bw/10, com bw a largura da alma em cm (convertida para mm
+    dentro da função: φt,máx = bw_cm·10/10). Barra lisa: φt <= 12 mm.
+    Estribo de tela soldada: o mínimo pode cair para 4,2 mm **desde que**
+    sejam tomadas precauções contra a corrosão (``protecao_corrosao=True``);
+    sem isso, vale o mínimo de 5 mm.
+
+    ``tipo``: 'alta_aderencia' (CA-50, CA-60 nervurado), 'lisa' (CA-25) ou
+    'tela'. Devolve (φt,mín, φt,máx) em mm.
+    """
+    bw = _positivo(bw_cm, "bw_cm")
+    t = _tipo_estribo(tipo)
+    phi_max = bw * 10.0 * FATOR_PHI_ESTRIBO_MAX_BW
+    if t == "lisa":
+        phi_max = min(phi_max, PHI_ESTRIBO_MAX_LISA_MM)
+    phi_min = PHI_ESTRIBO_MIN_TELA_MM if (t == "tela" and protecao_corrosao) else PHI_ESTRIBO_MIN_MM
+    if phi_max < phi_min - _TOL:
+        raise FaixaNormativaError(
+            f"18.3.3.2: com bw = {_fmt(bw)} cm não há diâmetro de estribo admissível "
+            f"(φt,máx = bw/10 = {_fmt(phi_max)} mm < φt,mín = {_fmt(phi_min)} mm)."
+        )
+    return phi_min, phi_max
+
+
+def phi_min_barra_canto_mm(phi_estribo_mm: float) -> float:
+    """Diâmetro mínimo da barra no canto do estribo fechado ou no gancho do
+    estribo aberto (18.3.3.2, p. 171).
+
+    Sem barra longitudinal de cálculo no local, colocar barra de amarração
+    com φ >= φt; havendo barra longitudinal, ela também deve ter φ >= φt.
+    Nos dois casos o mínimo é o próprio φt, em mm.
+    """
+    return _positivo(phi_estribo_mm, "phi_estribo_mm")
+
+
+# ---------------------------------------------------------------------------
+# 18.3.3.2 — Espaçamentos máximos (PDF p. 171)
+# ---------------------------------------------------------------------------
+LIMITE_VD_VRD2_LONGITUDINAL = 0.67
+S_MAX_BAIXO_FATOR_D = 0.6
+S_MAX_BAIXO_CM = 30.0   # 300 mm
+S_MAX_ALTO_FATOR_D = 0.3
+S_MAX_ALTO_CM = 20.0    # 200 mm
+
+LIMITE_VD_VRD2_TRANSVERSAL = 0.20
+ST_MAX_BAIXO_FATOR_D = 1.0
+ST_MAX_BAIXO_CM = 80.0  # 800 mm
+ST_MAX_ALTO_FATOR_D = 0.6
+ST_MAX_ALTO_CM = 35.0   # 350 mm
+
+
+def _razao_vd_vrd2(Vd_kn: float, VRd2_kn: float) -> float:
+    vrd2 = _positivo(VRd2_kn, "VRd2_kn")
+    return abs(float(Vd_kn)) / vrd2
+
+
+def s_max_estribo_cm(Vd_kn: float, VRd2_kn: float, d_cm: float) -> float:
+    """Espaçamento longitudinal máximo entre estribos de viga (18.3.3.2, p. 171).
+
+    - Vd <= 0,67·VRd2: smáx = 0,6·d <= 300 mm;
+    - Vd >  0,67·VRd2: smáx = 0,3·d <= 200 mm.
+
+    O degrau em 0,67 é da norma (plano, seção 8, risco 5): Vd = 0,67·VRd2
+    exato fica no primeiro ramo (tolerância relativa de 1e-9). Vd em kN
+    (usa-se |Vd|), VRd2 em kN (de ``cortante_nbr6118``), d em cm; devolve cm.
+    """
+    d = _positivo(d_cm, "d_cm")
+    r = _razao_vd_vrd2(Vd_kn, VRd2_kn)
+    if r <= LIMITE_VD_VRD2_LONGITUDINAL * (1.0 + _TOL):
+        return min(S_MAX_BAIXO_FATOR_D * d, S_MAX_BAIXO_CM)
+    return min(S_MAX_ALTO_FATOR_D * d, S_MAX_ALTO_CM)
+
+
+def st_max_cm(Vd_kn: float, VRd2_kn: float, d_cm: float) -> float:
+    """Espaçamento transversal máximo entre ramos sucessivos de estribo (18.3.3.2, p. 171).
+
+    - Vd <= 0,20·VRd2: st,máx = d <= 800 mm;
+    - Vd >  0,20·VRd2: st,máx = 0,6·d <= 350 mm.
+
+    Degrau da norma em 0,20 (Vd = 0,20·VRd2 exato fica no primeiro ramo).
+    Vd e VRd2 em kN, d em cm; devolve cm.
+    """
+    d = _positivo(d_cm, "d_cm")
+    r = _razao_vd_vrd2(Vd_kn, VRd2_kn)
+    if r <= LIMITE_VD_VRD2_TRANSVERSAL * (1.0 + _TOL):
+        return min(ST_MAX_BAIXO_FATOR_D * d, ST_MAX_BAIXO_CM)
+    return min(ST_MAX_ALTO_FATOR_D * d, ST_MAX_ALTO_CM)
+
+
+def emenda_estribo_permitida(tipo: str) -> bool:
+    """Emenda por traspasse de estribo é permitida? (18.3.3.2, p. 171).
+
+    Só quando o estribo é de tela soldada ou de barra de alta aderência:
+    'tela' e 'alta_aderencia' -> True; 'lisa' -> False.
+    """
+    return _tipo_estribo(tipo) in ("tela", "alta_aderencia")
+
+
+# ---------------------------------------------------------------------------
+# 18.3.3.3.2 — Espaçamento longitudinal das barras dobradas (PDF p. 171)
+# ---------------------------------------------------------------------------
+ALFA_MIN_GRAUS = 45.0   # 17.4.1.1.5
+ALFA_MAX_GRAUS = 90.0
+
+
+def s_max_barras_dobradas_cm(d_cm: float, alfa_graus: float) -> float:
+    """Espaçamento longitudinal máximo entre barras dobradas (18.3.3.3.2, p. 171).
+
+    smáx = 0,6·d·(1 + cotg α), com α o ângulo de inclinação da barra dobrada
+    em relação ao eixo da viga. d em cm; devolve cm. Faixa de α: a de
+    17.4.1.1.5 para armadura transversal, 45° <= α <= 90°; fora dela levanta
+    ``FaixaNormativaError``.
+    """
+    d = _positivo(d_cm, "d_cm")
+    a = float(alfa_graus)
+    if not (ALFA_MIN_GRAUS - 1e-6 <= a <= ALFA_MAX_GRAUS + 1e-6):
+        raise FaixaNormativaError(
+            f"18.3.3.3.2 / 17.4.1.1.5: α deve estar entre 45° e 90° (recebido {a:g}°)."
+        )
+    cotg = 0.0 if abs(a - 90.0) <= 1e-6 else 1.0 / math.tan(math.radians(a))
+    return 0.6 * d * (1.0 + cotg)
+
+
+# ---------------------------------------------------------------------------
+# 18.3.3.2 — Verificação conjunta dos estribos de força cortante
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class ResultadoEstribosViga:
+    phi_t_mm: float
+    phi_t_min_mm: float
+    phi_t_max_mm: float
+    s_max_cm: float
+    s_cm: float | None
+    st_max_cm: float
+    st_cm: float | None
+    razao_vd_vrd2: float
+    phi_canto_min_mm: float
+    phi_canto_mm: float | None
+    emenda_por_traspasse: bool
+    emenda_permitida: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_estribos_viga(
+    phi_t_mm: float,
+    bw_cm: float,
+    d_cm: float,
+    Vd_kn: float,
+    VRd2_kn: float,
+    *,
+    tipo: str = "alta_aderencia",
+    protecao_corrosao: bool = False,
+    s_cm: float | None = None,
+    st_cm: float | None = None,
+    phi_canto_mm: float | None = None,
+    emenda_por_traspasse: bool = False,
+) -> ResultadoEstribosViga:
+    """Reúne as prescrições de 18.3.3.2 (p. 170-171) para os estribos de uma viga.
+
+    Confere o diâmetro (5 mm ou 4,2 mm em tela protegida <= φt <= bw/10; 12 mm
+    se lisa), o espaçamento longitudinal ``s_cm`` contra smáx(Vd/VRd2), o
+    espaçamento transversal entre ramos ``st_cm`` contra st,máx(Vd/VRd2), o
+    diâmetro da barra de canto ``phi_canto_mm`` (>= φt) e a emenda por
+    traspasse (só tela ou alta aderência). Os parâmetros opcionais omitidos
+    não são confrontados (o limite é devolvido mesmo assim).
+    """
+    phi_t = _positivo(phi_t_mm, "phi_t_mm")
+    phi_min, phi_max = phi_estribo_limites_mm(bw_cm, tipo, protecao_corrosao)
+    smax = s_max_estribo_cm(Vd_kn, VRd2_kn, d_cm)
+    stmax = st_max_cm(Vd_kn, VRd2_kn, d_cm)
+    r = _razao_vd_vrd2(Vd_kn, VRd2_kn)
+    phi_canto_min = phi_min_barra_canto_mm(phi_t)
+    emenda_ok = emenda_estribo_permitida(tipo)
+
+    checagens: list[tuple[str, bool]] = []
+    memoria: list[str] = []
+
+    ok_phi = phi_min - _TOL <= phi_t <= phi_max + _TOL
+    checagens.append(("18.3.3.2 diâmetro do estribo", ok_phi))
+    memoria.append(
+        f"18.3.3.2: {_fmt(phi_min)} mm <= φt = {_fmt(phi_t)} mm <= {_fmt(phi_max)} mm "
+        f"(bw/10{' e 12 mm, barra lisa' if _tipo_estribo(tipo) == 'lisa' else ''}) -> "
+        f"{'ok' if ok_phi else 'reprovado'}."
+    )
+
+    faixa_s = "<=" if r <= LIMITE_VD_VRD2_LONGITUDINAL * (1.0 + _TOL) else ">"
+    memoria.append(
+        f"18.3.3.2: Vd/VRd2 = {_fmt(r)} {faixa_s} 0,67 -> smáx = {_fmt(smax)} cm."
+    )
+    if s_cm is not None:
+        ok_s = float(s_cm) <= smax + _TOL
+        checagens.append(("18.3.3.2 espaçamento longitudinal máximo", ok_s))
+        memoria.append(f"18.3.3.2: s = {_fmt(float(s_cm))} cm <= smáx = {_fmt(smax)} cm -> "
+                       f"{'ok' if ok_s else 'reprovado'}.")
+
+    faixa_st = "<=" if r <= LIMITE_VD_VRD2_TRANSVERSAL * (1.0 + _TOL) else ">"
+    memoria.append(
+        f"18.3.3.2: Vd/VRd2 = {_fmt(r)} {faixa_st} 0,20 -> st,máx = {_fmt(stmax)} cm."
+    )
+    if st_cm is not None:
+        ok_st = float(st_cm) <= stmax + _TOL
+        checagens.append(("18.3.3.2 espaçamento transversal entre ramos", ok_st))
+        memoria.append(f"18.3.3.2: st = {_fmt(float(st_cm))} cm <= st,máx = {_fmt(stmax)} cm -> "
+                       f"{'ok' if ok_st else 'reprovado'}.")
+
+    if phi_canto_mm is not None:
+        ok_canto = float(phi_canto_mm) + _TOL >= phi_canto_min
+        checagens.append(("18.3.3.2 diâmetro da barra de canto", ok_canto))
+        memoria.append(f"18.3.3.2: φ da barra de canto = {_fmt(float(phi_canto_mm))} mm >= "
+                       f"φt = {_fmt(phi_canto_min)} mm -> {'ok' if ok_canto else 'reprovado'}.")
+
+    if emenda_por_traspasse:
+        checagens.append(("18.3.3.2 emenda por traspasse do estribo", emenda_ok))
+        memoria.append(
+            "18.3.3.2: emenda por traspasse de estribo "
+            + ("permitida (tela ou barra de alta aderência)." if emenda_ok
+               else "não permitida em barra lisa -> reprovado.")
+        )
+
+    ok = all(v for _, v in checagens)
+    reprovados = [n for n, v in checagens if not v]
+    governante = reprovados[0] if reprovados else "nenhum critério reprovado (18.3.3.2)"
+    return ResultadoEstribosViga(
+        phi_t_mm=phi_t, phi_t_min_mm=phi_min, phi_t_max_mm=phi_max,
+        s_max_cm=smax, s_cm=(float(s_cm) if s_cm is not None else None),
+        st_max_cm=stmax, st_cm=(float(st_cm) if st_cm is not None else None),
+        razao_vd_vrd2=r, phi_canto_min_mm=phi_canto_min,
+        phi_canto_mm=(float(phi_canto_mm) if phi_canto_mm is not None else None),
+        emenda_por_traspasse=bool(emenda_por_traspasse), emenda_permitida=emenda_ok,
+        ok=ok, governante=governante, memoria=tuple(memoria),
+    )
+
+
+# ---------------------------------------------------------------------------
+# 18.3.4 — Armadura para torção (PDF p. 171-172)
+# ---------------------------------------------------------------------------
+ANGULO_GANCHO_TORCAO_GRAUS = 135.0
+S_MAX_LONGITUDINAL_TORCAO_CM = 35.0   # 350 mm
+
+
+@dataclass(frozen=True)
+class ResultadoEstriboTorcao:
+    fechado: bool
+    angulo_gancho_graus: float
+    estribos_cortante: ResultadoEstribosViga | None
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_estribo_torcao(
+    fechado: bool,
+    angulo_gancho_graus: float,
+    *,
+    phi_t_mm: float | None = None,
+    bw_cm: float | None = None,
+    d_cm: float | None = None,
+    Vd_kn: float | None = None,
+    VRd2_kn: float | None = None,
+    s_cm: float | None = None,
+    tipo: str = "alta_aderencia",
+    protecao_corrosao: bool = False,
+) -> ResultadoEstriboTorcao:
+    """Verifica as regras construtivas do estribo de torção (18.3.4, p. 171).
+
+    - o estribo deve ser fechado em todo o contorno, envolvendo as barras
+      longitudinais de tração;
+    - as extremidades são ancoradas por ganchos em ângulo de 135°. Aceita-se
+      aqui ângulo >= 135° (o gancho semicircular de 180° dá ancoragem não
+      menor; decisão declarada: a norma cita só 135°). O comprimento da ponta
+      reta do gancho está em ``ancoragem_nbr6118.ponta_reta_estribo_cm`` (P21);
+    - valem as prescrições de 18.3.3.2 para o diâmetro e o espaçamento
+      longitudinal: com ``phi_t_mm``, ``bw_cm``, ``d_cm``, ``Vd_kn`` e
+      ``VRd2_kn`` informados, confere também isso por
+      ``verificar_estribos_viga`` (``s_cm`` opcional).
+    """
+    ang = float(angulo_gancho_graus)
+    if not (0.0 < ang <= 180.0 + 1e-6):
+        raise ValueError("angulo_gancho_graus deve estar entre 0° e 180°.")
+    checagens: list[tuple[str, bool]] = []
+    memoria: list[str] = []
+
+    checagens.append(("18.3.4 estribo fechado em todo o contorno", bool(fechado)))
+    memoria.append("18.3.4: estribo de torção "
+                   + ("fechado em todo o contorno -> ok." if fechado
+                      else "aberto -> reprovado (deve ser fechado em todo o contorno)."))
+    ok_ang = ang + 1e-6 >= ANGULO_GANCHO_TORCAO_GRAUS
+    checagens.append(("18.3.4 gancho a 135°", ok_ang))
+    memoria.append(f"18.3.4: gancho a {_fmt(ang)}° (exigido 135°) -> "
+                   f"{'ok' if ok_ang else 'reprovado'}.")
+
+    est = None
+    dados = (phi_t_mm, bw_cm, d_cm, Vd_kn, VRd2_kn)
+    if all(v is not None for v in dados):
+        est = verificar_estribos_viga(
+            phi_t_mm, bw_cm, d_cm, Vd_kn, VRd2_kn, tipo=tipo,
+            protecao_corrosao=protecao_corrosao, s_cm=s_cm,
+        )
+        checagens.append((f"18.3.4 -> {est.governante}", est.ok))
+        memoria.extend(est.memoria)
+    elif any(v is not None for v in dados):
+        raise ValueError("Para conferir 18.3.3.2 informe phi_t_mm, bw_cm, d_cm, Vd_kn e VRd2_kn juntos.")
+
+    ok = all(v for _, v in checagens)
+    reprovados = [n for n, v in checagens if not v]
+    governante = reprovados[0] if reprovados else "nenhum critério reprovado (18.3.4)"
+    return ResultadoEstriboTorcao(
+        fechado=bool(fechado), angulo_gancho_graus=ang, estribos_cortante=est,
+        ok=ok, governante=governante, memoria=tuple(memoria),
+    )
+
+
+def n_min_barras_longitudinais_torcao(perimetro_cm: float, n_vertices: int = 4) -> int:
+    """Número mínimo de barras longitudinais de torção no perímetro interno
+    dos estribos (18.3.4, p. 172).
+
+    Espaçamento máximo de 350 mm ao longo do perímetro interno (contorno
+    fechado: n barras dão n intervalos, n >= u/35) e pelo menos uma barra em
+    cada vértice: n = máx(⌈u/35⌉; n_vértices). u em cm.
+    """
+    u = _positivo(perimetro_cm, "perimetro_cm")
+    nv = int(n_vertices)
+    if nv < 0:
+        raise ValueError("n_vertices deve ser >= 0.")
+    return max(math.ceil(u / S_MAX_LONGITUDINAL_TORCAO_CM - _TOL), nv)
+
+
+@dataclass(frozen=True)
+class ResultadoBarrasTorcao:
+    espacamentos_cm: tuple[float, ...]
+    s_max_cm: float
+    espacamento_maior_cm: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_espacamento_barras_torcao(espacamentos_cm: Sequence[float]) -> ResultadoBarrasTorcao:
+    """Espaçamento das barras longitudinais de torção ao longo do perímetro
+    interno dos estribos: no máximo 350 mm (18.3.4, p. 172).
+
+    ``espacamentos_cm``: distância entre barras consecutivas ao longo do
+    perímetro, em cm (arranjo distribuído ou concentrado).
+    """
+    esp = tuple(float(s) for s in espacamentos_cm)
+    if not esp:
+        raise ValueError("Informe ao menos um espaçamento.")
+    if any(s <= 0.0 for s in esp):
+        raise ValueError("Os espaçamentos devem ser positivos.")
+    maior = max(esp)
+    ok = maior <= S_MAX_LONGITUDINAL_TORCAO_CM + _TOL
+    memoria = (
+        f"18.3.4: maior espaçamento entre barras longitudinais de torção = {_fmt(maior)} cm "
+        f"<= 35 cm -> {'ok' if ok else 'reprovado'}.",
+    )
+    governante = ("18.3.4 espaçamento das barras longitudinais <= 350 mm" if ok
+                  else "18.3.4 espaçamento das barras longitudinais > 350 mm")
+    return ResultadoBarrasTorcao(esp, S_MAX_LONGITUDINAL_TORCAO_CM, maior, ok, governante, memoria)
+
+
+@dataclass(frozen=True)
+class ResultadoBarraPorVertice:
+    barras_por_vertice: tuple[int, ...]
+    vertices_sem_barra: tuple[int, ...]
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_barra_por_vertice(barras_por_vertice: Sequence[int]) -> ResultadoBarraPorVertice:
+    """Seção poligonal: pelo menos uma barra em cada vértice dos estribos de
+    torção (18.3.4, p. 172).
+
+    ``barras_por_vertice``: número de barras longitudinais em cada vértice do
+    estribo (uma entrada por vértice; seção retangular = 4 entradas).
+    """
+    n = tuple(int(x) for x in barras_por_vertice)
+    if len(n) < 3:
+        raise ValueError("Seção poligonal tem ao menos 3 vértices.")
+    if any(x < 0 for x in n):
+        raise ValueError("Número de barras por vértice não pode ser negativo.")
+    sem = tuple(i for i, x in enumerate(n) if x < 1)
+    ok = not sem
+    memoria = (
+        f"18.3.4: {len(n)} vértices; vértices sem barra: "
+        + (", ".join(str(i) for i in sem) if sem else "nenhum")
+        + f" -> {'ok' if ok else 'reprovado'}.",
+    )
+    governante = ("18.3.4 uma barra em cada vértice" if ok
+                  else "18.3.4 vértice sem barra longitudinal")
+    return ResultadoBarraPorVertice(n, sem, ok, governante, memoria)
+
+
+def distribuir_As_long_torcao_cm2(As_long_cm2_por_m: float,
+                                  trechos_perimetro_cm: Sequence[float]) -> tuple[float, ...]:
+    """Área de armadura longitudinal de torção exigida para cada barra ou
+    feixe, pela relação ΔAsl/Δu constante (18.3.4, p. 172).
+
+    ΔAsl,i = (As,long/ue)·Δui, com As,long/ue em cm²/m (de
+    ``torcao_nbr6118.As_long_torcao_cm2_por_m``) e Δui em cm, o trecho de
+    perímetro da seção efetiva correspondente à barra i (conversão: /100).
+    A soma das áreas é (As,long/ue)·Σ Δu.
+    """
+    taxa = float(As_long_cm2_por_m)
+    if taxa < 0.0:
+        raise ValueError("As_long_cm2_por_m não pode ser negativo.")
+    trechos = tuple(_positivo(t, "trecho de perímetro") for t in trechos_perimetro_cm)
+    if not trechos:
+        raise ValueError("Informe ao menos um trecho de perímetro.")
+    return tuple(taxa * t / 100.0 for t in trechos)
+
+
+@dataclass(frozen=True)
+class ResultadoDeltaAslDeltaU:
+    As_long_cm2_por_m: float
+    exigidas_cm2: tuple[float, ...]
+    adotadas_cm2: tuple[float, ...]
+    barras_insuficientes: tuple[int, ...]
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_delta_Asl_delta_u(areas_barras_cm2: Sequence[float],
+                                trechos_perimetro_cm: Sequence[float],
+                                As_long_cm2_por_m: float) -> ResultadoDeltaAslDeltaU:
+    """Confere a relação ΔAsl/Δu exigida pelo dimensionamento em cada barra ou
+    feixe (18.3.4, p. 172).
+
+    Para cada barra i: ΔAsl,i/Δui >= As,long/ue, isto é,
+    ΔAsl,i >= (As,long/ue)·Δui/100 (As,long/ue em cm²/m; Δu em cm; ΔAsl em
+    cm²). ``areas_barras_cm2`` e ``trechos_perimetro_cm`` têm o mesmo
+    comprimento (uma entrada por barra ou feixe).
+    """
+    areas = tuple(float(a) for a in areas_barras_cm2)
+    exig = distribuir_As_long_torcao_cm2(As_long_cm2_por_m, trechos_perimetro_cm)
+    if len(areas) != len(exig):
+        raise ValueError("areas_barras_cm2 e trechos_perimetro_cm devem ter o mesmo comprimento.")
+    insuf = tuple(i for i, (a, e) in enumerate(zip(areas, exig)) if a < e * (1.0 - _TOL) - _TOL)
+    ok = not insuf
+    memoria = [
+        f"18.3.4: ΔAsl/Δu exigido = As,long/ue = {_fmt(float(As_long_cm2_por_m))} cm²/m.",
+    ]
+    for i, (a, e, t) in enumerate(zip(areas, exig, trechos_perimetro_cm)):
+        memoria.append(
+            f"18.3.4: barra {i}: Δu = {_fmt(float(t))} cm, ΔAsl exigida = {_fmt(e)} cm², "
+            f"adotada = {_fmt(a)} cm² -> {'ok' if i not in insuf else 'reprovado'}."
+        )
+    governante = ("18.3.4 relação ΔAsl/Δu atendida" if ok
+                  else f"18.3.4 relação ΔAsl/Δu não atendida na barra {insuf[0]}")
+    return ResultadoDeltaAslDeltaU(float(As_long_cm2_por_m), exig, areas, insuf, ok,
+                                   governante, tuple(memoria))
+
+
+# ---------------------------------------------------------------------------
+# 18.3.6 — Armadura de suspensão de viga apoiada em viga (PDF p. 172)
+# ---------------------------------------------------------------------------
+FRACAO_MIN_SUSPENSAO_VIGA_APOIO = 0.75
+FRACAO_MAX_SUSPENSAO_VIGA_APOIADA = 0.25
+
+
+def viga_pendurada(cota_face_inferior_apoiada_cm: float,
+                   cota_face_inferior_apoio_cm: float) -> bool:
+    """Classifica a viga apoiada como pendurada (18.3.6, p. 172).
+
+    "Define-se uma situação de viga pendurada quando a face inferior da viga
+    apoiada está abaixo da face inferior da viga de apoio." Cotas absolutas
+    (crescem para cima), em cm. Faces no mesmo nível: não pendurada.
+    """
+    return float(cota_face_inferior_apoiada_cm) < float(cota_face_inferior_apoio_cm) - _TOL
+
+
+def fator_reducao_suspensao(h_susp_cm: float, h_viga_apoio_cm: float,
+                            faces_superiores_coincidentes: bool = True) -> float:
+    """Fator de redução da carga de suspensão (18.3.6, p. 172).
+
+    Vigas **não penduradas** com faces superiores coincidentes: pode-se
+    aplicar (1 − h_susp/h_viga apoio), com h_susp a diferença de nível entre
+    as faces inferiores das vigas e h_viga apoio a altura da viga de apoio
+    (cm). Fora desse caso (``faces_superiores_coincidentes=False``) a norma
+    não prevê redução, e o fator é 1.
+
+    Faixa: 0 <= h_susp <= h_viga apoio. h_susp < 0 (viga pendurada) ou maior
+    que a altura da viga de apoio levanta ``FaixaNormativaError``.
+    """
+    h_apoio = _positivo(h_viga_apoio_cm, "h_viga_apoio_cm")
+    h_susp = float(h_susp_cm)
+    if not faces_superiores_coincidentes:
+        return 1.0
+    if h_susp < -_TOL or h_susp > h_apoio * (1.0 + _TOL):
+        raise FaixaNormativaError(
+            f"18.3.6: o fator (1 − h_susp/h_viga apoio) vale para 0 <= h_susp <= h_viga apoio "
+            f"(recebido h_susp = {_fmt(h_susp)} cm, h_viga apoio = {_fmt(h_apoio)} cm); "
+            "h_susp < 0 é viga pendurada, sem redução."
+        )
+    return 1.0 - max(h_susp, 0.0) / h_apoio
+
+
+@dataclass(frozen=True)
+class ResultadoSuspensaoViga:
+    Fd_kn: float
+    fator_reducao: float
+    fyd_mpa: float
+    As_tirante_cm2: float
+    pendurada: bool
+    As_viga_apoio_min_cm2: float
+    extensao_viga_apoio_cm: float
+    As_viga_apoiada_max_cm2: float
+    extensao_viga_apoiada_cm: float
+    taxa_viga_apoio_cm2_por_m: float
+    taxa_viga_apoiada_cm2_por_m: float
+    Asw_total_viga_apoio_cm2_por_m: float
+    Asw_total_viga_apoiada_cm2_por_m: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def As_suspensao_viga(
+    Fd_kn: float,
+    h_viga_apoio_cm: float,
+    h_viga_apoiada_cm: float,
+    *,
+    fyk_mpa: float = 500.0,
+    gama_s: float | None = None,
+    pendurada: bool = False,
+    fator_reducao: float = 1.0,
+    viga_apoio_continua: bool = True,
+    viga_apoiada_continua: bool = True,
+    fracao_viga_apoio: float = FRACAO_MIN_SUSPENSAO_VIGA_APOIO,
+    Asw_cisalhamento_viga_apoio_cm2_por_m: float = 0.0,
+    Asw_cisalhamento_viga_apoiada_cm2_por_m: float = 0.0,
+) -> ResultadoSuspensaoViga:
+    """Armadura de suspensão de viga apoiada em viga e sua distribuição (18.3.6, p. 172).
+
+    Tirante: As,susp = fator·Fd/fyd (Fd em kN, fyd = fyk/γs do núcleo, em
+    kN/cm² = MPa/10; As em cm²). ``fator_reducao`` é o de
+    ``fator_reducao_suspensao`` (só para viga não pendurada com faces
+    superiores coincidentes).
+
+    Viga **não pendurada** (Figura 18.4):
+    - na viga de apoio, no mínimo 75 % de As,susp, numa extensão máxima
+      h_viga apoio (metade para cada lado do cruzamento);
+    - na viga apoiada, no máximo 25 % de As,susp, numa extensão máxima
+      h_viga apoiada (metade para cada lado);
+    - se a viga não se estende além do cruzamento (``*_continua=False``),
+      toda a armadura dela vai na extensão h_viga/2.
+    ``fracao_viga_apoio`` (padrão 0,75, entre 0,75 e 1,0) é a parcela posta
+    na viga de apoio; o resto vai para a viga apoiada.
+
+    Viga **pendurada**: a norma não dá repartição. Adota-se (decisão
+    declarada, a favor da segurança) 100 % na viga de apoio, na mesma
+    extensão h_viga apoio; o fator de redução não se aplica (levanta
+    ``FaixaNormativaError`` se diferente de 1).
+
+    A armadura de suspensão soma-se à de cisalhamento (força cortante e/ou
+    torção) já existente no trecho: informe-a em
+    ``Asw_cisalhamento_*_cm2_por_m`` para obter a taxa total. As taxas são
+    As/extensão, em cm²/m.
+    """
+    Fd = abs(float(Fd_kn))
+    h_ap = _positivo(h_viga_apoio_cm, "h_viga_apoio_cm")
+    h_ad = _positivo(h_viga_apoiada_cm, "h_viga_apoiada_cm")
+    fator = float(fator_reducao)
+    if not (0.0 - _TOL <= fator <= 1.0 + _TOL):
+        raise FaixaNormativaError("18.3.6: o fator de redução deve estar entre 0 e 1.")
+    if pendurada and abs(fator - 1.0) > _TOL:
+        raise FaixaNormativaError(
+            "18.3.6: o fator de redução (1 − h_susp/h_viga apoio) só vale para viga não pendurada."
+        )
+    frac = float(fracao_viga_apoio)
+    if not pendurada and not (FRACAO_MIN_SUSPENSAO_VIGA_APOIO - _TOL <= frac <= 1.0 + _TOL):
+        raise FaixaNormativaError(
+            "18.3.6: na viga de apoio vai no mínimo 75 % da armadura do tirante "
+            f"(fracao_viga_apoio = {frac:g})."
+        )
+    gs = nbr.GAMA_S if gama_s is None else float(gama_s)
+    fyd_mpa = nbr.fyd(fyk_mpa, gs)
+    fyd_kncm2 = nbr.mpa_para_kncm2(fyd_mpa)
+    As_t = fator * Fd / fyd_kncm2
+
+    if pendurada:
+        frac = 1.0
+    As_ap = frac * As_t
+    As_ad = As_t - As_ap
+    ext_ap = h_ap if viga_apoio_continua else h_ap / 2.0
+    ext_ad = h_ad if viga_apoiada_continua else h_ad / 2.0
+    taxa_ap = As_ap / (ext_ap / 100.0)
+    taxa_ad = As_ad / (ext_ad / 100.0) if As_ad > 0.0 else 0.0
+    tot_ap = taxa_ap + float(Asw_cisalhamento_viga_apoio_cm2_por_m)
+    tot_ad = taxa_ad + float(Asw_cisalhamento_viga_apoiada_cm2_por_m)
+
+    memoria = [
+        f"18.3.6: As,susp = fator·Fd/fyd = {_fmt(fator)} × {_fmt(Fd)} kN / "
+        f"{_fmt(fyd_kncm2)} kN/cm² = {_fmt(As_t)} cm² (fyd = {_fmt(fyk_mpa)}/{_fmt(gs)} MPa).",
+    ]
+    if pendurada:
+        memoria.append(
+            "18.3.6: viga pendurada; a norma não reparte o tirante, adota-se 100 % na viga de apoio."
+        )
+    else:
+        memoria.append(
+            f"18.3.6: viga não pendurada; viga de apoio >= 75 %: {_fmt(As_ap)} cm² "
+            f"({_fmt(100 * frac)} %); viga apoiada <= 25 %: {_fmt(As_ad)} cm²."
+        )
+    memoria.append(
+        f"18.3.6: extensão na viga de apoio = {_fmt(ext_ap)} cm "
+        + ("(h/2 para cada lado do cruzamento)" if viga_apoio_continua
+           else "(h/2, a viga não passa do cruzamento)")
+        + f" -> {_fmt(taxa_ap)} cm²/m; somada à de cisalhamento: {_fmt(tot_ap)} cm²/m."
+    )
+    if As_ad > 0.0:
+        memoria.append(
+            f"18.3.6: extensão na viga apoiada = {_fmt(ext_ad)} cm "
+            + ("(h/2 para cada lado do cruzamento)" if viga_apoiada_continua
+               else "(h/2, a viga não passa do cruzamento)")
+            + f" -> {_fmt(taxa_ad)} cm²/m; somada à de cisalhamento: {_fmt(tot_ad)} cm²/m."
+        )
+    return ResultadoSuspensaoViga(
+        Fd_kn=Fd, fator_reducao=fator, fyd_mpa=fyd_mpa, As_tirante_cm2=As_t,
+        pendurada=bool(pendurada),
+        As_viga_apoio_min_cm2=As_ap, extensao_viga_apoio_cm=ext_ap,
+        As_viga_apoiada_max_cm2=As_ad, extensao_viga_apoiada_cm=ext_ad,
+        taxa_viga_apoio_cm2_por_m=taxa_ap, taxa_viga_apoiada_cm2_por_m=taxa_ad,
+        Asw_total_viga_apoio_cm2_por_m=tot_ap, Asw_total_viga_apoiada_cm2_por_m=tot_ad,
+        ok=True, governante="18.3.6 armadura de suspensão (dimensionamento)",
+        memoria=tuple(memoria),
+    )
+
+
+# ---------------------------------------------------------------------------
+# 18.3.7 — Armadura de ligação mesa-alma ou talão-alma (PDF p. 173)
+# ---------------------------------------------------------------------------
+AS_LIGACAO_MESA_ALMA_MIN_CM2_POR_M = 1.5
+
+
+def As_ligacao_mesa_alma_min_cm2_por_m() -> float:
+    """Seção mínima da armadura de ligação mesa-alma ou talão-alma (18.3.7, p. 173).
+
+    1,5 cm² por metro de viga, estendendo-se por toda a largura útil e
+    adequadamente ancorada.
+    """
+    return AS_LIGACAO_MESA_ALMA_MIN_CM2_POR_M
+
+
+@dataclass(frozen=True)
+class ResultadoLigacaoMesaAlma:
+    As_necessaria_cm2_por_m: float
+    As_min_cm2_por_m: float
+    As_exigida_cm2_por_m: float
+    As_laje_cm2_por_m: float
+    As_adicional_cm2_por_m: float
+    As_adicional_necessaria_cm2_por_m: float
+    As_total_cm2_por_m: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_ligacao_mesa_alma(
+    As_necessaria_cm2_por_m: float = 0.0,
+    As_flexao_laje_cm2_por_m: float = 0.0,
+    As_adicional_cm2_por_m: float = 0.0,
+    laje_ancorada: bool = True,
+) -> ResultadoLigacaoMesaAlma:
+    """Armadura de ligação mesa-alma ou talão-alma (18.3.7, p. 173).
+
+    Exigida: máx(As necessária para as trações do plano de ligação; 1,5 cm²/m).
+    A armadura de flexão da laje existente no plano de ligação conta, se
+    devidamente ancorada (``laje_ancorada``); a diferença é completada por
+    armadura adicional. Todas as taxas em cm²/m.
+
+    A verificação da resistência do concreto aos efeitos tangenciais no plano
+    de ligação e o cálculo de ``As_necessaria_cm2_por_m`` não têm fórmula
+    neste item e ficam com o usuário.
+    """
+    nec = float(As_necessaria_cm2_por_m)
+    laje = float(As_flexao_laje_cm2_por_m)
+    adic = float(As_adicional_cm2_por_m)
+    if nec < 0.0 or laje < 0.0 or adic < 0.0:
+        raise ValueError("As taxas de armadura não podem ser negativas.")
+    amin = As_ligacao_mesa_alma_min_cm2_por_m()
+    exig = max(nec, amin)
+    laje_conta = laje if laje_ancorada else 0.0
+    adic_nec = max(0.0, exig - laje_conta)
+    total = laje_conta + adic
+    ok = total + _TOL >= exig
+    memoria = (
+        f"18.3.7: As exigida = máx(As necessária = {_fmt(nec)}; 1,5) = {_fmt(exig)} cm²/m.",
+        f"18.3.7: armadura de flexão da laje considerada = {_fmt(laje_conta)} cm²/m"
+        + ("" if laje_ancorada else " (não ancorada, não conta)")
+        + f"; adicional necessária = {_fmt(adic_nec)} cm²/m.",
+        f"18.3.7: As total = {_fmt(total)} cm²/m >= {_fmt(exig)} cm²/m -> "
+        f"{'ok' if ok else 'reprovado'}.",
+    )
+    governante = ("18.3.7 armadura mínima de 1,5 cm²/m" if amin >= nec
+                  else "18.3.7 armadura necessária ao plano de ligação")
+    return ResultadoLigacaoMesaAlma(
+        As_necessaria_cm2_por_m=nec, As_min_cm2_por_m=amin, As_exigida_cm2_por_m=exig,
+        As_laje_cm2_por_m=laje_conta, As_adicional_cm2_por_m=adic,
+        As_adicional_necessaria_cm2_por_m=adic_nec, As_total_cm2_por_m=total,
+        ok=ok, governante=governante, memoria=memoria,
     )

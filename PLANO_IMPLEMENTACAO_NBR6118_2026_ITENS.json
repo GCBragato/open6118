@@ -179,7 +179,8 @@
    "nome": "Detalhamento de vigas: estribos, torção e suspensão",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/detalhamento_vigas_nbr6118.py"
+   "modulo": "dimensionamento/detalhamento_vigas_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P24",
@@ -10238,7 +10239,7 @@
    "pagina_pdf": 167,
    "titulo": "Proteção contra flambagem das barras longitudinais junto à superfície (limite de 20·φt sem estribo suplementar)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P23",
@@ -10248,7 +10249,23 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Secao com 4 barras nos cantos apenas -> nenhum grampo necessario. Barra intermediaria a distancia > 20*phi_t do canto -> grampo obrigatorio.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P23",
+    "data": "19/09/2026",
+    "funcoes": [
+     "trecho_protegido_flambagem_cm",
+     "protecao_flambagem"
+    ],
+    "testes": [
+     "test_18_2_4_trecho_20_phi_t_exato",
+     "test_18_2_4_so_barras_de_canto_dispensa_grampo",
+     "test_18_2_4_duas_barras_no_trecho_ok_tres_nao",
+     "test_18_2_4_barra_no_limite_e_fora_dele",
+     "test_18_2_4_dois_cantos_figura_18_2_b"
+    ],
+    "observacao": "Recebe as posições das barras intermediárias de uma face, medidas a partir do canto A. O comprimento da face é opcional; com ele, cada barra é conferida contra os dois cantos (Figura 18.2-b). Critério declarado para barra dentro do trecho dos dois cantos: fica protegida se algum dos dois trechos tiver até 2 barras. O caso de estribo curvilíneo não é tratado."
+   }
   },
   {
    "id": "18.3.1-generalidades-esbeltez-viga-x-viga-parede",
@@ -10602,7 +10619,7 @@
    "pagina_pdf": 170,
    "titulo": "Diâmetro mínimo e máximo da barra de estribo para força cortante",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P23",
@@ -10612,7 +10629,23 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "bw=15cm -> phi_max=15mm, mas barra lisa trava em 12mm. bw=200cm -> phi_max=200mm (nao restritivo, so o minimo importa).",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P23",
+    "data": "19/09/2026",
+    "funcoes": [
+     "phi_estribo_limites_mm",
+     "verificar_estribos_viga"
+    ],
+    "testes": [
+     "test_18_3_3_2_phi_estribo_limites_alta_aderencia",
+     "test_18_3_3_2_phi_estribo_barra_lisa_trava_em_12",
+     "test_18_3_3_2_phi_estribo_bw_largo",
+     "test_18_3_3_2_tela_4_2_so_com_protecao_corrosao",
+     "test_18_3_3_2_phi_estribo_bw_estreito_sem_solucao"
+    ],
+    "observacao": "O mínimo de 4,2 mm vale só para tela com protecao_corrosao=True. Com bw/10 < φmín, levanta FaixaNormativaError."
+   }
   },
   {
    "id": "18.3.3.2-barras-amarracao-canto-estribo",
@@ -10620,7 +10653,7 @@
    "pagina_pdf": 171,
    "titulo": "Diâmetro mínimo de barra de amarração/canto quando não há barra longitudinal calculada no canto do estribo",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P23",
@@ -10632,7 +10665,20 @@
     "18.3.3.2-diametro-min-max-estribo"
    ],
    "teste_sugerido": "estribo phi=6,3mm -> barra de amarracao/canto deve ter phi>=6,3mm.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P23",
+    "data": "19/09/2026",
+    "funcoes": [
+     "phi_min_barra_canto_mm",
+     "verificar_estribos_viga"
+    ],
+    "testes": [
+     "test_18_3_3_2_barra_canto_minimo_igual_ao_estribo",
+     "test_18_3_3_2_verificacao_conjunta_ok_e_reprovada"
+    ],
+    "observacao": "φ >= φt, tanto para barra de amarração quanto para barra longitudinal de cálculo."
+   }
   },
   {
    "id": "18.3.3.2-espacamento-longitudinal-max-estribos",
@@ -10640,7 +10686,7 @@
    "pagina_pdf": 171,
    "titulo": "Espaçamento longitudinal máximo entre estribos (smáx) em função de Vd/VRd2",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P23",
@@ -10654,7 +10700,23 @@
     "cortante_nbr6118.modelo_calculo_II"
    ],
    "teste_sugerido": "d=46cm,Vd=0,5*VRd2 -> smax=min(27,6cm;30cm)=27,6cm. d=60cm,Vd=0,8*VRd2 -> smax=min(18cm;20cm)=18cm. Checar salto proposital em Vd=0,67*VRd2.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P23",
+    "data": "19/09/2026",
+    "funcoes": [
+     "s_max_estribo_cm",
+     "verificar_estribos_viga"
+    ],
+    "testes": [
+     "test_18_3_3_2_smax_ramo_baixo",
+     "test_18_3_3_2_smax_ramo_baixo_teto_300mm",
+     "test_18_3_3_2_smax_ramo_alto",
+     "test_18_3_3_2_smax_degrau_067_dois_lados",
+     "test_18_3_3_2_smax_com_vrd2_do_modelo_I"
+    ],
+    "observacao": "VRd2 entra como parâmetro (vem de cortante_nbr6118, P15). Usa |Vd|. Vd = 0,67·VRd2 exato fica no ramo de baixo (tolerância relativa 1e-9)."
+   }
   },
   {
    "id": "18.3.3.2-espacamento-transversal-max-ramos",
@@ -10662,7 +10724,7 @@
    "pagina_pdf": 171,
    "titulo": "Espaçamento transversal máximo entre ramos sucessivos de estribo (st,máx) em função de Vd/VRd2",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P23",
@@ -10675,7 +10737,20 @@
     "cortante_nbr6118.modelo_calculo_II"
    ],
    "teste_sugerido": "d=46cm,Vd=0,1*VRd2 -> st_max=min(46cm;80cm)=46cm. d=46cm,Vd=0,5*VRd2 -> st_max=min(27,6cm;35cm)=27,6cm.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P23",
+    "data": "19/09/2026",
+    "funcoes": [
+     "st_max_cm",
+     "verificar_estribos_viga"
+    ],
+    "testes": [
+     "test_18_3_3_2_st_max_ramos",
+     "test_18_3_3_2_st_max_degrau_020_dois_lados"
+    ],
+    "observacao": "Degrau em 0,20 testado dos dois lados."
+   }
   },
   {
    "id": "18.3.3.2-emenda-traspasse-estribo",
@@ -10683,7 +10758,7 @@
    "pagina_pdf": 171,
    "titulo": "Restrição à emenda por traspasse de estribos (só tela ou barra de alta aderência)",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P23",
@@ -10693,7 +10768,20 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "estribo barra lisa CA-25 com traspasse -> reprovar. estribo CA-50 (alta aderencia) com traspasse -> aprovar.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P23",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emenda_estribo_permitida",
+     "verificar_estribos_viga"
+    ],
+    "testes": [
+     "test_18_3_3_2_emenda_traspasse",
+     "test_18_3_3_2_verificacao_conjunta_ok_e_reprovada"
+    ],
+    "observacao": "Tipos aceitos: alta_aderencia/CA-50/CA-60, lisa/CA-25 e tela."
+   }
   },
   {
    "id": "18.3.3.3.1-ancoragem-barra-dobrada-cortante",
@@ -10720,7 +10808,7 @@
    "pagina_pdf": 171,
    "titulo": "Espaçamento longitudinal máximo entre barras dobradas resistentes a cortante",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P23",
@@ -10730,7 +10818,19 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "alfa=45graus,d=46cm: smax=0,6*46*(1+1)=55,2cm. alfa=90graus (cotg=0): smax=0,6*d, igual ao caso Vd<=0,67VRd2 de estribo vertical.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P23",
+    "data": "19/09/2026",
+    "funcoes": [
+     "s_max_barras_dobradas_cm"
+    ],
+    "testes": [
+     "test_18_3_3_3_2_barras_dobradas_45_e_90",
+     "test_18_3_3_3_2_barras_dobradas_fora_da_faixa"
+    ],
+    "observacao": "A faixa 45° <= α <= 90° vem de 17.4.1.1.5; fora dela, FaixaNormativaError."
+   }
   },
   {
    "id": "18.3.4-armadura-torcao-generalidades-remissao",
@@ -10755,7 +10855,7 @@
    "pagina_pdf": 171,
    "titulo": "Estribo de torção fechado em todo o contorno, com ganchos a 135 graus, reaproveitando regras de 18.3.3.2",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P23",
@@ -10768,7 +10868,19 @@
     "18.3.3.2-espacamento-longitudinal-max-estribos"
    ],
    "teste_sugerido": "Verificar angulo do gancho >=135 graus no detalhamento gerado.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P23",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_estribo_torcao"
+    ],
+    "testes": [
+     "test_18_3_4_estribo_fechado_135",
+     "test_18_3_4_estribo_torcao_reusa_18_3_3_2"
+    ],
+    "observacao": "Aceita ângulo >= 135° (decisão declarada: o gancho de 180° não ancora menos). Quando φt, bw, d, Vd e VRd2 são informados, reaproveita verificar_estribos_viga (18.3.3.2). O comprimento da ponta do gancho continua em ancoragem_nbr6118.ponta_reta_estribo_cm (P21)."
+   }
   },
   {
    "id": "18.3.4-espacamento-longitudinal-barras-torcao",
@@ -10776,7 +10888,7 @@
    "pagina_pdf": 172,
    "titulo": "Espaçamento máximo das barras longitudinais de torção ao longo do perímetro interno dos estribos (350mm)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P23",
@@ -10786,7 +10898,21 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "8 barras em perimetro de 3,2m -> espacamento=400mm>350mm, reprovar; precisa de 10 barras (320mm).",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P23",
+    "data": "19/09/2026",
+    "funcoes": [
+     "S_MAX_LONGITUDINAL_TORCAO_CM",
+     "verificar_espacamento_barras_torcao",
+     "n_min_barras_longitudinais_torcao"
+    ],
+    "testes": [
+     "test_18_3_4_espacamento_350mm",
+     "test_18_3_4_n_min_barras"
+    ],
+    "observacao": "n mínimo = máx(⌈u/35⌉; número de vértices)."
+   }
   },
   {
    "id": "18.3.4-relacao-deltaAsl-deltau",
@@ -10794,7 +10920,7 @@
    "pagina_pdf": 172,
    "titulo": "Relação DeltaAsl/Deltau constante ao longo do perímetro",
    "tipo": "verificacao",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "M",
    "pacote": "P23",
@@ -10807,7 +10933,20 @@
     "torcao_nbr6118.As_long_torcao_cm2_por_m"
    ],
    "teste_sugerido": "Distribuir a area total proporcionalmente ao perimetro de cada trecho entre vertices e conferir soma = As total.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P23",
+    "data": "19/09/2026",
+    "funcoes": [
+     "distribuir_As_long_torcao_cm2",
+     "verificar_delta_Asl_delta_u"
+    ],
+    "testes": [
+     "test_18_3_4_delta_Asl_delta_u",
+     "test_18_3_4_delta_Asl_com_torcao_nbr6118"
+    ],
+    "observacao": "ΔAsl,i >= (As,long/ue)·Δui/100. A taxa vem de torcao_nbr6118.As_long_torcao_cm2_por_m."
+   }
   },
   {
    "id": "18.3.4-barra-cada-vertice-poligonal",
@@ -10815,7 +10954,7 @@
    "pagina_pdf": 172,
    "titulo": "Pelo menos uma barra longitudinal em cada vértice de estribo poligonal de torção",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P23",
@@ -10825,7 +10964,18 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Secao retangular (4 vertices) com 4 barras nos cantos -> ok; com 3 -> reprovar.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P23",
+    "data": "19/09/2026",
+    "funcoes": [
+     "verificar_barra_por_vertice"
+    ],
+    "testes": [
+     "test_18_3_4_barra_por_vertice"
+    ],
+    "observacao": "Recebe o número de barras em cada vértice."
+   }
   },
   {
    "id": "18.3.5-armadura-pele",
@@ -10864,7 +11014,7 @@
    "pagina_pdf": 172,
    "titulo": "Armadura de suspensão em vigas não penduradas: percentuais e extensão na viga de apoio e na viga apoiada",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P23",
@@ -10875,7 +11025,21 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Carga concentrada P transmitida por viga secundaria: tirante As=P/fyd; verificar 75% na viga de apoio e 25% na apoiada, cada uma na extensao h/2.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P23",
+    "data": "19/09/2026",
+    "funcoes": [
+     "As_suspensao_viga"
+    ],
+    "testes": [
+     "test_18_3_6_suspensao_caso_a_mao",
+     "test_18_3_6_suspensao_viga_nao_continua_e_reducao",
+     "test_18_3_6_suspensao_pendurada_e_limites",
+     "test_18_3_6_suspensao_nao_e_a_de_bloco"
+    ],
+    "observacao": "As = fator·Fd/fyd, com fyd do núcleo, sem o teto de 435 MPa do estribo, porque a norma não o impõe à suspensão. Viga não pendurada: >= 75 % na viga de apoio, em h (ou h/2 se a viga não continua), e <= 25 % na apoiada. A taxa em cm²/m é devolvida já somada à Asw de cisalhamento informada. Viga pendurada: a norma não reparte; adota-se 100 % na viga de apoio (decisão declarada)."
+   }
   },
   {
    "id": "18.3.6-fator-reducao-vigas-face-superior-coincidente",
@@ -10883,7 +11047,7 @@
    "pagina_pdf": 172,
    "titulo": "Fator de redução da carga de suspensão para vigas não penduradas com faces superiores coincidentes",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P23",
@@ -10895,7 +11059,18 @@
     "18.3.6-armadura-suspensao-percentuais"
    ],
    "teste_sugerido": "h_susp=0 -> fator=1 (sem reducao). h_susp=h_viga_apoio -> fator=0 (equivale a viga pendurada, limite de aplicabilidade).",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P23",
+    "data": "19/09/2026",
+    "funcoes": [
+     "fator_reducao_suspensao"
+    ],
+    "testes": [
+     "test_18_3_6_fator_reducao"
+    ],
+    "observacao": "Faixa 0 <= h_susp <= h_viga apoio; fora dela, FaixaNormativaError. Sem faces superiores coincidentes, devolve 1. Com viga pendurada, As_suspensao_viga recusa fator < 1."
+   }
   },
   {
    "id": "18.3.6-definicao-viga-pendurada",
@@ -10903,7 +11078,7 @@
    "pagina_pdf": 172,
    "titulo": "Classificação viga pendurada x não pendurada",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P23",
@@ -10913,7 +11088,18 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Cotas de fundo: viga apoiada=-0,50m, viga apoio=-0,40m -> pendurada. viga apoiada=-0,30m, viga apoio=-0,40m -> nao pendurada.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P23",
+    "data": "19/09/2026",
+    "funcoes": [
+     "viga_pendurada"
+    ],
+    "testes": [
+     "test_18_3_6_viga_pendurada"
+    ],
+    "observacao": "Cotas absolutas em cm. Faces inferiores no mesmo nível contam como viga não pendurada."
+   }
   },
   {
    "id": "18.3.7-armadura-ligacao-mesa-alma",
@@ -10921,7 +11107,7 @@
    "pagina_pdf": 173,
    "titulo": "Armadura mínima de ligação mesa-alma ou talão-alma (1,5 cm2/m)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P23",
@@ -10931,7 +11117,20 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Viga T: As,ligacao >= 1,5 cm2/m em toda a largura util (bf), independente da geometria.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P23",
+    "data": "19/09/2026",
+    "funcoes": [
+     "As_ligacao_mesa_alma_min_cm2_por_m",
+     "verificar_ligacao_mesa_alma"
+    ],
+    "testes": [
+     "test_18_3_7_minimo_1_5",
+     "test_18_3_7_verificacao_ligacao"
+    ],
+    "observacao": "Exigida = máx(necessária; 1,5 cm²/m). A armadura de flexão da laje conta se estiver ancorada. A resistência do concreto no plano de ligação não tem fórmula neste item e fica com o usuário."
+   }
   },
   {
    "id": "18.4.1-introducao-pilar-x-pilar-parede",

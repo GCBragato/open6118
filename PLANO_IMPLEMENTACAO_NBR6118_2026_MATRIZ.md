@@ -459,7 +459,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `18.2.2-diametro-curvatura-barra-longitudinal` | 18.2.2 | 166 | Diâmetro interno mínimo de curvatura de barra longitudinal dobrada (força cortante ou nó de pórtico) | implementado | média | P | P22 |
 | `18.2.2-fissuracao-plano-dobra` | 18.2.2 | 166 | Necessidade de armadura transversal ou diâmetro maior quando há risco de fissuração no plano da barra dobrada | não computável | baixa | P |  |
 | `18.2.3-mudanca-direcao-armaduras` | 18.2.3 | 166 | Mudança de direção de barras tracionadas (retificação, cobrimento insuficiente) | não computável | baixa | P |  |
-| `18.2.4-protecao-flambagem-barras` | 18.2.4 | 167 | Proteção contra flambagem das barras longitudinais junto à superfície (limite de 20·φt sem estribo suplementar) | ausente | média | M | P23 |
+| `18.2.4-protecao-flambagem-barras` | 18.2.4 | 167 | Proteção contra flambagem das barras longitudinais junto à superfície (limite de 20·φt sem estribo suplementar) | implementado | média | M | P23 |
 | `18.3.1-generalidades-esbeltez-viga-x-viga-parede` | 18.3.1 | 167 | Classificação viga comum x viga-parede pela relação vão/altura (l/h) | implementado | média | P | P11 |
 | `18.3.2.1-as-min-flexao-viga-remissao` | 18.3.2.1 | 168 | Quantidade mínima de armadura longitudinal de flexão em vigas (remissão a 17.3.5) | implementado | alta | P |  |
 | `18.3.2.2-espacamento-longitudinal-vigas` | 18.3.2.2 | 168 | Espaçamento mínimo livre entre barras longitudinais de vigas (horizontal ah e vertical av) | implementado | alta | P | P22 |
@@ -472,23 +472,23 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `18.3.2.4-d-apoio-extremo-momento-negativo` | 18.3.2.4-d | 170 | Apoio extremo com momento negativo: armadura pelo dimensionamento, ancorada conforme 18.3.2.4.1 | não computável | média | P |  |
 | `18.3.2.4.1-ancoragem-apoio` | 18.3.2.4.1 | 170 | Comprimento mínimo de ancoragem da armadura de tração a partir da face do apoio | implementado | alta | M | P22 |
 | `18.3.3.1-generalidades-armadura-transversal-cortante` | 18.3.3.1 | 170 | Tipos de armadura transversal para força cortante (estribos, barras dobradas, telas soldadas), remissão a 17.4 | não computável | alta | P |  |
-| `18.3.3.2-diametro-min-max-estribo` | 18.3.3.2 | 170 | Diâmetro mínimo e máximo da barra de estribo para força cortante | ausente | alta | P | P23 |
-| `18.3.3.2-barras-amarracao-canto-estribo` | 18.3.3.2 | 171 | Diâmetro mínimo de barra de amarração/canto quando não há barra longitudinal calculada no canto do estribo | ausente | média | P | P23 |
-| `18.3.3.2-espacamento-longitudinal-max-estribos` | 18.3.3.2 | 171 | Espaçamento longitudinal máximo entre estribos (smáx) em função de Vd/VRd2 | ausente | alta | P | P23 |
-| `18.3.3.2-espacamento-transversal-max-ramos` | 18.3.3.2 | 171 | Espaçamento transversal máximo entre ramos sucessivos de estribo (st,máx) em função de Vd/VRd2 | ausente | alta | P | P23 |
-| `18.3.3.2-emenda-traspasse-estribo` | 18.3.3.2 | 171 | Restrição à emenda por traspasse de estribos (só tela ou barra de alta aderência) | ausente | baixa | P | P23 |
+| `18.3.3.2-diametro-min-max-estribo` | 18.3.3.2 | 170 | Diâmetro mínimo e máximo da barra de estribo para força cortante | implementado | alta | P | P23 |
+| `18.3.3.2-barras-amarracao-canto-estribo` | 18.3.3.2 | 171 | Diâmetro mínimo de barra de amarração/canto quando não há barra longitudinal calculada no canto do estribo | implementado | média | P | P23 |
+| `18.3.3.2-espacamento-longitudinal-max-estribos` | 18.3.3.2 | 171 | Espaçamento longitudinal máximo entre estribos (smáx) em função de Vd/VRd2 | implementado | alta | P | P23 |
+| `18.3.3.2-espacamento-transversal-max-ramos` | 18.3.3.2 | 171 | Espaçamento transversal máximo entre ramos sucessivos de estribo (st,máx) em função de Vd/VRd2 | implementado | alta | P | P23 |
+| `18.3.3.2-emenda-traspasse-estribo` | 18.3.3.2 | 171 | Restrição à emenda por traspasse de estribos (só tela ou barra de alta aderência) | implementado | baixa | P | P23 |
 | `18.3.3.3.1-ancoragem-barra-dobrada-cortante` | 18.3.3.3.1 | 171 | Ancoragem de barras dobradas resistentes à força cortante (trecho reto ≥ lb,nec) | implementado | média | P |  |
-| `18.3.3.3.2-espacamento-barras-dobradas` | 18.3.3.3.2 | 171 | Espaçamento longitudinal máximo entre barras dobradas resistentes a cortante | ausente | baixa | P | P23 |
+| `18.3.3.3.2-espacamento-barras-dobradas` | 18.3.3.3.2 | 171 | Espaçamento longitudinal máximo entre barras dobradas resistentes a cortante | implementado | baixa | P | P23 |
 | `18.3.4-armadura-torcao-generalidades-remissao` | 18.3.4 | 171 | Armadura de torção: estribos fechados + longitudinais, remissão a 17.5 e efetividade dentro da parede fictícia | não computável | média | P |  |
-| `18.3.4-estribo-torcao-135-graus-fechado` | 18.3.4 | 171 | Estribo de torção fechado em todo o contorno, com ganchos a 135 graus, reaproveitando regras de 18.3.3.2 | ausente | média | P | P23 |
-| `18.3.4-espacamento-longitudinal-barras-torcao` | 18.3.4 | 172 | Espaçamento máximo das barras longitudinais de torção ao longo do perímetro interno dos estribos (350mm) | ausente | média | P | P23 |
-| `18.3.4-relacao-deltaAsl-deltau` | 18.3.4 | 172 | Relação DeltaAsl/Deltau constante ao longo do perímetro | parcial | baixa | M | P23 |
-| `18.3.4-barra-cada-vertice-poligonal` | 18.3.4 | 172 | Pelo menos uma barra longitudinal em cada vértice de estribo poligonal de torção | ausente | baixa | P | P23 |
+| `18.3.4-estribo-torcao-135-graus-fechado` | 18.3.4 | 171 | Estribo de torção fechado em todo o contorno, com ganchos a 135 graus, reaproveitando regras de 18.3.3.2 | implementado | média | P | P23 |
+| `18.3.4-espacamento-longitudinal-barras-torcao` | 18.3.4 | 172 | Espaçamento máximo das barras longitudinais de torção ao longo do perímetro interno dos estribos (350mm) | implementado | média | P | P23 |
+| `18.3.4-relacao-deltaAsl-deltau` | 18.3.4 | 172 | Relação DeltaAsl/Deltau constante ao longo do perímetro | implementado | baixa | M | P23 |
+| `18.3.4-barra-cada-vertice-poligonal` | 18.3.4 | 172 | Pelo menos uma barra longitudinal em cada vértice de estribo poligonal de torção | implementado | baixa | P | P23 |
 | `18.3.5-armadura-pele` | 18.3.5 | 172 | Espaçamento máximo da armadura de pele (afastamento ≤ d/3 e 20 cm) | implementado | alta | P | P12 |
-| `18.3.6-armadura-suspensao-percentuais` | 18.3.6 | 172 | Armadura de suspensão em vigas não penduradas: percentuais e extensão na viga de apoio e na viga apoiada | ausente | média | M | P23 |
-| `18.3.6-fator-reducao-vigas-face-superior-coincidente` | 18.3.6 | 172 | Fator de redução da carga de suspensão para vigas não penduradas com faces superiores coincidentes | ausente | baixa | P | P23 |
-| `18.3.6-definicao-viga-pendurada` | 18.3.6 | 172 | Classificação viga pendurada x não pendurada | ausente | baixa | P | P23 |
-| `18.3.7-armadura-ligacao-mesa-alma` | 18.3.7 | 173 | Armadura mínima de ligação mesa-alma ou talão-alma (1,5 cm2/m) | ausente | média | P | P23 |
+| `18.3.6-armadura-suspensao-percentuais` | 18.3.6 | 172 | Armadura de suspensão em vigas não penduradas: percentuais e extensão na viga de apoio e na viga apoiada | implementado | média | M | P23 |
+| `18.3.6-fator-reducao-vigas-face-superior-coincidente` | 18.3.6 | 172 | Fator de redução da carga de suspensão para vigas não penduradas com faces superiores coincidentes | implementado | baixa | P | P23 |
+| `18.3.6-definicao-viga-pendurada` | 18.3.6 | 172 | Classificação viga pendurada x não pendurada | implementado | baixa | P | P23 |
+| `18.3.7-armadura-ligacao-mesa-alma` | 18.3.7 | 173 | Armadura mínima de ligação mesa-alma ou talão-alma (1,5 cm2/m) | implementado | média | P | P23 |
 | `18.4.1-introducao-pilar-x-pilar-parede` | 18.4.1 | 173 | Classificação pilar comum x pilar-parede pela razão entre dimensões da seção (maior ≤ 5 vezes a menor) | implementado | alta | P | P11 |
 | `18.4.2.1-diametro-min-max-barra-longitudinal-pilar` | 18.4.2.1 | 173 | Diâmetro mínimo e máximo da barra longitudinal de pilar | implementado | alta | P | P24 |
 | `18.4.2.1-taxa-armadura-pilar-remissao` | 18.4.2.1 | 173 | Taxa geométrica de armadura longitudinal de pilar (remissão a 17.3.5.3) | implementado | alta | P |  |
