@@ -142,7 +142,8 @@
    "nome": "Detalhamento de lajes",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/detalhamento_lajes_nbr6118.py"
+   "modulo": "dimensionamento/detalhamento_lajes_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P19",
@@ -12881,7 +12882,7 @@
    "pagina_pdf": 192,
    "titulo": "Diâmetro máximo de barra de flexão em laje",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P18",
@@ -12891,7 +12892,22 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "h=10cm -> phi_max=1,25cm (12,5mm); h=20cm -> phi_max=2,5cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P18",
+    "data": "19/09/2026",
+    "funcoes": [
+     "phi_max_laje_mm"
+    ],
+    "testes": [
+     "test_phi_max_laje_h10",
+     "test_phi_max_laje_h20",
+     "test_phi_max_laje_ponto_interior",
+     "test_phi_max_laje_h_invalido",
+     "test_entrada_invalida_levanta_faixa_normativa_error_positivo"
+    ],
+    "observacao": "Sem mudança de fórmula nesta volta; corrigido apenas o tipo de exceção para entrada inválida (agora FaixaNormativaError, herdado de _positivo)."
+   }
   },
   {
    "id": "20.1-espacamento-max-principal",
@@ -12899,7 +12915,7 @@
    "pagina_pdf": 192,
    "titulo": "Espaçamento máximo da armadura principal de flexão em laje",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P18",
@@ -12909,7 +12925,23 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "h=15cm -> 2h=30cm > 20cm, logo s_max=20cm; phi=25mm -> 15*2,5=37,5cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P18",
+    "data": "19/09/2026",
+    "funcoes": [
+     "espacamento_max_principal_cm"
+    ],
+    "testes": [
+     "test_espacamento_max_principal_h15_governa_20cm",
+     "test_espacamento_max_principal_h_pequeno_governa_2h",
+     "test_espacamento_max_principal_phi25_relaxa_15phi",
+     "test_espacamento_max_principal_phi_no_limite_20mm",
+     "test_espacamento_max_principal_phi_logo_abaixo_20mm",
+     "test_espacamento_max_principal_h_invalido"
+    ],
+    "observacao": "Sem achado nesta volta; nenhuma mudança de comportamento numérico."
+   }
   },
   {
    "id": "20.1-sem-escalonamento-armadura-positiva",
@@ -12917,7 +12949,7 @@
    "pagina_pdf": 192,
    "titulo": "Vedação de escalonamento da armadura positiva e prolongamento mínimo no apoio",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P18",
@@ -12930,7 +12962,22 @@
     "Secao9-ancoragem"
    ],
    "teste_sugerido": "Caso trivial: comprimento minimo alem do eixo = 4 cm, comparar com ancoragem exigida na Secao 9 e usar o maior.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P18",
+    "data": "19/09/2026",
+    "funcoes": [
+     "prolongamento_positivo_apoio_cm"
+    ],
+    "testes": [
+     "test_prolongamento_positivo_apoio_minimo_absoluto",
+     "test_prolongamento_positivo_apoio_governado_pela_ancoragem",
+     "test_prolongamento_positivo_apoio_fronteira_igual",
+     "test_prolongamento_positivo_apoio_lb_negativo",
+     "test_entrada_invalida_levanta_faixa_normativa_error_nao_negativo"
+    ],
+    "observacao": "Corrigido apenas o tipo de exceção (FaixaNormativaError, herdado de _nao_negativo)."
+   }
   },
   {
    "id": "20.1-armadura-secundaria-positiva",
@@ -12938,7 +12985,7 @@
    "pagina_pdf": 192,
    "titulo": "Armadura secundária positiva mínima e espaçamento máximo",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P18",
@@ -12951,7 +12998,23 @@
     "nucleo.rho_min_flexao"
    ],
    "teste_sugerido": "As_principal=5 cm2/m -> As,sec_min=1,0 cm2/m; verificar tambem s<=33cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P18",
+    "data": "19/09/2026",
+    "funcoes": [
+     "As_secundaria_min_cm2_por_m",
+     "espacamento_max_secundaria_cm"
+    ],
+    "testes": [
+     "test_As_secundaria_min",
+     "test_As_secundaria_min_outro_ponto",
+     "test_As_secundaria_min_invalido",
+     "test_espacamento_max_secundaria",
+     "test_entrada_invalida_levanta_faixa_normativa_error_positivo"
+    ],
+    "observacao": "Corrigido apenas o tipo de exceção para entrada inválida."
+   }
   },
   {
    "id": "20.1-estribo-nervurada-espacamento",
@@ -12959,7 +13022,7 @@
    "pagina_pdf": 192,
    "titulo": "Espaçamento máximo de estribos em nervuras de laje nervurada",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P18",
@@ -12969,7 +13032,18 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Caso trivial: comparar espacamento adotado com 20 cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P18",
+    "data": "19/09/2026",
+    "funcoes": [
+     "espacamento_max_estribo_nervura_cm"
+    ],
+    "testes": [
+     "test_espacamento_max_estribo_nervura"
+    ],
+    "observacao": "Constante fixa (20 cm); sem achado nesta volta."
+   }
   },
   {
    "id": "20.2-bordas-aberturas",
@@ -12991,7 +13065,7 @@
    "pagina_pdf": 194,
    "titulo": "Distribuição de armadura em lajes sem vigas por faixas (Figura 20.2)",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P18",
@@ -13003,7 +13077,26 @@
     "14.7.8-processo-aproximado"
    ],
    "teste_sugerido": "Caso l=600cm -> 0,35l=210cm, 0,25l=150cm, 0,125l=75cm (>15cm, governa a fracao); l=100cm -> 0,125l=12,5cm<15cm, deve prevalecer o minimo absoluto de 15cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P18",
+    "data": "19/09/2026",
+    "funcoes": [
+     "distribuicao_faixas_laje_lisa",
+     "DistribuicaoFaixasLajeLisa"
+    ],
+    "testes": [
+     "test_distribuicao_faixas_l600_fracao_governa",
+     "test_distribuicao_faixas_l100_minimo_absoluto_governa",
+     "test_distribuicao_faixas_fronteira_0125l_igual_15cm",
+     "test_distribuicao_faixas_soma_percentuais_100_por_cento",
+     "test_distribuicao_faixas_l_invalido",
+     "test_entrada_invalida_levanta_faixa_normativa_error_positivo",
+     "test_distribuicao_faixas_docstring_distingue_eixo_e_face_do_apoio",
+     "test_distribuicao_faixas_memoria_acentuada"
+    ],
+    "observacao": "Valores numéricos devolvidos continuam corretos (não dependem do ponto de referência); corrigidos o docstring (eixo x face do apoio, achado de norma) e a acentuação da memória (achado de diff)."
+   }
   },
   {
    "id": "20.3.1-barras-continuas-apoio",
@@ -13011,7 +13104,7 @@
    "pagina_pdf": 194,
    "titulo": "Mínimo de barras inferiores contínuas sobre os apoios",
    "tipo": "detalhamento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P18",
@@ -13023,7 +13116,24 @@
     "19.5.4-colapso-progressivo"
    ],
    "teste_sugerido": "Verificar que o layout gerado sempre mantem >=2 barras inferiores atravessando cada pilar.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P18",
+    "data": "19/09/2026",
+    "funcoes": [
+     "barras_continuas_apoio_min",
+     "ResultadoBarrasContinuasApoio"
+    ],
+    "testes": [
+     "test_barras_continuas_apoio_ok",
+     "test_barras_continuas_apoio_numero_insuficiente",
+     "test_barras_continuas_apoio_ccp_insuficiente",
+     "test_barras_continuas_apoio_fronteira_capacidade_exata",
+     "test_entrada_invalida_levanta_faixa_normativa_error_nao_negativo",
+     "test_barras_continuas_apoio_governante_e_memoria_acentuados"
+    ],
+    "observacao": "Corrigidos acentuação (governante e memória) e tipo de exceção para FSd_kn negativo."
+   }
   },
   {
    "id": "20.3.1-capitel-penetracao-minima",
@@ -13031,7 +13141,7 @@
    "pagina_pdf": 194,
    "titulo": "Penetração mínima de barras inferiores interrompidas em capitel",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P18",
@@ -13041,7 +13151,22 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "phi=20mm -> 24*2=48cm>30cm, L_min=48cm; phi=10mm -> 24*1=24cm<30cm, L_min=30cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P18",
+    "data": "19/09/2026",
+    "funcoes": [
+     "penetracao_capitel_cm"
+    ],
+    "testes": [
+     "test_penetracao_capitel_fracao_governa",
+     "test_penetracao_capitel_minimo_absoluto_governa",
+     "test_penetracao_capitel_fronteira_30cm",
+     "test_penetracao_capitel_invalido",
+     "test_entrada_invalida_levanta_faixa_normativa_error_positivo"
+    ],
+    "observacao": "Corrigido apenas o tipo de exceção para entrada inválida."
+   }
   },
   {
    "id": "20.3.2.1-espacamento-max-cabos",
@@ -13281,7 +13406,7 @@
    "pagina_pdf": 196,
    "titulo": "Comprimento de ancoragem de tela soldada nervurada no apoio sobre viga",
    "tipo": "formula",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P18",
@@ -13291,7 +13416,22 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "phi=6mm -> 10*0,6=6cm<10cm, l_anc=10cm; phi=12mm -> 10*1,2=12cm>10cm, l_anc=12cm.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P18",
+    "data": "19/09/2026",
+    "funcoes": [
+     "ancoragem_tela_apoio_cm"
+    ],
+    "testes": [
+     "test_ancoragem_tela_apoio_minimo_absoluto_governa",
+     "test_ancoragem_tela_apoio_fracao_governa",
+     "test_ancoragem_tela_apoio_fronteira_10cm",
+     "test_ancoragem_tela_apoio_invalido",
+     "test_entrada_invalida_levanta_faixa_normativa_error_positivo"
+    ],
+    "observacao": "Corrigido apenas o tipo de exceção para entrada inválida."
+   }
   },
   {
    "id": "20.5.2-emenda-tela-tabela-malhas-fios",
@@ -13299,7 +13439,7 @@
    "pagina_pdf": 196,
    "titulo": "Emenda de armaduras em tela soldada nervurada por sobreposição de malhas/fios",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P18",
@@ -13308,7 +13448,22 @@
    "conferido_na_imagem": false,
    "depende_de": [],
    "teste_sugerido": "Verificar contagem de malhas/fios sobrepostos conforme o tipo de armadura.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P18",
+    "data": "19/09/2026",
+    "funcoes": [
+     "emenda_tela_malhas"
+    ],
+    "testes": [
+     "test_emenda_tela_malhas_principal",
+     "test_emenda_tela_malhas_secundaria",
+     "test_emenda_tela_malhas_secundaria_acentuada_e_maiuscula",
+     "test_emenda_tela_malhas_tipo_invalido",
+     "test_emenda_tela_malhas_tipo_invalido_e_faixa_normativa_error"
+    ],
+    "observacao": "Corrigido o tipo de exceção para tipo_armadura inválido: agora FaixaNormativaError."
+   }
   },
   {
    "id": "20.5.2-emenda-tela-retangular-reducao",
@@ -13333,7 +13488,7 @@
    "pagina_pdf": 197,
    "titulo": "Armadura inferior de segurança em laje em balanço (marquise)",
    "tipo": "verificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P18",
@@ -13346,7 +13501,24 @@
     "nucleo.As_min_flexao_retangular"
    ],
    "teste_sugerido": "Dimensionar As para Mg isolado (sem majoracoes de acidental) e comparar com a As de flexao total da laje.",
-   "trecho": "detlaj"
+   "trecho": "detlaj",
+   "implementacao": {
+    "pacote": "P18",
+    "data": "19/09/2026",
+    "funcoes": [
+     "As_inferior_balanco",
+     "ResultadoArmaduraBalancoInferior"
+    ],
+    "testes": [
+     "test_As_inferior_balanco_governado_pelo_minimo",
+     "test_As_inferior_balanco_governado_pela_flexao",
+     "test_As_inferior_balanco_secao_insuficiente",
+     "test_As_inferior_balanco_entradas_invalidas",
+     "test_As_inferior_balanco_secao_insuficiente_e_faixa_normativa_error",
+     "test_As_inferior_balanco_governante_e_memoria_acentuados"
+    ],
+    "observacao": "Corrigidos acentuação (governante e memória: 'ações', 'majoração') e tipo de exceção para discriminante negativo e entradas inválidas."
+   }
   },
   {
    "id": "21.1-definicao-regiao-especial",

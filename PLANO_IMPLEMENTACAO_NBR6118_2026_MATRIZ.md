@@ -560,15 +560,15 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 
 | Id | Item | Pág. | O que é | Situação | Prior. | Compl. | Pacote |
 |---|---|---|---|---|---|---|---|
-| `20.1-diametro-max-barra` | 20.1 | 192 | Diâmetro máximo de barra de flexão em laje | ausente | alta | P | P18 |
-| `20.1-espacamento-max-principal` | 20.1 | 192 | Espaçamento máximo da armadura principal de flexão em laje | ausente | alta | P | P18 |
-| `20.1-sem-escalonamento-armadura-positiva` | 20.1 | 192 | Vedação de escalonamento da armadura positiva e prolongamento mínimo no apoio | ausente | alta | P | P18 |
-| `20.1-armadura-secundaria-positiva` | 20.1 | 192 | Armadura secundária positiva mínima e espaçamento máximo | ausente | alta | P | P18 |
-| `20.1-estribo-nervurada-espacamento` | 20.1 | 192 | Espaçamento máximo de estribos em nervuras de laje nervurada | ausente | média | P | P18 |
+| `20.1-diametro-max-barra` | 20.1 | 192 | Diâmetro máximo de barra de flexão em laje | implementado | alta | P | P18 |
+| `20.1-espacamento-max-principal` | 20.1 | 192 | Espaçamento máximo da armadura principal de flexão em laje | implementado | alta | P | P18 |
+| `20.1-sem-escalonamento-armadura-positiva` | 20.1 | 192 | Vedação de escalonamento da armadura positiva e prolongamento mínimo no apoio | implementado | alta | P | P18 |
+| `20.1-armadura-secundaria-positiva` | 20.1 | 192 | Armadura secundária positiva mínima e espaçamento máximo | implementado | alta | P | P18 |
+| `20.1-estribo-nervurada-espacamento` | 20.1 | 192 | Espaçamento máximo de estribos em nervuras de laje nervurada | implementado | média | P | P18 |
 | `20.2-bordas-aberturas` | 20.2 | 193 | Armadura em bordas livres e aberturas de lajes maciças | não computável | média | P |  |
-| `20.3.1-fig20.2-distribuicao-faixas` | 20.3.1 | 194 | Distribuição de armadura em lajes sem vigas por faixas (Figura 20.2) | ausente | alta | M | P18 |
-| `20.3.1-barras-continuas-apoio` | 20.3.1 | 194 | Mínimo de barras inferiores contínuas sobre os apoios | ausente | alta | P | P18 |
-| `20.3.1-capitel-penetracao-minima` | 20.3.1 | 194 | Penetração mínima de barras inferiores interrompidas em capitel | ausente | média | P | P18 |
+| `20.3.1-fig20.2-distribuicao-faixas` | 20.3.1 | 194 | Distribuição de armadura em lajes sem vigas por faixas (Figura 20.2) | implementado | alta | M | P18 |
+| `20.3.1-barras-continuas-apoio` | 20.3.1 | 194 | Mínimo de barras inferiores contínuas sobre os apoios | implementado | alta | P | P18 |
+| `20.3.1-capitel-penetracao-minima` | 20.3.1 | 194 | Penetração mínima de barras inferiores interrompidas em capitel | implementado | média | P | P18 |
 | `20.3.2.1-espacamento-max-cabos` | 20.3.2.1 | 194 | Espaçamento máximo entre cordoalhas/cabos para faixa protendida | ausente | média | P | P33 |
 | `20.3.2.1-tensao-compressao-media-minima` | 20.3.2.1 | 194 | Tensão de compressão média mínima na seção com cabo/feixe | ausente | média | P | P33 |
 | `20.3.2.2-largura-max-faixa-externa` | 20.3.2.2 | 195 | Largura máxima da porção de laje para cabos em faixa externa de apoio | ausente | média | P | P33 |
@@ -582,10 +582,10 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `20.4-diametro-max-estribo-puncao` | 20.4 | 196 | Diâmetro máximo do estribo de armadura de punção | ausente | alta | P | P20 |
 | `20.4-contato-mecanico-canto-estribo` | 20.4 | 196 | Contato mecânico e diâmetro mínimo da barra longitudinal no canto do estribo de punção | ausente | média | P | P20 |
 | `20.4-studs-desempenho-ensaio` | 20.4 | 196 | Preferência por studs e exigência de desempenho comprovado por ensaio | não computável | média | P |  |
-| `20.5.1-ancoragem-tela-soldada-apoio` | 20.5.1 | 196 | Comprimento de ancoragem de tela soldada nervurada no apoio sobre viga | ausente | média | P | P18 |
-| `20.5.2-emenda-tela-tabela-malhas-fios` | 20.5.2 | 196 | Emenda de armaduras em tela soldada nervurada por sobreposição de malhas/fios | ausente | baixa | P | P18 |
+| `20.5.1-ancoragem-tela-soldada-apoio` | 20.5.1 | 196 | Comprimento de ancoragem de tela soldada nervurada no apoio sobre viga | implementado | média | P | P18 |
+| `20.5.2-emenda-tela-tabela-malhas-fios` | 20.5.2 | 196 | Emenda de armaduras em tela soldada nervurada por sobreposição de malhas/fios | implementado | baixa | P | P18 |
 | `20.5.2-emenda-tela-retangular-reducao` | 20.5.2 | 196 | Redução de emenda em telas retangulares (L ou T) na maior dimensão | não computável | baixa | P |  |
-| `20.6-armadura-inferior-laje-balanco` | 20.6 | 197 | Armadura inferior de segurança em laje em balanço (marquise) | ausente | alta | P | P18 |
+| `20.6-armadura-inferior-laje-balanco` | 20.6 | 197 | Armadura inferior de segurança em laje em balanço (marquise) | implementado | alta | P | P18 |
 
 ## Seção 21
 
