@@ -1043,7 +1043,9 @@ def _ordem_perimetro(posicoes: list) -> list:
 def modelo_bloco_estacas(posicoes_estacas_cm, Nd_kn: float, d_cm: float,
                          ap_cm: float = 0.0, bp_cm: float | None = None,
                          ex_cm: float = 0.0, ey_cm: float = 0.0,
-                         reacoes_estacas_kn=None, tirantes=None) -> TrelicaBT:
+                         reacoes_estacas_kn=None, tirantes=None,
+                         Hx_kn: float = 0.0, Hy_kn: float = 0.0,
+                         avisar: bool = True) -> TrelicaBT:
     """Modelo de bielas e tirantes tridimensional de bloco sobre estacas
     (22.7.3, PDF p. 213; 22.3.1, PDF p. 203).
 
@@ -1082,11 +1084,27 @@ def modelo_bloco_estacas(posicoes_estacas_cm, Nd_kn: float, d_cm: float,
         - 4 estacas: os 4 tirantes do perímetro mais uma diagonal, necessária
           para fechar a isostaticidade; sob carga centrada a diagonal sai
           nula;
-        - 5 ou mais estacas: informe ``tirantes``; a contagem de
-          isostaticidade de ``resolver`` recusa topologia que não feche.
+        - 5 ou mais estacas: o reticulado isostático de
+          ``topologia_tirantes_bloco`` (F4), pelo critério das ligações mais
+          curtas primeiro — 2·n - 3 tirantes sobre as linhas que unem os
+          eixos das estacas, como 22.7.2.1 a) descreve. A escolha do
+          reticulado muda a força de cada tirante e é decisão de projeto:
+          informe ``tirantes`` quando tiver a sua.
 
-    Unidades: posições e d em cm; Nd em kN (valor positivo, compressão do
-    pilar). Devolve a ``TrelicaBT`` pronta para ``resolver``.
+    Força horizontal no topo do bloco (22.7.3): ``Hx_kn`` e ``Hy_kn`` entram
+    no nó do pilar, e o momento H·d que elas produzem no nível das estacas
+    soma-se ao de N·e na distribuição das reações verticais; a reação
+    horizontal é dividida por igual entre as estacas, com a parcela de
+    torção que equilibra ex·Hy - ey·Hx (``_reacoes_bloco_com_horizontal``).
+    Com força horizontal o modelo é sempre espacial. Essa é a hipótese de
+    bloco rígido sobre apoios iguais, **não** a interação solo-estrutura que
+    22.7.3 exige "sempre que houver forças horizontais significativas ou
+    forte assimetria": com ``avisar=True`` (padrão) sai um ``AvisoNBR6118``
+    lembrando disso; quem tiver as reações da sua análise de interação
+    solo-estrutura as passa em ``reacoes_estacas_kn``.
+
+    Unidades: posições e d em cm; Nd, Hx e Hy em kN (Nd positivo, compressão
+    do pilar). Devolve a ``TrelicaBT`` pronta para ``resolver``.
     """
     pos = [(float(p[0]), float(p[1])) for p in posicoes_estacas_cm]
     n = len(pos)
@@ -1107,15 +1125,35 @@ def modelo_bloco_estacas(posicoes_estacas_cm, Nd_kn: float, d_cm: float,
         return math.copysign(abs(v) - c / 4.0, v)
 
     pos_mod = [(_recuar(x, ap), _recuar(y, bp)) for x, y in pos]
-    if reacoes_estacas_kn is None:
-        R = _reacoes_lineares(pos_mod, float(Nd_kn), float(ex_cm), float(ey_cm))
+    Hx = float(Hx_kn)
+    Hy = float(Hy_kn)
+    com_h = abs(Hx) > 0.0 or abs(Hy) > 0.0
+    if com_h:
+        R_auto, Fx_est, Fy_est = _reacoes_bloco_com_horizontal(
+            pos_mod, float(Nd_kn), float(ex_cm), float(ey_cm), d, Hx, Hy)
+        R = R_auto
+        if avisar:
+            _warnings_f4.warn(
+                "22.7.3: com força horizontal no topo do bloco, o modelo deve "
+                "contemplar a interação solo-estrutura sempre que essa força "
+                "for significativa ou houver forte assimetria. A distribuição "
+                "usada aqui é a de bloco rígido sobre apoios iguais; informe "
+                "reacoes_estacas_kn com as reações da sua análise de interação "
+                "solo-estrutura quando for o caso.",
+                nbr.AvisoNBR6118, stacklevel=2)
     else:
+        Fx_est = [0.0] * n
+        Fy_est = [0.0] * n
+        R = None
+    if reacoes_estacas_kn is not None:
         R = [float(v) for v in reacoes_estacas_kn]
         if len(R) != n:
             raise ValueError(
                 f"reacoes_estacas_kn tem {len(R)} valor(es) para {n} estaca(s).")
+    elif R is None:
+        R = _reacoes_lineares(pos_mod, float(Nd_kn), float(ex_cm), float(ey_cm))
 
-    plano = (n == 2 and all(abs(y) < 1e-9 for _, y in pos_mod)
+    plano = (not com_h and n == 2 and all(abs(y) < 1e-9 for _, y in pos_mod)
              and abs(float(ey_cm)) < 1e-9)
     t = TrelicaBT(nome=f"bloco sobre {n} estacas (22.7.3)", espacial=not plano)
     if plano:
@@ -1132,15 +1170,23 @@ def modelo_bloco_estacas(posicoes_estacas_cm, Nd_kn: float, d_cm: float,
     for k, (x, y) in enumerate(pos_mod):
         t.no(k, x, y, 0.0)
         t.barra(("biela", k), "P", k)
-        t.forca(k, Fz_kn=R[k])
-    t.forca("P", Fz_kn=-float(Nd_kn))
-    if tirantes is None:
+        t.forca(k, Fx_kn=Fx_est[k], Fy_kn=Fy_est[k], Fz_kn=R[k])
+    t.forca("P", Fx_kn=Hx, Fy_kn=Hy, Fz_kn=-float(Nd_kn))
+    if tirantes is not None:
+        pares = [(int(a), int(b)) for a, b in tirantes]
+    elif n == 2:
+        # duas estacas em treliça espacial (força horizontal, ou estacas fora
+        # do eixo x): o único tirante liga as duas
+        pares = [(0, 1)]
+    elif n <= 4:
         ordem = _ordem_perimetro(pos_mod)
         pares = [(ordem[i], ordem[(i + 1) % n]) for i in range(n)]
         if n == 4:
             pares.append((ordem[0], ordem[2]))
     else:
-        pares = [(int(a), int(b)) for a, b in tirantes]
+        # F4: reticulado isostático automático (22.7.2.1 a) com 22.3.1)
+        pares = list(_topologia_isostatica_bloco(
+            pos_mod, (float(ex_cm), float(ey_cm), d)))
     for a, b in pares:
         t.barra(("tirante", min(a, b), max(a, b)), a, b)
     return t
@@ -1379,3 +1425,363 @@ def modelo_zona_ancoragem(P_kn: float, a_cm: float, h_cm: float,
         C_biela_kn=C, tan_theta=tan_theta, As_tirante_cm2=As,
         sigma_ancoragem_kncm2=sigma, no_ancoragem=no, ok=ok,
         governante="21.2.3", memoria=tuple(memoria))
+
+
+# === F4: bloco sobre estacas — topologia automática, força horizontal e
+# fendilhamento pilar-bloco (22.7.2 e 22.7.3) ===
+# Fechamento do item 22.7.3 que o P48 deixou parcial. 22.7.3 (PDF p. 213) tem
+# três exigências além do modelo biela-tirante tridimensional em si, e este
+# bloco fecha as três que dependem só da geometria:
+#
+#   - "Esses modelos devem contemplar adequadamente os aspectos descritos em
+#     22.7.2." 22.7.2.1 a) (PDF p. 213) diz que as trações ficam
+#     "essencialmente concentradas nas linhas sobre as estacas (reticulado
+#     definido pelo eixo das estacas, com faixas de largura igual a 1,2 vez
+#     seu diâmetro)": daí ``topologia_tirantes_bloco``, que monta o reticulado
+#     isostático de tirantes de qualquer número de estacas, e
+#     ``largura_faixa_tirante_bloco_cm``, que dá a faixa de 1,2·phi em que a
+#     armadura do tirante se distribui.
+#   - "Na região de contato entre o pilar e o bloco, os efeitos de
+#     fendilhamento devem ser considerados, conforme requerido em 21.2,
+#     permitindo-se a adoção de um modelo de bielas e tirantes para a
+#     determinação das armaduras": ``fendilhamento_pilar_bloco``.
+#   - "Sempre que houver forças horizontais significativas ou forte assimetria,
+#     o modelo deve contemplar a interação solo-estrutura":
+#     ``modelo_bloco_estacas`` passou a aceitar ``Hx_kn`` e ``Hy_kn``, e avisa
+#     que a distribuição adotada é a de bloco rígido sobre apoios iguais, não
+#     a interação solo-estrutura, que depende da rigidez de cada estaca e do
+#     solo e é dado de projeto.
+#
+# Continua fora do escopo, por decisão do plano (seção 7 e decisão 1 de
+# 19/09/2026): a análise tridimensional linear ou não linear de sólido, que
+# 22.7.3 também aceita — o plano fecha a análise estrutural em barras e deixa
+# de fora os elementos finitos de placa e de sólido.
+
+import math as _math_f4
+import warnings as _warnings_f4
+from dataclasses import dataclass as _dataclass_f4
+
+import numpy as _np_f4
+
+# 22.7.2.1 a), PDF p. 213 — faixa, em torno da linha que une os eixos de duas
+# estacas, em que a tração do tirante se considera concentrada.
+FAIXA_TIRANTE_SOBRE_DIAMETRO = 1.2
+
+
+def largura_faixa_tirante_bloco_cm(diametro_estaca_cm: float) -> float:
+    """Largura da faixa do tirante do bloco, cm (22.7.2.1 a, PDF p. 213).
+
+        largura = 1,2 · phi,estaca
+
+    22.7.2.1 a) descreve o bloco rígido como trabalhando "à flexão nas duas
+    direções, usualmente simulado por bielas e tirantes, mas com trações
+    essencialmente concentradas nas linhas sobre as estacas (reticulado
+    definido pelo eixo das estacas, com faixas de largura igual a 1,2 vez
+    seu diâmetro)". É nessa faixa, centrada na linha que une os eixos das
+    duas estacas do tirante, que a armadura do tirante deve ser
+    concentrada. ``diametro_estaca_cm`` é o diâmetro da estaca, cm.
+    """
+    phi = float(diametro_estaca_cm)
+    if phi <= 0.0:
+        raise FaixaNormativaError(
+            f"phi,estaca = {_num(phi)} cm: o diâmetro da estaca tem de ser "
+            "positivo.")
+    return FAIXA_TIRANTE_SOBRE_DIAMETRO * phi
+
+
+def _recuo_blevot_f4(v: float, c: float) -> float:
+    """Recuo de Blévot do nó da estaca, componente a componente (o mesmo de
+    ``modelo_bloco_estacas``): a biela parte do centroide da parcela da seção
+    do pilar associada àquela estaca, a c/4 do eixo."""
+    if abs(v) <= c / 4.0:
+        return 0.0
+    return _math_f4.copysign(abs(v) - c / 4.0, v)
+
+
+def _coluna_equilibrio_f4(i: int, j: int, pontos, n_nos: int):
+    """Coluna da matriz de equilíbrio da barra i-j: o versor da barra nos
+    graus do nó i e o seu oposto nos graus do nó j."""
+    u = pontos[j] - pontos[i]
+    L = float(_np_f4.linalg.norm(u))
+    if L <= 0.0:
+        raise FaixaNormativaError(
+            f"Nós {i} e {j} do modelo do bloco coincidem: barra de comprimento "
+            "nulo.")
+    u = u / L
+    col = _np_f4.zeros(3 * n_nos)
+    col[3 * i:3 * i + 3] = u
+    col[3 * j:3 * j + 3] = -u
+    return col
+
+
+def _topologia_isostatica_bloco(pos_mod, pilar_xyz) -> tuple:
+    """Escolhe o reticulado de tirantes que torna isostática a treliça de
+    ``modelo_bloco_estacas`` (22.3.1), dado o conjunto de nós de estaca já
+    recuados e o nó do pilar. Ver ``topologia_tirantes_bloco``."""
+    n = len(pos_mod)
+    pontos = _np_f4.array([[x, y, 0.0] for x, y in pos_mod]
+                          + [list(pilar_xyz)], dtype=float)
+    n_nos = n + 1
+    alvo = 2 * n - 3                      # m + 6 = 3*(n+1), com n bielas
+    colunas = [_coluna_equilibrio_f4(n, k, pontos, n_nos) for k in range(n)]
+    M = _np_f4.array(colunas).T
+    candidatos = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            L = float(_np_f4.linalg.norm(pontos[j] - pontos[i]))
+            candidatos.append((L, i, j))
+    candidatos.sort(key=lambda c: (round(c[0], 9), c[1], c[2]))
+    pares: list = []
+    for _L, i, j in candidatos:
+        if len(pares) == alvo:
+            break
+        col = _coluna_equilibrio_f4(i, j, pontos, n_nos).reshape(-1, 1)
+        tentativa = _np_f4.hstack([M, col])
+        if _np_f4.linalg.matrix_rank(tentativa, tol=1e-8) == tentativa.shape[1]:
+            M = tentativa
+            pares.append((i, j))
+    if len(pares) != alvo:
+        raise TrelicaNaoIsostaticaError(
+            f"22.3.1 exige treliça isostática: com {n} estaca(s) seriam "
+            f"necessários {alvo} tirante(s) independentes sobre as linhas que "
+            f"unem os eixos das estacas, e só {len(pares)} saíram "
+            "independentes (arranjo degenerado, por exemplo estacas "
+            "coincidentes). Informe a topologia em `tirantes`.")
+    return tuple(pares)
+
+
+def topologia_tirantes_bloco(posicoes_estacas_cm, d_cm: float,
+                             ap_cm: float = 0.0, bp_cm: float | None = None,
+                             ex_cm: float = 0.0, ey_cm: float = 0.0) -> tuple:
+    """Reticulado de tirantes de um bloco sobre estacas (22.7.2.1 a) e
+    22.3.1, PDF p. 213 e 203), como lista de pares de índices de estaca.
+
+    22.7.2.1 a) manda concentrar as trações "nas linhas sobre as estacas
+    (reticulado definido pelo eixo das estacas)", e 22.3.1 exige que a
+    treliça de bielas e tirantes seja **isostática**. Com uma biela do nó do
+    pilar a cada uma das n estacas, a contagem de 22.3.1 no modo
+    autoequilibrado (m + 6 = 3·(n+1)) fecha com exatamente
+
+        número de tirantes = 2·n - 3
+
+    (1 com duas estacas, 3 com três, 5 com quatro, 7 com cinco, 9 com seis).
+    Existe mais de um reticulado com esse número de barras, e a escolha muda
+    a força de cada tirante: **é decisão de projeto**, e quem tiver a sua
+    passa a lista pronta em ``modelo_bloco_estacas(tirantes=...)``. O
+    critério determinístico desta função, quando ninguém escolhe, é o das
+    ligações **mais curtas primeiro**: percorre os pares de estacas em ordem
+    crescente de distância (desempate pelos índices) e aceita o par sempre
+    que ele acrescenta uma equação de equilíbrio independente, até chegar a
+    2·n - 3. Tirante mais curto é tirante mais eficiente, e a ordem por
+    distância reproduz o perímetro nos arranjos usuais (triângulo, quadrado,
+    hexágono) antes de recorrer a diagonais.
+
+    A independência é medida no posto da matriz de equilíbrio da treliça
+    completa (bielas mais tirantes já aceitos), de modo que o reticulado
+    devolvido é isostático **e** não é de forma crítica: ``resolver`` não
+    encontra matriz singular.
+
+    ``posicoes_estacas_cm``: posições (x, y) dos eixos das estacas, cm, com
+    a origem no eixo do bloco. ``d_cm``: altura útil do bloco, cm.
+    ``ap_cm``/``bp_cm``: dimensões do pilar, cm, para o recuo de Blévot dos
+    nós (mesma convenção de ``modelo_bloco_estacas``). ``ex_cm``/``ey_cm``:
+    excentricidades da força do pilar, cm.
+
+    Devolve uma tupla de pares ``(i, j)`` de índices de estaca, na ordem em
+    que foram escolhidos, pronta para ``modelo_bloco_estacas(tirantes=...)``.
+    """
+    pos = [(float(p[0]), float(p[1])) for p in posicoes_estacas_cm]
+    n = len(pos)
+    if n < 3:
+        raise ValueError(
+            "topologia_tirantes_bloco vale a partir de 3 estacas; com 2 o "
+            "único tirante é o que liga as duas.")
+    d = float(d_cm)
+    if d <= 0.0:
+        raise FaixaNormativaError(
+            f"d = {_num(d)} cm: a altura útil do bloco tem de ser positiva.")
+    ap = float(ap_cm)
+    bp = float(ap_cm if bp_cm is None else bp_cm)
+    if ap < 0.0 or bp < 0.0:
+        raise FaixaNormativaError("ap e bp não podem ser negativos.")
+    pos_mod = [(_recuo_blevot_f4(x, ap), _recuo_blevot_f4(y, bp)) for x, y in pos]
+    return _topologia_isostatica_bloco(
+        pos_mod, (float(ex_cm), float(ey_cm), d))
+
+
+def _reacoes_bloco_com_horizontal(pos_mod, N_kn: float, ex_cm: float,
+                                  ey_cm: float, d_cm: float, Hx_kn: float,
+                                  Hy_kn: float):
+    """Reações de cada estaca com força horizontal no topo do bloco
+    (22.7.3), na hipótese de bloco rígido sobre apoios iguais.
+
+    Vertical: a força horizontal aplicada no nó do pilar, a d acima do nível
+    das estacas, acrescenta o momento H·d ao momento N·e da excentricidade,
+
+        R_i = N/n + (N·ey + Hy·d)·y_i/Sy + (N·ex + Hx·d)·x_i/Sx
+
+    Horizontal: parte igual em cada estaca, mais a parcela de torção que
+    equilibra o momento em torno do eixo vertical, Tz = ex·Hy - ey·Hx,
+    distribuída pelo momento polar J = Sx + Sy dos eixos das estacas:
+
+        Fx_i = -Hx/n - t·y_i      Fy_i = -Hy/n + t·x_i      t = -Tz/J
+
+    Devolve (reações verticais, forças horizontais em x, em y), todas em kN,
+    já com o sinal com que entram como força nodal na treliça.
+    """
+    n = len(pos_mod)
+    xs = _np_f4.array([p[0] for p in pos_mod], dtype=float)
+    ys = _np_f4.array([p[1] for p in pos_mod], dtype=float)
+    Sx = float(_np_f4.sum(xs ** 2))
+    Sy = float(_np_f4.sum(ys ** 2))
+    J = Sx + Sy
+    if J <= 0.0:
+        raise FaixaNormativaError(
+            "Todas as estacas no eixo do bloco: não há como distribuir força "
+            "horizontal nem momento entre elas.")
+    N = float(N_kn)
+    d = float(d_cm)
+    Hx = float(Hx_kn)
+    Hy = float(Hy_kn)
+    My = N * float(ex_cm) + Hx * d
+    Mx = N * float(ey_cm) + Hy * d
+    R = _np_f4.full(n, N / n)
+    if abs(My) > 0.0:
+        if Sx <= 0.0:
+            raise FaixaNormativaError(
+                "Momento em torno de y sem estacas distribuídas em x: não há "
+                "como distribuir a reação.")
+        R = R + My * xs / Sx
+    if abs(Mx) > 0.0:
+        if Sy <= 0.0:
+            raise FaixaNormativaError(
+                "Momento em torno de x sem estacas distribuídas em y: não há "
+                "como distribuir a reação.")
+        R = R + Mx * ys / Sy
+    t = -(float(ex_cm) * Hy - float(ey_cm) * Hx) / J
+    Fx = -Hx / n - t * ys
+    Fy = -Hy / n + t * xs
+    return ([float(v) for v in R], [float(v) for v in Fx],
+            [float(v) for v in Fy])
+
+
+# ---------------------------------------------------------------------------
+# 22.7.3 com 21.2 — Fendilhamento na região de contato pilar-bloco (p. 213)
+# ---------------------------------------------------------------------------
+@_dataclass_f4(frozen=True)
+class ResultadoContatoPilarBloco:
+    """Resultado da verificação da região de contato pilar-bloco (22.7.3 com
+    21.2 e 22.3.2)."""
+
+    Nd_kn: float
+    ap_cm: float
+    bp_cm: float
+    a_bloco_cm: float
+    b_bloco_cm: float
+    T_x_kn: float
+    T_y_kn: float
+    x_tirante_x_cm: float
+    x_tirante_y_cm: float
+    As_x_cm2: float | None
+    As_y_cm2: float | None
+    sigma_contato_kncm2: float
+    no_contato: ResultadoNoBielaTirante
+    ok: bool
+    governante: str
+    memoria: tuple
+
+
+def fendilhamento_pilar_bloco(Nd_kn: float, ap_cm: float, bp_cm: float,
+                              a_bloco_cm: float, b_bloco_cm: float,
+                              fck_mpa: float, fyd_kncm2: float | None = None,
+                              ex_cm: float = 0.0, ey_cm: float = 0.0,
+                              gama_c: float = GAMA_C
+                              ) -> ResultadoContatoPilarBloco:
+    """Fendilhamento e esmagamento na região de contato entre o pilar e o
+    bloco (22.7.3, PDF p. 213, com 21.2 e 22.3.2).
+
+    22.7.3: "Na região de contato entre o pilar e o bloco, os efeitos de
+    fendilhamento devem ser considerados, conforme requerido em 21.2,
+    permitindo-se a adoção de um modelo de bielas e tirantes para a
+    determinação das armaduras." 22.6.4.1 (PDF p. 212) faz a mesma exigência
+    para a sapata, e esta função serve aos dois casos.
+
+    O modelo de bielas e tirantes que a norma autoriza é o mesmo prisma
+    simétrico da zona de ancoragem (``forca_fendilhamento_kn``,
+    ``posicao_fendilhamento_cm``), aplicado em cada direção do bloco, com a
+    dimensão do **pilar** no lugar da placa de ancoragem e a dimensão do
+    **bloco** no lugar da altura da seção:
+
+        Tx = 0,25·Nd·(1 - ap/a')     a' = a,bloco - 2·|ex|
+        Ty = 0,25·Nd·(1 - bp/b')     b' = b,bloco - 2·|ey|
+
+    cada um num tirante transversal a x' = a'/2 (e y' = b'/2) abaixo da face
+    do bloco, onde a difusão da força do pilar se completa. A NBR 6118:2026
+    não escreve essa expressão — 21.2 só exige que o fendilhamento seja
+    considerado e remete à Seção 22; a forma fechada é a do prisma simétrico
+    (Guyon, 1953; Schlaich & Schäfer, 1987), declarada na docstring de
+    ``forca_fendilhamento_kn``.
+
+    Esmagamento: a tensão de contato sigma = Nd/(ap·bp) é verificada por
+    ``verificar_no`` como nó **CCC** (fcd1, 22.3.2), que é o tipo do nó sob o
+    pilar, onde só confluem bielas comprimidas — o mesmo fcd1 que
+    ``blocos_nbr6118.fcd1_no_pilar_kncm2`` já usava no método das bielas.
+
+    ``Nd_kn``: força de cálculo do pilar, kN. ``ap_cm``/``bp_cm``: dimensões
+    da seção do pilar nas direções x e y, cm. ``a_bloco_cm``/``b_bloco_cm``:
+    dimensões do bloco nas mesmas direções, cm. ``ex_cm``/``ey_cm``:
+    excentricidades da força do pilar, cm. Com ``fyd_kncm2``, saem também as
+    áreas de aço dos dois tirantes de fendilhamento (22.3.3).
+
+    Faixa: exige 0 < ap < a' e 0 < bp < b' (o pilar tem de caber no prisma
+    simétrico do bloco); fora disso, ``FaixaNormativaError``.
+    """
+    Nd = float(Nd_kn)
+    if Nd <= 0.0:
+        raise FaixaNormativaError(
+            f"Nd = {_num(Nd)} kN: a força do pilar tem de ser positiva.")
+    ap = float(ap_cm)
+    bp = float(bp_cm)
+    if ap <= 0.0 or bp <= 0.0:
+        raise FaixaNormativaError(
+            f"As dimensões do pilar ({_num(ap)} x {_num(bp)} cm) têm de ser "
+            "positivas.")
+    Tx = forca_fendilhamento_kn(Nd, ap, a_bloco_cm, ex_cm)
+    Ty = forca_fendilhamento_kn(Nd, bp, b_bloco_cm, ey_cm)
+    xt = posicao_fendilhamento_cm(a_bloco_cm, ex_cm)
+    yt = posicao_fendilhamento_cm(b_bloco_cm, ey_cm)
+    As_x = As_tirante_cm2(Tx, fyd_kncm2) if fyd_kncm2 is not None else None
+    As_y = As_tirante_cm2(Ty, fyd_kncm2) if fyd_kncm2 is not None else None
+    sigma = Nd / (ap * bp)
+    no = verificar_no("CCC", sigma, fck_mpa, gama_c)
+    ap_prisma = prisma_simetrico_cm(a_bloco_cm, ex_cm)
+    bp_prisma = prisma_simetrico_cm(b_bloco_cm, ey_cm)
+    memoria = [
+        "22.7.3: na região de contato entre o pilar e o bloco, os efeitos de "
+        "fendilhamento devem ser considerados conforme 21.2, admitindo-se "
+        "modelo de bielas e tirantes para determinar as armaduras.",
+        "Modelo do prisma simétrico em cada direção (a mesma forma fechada de "
+        "``forca_fendilhamento_kn``; a norma não traz a expressão).",
+        f"Direção x: a' = {_num(a_bloco_cm)} - 2*{_num(abs(float(ex_cm)))} = "
+        f"{_num(ap_prisma)} cm; Tx = 0,25*Nd*(1 - ap/a') = 0,25*{_num(Nd)}*"
+        f"(1 - {_num(ap)}/{_num(ap_prisma)}) = {_num(Tx)} kN, a {_num(xt)} cm "
+        "da face de contato.",
+        f"Direção y: b' = {_num(b_bloco_cm)} - 2*{_num(abs(float(ey_cm)))} = "
+        f"{_num(bp_prisma)} cm; Ty = 0,25*Nd*(1 - bp/b') = 0,25*{_num(Nd)}*"
+        f"(1 - {_num(bp)}/{_num(bp_prisma)}) = {_num(Ty)} kN, a {_num(yt)} cm "
+        "da face de contato.",
+        f"Esmagamento: sigma = Nd/(ap*bp) = {_num(Nd)}/({_num(ap)}*{_num(bp)}) "
+        f"= {_num(sigma)} kN/cm2, no nó CCC sob o pilar.",
+    ]
+    if As_x is not None:
+        memoria.append(
+            f"22.3.3: As,x = Tx/fyd = {_num(Tx)}/{_num(fyd_kncm2)} = "
+            f"{_num(As_x)} cm2; As,y = Ty/fyd = {_num(Ty)}/{_num(fyd_kncm2)} = "
+            f"{_num(As_y)} cm2, em malha em torno da seção do tirante.")
+    memoria.extend(no.memoria)
+    return ResultadoContatoPilarBloco(
+        Nd_kn=Nd, ap_cm=ap, bp_cm=bp, a_bloco_cm=float(a_bloco_cm),
+        b_bloco_cm=float(b_bloco_cm), T_x_kn=Tx, T_y_kn=Ty,
+        x_tirante_x_cm=xt, x_tirante_y_cm=yt, As_x_cm2=As_x, As_y_cm2=As_y,
+        sigma_contato_kncm2=sigma, no_contato=no, ok=no.ok,
+        governante="22.7.3", memoria=tuple(memoria))

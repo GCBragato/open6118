@@ -452,14 +452,17 @@ def test_bloco_reacoes_informadas_e_erros():
 
 
 def test_bloco_5_estacas_exige_topologia_isostatica():
-    # sem tirantes informados, o perímetro de 5 estacas não fecha a
-    # isostaticidade de 22.3.1 e o modelo é recusado com a contagem
+    # F4 (fechamento de 22.7.3): sem tirantes informados, o reticulado passou
+    # a ser escolhido por topologia_tirantes_bloco e já fecha a isostaticidade
+    # de 22.3.1 (antes do F4 este caso levantava TrelicaNaoIsostaticaError,
+    # porque só havia perímetro). A contagem é 5 bielas + 2*5-3 = 7 tirantes
+    # + 6 graus de corpo rígido - 3*6 nós = 0.
     pos = [(100.0, 0.0), (0.0, 100.0), (-100.0, 0.0), (0.0, -100.0), (0.0, 0.0)]
     t = bt.modelo_bloco_estacas(pos, 2000.0, 100.0)
-    with pytest.raises(bt.TrelicaNaoIsostaticaError) as exc:
-        t.resolver()
-    assert "isostática" in str(exc.value)
-    # com a topologia informada pelo projetista, a contagem fecha
+    assert t.grau_estatico() == 0
+    assert sum(1 for b in t.barras if b[0] == "tirante") == 7
+    t.resolver()
+    # com a topologia informada pelo projetista, a contagem também fecha
     t2 = bt.modelo_bloco_estacas(
         pos, 2000.0, 100.0,
         tirantes=[(0, 1), (1, 2), (2, 3), (3, 0), (4, 0), (4, 1), (4, 2)])

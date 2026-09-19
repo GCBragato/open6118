@@ -15175,26 +15175,40 @@
    ],
    "trecho": "especiais",
    "implementacao": {
-    "pacote": "P36",
+    "pacote": "P36 + F4",
     "data": "19/09/2026",
     "funcoes": [
-     "consolos_nbr6118.braco_alavanca_consolo_cm",
-     "consolos_nbr6118.Rsd_tirante_consolo_kn",
-     "consolos_nbr6118.dimensionar_consolo"
+     "consolos_nbr6118.braco_alavanca_adotado_cm",
+     "consolos_nbr6118.inclinacao_biela_consolo",
+     "consolos_nbr6118.verificar_biela_consolo",
+     "consolos_nbr6118.ResultadoBielaConsolo",
+     "consolos_nbr6118.modelo_biela_tirante_consolo",
+     "consolos_nbr6118.dimensionar_consolo (alterada: parâmetros z_cm e b0_cm, campos inclinacao_biela e biela, ok/governante passaram a refletir 22.3.1 e 22.5.1.2 c)"
     ],
     "testes": [
-     "test_braco_alavanca_consolo",
-     "test_rsd_tirante_consolo_sem_forca_horizontal",
-     "test_rsd_tirante_consolo_com_forca_horizontal_soma_direto",
-     "test_dimensionar_consolo_exemplo_a_mao_modelo_biela_tirante",
-     "test_dimensionar_consolo_as_min_governa_quando_tirante_e_pequeno",
-     "test_dimensionar_consolo_gama_n_explicito_sobrescreve_padrao",
-     "test_dimensionar_consolo_expoe_fcd1_fcd3_como_referencia",
-     "test_dimensionar_consolo_a_maior_que_d_levanta_erro_nao_e_consolo",
-     "test_dimensionar_consolo_modelo_atrito_nao_implementado",
-     "test_dimensionar_consolo_modelo_desconhecido_levanta_value_error"
+     "tests/test_f4_fechamento.py::test_braco_alavanca_adotado_padrao_e_informado",
+     "tests/test_f4_fechamento.py::test_braco_alavanca_adotado_fora_da_faixa_levanta_erro",
+     "tests/test_f4_fechamento.py::test_inclinacao_biela_consolo_nos_dois_lados_do_limite_superior",
+     "tests/test_f4_fechamento.py::test_inclinacao_biela_consolo_nos_dois_lados_do_limite_inferior",
+     "tests/test_f4_fechamento.py::test_inclinacao_biela_consolo_faixa_interior_e_z_informado",
+     "tests/test_f4_fechamento.py::test_verificar_biela_consolo_exemplo_a_mao",
+     "tests/test_f4_fechamento.py::test_verificar_biela_consolo_tipo_ccc_usa_fcd1",
+     "tests/test_f4_fechamento.py::test_verificar_biela_consolo_tipo_desconhecido_levanta_value_error",
+     "tests/test_f4_fechamento.py::test_verificar_biela_consolo_b0_limita_a_largura_transversal",
+     "tests/test_f4_fechamento.py::test_verificar_biela_consolo_reprova_com_placa_pequena",
+     "tests/test_f4_fechamento.py::test_verificar_biela_consolo_h_menor_ou_igual_a_d_levanta_erro",
+     "tests/test_f4_fechamento.py::test_verificar_biela_consolo_inclinacao_fora_da_faixa_reprova",
+     "tests/test_f4_fechamento.py::test_modelo_biela_tirante_consolo_reproduz_a_conta_de_braco_de_alavanca",
+     "tests/test_f4_fechamento.py::test_modelo_biela_tirante_consolo_sem_forca_horizontal",
+     "tests/test_f4_fechamento.py::test_modelo_biela_tirante_consolo_com_z_informado",
+     "tests/test_f4_fechamento.py::test_dimensionar_consolo_com_a0_verifica_a_biela_e_leva_ao_ok",
+     "tests/test_f4_fechamento.py::test_dimensionar_consolo_com_a0_pequeno_reprova_pela_biela",
+     "tests/test_f4_fechamento.py::test_dimensionar_consolo_sem_a0_nao_verifica_a_biela",
+     "tests/test_f4_fechamento.py::test_dimensionar_consolo_muito_curto_reprova_pela_inclinacao_22_3_1",
+     "tests/test_f4_fechamento.py::test_dimensionar_consolo_z_informado_substitui_a_aproximacao",
+     "tests/test_f4_fechamento.py::test_dimensionar_consolo_modelo_atrito_explica_a_ausencia_de_coeficiente"
     ],
-    "observacao": "22.5.1.3 e descritivo na norma (exige so equilibrio geral e apoio experimental; sem formula fechada -- por isso 'conferido_na_imagem: false' no mapa). Implementado: modelo classico de biela-tirante (z=0,85d adotado e documentado, Rsd=Fd*a/z+Hd) com As do tirante, exposto com o exemplo a mao do aceite. fcd1/fcd3 (22.3.2) sao expostos no resultado so como referencia. Falta (por isso 'parcial'): verificacao automatica da tensao de compressao na biela contra fcd1/fcd3, porque isso exige a largura efetiva do no, que depende da geometria do apoio (placa a0) e nao tem formula fechada no texto normativo -- quem tiver essa geometria chama bielas_tirantes_nbr6118.verificar_no com o sigma calculado a parte. modelo='atrito' (atrito-cisalhamento) nao implementado: 22.5.1.3 cita o metodo so descritivamente, sem coeficientes de atrito -- levanta NotImplementedError em vez de inventar constante sem fonte normativa."
+    "observacao": "Fechados os dois buracos que o P36 apontou como \"falta\". (1) Verificação automática da compressão na biela: a imagem da p. 207 (22.5.1.2 c) dá justamente a regra de largura efetiva do nó que o P36 disse não existir — \"pode ser considerada a abertura de carga sob a placa de apoio [...] limitada a uma inclinação máxima de 1:2 em relação à vertical, nos pontos extremos A e C (ou E) da área de apoio ampliada\". Com ela, verificar_biela_consolo calcula Rcd = Fd·L/z, a largura do nó a0 + d' (d' = h − d), h,biela = (a0 + d')·sen(theta) e compara sigma a fcd3 (nó CCT, padrão) ou fcd1 (tipo='CCC'); dimensionar_consolo faz isso sozinho quando a0_cm é informado, e o resultado entra em ok. (2) Equilíbrio global \"inclusive no nó de ligação com o pilar\" (22.5.1.2): modelo_biela_tirante_consolo monta a treliça da Figura 22.4 como TrelicaBT (22.3.1, P48), isostática e conferida pelo próprio cálculo de barras, e reproduz exatamente Rsd = Fd·a/z + Hd e Rcd = −Fd·L/z. (3) Acrescentada a conferência da inclinação da biela contra 22.3.1 (0,57 <= tan(theta) <= 2), que com z = 0,85·d cobre o consolo curto inteiro e reprova a/d < 0,425. Continua PARCIAL só por modelo='atrito': varri a norma inteira — \"atrito-cisalhamento\" aparece uma única vez, em 22.5.1.3, sem coeficiente de atrito, faixa de rugosidade nem expressão; as demais ocorrências de \"atrito\" são perda de protensão (9.6.3.3.2.2). Sem fonte normativa para a constante, mantive NotImplementedError e registrei a evidência no comentário de abertura do bloco F4 e na docstring."
    }
   },
   {
@@ -15371,16 +15385,22 @@
    ],
    "trecho": "especiais",
    "implementacao": {
-    "pacote": "P36",
+    "pacote": "P36 + F4",
     "data": "19/09/2026",
     "funcoes": [
-     "consolos_nbr6118.dimensionar_dente_gerber"
+     "consolos_nbr6118.dimensionar_dente_gerber (alterada: parâmetros z_cm, a0_cm e b0_cm; ok herdado do consolo; memória cita 22.5.2.2 a), b) e c))",
+     "consolos_nbr6118.verificar_biela_consolo",
+     "consolos_nbr6118.inclinacao_biela_consolo",
+     "consolos_nbr6118.braco_alavanca_adotado_cm"
     ],
     "testes": [
-     "test_dimensionar_dente_gerber_reaproveita_consolo_e_soma_suspensao",
-     "test_dimensionar_dente_gerber_a_maior_que_d_levanta_erro"
+     "tests/test_f4_fechamento.py::test_dente_gerber_com_a0_verifica_a_biela_e_soma_a_suspensao",
+     "tests/test_f4_fechamento.py::test_dente_gerber_biela_mais_inclinada_quando_a_suspensao_esta_perto",
+     "tests/test_f4_fechamento.py::test_dente_gerber_inclinacao_fora_de_22_3_1_reprova",
+     "tests/test_f4_fechamento.py::test_dente_gerber_z_informado_muda_o_tirante_e_nao_a_suspensao",
+     "tests/test_f4_fechamento.py::test_dente_gerber_memoria_cita_as_tres_diferencas_de_22_5_2_2"
     ],
-    "observacao": "22.5.2.3 tambem e descritivo ('mesmos principios do consolo, com as correcoes de 22.5.2.2'). Reaproveita dimensionar_consolo (mesma aproximacao z=0,85d) e desliga a suspensao de 22.5.1.4.4 (Fd_indireta_kn=0), somando a suspensao propria do dente Gerber. Falta, pela mesma razao do item 22.5.1.3: nao modela a biela mais inclinada do dente Gerber (22.5.2.2 a) como uma geometria separada -- usa a mesma aproximacao de braco de alavanca do consolo, por nao haver formula fechada na norma para a inclinacao especifica do dente."
+    "observacao": "A geometria da biela do dente passou a ser parametrizável e conferida: z_cm substitui a aproximação 0,85·d, a docstring documenta (o que faltava) que no dente Gerber a_cm é medido até a linha da armadura de suspensão e não até a face de um pilar — é essa a \"correção necessária\" de 22.5.2.3 para a biela \"usualmente mais inclinada\" de 22.5.2.2 a) —, a inclinação é conferida contra 22.3.1 e, com a0_cm, a compressão na biela contra 22.3.2. A memória de cálculo agora percorre as três diferenças de 22.5.2.2: a) biela mais inclinada (com o tan(theta) do caso), b) a armadura principal tem de penetrar na viga procurando ancoragem nas bielas de cisalhamento (exigência de detalhamento, comprimento pela Seção 9), c) suspensão para no mínimo Fd (22.5.2.4.2, já existia). Continua PARCIAL na treliça própria do dente: li a imagem da p. 210 e 22.5.2.3 é literalmente \"os mesmos princípios estabelecidos para os consolos, desde que sejam feitas as correções necessárias\", e 22.5.2.2 a) descreve a biela mais inclinada sem dar inclinação, posição de nó nem geometria. Tentei montar a treliça da Figura 22.6 e o equilíbrio do nó do aparelho de apoio fica indeterminado sem arbitrar o tirante do soffit e a posição do nó da suspensão — arbítrio sem fonte normativa, que a biblioteca não faz. Registrado assim na docstring, na primeira pessoa da biblioteca."
    }
   },
   {
@@ -15820,22 +15840,38 @@
    "fora_do_escopo_ate_18_09": "O modelo 3D é análise estrutural. O método das bielas (Blévot) é completado no P37.",
    "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras).",
    "implementacao": {
-    "pacote": "P48",
+    "pacote": "P48 + F4",
     "data": "19/09/2026",
     "funcoes": [
-     "modelo_bloco_estacas",
-     "_reacoes_lineares",
-     "_ordem_perimetro"
+     "bielas_tirantes_nbr6118.topologia_tirantes_bloco",
+     "bielas_tirantes_nbr6118._topologia_isostatica_bloco",
+     "bielas_tirantes_nbr6118._coluna_equilibrio_f4",
+     "bielas_tirantes_nbr6118._recuo_blevot_f4",
+     "bielas_tirantes_nbr6118._reacoes_bloco_com_horizontal",
+     "bielas_tirantes_nbr6118.largura_faixa_tirante_bloco_cm",
+     "bielas_tirantes_nbr6118.fendilhamento_pilar_bloco",
+     "bielas_tirantes_nbr6118.ResultadoContatoPilarBloco",
+     "bielas_tirantes_nbr6118.modelo_bloco_estacas (alterada: topologia automática para n >= 5, parâmetros Hx_kn, Hy_kn e avisar)"
     ],
     "testes": [
-     "test_bloco_2_estacas_bate_com_metodo_das_bielas",
-     "test_bloco_2_estacas_sem_recuo_do_pilar",
-     "test_bloco_3_estacas_trelica_espacial",
-     "test_bloco_4_estacas_tirantes_do_perimetro",
-     "test_bloco_reacoes_informadas_e_erros",
-     "test_bloco_5_estacas_exige_topologia_isostatica"
+     "tests/test_f4_fechamento.py::test_largura_faixa_tirante_bloco",
+     "tests/test_f4_fechamento.py::test_topologia_tirantes_bloco_tem_2n_menos_3_tirantes",
+     "tests/test_f4_fechamento.py::test_topologia_tirantes_bloco_prefere_as_ligacoes_mais_curtas",
+     "tests/test_f4_fechamento.py::test_topologia_tirantes_bloco_erros",
+     "tests/test_f4_fechamento.py::test_bloco_5_estacas_topologia_automatica_resolve",
+     "tests/test_f4_fechamento.py::test_bloco_6_estacas_hexagono_tirantes_do_perimetro",
+     "tests/test_f4_fechamento.py::test_bloco_forca_horizontal_avisa_interacao_solo_estrutura",
+     "tests/test_f4_fechamento.py::test_bloco_2_estacas_com_forca_horizontal",
+     "tests/test_f4_fechamento.py::test_bloco_forca_horizontal_com_excentricidade_cruzada_fica_autoequilibrado",
+     "tests/test_f4_fechamento.py::test_bloco_sem_forca_horizontal_nao_muda_nada",
+     "tests/test_f4_fechamento.py::test_fendilhamento_pilar_bloco_exemplo_a_mao",
+     "tests/test_f4_fechamento.py::test_fendilhamento_pilar_bloco_sem_fyd_nao_dimensiona",
+     "tests/test_f4_fechamento.py::test_fendilhamento_pilar_bloco_excentricidade_reduz_o_prisma",
+     "tests/test_f4_fechamento.py::test_fendilhamento_pilar_bloco_reprova_o_esmagamento",
+     "tests/test_f4_fechamento.py::test_fendilhamento_pilar_bloco_erros",
+     "tests/test_p48_bielas_tirantes_trelicas.py::test_bloco_5_estacas_exige_topologia_isostatica (atualizado)"
     ],
-    "observacao": "O modelo biela-tirante tridimensional está implementado e vale para qualquer arranjo de estacas, com a reação de cada estaca (informada, ou pela distribuição linear de bloco rígido). Falta o que o texto do pacote pedia como topologia automática: há topologia padrão de tirantes só para 2 estacas (treliça plana, tirante único), 3 (perímetro) e 4 (perímetro mais uma diagonal, necessária para fechar a isostaticidade e nula sob carga centrada). Para 5 e 6 estacas o projetista tem de informar a lista `tirantes`, e a contagem de isostaticidade de 22.3.1 recusa topologia que não feche — o caso de 5 estacas (4 + central) está testado nos dois caminhos. Também ficam fora a análise 3D linear/não linear de sólido e a interação solo-estrutura que 22.7.3 pede quando há forças horizontais significativas ou forte assimetria; força horizontal pode ser acrescentada à TrelicaBT devolvida, mas o construtor só aplica Nd. Aceite atendido: com 2 estacas o tirante sai Nd*(2e - ap)/(8d), idêntico ao método das bielas de blocos_nbr6118 (As_principal_2_estacas = 1,15*T/fyd)."
+    "observacao": "Fechadas as três exigências de 22.7.3 que dependem só de geometria. (1) Topologia automática, que o P48 deixou como \"falta\": topologia_tirantes_bloco monta o reticulado isostático de 2n−3 tirantes para qualquer número de estacas, pelo critério determinístico das ligações mais curtas primeiro, aceitando o par só quando ele acrescenta equação de equilíbrio independente (posto da matriz de equilíbrio da treliça completa) — garante isostaticidade e ausência de forma crítica. modelo_bloco_estacas usa isso para n >= 5 e mantém exatamente a topologia antiga para n <= 4, para não mexer nos resultados já aceitos (inclusive modelo_sapata). Conferido: 5 estacas (4 + central) dá 7 tirantes, com os 4 radiais absorvendo o empuxo inteiro (400 kN cada) e o perímetro nulo; hexágono de 6 dá 9, com os 6 lados a 200 kN e as 3 diagonais nulas. (2) Força horizontal (22.7.3, \"sempre que houver forças horizontais significativas ou forte assimetria\"): Hx_kn e Hy_kn entram no nó do pilar, o momento H·d soma-se ao de N·e na distribuição vertical e a reação horizontal é dividida por igual com a parcela polar que equilibra a torção ex·Hy − ey·Hx; conferido que a treliça sai autoequilibrada em força e momento, inclusive com excentricidade cruzada. Sai AvisoNBR6118 dizendo que essa é a hipótese de bloco rígido sobre apoios iguais e não a interação solo-estrutura, que é dado de projeto (avisar=False silencia; reacoes_estacas_kn aceita as reações da análise de interação). (3) Fendilhamento pilar-bloco (21.2, via 22.7.3): fendilhamento_pilar_bloco aplica o prisma simétrico já existente em cada direção (Tx = 0,25·Nd·(1 − ap/a'), a' = a,bloco − 2|ex|) e verifica o esmagamento no nó CCC contra fcd1; serve também à sapata (22.6.4.1). (4) largura_faixa_tirante_bloco_cm traz a faixa de 1,2·phi de 22.7.2.1 a), que 22.7.3 manda contemplar. Continua PARCIAL só pela análise tridimensional linear ou não linear de sólido, que 22.7.3 também aceita: está fora do escopo do projeto pela seção 7 e pela decisão 1 do plano (análise em barras; sem elementos finitos de placa e de sólido)."
    }
   },
   {
