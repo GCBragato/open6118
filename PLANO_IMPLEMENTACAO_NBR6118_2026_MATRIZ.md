@@ -349,9 +349,9 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `15.8.3.3.5-pilar-padrao-flexao-obliqua` | 15.8.3.3.5 | 131 | Método do pilar-padrão para flexão composta oblíqua (duas direções simultâneas) | implementado | alta | G | P25 |
 | `15.8.4-fluencia-ecc` | 15.8.4 | 131 | Excentricidade adicional de fluência ecc para pilares esbeltos (λ>90) | implementado | média | M | P25 |
 | `15.9.1-pilar-parede-generalidades` | 15.9.1 | 131 | Condição para pilar-parede ser tratado como elemento linear | não computável | média | P |  |
-| `15.9.2-esbeltez-lamina-pilar-parede` | 15.9.2 | 132 | Esbeltez λi de cada lâmina do pilar-parede e dispensa dos efeitos localizados | ausente | média | P | P29 |
-| `15.9.2-comprimento-equivalente-lamina` | 15.9.2 | 132 | Comprimento equivalente ℓe de lâmina de pilar-parede por vinculação (Figura 15.4) | ausente | média | M | P29 |
-| `15.9.3-faixas-verticais-pilar-parede` | 15.9.3 | 133 | Decomposição do pilar-parede em faixas verticais para efeito localizado de 2ª ordem | ausente | média | M | P29 |
+| `15.9.2-esbeltez-lamina-pilar-parede` | 15.9.2 | 132 | Esbeltez λi de cada lâmina do pilar-parede e dispensa dos efeitos localizados | implementado | média | P | P29 |
+| `15.9.2-comprimento-equivalente-lamina` | 15.9.2 | 132 | Comprimento equivalente ℓe de lâmina de pilar-parede por vinculação (Figura 15.4) | implementado | média | M | P29 |
+| `15.9.3-faixas-verticais-pilar-parede` | 15.9.3 | 133 | Decomposição do pilar-parede em faixas verticais para efeito localizado de 2ª ordem | implementado | média | M | P29 |
 | `15.10-instabilidade-lateral-vigas` | 15.10 | 134 | Verificação aproximada de instabilidade lateral (flambagem lateral) de vigas | implementado | baixa | P | P12 |
 
 ## Seção 16
@@ -500,7 +500,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `18.4.3-espacamento-max-estribo-pilar-phi-reduzido` | 18.4.3 | 174 | Limite adicional de espaçamento quando φt < φℓ/4 (fórmula com fyk) | implementado | média | P | P24 |
 | `18.4.3-nota-dutilidade-concreto-alta-resistencia` | 18.4.3 (NOTA) | 174 | Recomendação de redução de 50% no espaçamento de estribos para concretos C55 a C90 (dutilidade) | implementado | média | P | P24 |
 | `18.5-pilar-parede-esforcos-transversais-remissao-secao15` | 18.5 | 174 | Pilar-parede: exigência adicional de considerar 1a e 2a ordem transversal (Seção 15), inclusive 2a ordem localizada | não computável | média | P |  |
-| `18.5-armadura-transversal-pilar-parede-25pct` | 18.5 | 174 | Armadura transversal mínima de pilar-parede (25% da longitudinal por metro de face, se flexão de placa não for calculada) | ausente | média | P | P29 |
+| `18.5-armadura-transversal-pilar-parede-25pct` | 18.5 | 174 | Armadura transversal mínima de pilar-parede (25% da longitudinal por metro de face, se flexão de placa não for calculada) | implementado | média | P | P29 |
 | `18.6.1.1-tracado-qualitativo` | 18.6.1.1 | 175 | Traçado admissível dos cabos de protensão | não computável | baixa | P |  |
 | `18.6.1.1-FSd-apoio-intermediario` | 18.6.1.1 | 175 | Força de tração da armadura em apoios intermediários | implementado | média | P | P22 |
 | `18.6.1.2-raio-minimo-curvatura` | 18.6.1.2 | 175 | Raio mínimo de curvatura dos cabos de protensão | ausente | média | P | P31 |

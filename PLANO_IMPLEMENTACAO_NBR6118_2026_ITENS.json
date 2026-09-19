@@ -230,7 +230,8 @@
    "nome": "Pilar-parede",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/pilares_parede_nbr6118.py"
+   "modulo": "dimensionamento/pilares_parede_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P30",
@@ -8009,7 +8010,7 @@
    "pagina_pdf": 132,
    "titulo": "Esbeltez λi de cada lâmina do pilar-parede e dispensa dos efeitos localizados",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P29",
@@ -8021,7 +8022,33 @@
     "15.9.2-comprimento-equivalente-lamina"
    ],
    "teste_sugerido": "Caso limite λi=35 (aceito, dispensa); λi=35,01 (recusado); caso engastado+β=1 -> λi*0,85 deve reduzir o valor em exatos 15%.",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P29",
+    "data": "19/09/2026",
+    "funcoes": [
+     "esbeltez_lamina",
+     "dispensa_efeito_localizado",
+     "DispensaLocalizadoPilarParede",
+     "LAMBDA_LIMITE_LAMINA"
+    ],
+    "testes": [
+     "test_esbeltez_lamina_formula",
+     "test_esbeltez_lamina_fator_085_reduz_15_por_cento",
+     "test_esbeltez_lamina_fator_085_nao_aplica_beta_maior_que_1",
+     "test_esbeltez_lamina_h_nao_positivo",
+     "test_dispensa_lambda_igual_35_aceito",
+     "test_dispensa_lambda_35_01_recusado",
+     "test_dispensa_todas_laminas_devem_atender",
+     "test_dispensa_exige_fixacao_as_lajes",
+     "test_dispensa_lista_vazia_erro",
+     "test_dispensa_fixacao_por_lamina_uma_nao_fixada_recusa",
+     "test_dispensa_fixacao_por_lamina_todas_fixadas_aceita",
+     "test_dispensa_fixacao_por_lamina_tamanho_diferente_erro",
+     "test_esbeltez_e_dispensa_encadeadas_engastado_beta_1"
+    ],
+    "observacao": "Corrigida a citacao de pagina (156->174, nao se aplica a este item que ja citava p.132 corretamente) e estendido fixado_as_lajes para aceitar bool ou sequencia de bool por lamina, cobrindo a condicao a) por lamina do texto normativo."
+   }
   },
   {
    "id": "15.9.2-comprimento-equivalente-lamina",
@@ -8029,7 +8056,7 @@
    "pagina_pdf": 132,
    "titulo": "Comprimento equivalente ℓe de lâmina de pilar-parede por vinculação (Figura 15.4)",
    "tipo": "tabela",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P29",
@@ -8039,7 +8066,28 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Continuidade nas transições: caso C em β=1 deve dar ℓe=ℓ/2 pelos dois ramos (β<=1 e β>1 coincidem em β=1); caso D em β=7,0 deve dar ℓe=2b tanto pelo ramo direto quanto pela adoção do caso B (se estiverem calibrados para coincidir, conferir; senão documentar a descontinuidade).",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P29",
+    "data": "19/09/2026",
+    "funcoes": [
+     "le_lamina_cm"
+    ],
+    "testes": [
+     "test_le_lamina_caso_a",
+     "test_le_lamina_caso_b_beta_1",
+     "test_le_lamina_caso_b_piso_03l",
+     "test_le_lamina_caso_c_beta_1_continuidade",
+     "test_le_lamina_caso_c_beta_menor_que_1",
+     "test_le_lamina_caso_c_beta_maior_que_1",
+     "test_le_lamina_caso_d_beta_igual_7",
+     "test_le_lamina_caso_d_beta_menor_que_7_adota_caso_b",
+     "test_le_lamina_casos_b_e_d_nao_coincidem_em_beta_7",
+     "test_le_lamina_vinculacao_invalida",
+     "test_le_lamina_dimensoes_nao_positivas"
+    ],
+    "observacao": "Nenhum achado da verificacao atingiu este item; sem alteracoes nesta rodada."
+   }
   },
   {
    "id": "15.9.3-faixas-verticais-pilar-parede",
@@ -8047,7 +8095,7 @@
    "pagina_pdf": 133,
    "titulo": "Decomposição do pilar-parede em faixas verticais para efeito localizado de 2ª ordem",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P29",
@@ -8061,7 +8109,36 @@
     "15.8.3.3.3-md-tot-rigidez-kappa-aprox"
    ],
    "teste_sugerido": "Caso de pilar-parede sob carga centrada (M1xd=0): nd(x) deve ser constante, e Ni deve ser igual em todas as faixas (Ni=Nd*ai/largura_total).",
-   "trecho": "estab"
+   "trecho": "estab",
+   "implementacao": {
+    "pacote": "P29",
+    "data": "19/09/2026",
+    "funcoes": [
+     "largura_faixa_cm",
+     "nd_x_kn_por_cm",
+     "decompor_em_faixas",
+     "Faixa",
+     "LAMBDA_LIMITE_FAIXAS"
+    ],
+    "testes": [
+     "test_largura_faixa_regra_3h",
+     "test_largura_faixa_teto_100cm",
+     "test_largura_faixa_h_nao_positivo",
+     "test_nd_x_recupera_Nd_e_M1xd_por_integracao",
+     "test_nd_x_constante_com_M1xd_zero",
+     "test_decompor_em_faixas_soma_Ni_igual_Nd",
+     "test_decompor_em_faixas_carga_centrada_Ni_igual_em_todas",
+     "test_decompor_em_faixas_lambda_igual_90_aceito",
+     "test_decompor_em_faixas_lambda_90_01_recusado",
+     "test_decompor_em_faixas_sem_lambda_i_nao_verifica",
+     "test_decompor_em_faixas_largura_total_igual_b",
+     "test_decompor_em_faixas_myid_m1yd_vezes_ai",
+     "test_decompor_em_faixas_myid_piso_M1d_min",
+     "test_decompor_em_faixas_b_nao_positivo",
+     "test_faixa_encadeada_com_pilares_nbr6118"
+    ],
+    "observacao": "Adicionada a checagem da faixa de validade lambda_i < 90 por lamina (parametro opcional lambda_i_laminas, retrocompativel). Quem chama sem informar lambda_i_laminas continua sem essa verificacao automatica -- documentado no docstring como responsabilidade de quem chama nesse caso."
+   }
   },
   {
    "id": "15.10-instabilidade-lateral-vigas",
@@ -11606,7 +11683,7 @@
    "pagina_pdf": 174,
    "titulo": "Armadura transversal mínima de pilar-parede (25% da longitudinal por metro de face, se flexão de placa não for calculada)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P29",
@@ -11618,7 +11695,20 @@
     "18.4.1-introducao-pilar-x-pilar-parede"
    ],
    "teste_sugerido": "As,longitudinal=10cm2/m na maior face -> As,transversal_min=2,5cm2/m.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P29",
+    "data": "19/09/2026",
+    "funcoes": [
+     "As_transversal_pilar_parede_cm2_por_m"
+    ],
+    "testes": [
+     "test_As_transversal_25_por_cento",
+     "test_As_transversal_proporcional",
+     "test_As_transversal_negativo_erro"
+    ],
+    "observacao": "Corrigida a citacao de pagina de 'PDF p. 156' para 'PDF p. 174' nas 4 ocorrencias do modulo (docstring do modulo, comentario de secao, docstring da funcao e linha 'Fonte') e nas 2 dos testes. Conteudo tecnico da regra (25% da armadura longitudinal da maior face) ja estava correto e nao mudou."
+   }
   },
   {
    "id": "18.6.1.1-tracado-qualitativo",
