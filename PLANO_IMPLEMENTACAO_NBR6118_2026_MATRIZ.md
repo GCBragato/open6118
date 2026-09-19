@@ -596,7 +596,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `21.2.1-proporcao-lados-ac0` | 21.2.1 | 197 | Proporção máxima entre lados de área reduzida retangular | implementado | média | P | P34 |
 | `21.2.1-ressalvas-qualitativas` | 21.2.1 | 198 | Ressalvas de aplicação da fórmula de esmagamento em área reduzida | não computável | média | P |  |
 | `21.2.2-articulacao-concreto` | 21.2.2 | 198 | Geometria e inclinação limite de articulação de concreto (núcleo reduzido) | implementado | baixa | M | P34 |
-| `21.2.3-intro-protensao-modelo-3d` | 21.2.3 | 199 | Modelagem da região de introdução da protensão | ausente | média | G | P48 |
+| `21.2.3-intro-protensao-modelo-3d` | 21.2.3 | 199 | Modelagem da região de introdução da protensão | implementado | média | G | P48 |
 | `21.2.4-cargas-superficie-chumbadores` | 21.2.4 | 199 | Verificação de cargas de insertos e chumbadores na superfície do concreto | não computável | baixa | P |  |
 | `21.3.1-generalidades-furos-aberturas` | 21.3.1 | 200 | Generalidades sobre furos e aberturas em elementos estruturais | não computável | alta | P |  |
 | `21.3.2-classificacao-abertura-viga-parede` | 21.3.2 | 200 | Classificação de abertura em parede/viga-parede como normal ou prejudicial | não computável | média | M |  |
@@ -616,9 +616,9 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 
 | Id | Item | Pág. | O que é | Situação | Prior. | Compl. | Pacote |
 |---|---|---|---|---|---|---|---|
-| `22.2-limite-regiao-bd` | 22.2 | 202 | Limite convencional entre regiões B e D | ausente | média | P | P48 |
+| `22.2-limite-regiao-bd` | 22.2 | 202 | Limite convencional entre regiões B e D | implementado | média | P | P48 |
 | `22.2-gamma-n-consolo-gerber` | 22.2 | 203 | Coeficiente adicional γn para consolos e dentes Gerber | implementado | alta | P | P10 |
-| `22.3.1-procedimento-bielas-tirantes` | 22.3.1 | 203 | Procedimento geral do método de bielas e tirantes | ausente | média | G | P48 |
+| `22.3.1-procedimento-bielas-tirantes` | 22.3.1 | 203 | Procedimento geral do método de bielas e tirantes | implementado | média | G | P48 |
 | `22.3.1-limite-inclinacao-biela` | 22.3.1 | 204 | Faixa de inclinação admissível das bielas inclinadas | implementado | média | P | P35 |
 | `22.3.2-fcd1` | 22.3.2 | 204 | Resistência de cálculo da biela/nó CCC (fcd1) | implementado | alta | P |  |
 | `22.3.2-fcd2` | 22.3.2 | 204 | Resistência de cálculo da biela/nó CTT ou TTT (fcd2) | implementado | média | P | P35 |
@@ -626,7 +626,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `22.3.3-as-tirante` | 22.3.3 | 204 | Área de aço de um tirante genérico do modelo biela-tirante | implementado | alta | P | P35 |
 | `22.4.1-classificacao-viga-parede` | 22.4.1 | 204 | Classificação de viga como viga-parede | implementado | média | P | P11 |
 | `22.4.2-comportamento-viga-parede` | 22.4.2 | 204 | Comportamento estrutural das vigas-parede | não computável | média | P |  |
-| `22.4.3-modelo-calculo-viga-parede` | 22.4.3 | 205 | Modelos de cálculo para viga-parede no ELU | ausente | média | G | P48 |
+| `22.4.3-modelo-calculo-viga-parede` | 22.4.3 | 205 | Modelos de cálculo para viga-parede no ELU | implementado | média | G | P48 |
 | `22.4.4.1-as-viga-parede-continua` | 22.4.4.1 | 205 | Distribuição da armadura negativa em viga-parede contínua (3 faixas) | implementado | média | M | P35 |
 | `22.4.4.1-armadura-horizontal-minima-viga-parede` | 22.4.4.1 | 205 | Armadura horizontal mínima de viga-parede | implementado | média | P | P35 |
 | `22.4.4.2-ancoragem-flexao-positiva-viga-parede` | 22.4.4.2 | 205 | Ancoragem da armadura de flexão positiva nos apoios de viga-parede | não computável | média | P |  |
@@ -651,7 +651,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `22.6.1-hipotese-distribuicao-plana` | 22.6.1 | 211 | Validade da hipótese de distribuição plana de tensões no contato sapata-solo | implementado | média | P | P37 |
 | `22.6.2.2-cisalhamento-compressao-diagonal-sapata-rigida` | 22.6.2.2 | 212 | Verificação ao cisalhamento de sapata rígida por compressão diagonal (superfície C) | implementado | alta | P |  |
 | `22.6.2.3-sapata-flexivel-puncao` | 22.6.2.3 | 212 | Sapata flexível: verificação ao cisalhamento por punção | implementado | alta | G | P20 |
-| `22.6.3-modelo-calculo-sapata` | 22.6.3 | 212 | Modelo de cálculo tridimensional (ou bielas-tirantes 3D) para sapatas | ausente | média | G | P48 |
+| `22.6.3-modelo-calculo-sapata` | 22.6.3 | 212 | Modelo de cálculo tridimensional (ou bielas-tirantes 3D) para sapatas | implementado | média | G | P48 |
 | `22.6.4.1.1-armadura-flexao-sapata-detalhamento` | 22.6.4.1.1 | 212 | Detalhamento da armadura de flexão de sapata rígida | implementado | alta | P | P37 |
 | `22.6.4.1.1-fendilhamento-barra-25mm` | 22.6.4.1.1 | 213 | Verificação de fendilhamento horizontal para barras de flexão com diâmetro ≥ 25 mm | implementado | média | M | P37 |
 | `22.6.4.1.2-armadura-arranque-pilar-sapata` | 22.6.4.1.2 | 213 | Altura da sapata suficiente para ancoragem da armadura de arranque do pilar | implementado | alta | P | P37 |
@@ -659,7 +659,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `22.7.1-classificacao-bloco-rigido-flexivel` | 22.7.1 | 213 | Classificação de bloco sobre estacas rígido x flexível | implementado | alta | P | P37 |
 | `22.7.2.1-a-faixa-armadura-estacas` | 22.7.2.1 | 213 | Faixa de concentração das trações sobre o eixo das estacas | implementado | alta | P | P37 |
 | `22.7.2.2-bloco-flexivel-comportamento` | 22.7.2.2 | 213 | Comportamento estrutural do bloco flexível | não computável | média | P |  |
-| `22.7.3-modelo-calculo-bloco` | 22.7.3 | 213 | Modelo de cálculo tridimensional (ou bielas-tirantes 3D) para blocos sobre estacas | ausente | média | G | P48 |
+| `22.7.3-modelo-calculo-bloco` | 22.7.3 | 213 | Modelo de cálculo tridimensional (ou bielas-tirantes 3D) para blocos sobre estacas | parcial | média | G | P48 |
 | `22.7.4.1.1-armadura-flexao-bloco-85pct` | 22.7.4.1.1 | 214 | Concentração mínima de 85% da armadura de flexão nas faixas das estacas | implementado | alta | M | P37 |
 | `22.7.4.1.1-estacas-tracionadas-ancoragem` | 22.7.4.1.1 | 214 | Ancoragem da armadura de estacas tracionadas no bloco | implementado | média | M | P37 |
 | `22.7.4.1.2-armadura-distribuicao-bloco-20pct` | 22.7.4.1.2 | 214 | Armadura de distribuição (malha positiva adicional) do bloco rígido | implementado | média | P | P37 |

@@ -382,7 +382,8 @@
    "nome": "Bielas e tirantes: treliças e modelos de cálculo",
    "onda": 3,
    "prioridade": "media",
-   "modulo": "dimensionamento/bielas_tirantes_nbr6118.py"
+   "modulo": "dimensionamento/bielas_tirantes_nbr6118.py",
+   "executado_em": "19/09/2026"
   }
  ],
  "itens": [
@@ -14184,7 +14185,7 @@
    "pagina_pdf": 199,
    "titulo": "Modelagem da região de introdução da protensão",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "G",
    "falta": "Nao ha formula fechada nesta subsecao (remete a bielas e tirantes); o fendilhamento anelar sob ancoragem so vira computavel com a Secao 22 mapeada.",
@@ -14195,7 +14196,26 @@
    ],
    "trecho": "detlaj",
    "pacote": "P48",
-   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira o modelo-padrão de bielas e tirantes da zona de ancoragem no P48."
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira o modelo-padrão de bielas e tirantes da zona de ancoragem no P48.",
+   "implementacao": {
+    "pacote": "P48",
+    "data": "19/09/2026",
+    "funcoes": [
+     "prisma_simetrico_cm",
+     "forca_fendilhamento_kn",
+     "posicao_fendilhamento_cm",
+     "modelo_zona_ancoragem",
+     "ResultadoZonaAncoragem"
+    ],
+    "testes": [
+     "test_prisma_simetrico_e_posicao_do_tirante",
+     "test_forca_fendilhamento_expressao_fechada",
+     "test_modelo_zona_ancoragem_equilibrio_do_no",
+     "test_modelo_zona_ancoragem_armadura_e_esmagamento",
+     "test_zona_ancoragem_regiao_d_coincide_com_22_2"
+    ],
+    "observacao": "A subseção não traz fórmula fechada: ela exige modelo tridimensional (ou bielas e tirantes da Seção 22) com equilíbrio global, fendilhamento anelar e esmagamento. O modelo entregue é o do prisma simétrico, com a fonte declarada na docstring (Guyon, 1953; Schlaich & Schäfer, 1987; mesma expressão na AASHTO LRFD 5.9.5.6.5a): T = 0,25*P*(1 - a/h') com h' = h - 2|e|, tirante em x = h'/2. O equilíbrio do modelo é fechado (duas trajetórias de força), e o teste confere as componentes da biela contra T e P/2 em vez de repetir a fórmula. Os três aspectos que 21.2.3 lista estão cobertos: equilíbrio (componentes da biela), fendilhamento (tirante, com As por 22.3.3) e esmagamento (tensão sob a ancoragem verificada por verificar_no, nó CCT, 22.3.2)."
+   }
   },
   {
    "id": "21.2.4-cargas-superficie-chumbadores",
@@ -14554,7 +14574,7 @@
    "pagina_pdf": 202,
    "titulo": "Limite convencional entre regiões B e D",
    "tipo": "qualitativo",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "o_que_calcula": "Criterio de modelagem: distancia h (altura da secao) a partir da descontinuidade define o limite entre regiao B (Bernoulli) e regiao D (descontinuidade), delimitando onde aplicar bielas-e-tirantes.",
@@ -14563,7 +14583,21 @@
    "trecho": "especiais",
    "pacote": "P48",
    "falta": "A biblioteca não calcula estrutura; só recebe esforços prontos.",
-   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira a extensão da região D usada pelos modelos do P48."
+   "revisao": "19/09/2026: era não computável só porque a biblioteca não calculava estrutura. Passou a ausente com a decisão 1. Vira a extensão da região D usada pelos modelos do P48.",
+   "implementacao": {
+    "pacote": "P48",
+    "data": "19/09/2026",
+    "funcoes": [
+     "extensao_regiao_d_cm",
+     "classificar_regiao_bd"
+    ],
+    "testes": [
+     "test_extensao_regiao_d_um_e_dois_lados",
+     "test_extensao_regiao_d_fora_da_faixa",
+     "test_classificar_regiao_bd_nos_dois_lados_do_degrau"
+    ],
+    "observacao": "Transcrito da imagem da p. 202: o limite entre as regiões B e D fica a uma distância h (altura da seção) da seção efetiva da descontinuidade. O parâmetro n_lados (1 ou 2) cobre a descontinuidade de extremidade e a interna, que a Figura 22.1 b2 marca como 2h. O degrau é testado nos dois lados (x = h devolve 'D', x = h + eps devolve 'B')."
+   }
   },
   {
    "id": "22.2-gamma-n-consolo-gerber",
@@ -14600,7 +14634,7 @@
    "pagina_pdf": 203,
    "titulo": "Procedimento geral do método de bielas e tirantes",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "G",
    "o_que_calcula": "Idealizacao de uma regiao D como trelica isostatica autoequilibrada de bielas, tirantes e nos, a partir de reacoes obtidas por analise linear/nao linear.",
@@ -14614,7 +14648,40 @@
    "trecho": "especiais",
    "pacote": "P48",
    "fora_do_escopo_ate_18_09": "Idealizar a treliça de uma região D é modelagem do engenheiro. A biblioteca verifica bielas, nós e tirantes a partir das forças dadas (P35).",
-   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras)."
+   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras).",
+   "implementacao": {
+    "pacote": "P48",
+    "data": "19/09/2026",
+    "funcoes": [
+     "TrelicaBT",
+     "TrelicaBT.no",
+     "TrelicaBT.barra",
+     "TrelicaBT.apoio",
+     "TrelicaBT.forca",
+     "TrelicaBT.grau_estatico",
+     "TrelicaBT.resolver",
+     "BarraTrelicaBT",
+     "ResultadoTrelicaBT",
+     "ResultadoInclinacoesBT",
+     "TrelicaNaoIsostaticaError",
+     "TrelicaNaoAutoequilibradaError",
+     "verificar_inclinacoes_bielas",
+     "dimensionar_tirantes_cm2"
+    ],
+    "testes": [
+     "test_trelica_bt_classifica_biela_e_tirante",
+     "test_trelica_bt_inclinacao_e_comprimento",
+     "test_trelica_bt_hipostatica_recusada",
+     "test_trelica_bt_hiperestatica_recusada",
+     "test_trelica_bt_forma_critica_recusada",
+     "test_trelica_bt_autoequilibrada",
+     "test_trelica_bt_nao_autoequilibrada_recusada",
+     "test_trelica_bt_erros_de_montagem",
+     "test_verificar_inclinacoes_bielas_nos_dois_lados_da_faixa",
+     "test_dimensionar_tirantes_usa_22_3_3"
+    ],
+    "observacao": "A treliça é resolvida no cálculo de barras do P44 (tipos 'trelica_plana' e 'trelica_espacial'). As três exigências do item são conferidas: isostaticidade (contagem m + r - g*n, com mensagem que mostra a conta e diz se falta ou sobra barra/apoio; a forma crítica, que fecha a contagem mas tem matriz singular, é recusada à parte), sistema autoequilibrado (modo sem apoios, em que as reações da análise prévia entram como força nodal; a classe confere resultante de forças e de momentos nula, prende só os graus de corpo rígido e confere que essas reações fictícias saem nulas) e a faixa 0,57 <= tan(theta) <= 2 das bielas inclinadas (em verificar_inclinacoes_bielas, que devolve ok em vez de erro, porque inclinação fora da faixa é geometria do modelo). A classificação em biela/tirante/nula sai do sinal da força normal."
+   }
   },
   {
    "id": "22.3.1-limite-inclinacao-biela",
@@ -14806,7 +14873,7 @@
    "pagina_pdf": 205,
    "titulo": "Modelos de cálculo para viga-parede no ELU",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "G",
    "o_que_calcula": "MEF (linear ou nao linear) ou modelo de bielas e tirantes calibrado para aproximar as forcas de um modelo elastico linear; verificacao indireta da biela pela tensao de compressao vertical no apoio (22.3.2).",
@@ -14820,7 +14887,28 @@
    "trecho": "especiais",
    "pacote": "P48",
    "fora_do_escopo_ate_18_09": "Exige MEF ou uma treliça montada caso a caso. As armaduras e verificações de 22.4.4 estão no P35.",
-   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras)."
+   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras).",
+   "implementacao": {
+    "pacote": "P48",
+    "data": "19/09/2026",
+    "funcoes": [
+     "braco_alavanca_viga_parede_cm",
+     "modelo_viga_parede_biapoiada",
+     "modelo_viga_parede_continua",
+     "verificar_apoio_viga_parede"
+    ],
+    "testes": [
+     "test_braco_alavanca_viga_parede_biapoiada",
+     "test_braco_alavanca_viga_parede_continua",
+     "test_modelo_viga_parede_biapoiada_carga_concentrada",
+     "test_modelo_viga_parede_biapoiada_carga_uniforme",
+     "test_modelo_viga_parede_biapoiada_entradas_invalidas",
+     "test_modelo_viga_parede_continua_dois_vaos",
+     "test_modelo_viga_parede_continua_reacao_informada",
+     "test_verificar_apoio_viga_parede_nos_dois_lados_do_limite"
+    ],
+    "observacao": "O item permite dois caminhos: modelo plano elástico linear ou não linear (MEF) e modelo de bielas e tirantes calibrado. Foi implementado o segundo, que é o que o pacote pede; o MEF plano continua fora do escopo da biblioteca. O braço z vem da literatura declarada na docstring (Leonhardt & Mönnig, vol. 2; CEB-FIP MC90; Araújo, vol. 4): z = 0,60*l (l/h < 1) e z = 0,20*(l + 2h) (1 <= l/h <= 2) na biapoiada; z = 0,50*l e z = 0,20*(l + 1,5h) até l/h = 2,5 na contínua, com FaixaNormativaError acima disso (22.4.1 vai até l/h < 3, mas a expressão da literatura não). A biapoiada aceita carga concentrada no meio do vão (treliça de 3 barras, T = P*l/(4z)) e carga uniforme (resultante de cada metade no quarto de vão, T = q*l^2/(8z), igual ao momento de vão dividido por z). A contínua é de dois vãos iguais, com o tirante negativo no banzo superior sobre o apoio central e a reação do apoio central entrando como força nodal, como 22.3.1 manda. verificar_apoio_viga_parede faz a verificação indireta da biela pela tensão de compressão vertical no apoio, conforme 22.3.2."
+   }
   },
   {
    "id": "22.4.4.1-as-viga-parede-continua",
@@ -15449,7 +15537,7 @@
    "pagina_pdf": 212,
    "titulo": "Modelo de cálculo tridimensional (ou bielas-tirantes 3D) para sapatas",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "G",
    "o_que_calcula": "Dimensionamento por modelo tridimensional linear ou modelo biela-tirante tridimensional, contemplando o comportamento de 22.6.2 e o fendilhamento na regiao de contato pilar-sapata (21.2), podendo avaliar interacao solo-estrutura.",
@@ -15463,7 +15551,21 @@
    "trecho": "especiais",
    "pacote": "P48",
    "fora_do_escopo_ate_18_09": "O modelo 3D linear ou de bielas e tirantes é análise estrutural. O método simplificado de sapatas é completado no P37.",
-   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras)."
+   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras).",
+   "implementacao": {
+    "pacote": "P48",
+    "data": "19/09/2026",
+    "funcoes": [
+     "modelo_sapata",
+     "_reacoes_lineares"
+    ],
+    "testes": [
+     "test_modelo_sapata_centrada_bate_com_metodo_das_bielas",
+     "test_modelo_sapata_excentrica",
+     "test_modelo_sapata_pilar_nao_cabe"
+    ],
+    "observacao": "Modelo biela-tirante tridimensional (um dos dois caminhos que 22.6.3 admite; o modelo 3D linear de sólido, o de flexão do P37 e a avaliação da interação solo-estrutura ficam fora). Geometria clássica do método das bielas (Lebelle; CEB): a pressão do terreno é concentrada na resultante de cada quadrante da base e a biela parte do centroide do quadrante correspondente da seção do pilar, o que dá nós de base em (±(a-ap)/4, ±(b-bp)/4). Sob carga centrada a soma dos dois tirantes paralelos a x sai Nd*(a-ap)/(8d), exatamente o sapatas_nbr6118.tracao_base_bielas, e o mesmo em y. Com excentricidade, as reações dos quadrantes saem da distribuição linear de sapata rígida (22.6.1) sobre as posições dos nós do modelo, e o sistema continua autoequilibrado. O fendilhamento do contato pilar-sapata que 22.6.3 remete a 21.2 é o modelo_zona_ancoragem."
+   }
   },
   {
    "id": "22.6.4.1.1-armadura-flexao-sapata-detalhamento",
@@ -15672,7 +15774,7 @@
    "pagina_pdf": 213,
    "titulo": "Modelo de cálculo tridimensional (ou bielas-tirantes 3D) para blocos sobre estacas",
    "tipo": "procedimento",
-   "status": "ausente",
+   "status": "parcial",
    "prioridade": "media",
    "complexidade": "G",
    "o_que_calcula": "Modelos tridimensionais lineares/nao lineares ou bielas-tirantes 3D, contemplando o fendilhamento pilar-bloco (21.2) e a interacao solo-estrutura quando ha forcas horizontais significativas ou forte assimetria.",
@@ -15686,7 +15788,25 @@
    "trecho": "especiais",
    "pacote": "P48",
    "fora_do_escopo_ate_18_09": "O modelo 3D é análise estrutural. O método das bielas (Blévot) é completado no P37.",
-   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras)."
+   "revisao": "19/09/2026: entrou no escopo com a decisão 1 (análise estrutural com cálculo próprio de barras).",
+   "implementacao": {
+    "pacote": "P48",
+    "data": "19/09/2026",
+    "funcoes": [
+     "modelo_bloco_estacas",
+     "_reacoes_lineares",
+     "_ordem_perimetro"
+    ],
+    "testes": [
+     "test_bloco_2_estacas_bate_com_metodo_das_bielas",
+     "test_bloco_2_estacas_sem_recuo_do_pilar",
+     "test_bloco_3_estacas_trelica_espacial",
+     "test_bloco_4_estacas_tirantes_do_perimetro",
+     "test_bloco_reacoes_informadas_e_erros",
+     "test_bloco_5_estacas_exige_topologia_isostatica"
+    ],
+    "observacao": "O modelo biela-tirante tridimensional está implementado e vale para qualquer arranjo de estacas, com a reação de cada estaca (informada, ou pela distribuição linear de bloco rígido). Falta o que o texto do pacote pedia como topologia automática: há topologia padrão de tirantes só para 2 estacas (treliça plana, tirante único), 3 (perímetro) e 4 (perímetro mais uma diagonal, necessária para fechar a isostaticidade e nula sob carga centrada). Para 5 e 6 estacas o projetista tem de informar a lista `tirantes`, e a contagem de isostaticidade de 22.3.1 recusa topologia que não feche — o caso de 5 estacas (4 + central) está testado nos dois caminhos. Também ficam fora a análise 3D linear/não linear de sólido e a interação solo-estrutura que 22.7.3 pede quando há forças horizontais significativas ou forte assimetria; força horizontal pode ser acrescentada à TrelicaBT devolvida, mas o construtor só aplica Nd. Aceite atendido: com 2 estacas o tirante sai Nd*(2e - ap)/(8d), idêntico ao método das bielas de blocos_nbr6118 (As_principal_2_estacas = 1,15*T/fyd)."
+   }
   },
   {
    "id": "22.7.4.1.1-armadura-flexao-bloco-85pct",
