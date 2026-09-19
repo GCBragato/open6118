@@ -86,7 +86,8 @@
    "nome": "Classificação de elementos",
    "onda": 2,
    "prioridade": "alta",
-   "modulo": "dimensionamento/classificacao_elementos_nbr6118.py"
+   "modulo": "dimensionamento/classificacao_elementos_nbr6118.py",
+   "executado_em": "19/09/2026"
   },
   {
    "id": "P12",
@@ -4928,7 +4929,7 @@
    "pagina_pdf": 104,
    "titulo": "Critério de classificação de elemento linear (barra) por proporção geométrica",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "baixa",
    "complexidade": "P",
    "pacote": "P11",
@@ -4937,7 +4938,22 @@
    "formula_ou_regra": "comprimento >= 3 * maior_dimensao_secao_transversal -> elemento linear (viga/pilar/tirante/arco)",
    "conferido_na_imagem": false,
    "teste_sugerido": "Caso limite comprimento = 3*maior_dimensao deve classificar como linear (>=, nao so >).",
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P11",
+    "data": "19/09/2026",
+    "funcoes": [
+     "eh_elemento_linear(l_cm, h_max_cm)"
+    ],
+    "testes": [
+     "test_elemento_linear_caso_limite_igual_a_3",
+     "test_elemento_linear_abaixo_do_limite_e_de_superficie",
+     "test_elemento_linear_acima_do_limite",
+     "test_elemento_linear_entrada_invalida_levanta",
+     "test_memoria_elemento_linear_usa_virgula_no_valor_numerico"
+    ],
+    "observacao": "Corrigido nesta rodada: memoria agora usa virgula (_fmt4) no valor numerico de 4 casas decimais."
+   }
   },
   {
    "id": "14.4.1.1-14.4.1.4-classif-funcional",
@@ -4958,7 +4974,7 @@
    "pagina_pdf": 104,
    "titulo": "Critério de placa espessa (espessura maior que 1/3 do vão)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P11",
@@ -4966,7 +4982,21 @@
    "o_que_calcula": "Classifica uma placa como espessa, fora do escopo das hipoteses usuais de placa fina (14.7.1), quando a espessura ultrapassa 1/3 do vao.",
    "formula_ou_regra": "espessura > (1/3) * vao -> placa espessa (estudar por teoria propria)",
    "conferido_na_imagem": false,
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P11",
+    "data": "19/09/2026",
+    "funcoes": [
+     "eh_placa_espessa(h_cm, vao_cm)"
+    ],
+    "testes": [
+     "test_placa_caso_limite_h_igual_vao_sobre_3",
+     "test_placa_espessa_acima_do_limite",
+     "test_placa_bem_abaixo_do_limite",
+     "test_memoria_placa_espessa_usa_virgula_no_valor_numerico"
+    ],
+    "observacao": "Corrigido nesta rodada: memoria agora usa virgula (_fmt4) no valor numerico de 4 casas decimais."
+   }
   },
   {
    "id": "14.4.2.2-viga-parede-classif",
@@ -4974,7 +5004,7 @@
    "pagina_pdf": 105,
    "titulo": "Critério de classificação de viga-parede (chapa com vão menor que 3x a maior dimensão da seção)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P11",
@@ -4982,7 +5012,25 @@
    "o_que_calcula": "Classifica uma chapa de concreto como viga-parede quando o vao e menor que 3 vezes a maior dimensao da secao transversal.",
    "formula_ou_regra": "vao < 3 * maior_dimensao_secao_transversal -> chapa = viga-parede",
    "conferido_na_imagem": false,
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P11",
+    "data": "19/09/2026",
+    "funcoes": [
+     "eh_viga_parede(l_cm, h_cm, continua)"
+    ],
+    "testes": [
+     "test_viga_isostatica_caso_limite_l_sobre_h_2",
+     "test_viga_isostatica_abaixo_do_limite_2_e_parede",
+     "test_viga_isostatica_acima_do_limite_2_e_usual",
+     "test_viga_continua_caso_limite_l_sobre_h_3",
+     "test_viga_continua_abaixo_do_limite_3_e_parede",
+     "test_viga_divergencia_entre_regra_geral_e_especifica",
+     "test_viga_continua_nunca_diverge_das_duas_regras",
+     "test_memoria_viga_parede_usa_virgula_no_valor_numerico"
+    ],
+    "observacao": "Regra geral (14.4.2.2) implementada dentro de eh_viga_parede junto com 18.3.1/22.4.1; memoria corrigida nesta rodada."
+   }
   },
   {
    "id": "14.4.2.3-cascas-definicao",
@@ -5003,7 +5051,7 @@
    "pagina_pdf": 105,
    "titulo": "Critério de classificação de pilar-parede (menor dimensão menor que 1/5 da maior, na seção transversal)",
    "tipo": "limite",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P11",
@@ -5011,7 +5059,22 @@
    "o_que_calcula": "Classifica um elemento de superficie vertical comprimido como pilar-parede quando, em alguma das superficies que o compoem, a menor dimensao da secao transversal e menor que 1/5 da maior.",
    "formula_ou_regra": "menor_dimensao_superficie < (1/5) * maior_dimensao_superficie (na secao transversal do elemento) -> pilar-parede",
    "conferido_na_imagem": false,
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P11",
+    "data": "19/09/2026",
+    "funcoes": [
+     "eh_pilar_parede(b_cm, h_cm)"
+    ],
+    "testes": [
+     "test_pilar_caso_limite_razao_5",
+     "test_pilar_acima_do_limite_e_parede",
+     "test_pilar_ordem_dos_argumentos_e_livre",
+     "test_pilar_quadrado_nunca_e_parede",
+     "test_memoria_pilar_parede_usa_virgula_no_valor_numerico"
+    ],
+    "observacao": "Corrigido nesta rodada: memoria agora usa virgula (_fmt4) no valor numerico de 4 casas decimais."
+   }
   },
   {
    "id": "14.5.1-metodos-generalidades",
@@ -5071,7 +5134,7 @@
    "pagina_pdf": 106,
    "titulo": "Restrições ao uso de análise plástica em estruturas reticuladas",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P11",
@@ -5079,7 +5142,23 @@
    "o_que_calcula": "Proibe a analise plastica de estruturas reticuladas quando se consideram efeitos de 2a ordem global, ou quando nao ha dutilidade suficiente para as configuracoes de rotula adotadas; tambem deve ser evitada com carregamento ciclico (fadiga).",
    "formula_ou_regra": "analise_plastica_permitida = NAO considera_2a_ordem_global E dutilidade_suficiente E NAO ha_risco_de_fadiga",
    "conferido_na_imagem": false,
-   "trecho": "analise"
+   "trecho": "analise",
+   "implementacao": {
+    "pacote": "P11",
+    "data": "19/09/2026",
+    "funcoes": [
+     "analise_plastica_permitida(segunda_ordem_global, dutilidade_suficiente, risco_fadiga=False)"
+    ],
+    "testes": [
+     "test_analise_plastica_permitida_sem_restricoes",
+     "test_analise_plastica_proibida_por_2a_ordem_global",
+     "test_analise_plastica_proibida_por_falta_de_dutilidade",
+     "test_analise_plastica_proibida_por_fadiga",
+     "test_analise_plastica_proibida_por_todos_os_motivos_juntos",
+     "test_analise_plastica_padrao_risco_fadiga_falso"
+    ],
+    "observacao": "Sem achados nesta verificacao; memoria deste item nao usa formatacao numerica de 4 casas, so booleanos."
+   }
   },
   {
    "id": "14.5.5-analise-nao-linear-geral",
@@ -8171,7 +8250,7 @@
    "pagina_pdf": 167,
    "titulo": "Classificação viga comum x viga-parede pela relação vão/altura (l/h)",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P11",
@@ -8181,7 +8260,19 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "l=6m,h=2,5m,isostatica -> l/h=2,4>=2,0, viga comum. Mesma secao continua -> l/h=2,4<3,0, viga-parede.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P11",
+    "data": "19/09/2026",
+    "funcoes": [
+     "eh_viga_parede(l_cm, h_cm, continua)"
+    ],
+    "testes": [
+     "test_viga_continua_de_6m_altura_2_5m_do_teste_sugerido_18_3_1",
+     "test_memoria_viga_parede_usa_virgula_no_valor_numerico"
+    ],
+    "observacao": "Governa a classificacao final (regra especifica), conforme docstring; memoria corrigida nesta rodada."
+   }
   },
   {
    "id": "18.3.2.1-as-min-flexao-viga-remissao",
@@ -8727,7 +8818,7 @@
    "pagina_pdf": 173,
    "titulo": "Classificação pilar comum x pilar-parede pela razão entre dimensões da seção (maior ≤ 5 vezes a menor)",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "P",
    "pacote": "P11",
@@ -8738,7 +8829,20 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "Secao 20x100cm: razao=5,0 -> pilar comum (limite). Secao 20x101cm: razao=5,05 -> pilar-parede.",
-   "trecho": "detlin"
+   "trecho": "detlin",
+   "implementacao": {
+    "pacote": "P11",
+    "data": "19/09/2026",
+    "funcoes": [
+     "eh_pilar_parede(b_cm, h_cm)"
+    ],
+    "testes": [
+     "test_pilar_caso_limite_razao_5",
+     "test_pilar_acima_do_limite_e_parede",
+     "test_memoria_pilar_parede_usa_virgula_no_valor_numerico"
+    ],
+    "observacao": "Corrigido nesta rodada: memoria agora usa virgula (_fmt4)."
+   }
   },
   {
    "id": "18.4.2.1-diametro-min-max-barra-longitudinal-pilar",
@@ -10877,7 +10981,7 @@
    "pagina_pdf": 204,
    "titulo": "Classificação de viga como viga-parede",
    "tipo": "classificacao",
-   "status": "ausente",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "P",
    "pacote": "P11",
@@ -10886,7 +10990,20 @@
    "conferido_na_imagem": true,
    "depende_de": [],
    "teste_sugerido": "l/h=1,9 biapoiada -> viga-parede; l/h=2,1 biapoiada -> viga usual; l/h=2,9 continua -> viga-parede.",
-   "trecho": "especiais"
+   "trecho": "especiais",
+   "implementacao": {
+    "pacote": "P11",
+    "data": "19/09/2026",
+    "funcoes": [
+     "eh_viga_parede(l_cm, h_cm, continua)"
+    ],
+    "testes": [
+     "test_viga_isostatica_abaixo_do_limite_2_e_parede",
+     "test_viga_continua_abaixo_do_limite_3_e_parede",
+     "test_memoria_viga_parede_usa_virgula_no_valor_numerico"
+    ],
+    "observacao": "Corrigido nesta rodada: memoria corrigida (_fmt4)."
+   }
   },
   {
    "id": "22.4.2-comportamento-viga-parede",

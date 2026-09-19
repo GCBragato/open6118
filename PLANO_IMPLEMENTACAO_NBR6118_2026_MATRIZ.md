@@ -261,16 +261,16 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.3.1-ordem-equilibrio` | 14.3.1 | 103 | Escolha entre teoria de 1a e 2a ordem para as equações de equilíbrio | não computável | média | P |  |
 | `14.3.2-compatibilidade` | 14.3.2 | 104 | Condições de compatibilidade e dutilidade quando não verificadas | não computável | baixa | P |  |
 | `14.3.3-tensao-max-ciclica` | 14.3.3 | 104 | Limite de tensão de compressão em serviço para admitir carregamento monotônico | ausente | baixa | P | P14 |
-| `14.4.1-classif-elemento-linear` | 14.4.1 | 104 | Critério de classificação de elemento linear (barra) por proporção geométrica | ausente | baixa | P | P11 |
+| `14.4.1-classif-elemento-linear` | 14.4.1 | 104 | Critério de classificação de elemento linear (barra) por proporção geométrica | implementado | baixa | P | P11 |
 | `14.4.1.1-14.4.1.4-classif-funcional` | 14.4.1.1 a 14.4.1.4 | 104 | Classificação funcional dos elementos lineares (viga, pilar, tirante, arco) | não computável | baixa | P |  |
-| `14.4.2.1-placa-espessa` | 14.4.2.1 | 104 | Critério de placa espessa (espessura maior que 1/3 do vão) | ausente | média | P | P11 |
-| `14.4.2.2-viga-parede-classif` | 14.4.2.2 | 105 | Critério de classificação de viga-parede (chapa com vão menor que 3x a maior dimensão da seção) | ausente | média | P | P11 |
+| `14.4.2.1-placa-espessa` | 14.4.2.1 | 104 | Critério de placa espessa (espessura maior que 1/3 do vão) | implementado | média | P | P11 |
+| `14.4.2.2-viga-parede-classif` | 14.4.2.2 | 105 | Critério de classificação de viga-parede (chapa com vão menor que 3x a maior dimensão da seção) | implementado | média | P | P11 |
 | `14.4.2.3-cascas-definicao` | 14.4.2.3 | 105 | Definição de casca (elemento de superfície não plana) | não computável | baixa | P |  |
-| `14.4.2.4-pilar-parede-classif` | 14.4.2.4 | 105 | Critério de classificação de pilar-parede (menor dimensão menor que 1/5 da maior, na seção transversal) | ausente | média | P | P11 |
+| `14.4.2.4-pilar-parede-classif` | 14.4.2.4 | 105 | Critério de classificação de pilar-parede (menor dimensão menor que 1/5 da maior, na seção transversal) | implementado | média | P | P11 |
 | `14.5.1-metodos-generalidades` | 14.5.1 | 105 | Generalidades sobre os métodos de análise estrutural (14.5.2 a 14.5.6) | não computável | baixa | P |  |
 | `14.5.2-analise-linear` | 14.5.2 | 105 | Análise linear - hipóteses (comportamento elástico-linear, seção bruta, Ecs) | ausente | alta | P | P44 |
 | `14.5.3-analise-redistrib-geral` | 14.5.3 | 106 | Análise linear com redistribuição - condições gerais | ausente | média | P | P46 |
-| `14.5.4-analise-plastica-restricoes` | 14.5.4 | 106 | Restrições ao uso de análise plástica em estruturas reticuladas | ausente | média | P | P11 |
+| `14.5.4-analise-plastica-restricoes` | 14.5.4 | 106 | Restrições ao uso de análise plástica em estruturas reticuladas | implementado | média | P | P11 |
 | `14.5.5-analise-nao-linear-geral` | 14.5.5 | 106 | Análise não linear - condições gerais (geometria e armaduras completas, equilíbrio/compatibilidade/dutilidade) | não computável | baixa | P |  |
 | `14.5.6-modelos-fisicos` | 14.5.6 | 106 | Análise por modelos físicos (ensaios) - condições e margens de segurança | não computável | baixa | P |  |
 | `14.6.1-hipoteses-elementos-lineares` | 14.6.1 | 107 | Hipóteses básicas para estruturas de elementos lineares (seção plana, eixo, comprimento entre apoios) | não computável | baixa | P |  |
@@ -460,7 +460,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `18.2.2-fissuracao-plano-dobra` | 18.2.2 | 166 | Necessidade de armadura transversal ou diâmetro maior quando há risco de fissuração no plano da barra dobrada | não computável | baixa | P |  |
 | `18.2.3-mudanca-direcao-armaduras` | 18.2.3 | 166 | Mudança de direção de barras tracionadas (retificação, cobrimento insuficiente) | não computável | baixa | P |  |
 | `18.2.4-protecao-flambagem-barras` | 18.2.4 | 167 | Proteção contra flambagem das barras longitudinais junto à superfície (limite de 20·φt sem estribo suplementar) | ausente | média | M | P23 |
-| `18.3.1-generalidades-esbeltez-viga-x-viga-parede` | 18.3.1 | 167 | Classificação viga comum x viga-parede pela relação vão/altura (l/h) | ausente | média | P | P11 |
+| `18.3.1-generalidades-esbeltez-viga-x-viga-parede` | 18.3.1 | 167 | Classificação viga comum x viga-parede pela relação vão/altura (l/h) | implementado | média | P | P11 |
 | `18.3.2.1-as-min-flexao-viga-remissao` | 18.3.2.1 | 168 | Quantidade mínima de armadura longitudinal de flexão em vigas (remissão a 17.3.5) | implementado | alta | P |  |
 | `18.3.2.2-espacamento-longitudinal-vigas` | 18.3.2.2 | 168 | Espaçamento mínimo livre entre barras longitudinais de vigas (horizontal ah e vertical av) | ausente | alta | P | P22 |
 | `18.3.2.3.1-cobertura-diagrama-decalagem` | 18.3.2.3.1 | 168 | Cobertura do diagrama de força de tração solicitante pelo resistente (pontos A/B, decalagem al) - Figura 18.3 | parcial | alta | G | P22 |
@@ -489,7 +489,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `18.3.6-fator-reducao-vigas-face-superior-coincidente` | 18.3.6 | 172 | Fator de redução da carga de suspensão para vigas não penduradas com faces superiores coincidentes | ausente | baixa | P | P23 |
 | `18.3.6-definicao-viga-pendurada` | 18.3.6 | 172 | Classificação viga pendurada x não pendurada | ausente | baixa | P | P23 |
 | `18.3.7-armadura-ligacao-mesa-alma` | 18.3.7 | 173 | Armadura mínima de ligação mesa-alma ou talão-alma (1,5 cm2/m) | ausente | média | P | P23 |
-| `18.4.1-introducao-pilar-x-pilar-parede` | 18.4.1 | 173 | Classificação pilar comum x pilar-parede pela razão entre dimensões da seção (maior ≤ 5 vezes a menor) | ausente | alta | P | P11 |
+| `18.4.1-introducao-pilar-x-pilar-parede` | 18.4.1 | 173 | Classificação pilar comum x pilar-parede pela razão entre dimensões da seção (maior ≤ 5 vezes a menor) | implementado | alta | P | P11 |
 | `18.4.2.1-diametro-min-max-barra-longitudinal-pilar` | 18.4.2.1 | 173 | Diâmetro mínimo e máximo da barra longitudinal de pilar | ausente | alta | P | P24 |
 | `18.4.2.1-taxa-armadura-pilar-remissao` | 18.4.2.1 | 173 | Taxa geométrica de armadura longitudinal de pilar (remissão a 17.3.5.3) | implementado | alta | P |  |
 | `18.4.2.2-distribuicao-transversal-vertices-pilar` | 18.4.2.2 | 173 | Número mínimo de barras por geometria de pilar (1 por vértice; mínimo 6 em seção circular) | ausente | alta | P | P24 |
@@ -624,7 +624,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `22.3.2-fcd2` | 22.3.2 | 204 | Resistência de cálculo da biela/nó CTT ou TTT (fcd2) | ausente | média | P | P35 |
 | `22.3.2-fcd3` | 22.3.2 | 204 | Resistência de cálculo da biela/nó CCT (fcd3) | implementado | alta | P |  |
 | `22.3.3-as-tirante` | 22.3.3 | 204 | Área de aço de um tirante genérico do modelo biela-tirante | ausente | alta | P | P35 |
-| `22.4.1-classificacao-viga-parede` | 22.4.1 | 204 | Classificação de viga como viga-parede | ausente | média | P | P11 |
+| `22.4.1-classificacao-viga-parede` | 22.4.1 | 204 | Classificação de viga como viga-parede | implementado | média | P | P11 |
 | `22.4.2-comportamento-viga-parede` | 22.4.2 | 204 | Comportamento estrutural das vigas-parede | não computável | média | P |  |
 | `22.4.3-modelo-calculo-viga-parede` | 22.4.3 | 205 | Modelos de cálculo para viga-parede no ELU | ausente | média | G | P48 |
 | `22.4.4.1-as-viga-parede-continua` | 22.4.4.1 | 205 | Distribuição da armadura negativa em viga-parede contínua (3 faixas) | ausente | média | M | P35 |
