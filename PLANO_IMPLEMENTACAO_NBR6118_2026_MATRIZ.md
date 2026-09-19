@@ -648,24 +648,24 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `22.5.2.4.4-ancoragem-inferior-viga-gerber` | 22.5.2.4.4 | 211 | Ancoragem da armadura inferior da viga no trecho de suspensão do dente Gerber | não computável | baixa | P |  |
 | `22.5.2.4.5-casos-especiais-gerber` | 22.5.2.4.5 | 211 | Casos especiais de suspensão no dente Gerber (barras dobradas, protensão) | não computável | baixa | P |  |
 | `22.6.1-sapata-rigida-flexivel` | 22.6.1 | 211 | Classificação de sapata rígida x flexível | implementado | alta | P |  |
-| `22.6.1-hipotese-distribuicao-plana` | 22.6.1 | 211 | Validade da hipótese de distribuição plana de tensões no contato sapata-solo | parcial | média | P | P37 |
+| `22.6.1-hipotese-distribuicao-plana` | 22.6.1 | 211 | Validade da hipótese de distribuição plana de tensões no contato sapata-solo | implementado | média | P | P37 |
 | `22.6.2.2-cisalhamento-compressao-diagonal-sapata-rigida` | 22.6.2.2 | 212 | Verificação ao cisalhamento de sapata rígida por compressão diagonal (superfície C) | implementado | alta | P |  |
 | `22.6.2.3-sapata-flexivel-puncao` | 22.6.2.3 | 212 | Sapata flexível: verificação ao cisalhamento por punção | implementado | alta | G | P20 |
 | `22.6.3-modelo-calculo-sapata` | 22.6.3 | 212 | Modelo de cálculo tridimensional (ou bielas-tirantes 3D) para sapatas | ausente | média | G | P48 |
-| `22.6.4.1.1-armadura-flexao-sapata-detalhamento` | 22.6.4.1.1 | 212 | Detalhamento da armadura de flexão de sapata rígida | ausente | alta | P | P37 |
-| `22.6.4.1.1-fendilhamento-barra-25mm` | 22.6.4.1.1 | 213 | Verificação de fendilhamento horizontal para barras de flexão com diâmetro ≥ 25 mm | ausente | média | M | P37 |
-| `22.6.4.1.2-armadura-arranque-pilar-sapata` | 22.6.4.1.2 | 213 | Altura da sapata suficiente para ancoragem da armadura de arranque do pilar | ausente | alta | P | P37 |
+| `22.6.4.1.1-armadura-flexao-sapata-detalhamento` | 22.6.4.1.1 | 212 | Detalhamento da armadura de flexão de sapata rígida | implementado | alta | P | P37 |
+| `22.6.4.1.1-fendilhamento-barra-25mm` | 22.6.4.1.1 | 213 | Verificação de fendilhamento horizontal para barras de flexão com diâmetro ≥ 25 mm | implementado | média | M | P37 |
+| `22.6.4.1.2-armadura-arranque-pilar-sapata` | 22.6.4.1.2 | 213 | Altura da sapata suficiente para ancoragem da armadura de arranque do pilar | implementado | alta | P | P37 |
 | `22.6.4.1.3-sapata-flexivel-remissao-lajes-puncao` | 22.6.4.1.3 | 213 | Sapata flexível: remissão aos requisitos de lajes e punção | não computável | média | P |  |
-| `22.7.1-classificacao-bloco-rigido-flexivel` | 22.7.1 | 213 | Classificação de bloco sobre estacas rígido x flexível | ausente | alta | P | P37 |
-| `22.7.2.1-a-faixa-armadura-estacas` | 22.7.2.1 | 213 | Faixa de concentração das trações sobre o eixo das estacas | ausente | alta | P | P37 |
+| `22.7.1-classificacao-bloco-rigido-flexivel` | 22.7.1 | 213 | Classificação de bloco sobre estacas rígido x flexível | implementado | alta | P | P37 |
+| `22.7.2.1-a-faixa-armadura-estacas` | 22.7.2.1 | 213 | Faixa de concentração das trações sobre o eixo das estacas | implementado | alta | P | P37 |
 | `22.7.2.2-bloco-flexivel-comportamento` | 22.7.2.2 | 213 | Comportamento estrutural do bloco flexível | não computável | média | P |  |
 | `22.7.3-modelo-calculo-bloco` | 22.7.3 | 213 | Modelo de cálculo tridimensional (ou bielas-tirantes 3D) para blocos sobre estacas | ausente | média | G | P48 |
-| `22.7.4.1.1-armadura-flexao-bloco-85pct` | 22.7.4.1.1 | 214 | Concentração mínima de 85% da armadura de flexão nas faixas das estacas | ausente | alta | M | P37 |
-| `22.7.4.1.1-estacas-tracionadas-ancoragem` | 22.7.4.1.1 | 214 | Ancoragem da armadura de estacas tracionadas no bloco | ausente | média | M | P37 |
-| `22.7.4.1.2-armadura-distribuicao-bloco-20pct` | 22.7.4.1.2 | 214 | Armadura de distribuição (malha positiva adicional) do bloco rígido | parcial | média | P | P37 |
-| `22.7.4.1.3-armadura-suspensao-bloco-condicional` | 22.7.4.1.3 | 215 | Condição de exigência da armadura de suspensão no bloco | parcial | média | M | P37 |
-| `22.7.4.1.4-armadura-arranque-pilar-bloco` | 22.7.4.1.4 | 215 | Altura do bloco suficiente para ancoragem da armadura de arranque do pilar | ausente | alta | P | P37 |
-| `22.7.4.1.5-armadura-lateral-superior-obrigatoria` | 22.7.4.1.5 | 215 | Obrigatoriedade de armadura lateral e superior em blocos com estacas em linha única | parcial | média | M | P37 |
+| `22.7.4.1.1-armadura-flexao-bloco-85pct` | 22.7.4.1.1 | 214 | Concentração mínima de 85% da armadura de flexão nas faixas das estacas | implementado | alta | M | P37 |
+| `22.7.4.1.1-estacas-tracionadas-ancoragem` | 22.7.4.1.1 | 214 | Ancoragem da armadura de estacas tracionadas no bloco | implementado | média | M | P37 |
+| `22.7.4.1.2-armadura-distribuicao-bloco-20pct` | 22.7.4.1.2 | 214 | Armadura de distribuição (malha positiva adicional) do bloco rígido | implementado | média | P | P37 |
+| `22.7.4.1.3-armadura-suspensao-bloco-condicional` | 22.7.4.1.3 | 215 | Condição de exigência da armadura de suspensão no bloco | implementado | média | M | P37 |
+| `22.7.4.1.4-armadura-arranque-pilar-bloco` | 22.7.4.1.4 | 215 | Altura do bloco suficiente para ancoragem da armadura de arranque do pilar | implementado | alta | P | P37 |
+| `22.7.4.1.5-armadura-lateral-superior-obrigatoria` | 22.7.4.1.5 | 215 | Obrigatoriedade de armadura lateral e superior em blocos com estacas em linha única | implementado | média | M | P37 |
 | `22.7.4.2-bloco-flexivel-remissao-lajes-puncao` | 22.7.4.2 | 215 | Bloco flexível: remissão aos requisitos de lajes e punção | não computável | média | P |  |
 
 ## Seção 23

@@ -218,6 +218,8 @@ def As_bielas(T_kn: float, fyk_mpa: float = 500.0,
 # ---------------------------------------------------------------------------
 def tensoes_sapata_excentrica_1d(
     N_kn: float, M_kncm: float, A_cm: float, B_cm: float,
+    h_cm: float | None = None, ap_cm: float | None = None,
+    bp_cm: float | None = None, fundacao_em_rocha: bool = False,
 ) -> dict:
     """Tensões max/min na base de sapata isolada com excentricidade na
     direção A (um eixo).
@@ -227,6 +229,16 @@ def tensoes_sapata_excentrica_1d(
     b) e = A/6 (no limite): sigma_max = 2N/(AB), sigma_min = 0
     c) e > A/6 (fora do núcleo): área tracionada -> redistribuição
        sigma_max = 2N / (3*B*(A/2 - e))
+
+    P37 (22.6.1, PDF p. 211): a distribuição plana de tensões só pode ser
+    admitida para sapata rígida; para sapata flexível, ou em casos extremos
+    de fundação em rocha mesmo com sapata rígida, a hipótese deve ser
+    revista. Informando ``h_cm`` e ``ap_cm`` (e, opcionalmente, ``bp_cm``,
+    para verificar também a direção B) ou ``fundacao_em_rocha=True``, a
+    função checa a hipótese com ``verificar_hipotese_distribuicao_plana``,
+    emite ``AvisoNBR6118`` quando ela não vale e devolve a chave
+    ``"hipotese_plana_valida"``. Sem esses dados o comportamento é o de
+    antes (nenhuma checagem, ``"hipotese_plana_valida"`` = None).
     """
     e = abs(M_kncm) / N_kn
     nucleo = A_cm / 6.0
@@ -245,6 +257,8 @@ def tensoes_sapata_excentrica_1d(
         sigma_max = 2.0 * N_kn / (3.0 * B_cm * (A_cm / 2.0 - e))
         sigma_min = 0.0  # área tracionada desconsiderada
         caso = "c-fora-nucleo"
+    hip = _hipotese_plana_se_pedida(h_cm, A_cm, ap_cm, B_cm, bp_cm,
+                                    fundacao_em_rocha)
     return {
         "e_cm": e,
         "nucleo_cm": nucleo,
@@ -252,19 +266,31 @@ def tensoes_sapata_excentrica_1d(
         "sigma_min_kncm2": sigma_min,
         "caso": caso,
         "ok_NBR_caracteristica": (e <= A_cm * (1.0 / 2.0 - 1.0 / 3.0)),
+        "hipotese_plana_valida": None if hip is None else hip.hipotese_valida,
     }
 
 
 def tensoes_sapata_excentrica_2d(
     N_kn: float, eA_cm: float, eB_cm: float,
     A_cm: float, B_cm: float,
+    h_cm: float | None = None, ap_cm: float | None = None,
+    bp_cm: float | None = None, fundacao_em_rocha: bool = False,
 ) -> tuple[float, float, float, float]:
     """Tensões nos 4 cantos para excentricidade em 2 direções (núcleo central).
 
     sigma = N/(AB) * (1 +/- 6*eA/A +/- 6*eB/B)
 
     Retorna (sigma_++, sigma_+-, sigma_-+, sigma_--) em kN/cm2.
-    Válido apenas quando eA/A + eB/B <= 1/6."""
+    Válido apenas quando eA/A + eB/B <= 1/6.
+
+    P37 (22.6.1, PDF p. 211): ``h_cm``, ``ap_cm``, ``bp_cm`` e
+    ``fundacao_em_rocha`` acionam a checagem da hipótese de distribuição
+    plana (ver ``tensoes_sapata_excentrica_1d`` e
+    ``verificar_hipotese_distribuicao_plana``), que só emite
+    ``AvisoNBR6118``: o retorno segue sendo a tupla das quatro tensões.
+    """
+    _hipotese_plana_se_pedida(h_cm, A_cm, ap_cm, B_cm, bp_cm,
+                              fundacao_em_rocha)
     base = N_kn / (A_cm * B_cm)
     fA = 6.0 * eA_cm / A_cm
     fB = 6.0 * eB_cm / B_cm
@@ -869,6 +895,452 @@ def verificar_puncao_sapata_flexivel(
     mem.append(f"Resultado: {'passa' if ok else 'não passa'} — {gov}.")
     return ResultadoPuncaoSapata(rig, p, F_C, F_Cl, u0, u, area_Cl, dentro, tau_C, rd2,
                                  tau_Cl, rd1, ok, gov, tuple(mem))
+
+
+# === P37: fundações — sapatas (22.6.1, 22.6.4.1.1 e 22.6.4.1.2) ===
+import math as _math37
+import warnings as _warnings37
+from dataclasses import dataclass as _dataclass37
+
+try:  # executado como script, ou com dimensionamento/ no sys.path
+    import ancoragem_nbr6118 as _anc37
+    import seguranca_nbr6118 as _seg37
+except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
+    from dimensionamento import ancoragem_nbr6118 as _anc37
+    from dimensionamento import seguranca_nbr6118 as _seg37
+
+
+PHI_FENDILHAMENTO_HORIZONTAL_MM = 25.0
+"""22.6.4.1.1 (PDF p. 213): bitola a partir da qual o fendilhamento em plano
+horizontal da armadura de flexão da sapata tem de ser verificado."""
+
+
+def _f37(x: float) -> str:
+    """Número para a memória de cálculo, com vírgula decimal."""
+    return f"{x:.6g}".replace(".", ",")
+
+
+def _pos37(valor, nome: str, item: str) -> float:
+    """Converte para float exigindo valor positivo (senão FaixaNormativaError)."""
+    v = float(valor)
+    if not v > 0.0:
+        raise nbr.FaixaNormativaError(
+            f"{nome} tem de ser positivo ({item}); recebido {_f37(v)}."
+        )
+    return v
+
+
+@_dataclass37(frozen=True)
+class ResultadoHipotesePlana:
+    """Validade da hipótese de distribuição plana de tensões (22.6.1)."""
+
+    rigida: bool | None
+    fundacao_em_rocha: bool
+    h_cm: float | None
+    h_min_rigidez_cm: float
+    hipotese_valida: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_hipotese_distribuicao_plana(
+    h_cm: float | None, A_cm: float, ap_cm: float | None = None,
+    B_cm: float | None = None, bp_cm: float | None = None,
+    fundacao_em_rocha: bool = False, avisar: bool = True,
+) -> ResultadoHipotesePlana:
+    """Valida a hipótese de distribuição plana de tensões no contato sapata-terreno (22.6.1).
+
+    22.6.1 (PDF p. 211): "Quando se verifica a expressão a seguir, nas duas
+    direções, a sapata é considerada rígida. Caso contrário, a sapata é
+    considerada flexível:
+
+        h >= (a − ap)/3
+
+    Para a sapata rígida pode-se admitir plana a distribuição de tensões
+    normais no contato sapata-terreno, caso não se disponha de informações
+    mais detalhadas a respeito. Para sapatas flexíveis ou em casos extremos
+    de fundação em rocha, mesmo com sapata rígida, essa hipótese deve ser
+    revista."
+
+    Unidades: todos os comprimentos em cm. ``h_cm`` é a altura da sapata,
+    ``A_cm``/``B_cm`` as dimensões em planta e ``ap_cm``/``bp_cm`` as
+    dimensões do pilar nas mesmas direções. Com ``B_cm`` e ``bp_cm`` a
+    rigidez é conferida nas duas direções, como a norma pede; com só uma
+    direção, a memória registra que a outra não foi conferida. Com
+    ``h_cm`` ou ``ap_cm`` omitidos, a rigidez não é avaliada
+    (``rigida = None``) e só a fundação em rocha pode invalidar a
+    hipótese. ``avisar=True`` emite ``nucleo_nbr6118.AvisoNBR6118`` quando
+    a hipótese não vale. A rigidez em si vem de ``eh_rigida_nbr``.
+    """
+    A = _pos37(A_cm, "A", "22.6.1")
+    mem: list[str] = []
+    h_min = 0.0
+    rigida: bool | None = None
+    if h_cm is not None and ap_cm is not None:
+        h = _pos37(h_cm, "h", "22.6.1")
+        ap = _pos37(ap_cm, "ap", "22.6.1")
+        if ap > A:
+            raise nbr.FaixaNormativaError(
+                "O pilar não cabe na sapata na direção A (ap > A), 22.6.1."
+            )
+        h_min = (A - ap) / 3.0
+        if B_cm is not None and bp_cm is not None:
+            B = _pos37(B_cm, "B", "22.6.1")
+            bp = _pos37(bp_cm, "bp", "22.6.1")
+            if bp > B:
+                raise nbr.FaixaNormativaError(
+                    "O pilar não cabe na sapata na direção B (bp > B), 22.6.1."
+                )
+            h_min = max(h_min, (B - bp) / 3.0)
+            rigida = eh_rigida_nbr(h, A, ap, B, bp)
+            mem.append(
+                f"22.6.1: h >= (a − ap)/3 nas duas direções — h = {_f37(h)} cm, "
+                f"(A − ap)/3 = {_f37((A - ap) / 3.0)} cm, "
+                f"(B − bp)/3 = {_f37((B - bp) / 3.0)} cm; "
+                f"h,mín = {_f37(h_min)} cm."
+            )
+        else:
+            rigida = eh_rigida_nbr(h, A, ap)
+            mem.append(
+                f"22.6.1: h >= (a − ap)/3 — h = {_f37(h)} cm, "
+                f"(A − ap)/3 = {_f37(h_min)} cm (só a direção A foi informada; "
+                "a direção B não foi conferida)."
+            )
+        mem.append("22.6.1: a sapata é "
+                   + ("rígida." if rigida else "flexível."))
+    else:
+        mem.append("22.6.1: a rigidez não foi avaliada (h ou ap não informados).")
+    if fundacao_em_rocha:
+        mem.append("22.6.1: fundação em rocha — a hipótese de distribuição plana "
+                   "deve ser revista mesmo com sapata rígida.")
+    valida = (rigida is not False) and not fundacao_em_rocha
+    if valida:
+        gov = ("22.6.1: distribuição plana admitida (sapata rígida)."
+               if rigida else
+               "22.6.1: distribuição plana admitida, rigidez não conferida.")
+    elif rigida is False and fundacao_em_rocha:
+        gov = ("22.6.1: sapata flexível e fundação em rocha — a hipótese de "
+               "distribuição plana não se aplica.")
+    elif rigida is False:
+        gov = ("22.6.1: sapata flexível — a hipótese de distribuição plana de "
+               "tensões deve ser revista.")
+    else:
+        gov = ("22.6.1: fundação em rocha — a hipótese de distribuição plana de "
+               "tensões deve ser revista.")
+    mem.append(f"Resultado: {gov}")
+    if avisar and not valida:
+        _warnings37.warn(gov, nbr.AvisoNBR6118, stacklevel=2)
+    return ResultadoHipotesePlana(
+        rigida=rigida, fundacao_em_rocha=bool(fundacao_em_rocha),
+        h_cm=None if h_cm is None else float(h_cm),
+        h_min_rigidez_cm=h_min, hipotese_valida=valida, ok=valida,
+        governante=gov, memoria=tuple(mem),
+    )
+
+
+def _hipotese_plana_se_pedida(
+    h_cm, A_cm, ap_cm, B_cm, bp_cm, fundacao_em_rocha,
+) -> ResultadoHipotesePlana | None:
+    """22.6.1 nas funções de tensão: só checa quando há dado para isso."""
+    if (h_cm is None or ap_cm is None) and not fundacao_em_rocha:
+        return None
+    return verificar_hipotese_distribuicao_plana(
+        h_cm, A_cm, ap_cm, B_cm, bp_cm, fundacao_em_rocha, avisar=True,
+    )
+
+
+@_dataclass37(frozen=True)
+class ResultadoFendilhamentoSapata:
+    """Fendilhamento em plano horizontal da armadura de flexão (22.6.4.1.1)."""
+
+    phi_mm: float
+    phi_limite_mm: float
+    exige_verificacao: bool
+    verificacao_atendida: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def verificar_fendilhamento_horizontal(
+    phi_mm: float, fendilhamento_verificado: bool = False,
+    avisar: bool = True,
+) -> ResultadoFendilhamentoSapata:
+    """Fendilhamento em plano horizontal das barras de flexão da sapata (22.6.4.1.1).
+
+    22.6.4.1.1 (PDF p. 213): "Para barras com φ >= 25 mm, deve ser
+    verificado o fendilhamento em plano horizontal, uma vez que pode ocorrer
+    o destacamento de toda a malha da armadura."
+
+    A norma exige a verificação e não dá o critério fechado dela (o
+    fendilhamento do contato pilar-sapata é remetido a 21.2 por 22.6.3);
+    por isso esta função sinaliza a exigência e registra se ela foi
+    atendida por fora. ``phi_mm`` em mm; o degrau é em φ = 25 mm, incluído
+    (φ >= 25 mm exige). ``fendilhamento_verificado=True`` declara que a
+    verificação foi feita e atendida — só então ``ok`` é verdadeiro quando
+    a bitola cai na faixa. ``avisar=True`` emite ``AvisoNBR6118`` quando a
+    verificação é exigida e não foi declarada.
+    """
+    phi = _pos37(phi_mm, "φ", "22.6.4.1.1")
+    exige = phi >= PHI_FENDILHAMENTO_HORIZONTAL_MM
+    atendida = bool(fendilhamento_verificado)
+    ok = (not exige) or atendida
+    mem = [
+        f"22.6.4.1.1: φ = {_f37(phi)} mm; o fendilhamento em plano horizontal é "
+        f"exigido para φ >= {_f37(PHI_FENDILHAMENTO_HORIZONTAL_MM)} mm."
+    ]
+    if not exige:
+        gov = (f"22.6.4.1.1: φ = {_f37(phi)} mm < 25 mm — o fendilhamento em "
+               "plano horizontal não é exigido.")
+    elif atendida:
+        gov = (f"22.6.4.1.1: φ = {_f37(phi)} mm >= 25 mm — fendilhamento em "
+               "plano horizontal exigido e declarado verificado.")
+    else:
+        gov = (f"22.6.4.1.1: φ = {_f37(phi)} mm >= 25 mm — verificar o "
+               "fendilhamento em plano horizontal (risco de destacamento de "
+               "toda a malha da armadura).")
+    mem.append(f"Resultado: {gov}")
+    if avisar and exige and not atendida:
+        _warnings37.warn(gov, nbr.AvisoNBR6118, stacklevel=2)
+    return ResultadoFendilhamentoSapata(
+        phi_mm=phi, phi_limite_mm=PHI_FENDILHAMENTO_HORIZONTAL_MM,
+        exige_verificacao=exige, verificacao_atendida=atendida, ok=ok,
+        governante=gov, memoria=tuple(mem),
+    )
+
+
+@_dataclass37(frozen=True)
+class ResultadoDetalhamentoFlexaoSapata:
+    """Detalhamento da armadura de flexão de sapata rígida (22.6.4.1.1)."""
+
+    As_cm2: float
+    phi_mm: float
+    n_barras: int
+    As_efetiva_cm2: float
+    largura_util_cm: float
+    espacamento_cm: float
+    comprimento_reto_cm: float
+    gancho_ponta_reta_cm: float
+    pino_dobramento_phi: float
+    comprimento_total_barra_cm: float
+    de_face_a_face: bool
+    com_gancho_nas_duas_extremidades: bool
+    exige_fendilhamento_horizontal: bool
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def detalhamento_flexao_sapata(
+    As_cm2: float, phi_mm: float, largura_sapata_cm: float,
+    comprimento_sapata_cm: float, cobrimento_cm: float = 4.0,
+    aco: str = "CA-50", tipo_gancho: str = "reto",
+    com_gancho_nas_duas_extremidades: bool = True,
+    espacamento_max_cm: float | None = None,
+    fendilhamento_verificado: bool = False,
+) -> ResultadoDetalhamentoFlexaoSapata:
+    """Detalhamento da armadura de flexão de sapata rígida (22.6.4.1.1, PDF p. 212-213).
+
+    22.6.4.1.1: "A armadura de flexão deve ser uniformemente distribuída ao
+    longo da largura da sapata, estendendo-se integralmente de face a face da
+    sapata e terminando em gancho nas duas extremidades." E, na p. 213:
+    "Para barras com φ >= 25 mm, deve ser verificado o fendilhamento em plano
+    horizontal [...]".
+
+    Distribui ``As_cm2`` (cm², de uma direção) em barras de bitola
+    ``phi_mm`` (mm), uniformemente ao longo de ``largura_sapata_cm`` (cm, a
+    dimensão perpendicular às barras) e com as barras de face a face ao
+    longo de ``comprimento_sapata_cm`` (cm, a dimensão paralela a elas):
+
+        As,barra = π·φ²/4                      (φ em cm = φ[mm]/10)
+        n = máx(2, teto(As/As,barra))
+        largura útil = largura − 2·cobrimento − φ   (eixo a eixo das extremas)
+        espaçamento = largura útil/(n − 1)
+        comprimento reto = comprimento − 2·cobrimento   (de face a face)
+        comprimento total = comprimento reto + 2·ponta reta do gancho
+
+    O gancho (ponta reta mínima e pino de dobramento) vem de
+    ``ancoragem_nbr6118.comprimento_gancho`` e
+    ``ancoragem_nbr6118.diametro_pino_gancho`` (9.4.2.3, Tabela 9.1, P21);
+    ``tipo_gancho`` é 'reto' (padrão, ponta reta 8φ), '45' ou
+    'semicircular'. A norma não fixa espaçamento máximo neste item: com
+    ``espacamento_max_cm`` o usuário impõe o dele (por exemplo o de lajes,
+    20.1, quando 22.6.4.1.3 remete a lajes), e só então o espaçamento entra
+    em ``ok``. ``fendilhamento_verificado`` é repassado a
+    ``verificar_fendilhamento_horizontal``.
+    """
+    As = _pos37(As_cm2, "As", "22.6.4.1.1")
+    phi = _pos37(phi_mm, "φ", "22.6.4.1.1")
+    largura = _pos37(largura_sapata_cm, "largura da sapata", "22.6.4.1.1")
+    comprimento = _pos37(comprimento_sapata_cm, "comprimento da sapata",
+                         "22.6.4.1.1")
+    cob = float(cobrimento_cm)
+    if cob < 0.0:
+        raise nbr.FaixaNormativaError(
+            "O cobrimento não pode ser negativo (22.6.4.1.1)."
+        )
+    phi_cm = phi / 10.0
+    largura_util = largura - 2.0 * cob - phi_cm
+    if not largura_util > 0.0:
+        raise nbr.FaixaNormativaError(
+            f"A largura útil da sapata é nula ou negativa: largura = "
+            f"{_f37(largura)} cm, cobrimento = {_f37(cob)} cm, φ = "
+            f"{_f37(phi)} mm (22.6.4.1.1)."
+        )
+    comprimento_reto = comprimento - 2.0 * cob
+    if not comprimento_reto > 0.0:
+        raise nbr.FaixaNormativaError(
+            f"O comprimento reto de face a face é nulo ou negativo: "
+            f"comprimento = {_f37(comprimento)} cm, cobrimento = "
+            f"{_f37(cob)} cm (22.6.4.1.1)."
+        )
+    As_barra = _math37.pi * phi_cm ** 2 / 4.0
+    n = max(2, int(_math37.ceil(As / As_barra - 1e-9)))
+    As_ef = n * As_barra
+    espacamento = largura_util / (n - 1)
+    ponta_reta = _anc37.comprimento_gancho(phi, tipo_gancho)
+    pino = _anc37.diametro_pino_gancho(phi, aco)
+    com_gancho = bool(com_gancho_nas_duas_extremidades)
+    total = comprimento_reto + (2.0 * ponta_reta if com_gancho else 0.0)
+    fend = verificar_fendilhamento_horizontal(phi, fendilhamento_verificado,
+                                              avisar=False)
+    mem = [
+        f"22.6.4.1.1: As = {_f37(As)} cm² em barras φ {_f37(phi)} mm "
+        f"(As,barra = {_f37(As_barra)} cm²) — n = {n} barras, "
+        f"As,ef = {_f37(As_ef)} cm².",
+        f"22.6.4.1.1: distribuição uniforme na largura — largura útil = "
+        f"{_f37(largura)} − 2·{_f37(cob)} − {_f37(phi_cm)} = "
+        f"{_f37(largura_util)} cm; espaçamento = {_f37(largura_util)}/"
+        f"{n - 1} = {_f37(espacamento)} cm.",
+        f"22.6.4.1.1: barras de face a face — comprimento reto = "
+        f"{_f37(comprimento)} − 2·{_f37(cob)} = {_f37(comprimento_reto)} cm.",
+    ]
+    if com_gancho:
+        mem.append(
+            f"22.6.4.1.1 com 9.4.2.3: gancho '{tipo_gancho}' nas duas "
+            f"extremidades — ponta reta >= {_f37(ponta_reta)} cm, pino de "
+            f"dobramento D = {_f37(pino)}·φ; comprimento total da barra = "
+            f"{_f37(total)} cm."
+        )
+    else:
+        mem.append("22.6.4.1.1: as barras têm de terminar em gancho nas duas "
+                   "extremidades — o detalhamento informado não tem gancho.")
+    mem.extend(fend.memoria[:-1])
+    espacamento_ok = True
+    if espacamento_max_cm is not None:
+        lim = _pos37(espacamento_max_cm, "espaçamento máximo", "22.6.4.1.1")
+        espacamento_ok = espacamento <= lim + 1e-9
+        mem.append(
+            f"Espaçamento adotado {_f37(espacamento)} cm x máximo do usuário "
+            f"{_f37(lim)} cm (a 22.6.4.1.1 não fixa esse limite): "
+            f"{'ok' if espacamento_ok else 'não ok'}."
+        )
+    ok = com_gancho and espacamento_ok and fend.ok
+    if not com_gancho:
+        gov = "22.6.4.1.1: faltam os ganchos nas duas extremidades das barras."
+    elif not espacamento_ok:
+        gov = (f"Espaçamento de {_f37(espacamento)} cm acima do máximo "
+               f"imposto pelo usuário.")
+    elif not fend.ok:
+        gov = fend.governante
+    else:
+        gov = (f"22.6.4.1.1: {n} φ {_f37(phi)} mm a cada "
+               f"{_f37(espacamento)} cm, de face a face, com gancho nas duas "
+               "extremidades.")
+    mem.append(f"Resultado: {gov}")
+    return ResultadoDetalhamentoFlexaoSapata(
+        As_cm2=As, phi_mm=phi, n_barras=n, As_efetiva_cm2=As_ef,
+        largura_util_cm=largura_util, espacamento_cm=espacamento,
+        comprimento_reto_cm=comprimento_reto, gancho_ponta_reta_cm=ponta_reta,
+        pino_dobramento_phi=pino, comprimento_total_barra_cm=total,
+        de_face_a_face=True, com_gancho_nas_duas_extremidades=com_gancho,
+        exige_fendilhamento_horizontal=fend.exige_verificacao, ok=ok,
+        governante=gov, memoria=tuple(mem),
+    )
+
+
+@_dataclass37(frozen=True)
+class ResultadoAlturaArranque:
+    """Altura suficiente para ancorar a armadura de arranque do pilar
+    (22.6.4.1.2 na sapata; 22.7.4.1.4 no bloco)."""
+
+    elemento: str
+    item: str
+    h_cm: float
+    cobrimento_cm: float
+    desconto_dobra_cm: float
+    comprimento_disponivel_cm: float
+    lb_nec_cm: float
+    h_minima_cm: float
+    ok: bool
+    governante: str
+    memoria: tuple[str, ...]
+
+
+def altura_arranque_suficiente(
+    h_cm: float, lb_nec_cm: float, cobrimento_cm: float = 4.0,
+    desconto_dobra_cm: float = 0.0, elemento: str = "sapata",
+    item: str = "22.6.4.1.2",
+) -> ResultadoAlturaArranque:
+    """Altura da sapata suficiente para ancorar a armadura de arranque (22.6.4.1.2, PDF p. 213).
+
+    22.6.4.1.2: "A sapata deve ter altura suficiente para permitir a
+    ancoragem da armadura de arranque." O mesmo texto vale para o bloco em
+    22.7.4.1.4 (PDF p. 215): "O bloco deve ter altura suficiente para
+    permitir a ancoragem da armadura de arranque dos pilares" — daí os
+    parâmetros ``elemento`` e ``item``, usados por
+    ``blocos_nbr6118.altura_arranque_pilar_bloco``.
+
+    Comprimentos em cm:
+
+        l,disponível = h − cobrimento − desconto da dobra
+        h,mínimo     = lb,nec + cobrimento + desconto da dobra
+        condição     = l,disponível >= lb,nec   (Rd >= Sd, 12.5.2)
+
+    ``lb_nec_cm`` é o comprimento de ancoragem necessário da barra de
+    arranque, de ``ancoragem_nbr6118.comprimento_ancoragem`` (9.4.2.5, P21)
+    — com gancho, se o arranque terminar em gancho na base. ``cobrimento_cm``
+    é o cobrimento da face oposta (o inferior, sob a armadura de arranque);
+    ``desconto_dobra_cm`` é o que a dobra da barra consome da altura, quando
+    houver (o padrão 0 supõe o trecho reto ancorado até o cobrimento
+    inferior). A norma não fixa esse desconto: ele é dado do detalhamento.
+    """
+    h = _pos37(h_cm, "h", item)
+    lb = _pos37(lb_nec_cm, "lb,nec", item)
+    cob = float(cobrimento_cm)
+    desc = float(desconto_dobra_cm)
+    if cob < 0.0 or desc < 0.0:
+        raise nbr.FaixaNormativaError(
+            f"Cobrimento e desconto da dobra não podem ser negativos ({item})."
+        )
+    disponivel = h - cob - desc
+    h_min = lb + cob + desc
+    mem = [
+        f"{item}: o {elemento} tem de ter altura suficiente para ancorar a "
+        f"armadura de arranque do pilar.",
+        f"{item}: l,disponível = h − c − dobra = {_f37(h)} − {_f37(cob)} − "
+        f"{_f37(desc)} = {_f37(disponivel)} cm; lb,nec = {_f37(lb)} cm "
+        f"(9.4.2.5); h,mínimo = lb,nec + c + dobra = {_f37(h_min)} cm.",
+    ]
+    s = _seg37.verificar_seguranca(disponivel, lb,
+                                   f"l,disponível x lb,nec (arranque no {elemento})",
+                                   item)
+    mem.extend(s.memoria)
+    if s.ok:
+        gov = (f"{item}: altura suficiente — l,disponível = "
+               f"{_f37(disponivel)} cm >= lb,nec = {_f37(lb)} cm.")
+    else:
+        gov = (f"{item}: altura insuficiente para o arranque — adotar h >= "
+               f"{_f37(h_min)} cm (l,disponível = {_f37(disponivel)} cm < "
+               f"lb,nec = {_f37(lb)} cm).")
+    mem.append(f"Resultado: {gov}")
+    return ResultadoAlturaArranque(
+        elemento=str(elemento), item=str(item), h_cm=h, cobrimento_cm=cob,
+        desconto_dobra_cm=desc, comprimento_disponivel_cm=disponivel,
+        lb_nec_cm=lb, h_minima_cm=h_min, ok=s.ok, governante=gov,
+        memoria=tuple(mem),
+    )
 
 
 if __name__ == "__main__":
