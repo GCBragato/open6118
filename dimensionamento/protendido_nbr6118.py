@@ -1,5 +1,7 @@
 """Concreto Protendido - Fundamentos (NBR 6118:2026).
 
+Nome ate 19/09/2026: protendido_bastos.py. O credito as apostilas esta abaixo.
+
 Implementa as analises elasticas e perdas de protensao seguindo a apostila
 "FUNDAMENTOS DO CONCRETO PROTENDIDO", Prof. Paulo Sergio Bastos,
 UNESP/Bauru. As grandezas de material (fct,m, Eci, Ecs, o diagrama

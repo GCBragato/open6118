@@ -1,5 +1,7 @@
 """Pilares de Concreto Armado (NBR 6118:2026).
 
+Nome ate 19/09/2026: pilares_bastos.py. O credito as apostilas esta abaixo.
+
 Implementa o dimensionamento de pilares isolados (no fixos) seguindo a
 apostila "PILARES DE CONCRETO ARMADO", Prof. Paulo Sergio Bastos,
 UNESP/Bauru, corrigida contra a NBR 6118:2026 (auditoria de 18/09/2026:

@@ -3,7 +3,7 @@ NBR 6118:2026, pg 32 - Seção 9 Comportamento conjunto dos materiais
 
 Legado: mantido por compatibilidade e corrigido contra a NBR 6118:2026
 (auditoria de 18/09/2026, achados ANC-01 a ANC-08); para projetos novos,
-use dimensionamento/ancoragem_bastos.py.
+use dimensionamento/ancoragem_nbr6118.py.
 
 Métodos disponíveis:
 res_ade_pass(),

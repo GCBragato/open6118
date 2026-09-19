@@ -1,5 +1,7 @@
 # Correções do open6118 — NBR 6118:2026
 
+> **Depois deste relatório:** as correções foram commitadas no mesmo dia (commit `afb78af`). **Nomes de módulo:** em 19/09/2026 os `*_bastos.py` citados aqui foram renomeados para `*_nbr6118.py` (por exemplo, `vigas_bastos.py` virou `vigas_nbr6118.py`). O texto abaixo mantém os nomes da época.
+
 - **Data:** 18/09/2026
 - **Base:** [AUDITORIA_NBR6118_2026.md](AUDITORIA_NBR6118_2026.md) (73 defeitos confirmados)
 - **Norma:** ABNT NBR 6118:2026, 5ª edição. Páginas citadas = página do PDF (a impressa é 18 a menos).

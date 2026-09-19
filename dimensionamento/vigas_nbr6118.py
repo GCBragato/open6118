@@ -1,5 +1,7 @@
 """Flexao Normal Simples - Vigas em Concreto Armado (NBR 6118:2023).
 
+Nome ate 19/09/2026: vigas_bastos.py. O credito as apostilas esta abaixo.
+
 Implementa o dimensionamento das vigas a flexao simples seguindo a apostila
 "FLEXAO NORMAL SIMPLES - VIGAS" (Out/2023), Prof. Paulo Sergio Bastos,
 UNESP/Bauru, baseada na NBR 6118:2023.

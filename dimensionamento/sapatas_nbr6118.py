@@ -1,5 +1,7 @@
 """Sapatas de Fundacao (NBR 6118:2023 + CEB-70).
 
+Nome ate 19/09/2026: sapatas_bastos.py. O credito as apostilas esta abaixo.
+
 Implementa o dimensionamento de sapatas isoladas seguindo a apostila
 "SAPATAS DE FUNDACAO", Prof. Paulo Sergio Bastos, UNESP/Bauru.
 

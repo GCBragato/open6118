@@ -14,7 +14,7 @@
    - **443 em 48 pacotes**, cada um coeso (um módulo ou um tema) e do tamanho de uma rodada de agente, de 2 a 18 itens;
    - **1 fora do escopo:** o vento, que é da NBR 6123. A biblioteca recebe os esforços de vento prontos e os combina.
 3. **Uma preparação e quatro ondas.**
-   - **Preparação:** renomear os módulos `*_bastos.py` para `*_nbr6118.py` (decisão 4). Neste plano, os nomes de módulo já estão na forma nova.
+   - **Preparação, feita em 19/09/2026:** os módulos `*_bastos.py` foram renomeados para `*_nbr6118.py` (decisão 4).
    - **Onda 1, fundação (P1 a P9):** durabilidade, materiais, ações e combinações, fluência e retração, ELS base. Quase tudo o que vem depois consome isso.
    - **Onda 2, uso corrente em edifícios (P10 a P26, P44 e P45):** limites geométricos, cortante e torção completos, lajes, **punção** (a maior lacuna: não existe punção de laje; só a de sapata rígida), detalhamento de vigas e pilares, 2ª ordem de pilares, estabilidade global e o **cálculo próprio de estruturas de barras** (pórtico, grelha e treliça), com as lajes nervuradas e lisas por grelha e por pórtico equivalente.
    - **Onda 3, prioridade média (P27 a P37 e P46 a P48):** emendas, protensão completa, bielas e tirantes, consolos, fundações, regiões especiais, pilar-parede, o crescimento do kernel, a 2ª ordem global por análise não linear, os esforços hiperestáticos de protensão e os modelos de bielas e tirantes de viga-parede, sapata e bloco.
@@ -89,9 +89,9 @@ A tabela já reflete a revisão de 19/09/2026: os 13 itens de análise que eram 
 ### 3.2 Organização dos módulos
 
 1. **Nome por tema da norma, com sufixo `_nbr6118`:** `acoes_nbr6118.py`, `puncao_nbr6118.py`, `detalhamento_vigas_nbr6118.py` e assim por diante. Nada de apostila no nome de módulo novo.
-2. **Os `*_bastos.py` são renomeados para `*_nbr6118.py` antes da onda 1** (decisão 4), sem fachada no nome antigo: quem importa o nome antigo troca o import. As assinaturas das funções não mudam, só o nome do módulo. O crédito às apostilas do Prof. Paulo Sérgio Bastos passa para a docstring de cada módulo e para o README. Daqui em diante, este plano usa os nomes novos:
+2. **Os `*_bastos.py` foram renomeados para `*_nbr6118.py` em 19/09/2026, antes da onda 1** (decisão 4), sem fachada no nome antigo: quem importa o nome antigo troca o import. As assinaturas das funções não mudaram, só o nome do módulo. O crédito às apostilas do Prof. Paulo Sérgio Bastos está na docstring de cada módulo e no README.
 
-   | Hoje | Depois da preparação |
+   | Até 19/09/2026 | Agora |
    |---|---|
    | `vigas_bastos.py` | `vigas_nbr6118.py` |
    | `lajes_bastos.py` | `lajes_nbr6118.py` |
@@ -103,13 +103,14 @@ A tabela já reflete a revisão de 19/09/2026: os 13 itens de análise que eram 
    | `sapatas_bastos.py` | `sapatas_nbr6118.py` |
    | `blocos_bastos.py` | `blocos_nbr6118.py` |
    | `viga_servico_bastos.py` | `viga_servico_nbr6118.py` |
+
 3. **Núcleo único.** O que for grandeza de material ou parâmetro geral vai para `nucleo_nbr6118.py`:
-   - o que entra: massa específica, ν, dilatação, a Tabela 8.1 (promovida de `protendido_bastos`), `GAMA_F`, a Tabela 13.4 e a normalização única de CAA;
+   - o que entra: massa específica, ν, dilatação, a Tabela 8.1 (promovida de `protendido_nbr6118`), `GAMA_F`, a Tabela 13.4 e a normalização única de CAA;
    - o arquivo tem ~620 linhas; se passar de ~1 200, divide-se em `nucleo_nbr6118/` (pacote) com reexportação, sem mudar import.
 4. **Promover antes de consumir.** Função no lugar errado muda de casa no pacote que primeiro precisar dela, com reexportação no lugar antigo:
    - `alpha_f` e `momento_fissuracao` vão para `els_deformacao_nbr6118` (P8);
    - `vao_efetivo` vai para `analise_linear_nbr6118` (P14);
-   - a ancoragem ativa vai para `ancoragem_bastos` (P31).
+   - a ancoragem ativa vai para `ancoragem_nbr6118` (P31).
 5. **Legado `secoes_norma/`:** não recebe nada novo. Cada pacote que cobre um item que também existe no legado transforma a função legada em fachada de uma linha sobre a nova, com `DeprecationWarning`. Na correção de hoje o legado foi consertado e passou a delegar ao núcleo; aposentá-lo de vez (decisão 5 da auditoria) continua em aberto e não bloqueia nenhum pacote.
 
 ### 3.3 Convenções de código (as do núcleo, obrigatórias)
@@ -1280,7 +1281,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 
 | Onda | Pacotes | Leva paralela possível |
 |---|---|---|
-| Preparação | Renomear os módulos (decisão 4) | Sozinha, antes de tudo, com commit próprio |
+| Preparação | Renomear os módulos (decisão 4) | Feita em 19/09/2026, com commit próprio |
 | 1 | P1 a P9 | {P1, P2, P3, P4, P6} → {P5, P7, P8} → {P9} |
 | 2 | P10 a P26, P44 e P45 | {P10, P11, P13, P14, P21} → {P12, P15, P17, P24, P26, P44} → {P16, P19, P25, P45} → {P18, P20, P22, P23} |
 | 3 | P27 a P37, P46 a P48 | {P27, P28, P30, P34, P35, P46} → {P29, P31, P32, P36, P47} → {P33, P37, P48} |
@@ -1305,7 +1306,7 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 1. **Análise estrutural.** Entra a análise que a 6118 prescreve, com cálculo próprio em Python e só com barras: pórtico plano e espacial, grelha, treliça 2D e 3D e 2ª ordem global. Ficam de fora os elementos finitos de placa e de sólido e o vento (NBR 6123). Ver 3.1 e os pacotes P44 a P48.
 2. **Figura 8.6.** O ramo inclinado até fptd em εpu vira o **padrão**, e o patamar de hoje fica como opção (`diagrama="patamar"`). Muda o resultado de seção protendida no ELU (a estimativa, com o cabo a uns 15 ‰, é de 2 % a 3 % a mais no momento resistente), e o P3 lista o antes e o depois.
 3. **γg da nota a da Tabela 11.1.** O padrão é 1,4, num parâmetro configurável no começo do script (`nucleo.GAMA_G`), lido na hora da chamada e registrado na memória de cálculo. A biblioteca não decide se a obra é de pequena variabilidade (3.3, item 9).
-4. **Nomes dos módulos.** Os `*_bastos.py` são renomeados para `*_nbr6118.py` já, antes da onda 1, sem fachada no nome antigo. Quem importa o nome antigo troca o import. O crédito ao Prof. Bastos passa para a docstring de cada módulo e para o README (3.2).
+4. **Nomes dos módulos.** Os `*_bastos.py` foram renomeados para `*_nbr6118.py` em 19/09/2026, antes da onda 1, sem fachada no nome antigo. Quem importa o nome antigo troca o import. O crédito ao Prof. Bastos passa para a docstring de cada módulo e para o README (3.2).
 5. **Versionamento.** Direto no main, com um commit por pacote aprovado nas três verificações. Push só quando o Gustavo mandar.
 6. **VRd1 de laje.** `lajes_nbr6118.cortante_resistente_laje` passa a delegar a `cortante_nbr6118.laje_sem_armadura` (P15). O resultado muda só quando há força normal.
 
@@ -1335,11 +1336,11 @@ Formato: objetivo; itens (id do mapa · item da norma · página do PDF); o que 
 9. **Comparação com o TQS.** Os pacotes que mexem em pilar (P25, P28) exigem rodar de novo o `compare_3way_parallel.py`. Os dois obstáculos da CORRECOES (o `import tests` e o fck fora da faixa fora do `try`) precisam ser resolvidos antes.
 10. **Tamanho do núcleo.** Ver 3.2, item 3.
 11. **Cálculo de barras sem número na norma.** O risco típico é erro de sinal ou de convenção de eixo, que passa despercebido num caso simétrico. Os testes do P44 cobrem as duas direções e os dois sentidos de carga, conferem o equilíbrio em todo resultado e comparam com solução fechada (3.1).
-12. **Renomear quebra import.** A preparação troca o nome dos módulos sem fachada. Antes do commit, o pytest inteiro e os scripts de comparação com o TQS têm de rodar com os nomes novos, e o README muda junto. O artigo do blog sobre a biblioteca usa o nome antigo no exemplo de código e nos créditos, e muda junto se ainda não tiver sido publicado.
+12. **Renomear quebra import.** A preparação, feita em 19/09/2026, trocou o nome dos módulos sem fachada. Antes do commit, o pytest inteiro e os scripts de comparação com o TQS têm de rodar com os nomes novos, e o README muda junto. O artigo do blog sobre a biblioteca usa o nome antigo no exemplo de código e nos créditos, e muda junto se ainda não tiver sido publicado.
 
 ## 9. Como a execução vai funcionar
 
-**Antes da onda 1, a preparação (decisão 4):** renomear os módulos com `git mv`, para o histórico acompanhar cada arquivo; trocar todos os imports (biblioteca, testes, `secoes_norma/`, scripts de comparação e README); levar o crédito ao Prof. Bastos para a docstring de cada módulo; rodar o pytest inteiro; e commitar sozinho, sem nenhuma mudança de conteúdo misturada.
+**Antes da onda 1, a preparação (decisão 4), feita em 19/09/2026:** renomear os módulos com `git mv`, para o histórico acompanhar cada arquivo; trocar todos os imports (biblioteca, testes, `secoes_norma/`, scripts de comparação e README); levar o crédito ao Prof. Bastos para a docstring de cada módulo; rodar o pytest inteiro; e commitar sozinho, sem nenhuma mudança de conteúdo misturada.
 
 Para cada pacote, na ordem da seção 5:
 

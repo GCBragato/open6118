@@ -9,8 +9,8 @@ Gustavo) e é importado por secoes_norma/sec9.py (também legado, não
 editado aqui). Os cálculos de material agora delegam a
 dimensionamento/nucleo_nbr6118.py, fonte única testada contra a norma
 (tests/test_nucleo_nbr6118.py). Para código novo, prefira o núcleo
-diretamente ou os módulos dimensionamento/*_bastos.py (ex.:
-ancoragem_bastos.py no lugar de sec9.py, cortante_bastos.py no lugar da
+diretamente ou os módulos dimensionamento/*_nbr6118.py (ex.:
+ancoragem_nbr6118.py no lugar de sec9.py, cortante_nbr6118.py no lugar da
 verificação de cortante do legado).
 """
 
@@ -216,7 +216,7 @@ class Aco_Passivo:
         2023/2026 define η1 pela CATEGORIA do aço: CA-25 = 1,00,
         CA-50 = 2,25, CA-60 = 1,00 (o parâmetro ``superficie`` continua
         aceito, por compatibilidade, mas não influencia mais η1 — mesmo
-        padrão do ANC-01 em ancoragem_bastos.py).
+        padrão do ANC-01 em ancoragem_nbr6118.py).
         """
         return nbr.eta1(self.catAco)
 

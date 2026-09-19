@@ -1,4 +1,4 @@
-"""Pilares (pilares_bastos.py) contra a NBR 6118:2026 — achados PIL-01 a PIL-04.
+"""Pilares (pilares_nbr6118.py) contra a NBR 6118:2026 — achados PIL-01 a PIL-04.
 
 Valores esperados das reproduções verificadas na auditoria de 18/09/2026.
 """
@@ -11,7 +11,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "dimensionamento"))
 
 import nucleo_nbr6118 as nbr  # noqa: E402
-import pilares_bastos as P  # noqa: E402
+import pilares_nbr6118 as P  # noqa: E402
 
 # Exemplo 13.1.1 da apostila: pilar intermediário 20x50, Nd = 1400 kN, C30, le = 280 cm
 BASE = dict(Nd_kn=1400.0, le_cm=280.0, h_cm=20.0, fck_mpa=30.0, Ac_cm2=1000.0)

@@ -1,11 +1,13 @@
 """Vigas de Concreto Armado - Verificacoes de Servico (NBR 6118:2023).
 
+Nome ate 19/09/2026: viga_servico_bastos.py. O credito as apostilas esta abaixo.
+
 Implementa as verificacoes de servico (estado-limite de servico) seguindo
 a apostila "VIGAS DE CONCRETO ARMADO - Dimensionamento, Flecha e
 Fissuracao", Prof. Paulo Sergio Bastos, UNESP/Bauru.
 
 A flexao, cortante e ancoragem estao em scripts irmaos:
-    vigas_bastos.py, cortante_bastos.py, ancoragem_bastos.py.
+    vigas_nbr6118.py, cortante_nbr6118.py, ancoragem_nbr6118.py.
 
 Conteudo unico desta apostila implementado aqui:
     - Posicao da linha neutra no Estadio II (Eq. 60 retangular e Eq. 64 T).

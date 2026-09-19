@@ -1,4 +1,4 @@
-"""Testes de lajes_bastos.py contra a ABNT NBR 6118:2026.
+"""Testes de lajes_nbr6118.py contra a ABNT NBR 6118:2026.
 
 Cobre os achados LAJ-01 a LAJ-07 da auditoria (AUDITORIA_NBR6118_2026.md).
 Os valores esperados vem das formulas do nucleo normativo (nucleo_nbr6118.py,
@@ -17,7 +17,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "dimensionamento"))
 
-import lajes_bastos as laj  # noqa: E402
+import lajes_nbr6118 as laj  # noqa: E402
 import nucleo_nbr6118 as nbr  # noqa: E402
 
 
@@ -44,7 +44,7 @@ def _dimensionar_antigo(Md_kncm: float, d_cm: float, fck_mpa: float,
 def _dimensionar_oraculo(Md_kncm: float, d_cm: float, fck_mpa: float,
                          fyk_mpa: float = 500.0, bw_cm: float = 100.0) -> tuple[float, float]:
     """Oraculo independente: mesma fisica (bloco retangular, 17.2.2 e), mas
-    escrito direto a partir do nucleo, sem chamar lajes_bastos."""
+    escrito direto a partir do nucleo, sem chamar lajes_nbr6118."""
     tensao = nbr.mpa_para_kncm2(nbr.tensao_retangulo(fck_mpa))
     lam = nbr.lambda_retangulo(fck_mpa)
     fyd = nbr.mpa_para_kncm2(nbr.fyd(fyk_mpa))

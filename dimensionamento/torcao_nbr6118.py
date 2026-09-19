@@ -1,5 +1,7 @@
 """Torcao em Vigas de Concreto Armado (NBR 6118:2026).
 
+Nome ate 19/09/2026: torcao_bastos.py. O credito as apostilas esta abaixo.
+
 Implementa o dimensionamento a torcao seguindo a apostila
 "TORCAO EM VIGAS DE CONCRETO ARMADO", Prof. Paulo Sergio Bastos,
 UNESP/Bauru, corrigida contra a NBR 6118:2026 (auditoria de 18/09/2026:
@@ -72,7 +74,7 @@ def alfa_v2(fck_mpa: float) -> float:
 
 def _validar_theta_torcao(theta_deg: float) -> None:
     """17.5.1.1: 30 deg <= theta <= 45 deg (CRT-07; mesma faixa/forma da
-    validacao ja existente em cortante_bastos.modelo_calculo_II)."""
+    validacao ja existente em cortante_nbr6118.modelo_calculo_II)."""
     if not (THETA_MIN_DEG - 1e-6 <= theta_deg <= THETA_MAX_DEG + 1e-6):
         raise ValueError(
             f"theta deve estar entre 30 e 45 deg (recebido {theta_deg})."

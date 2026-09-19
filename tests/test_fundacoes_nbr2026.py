@@ -1,4 +1,4 @@
-"""Fundacoes (sapatas_bastos.py + blocos_bastos.py) contra a NBR 6118:2026 --
+"""Fundacoes (sapatas_nbr6118.py + blocos_nbr6118.py) contra a NBR 6118:2026 --
 achados FUN-01 a FUN-04 (ver AUDITORIA_NBR6118_2026.md).
 
 Valores esperados vem das reproducoes verificadas na auditoria de
@@ -14,8 +14,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "dimensionamento"))
 
 import nucleo_nbr6118 as nbr  # noqa: E402
-import sapatas_bastos as SAP  # noqa: E402
-import blocos_bastos as BLO  # noqa: E402
+import sapatas_nbr6118 as SAP  # noqa: E402
+import blocos_nbr6118 as BLO  # noqa: E402
 
 
 def _aprox(a: float, b: float, tol: float) -> bool:

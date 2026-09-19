@@ -1,5 +1,7 @@
 """Blocos de Fundacao sobre Estacas (NBR 6118:2023 + Metodo de Blevot).
 
+Nome ate 19/09/2026: blocos_bastos.py. O credito as apostilas esta abaixo.
+
 Implementa o dimensionamento de blocos rigidos sobre estacas seguindo a
 apostila "BLOCOS DE FUNDACAO", Prof. Paulo Sergio Bastos, UNESP/Bauru,
 pelo Metodo das Bielas (Blevot).

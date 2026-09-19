@@ -1,6 +1,17 @@
 Change Log
 ==========
 
+19/09/2026
+----------
+- Módulos `*_bastos.py` renomeados para `*_nbr6118.py` (por exemplo, `vigas_bastos` virou `vigas_nbr6118`).
+  Quem importava o nome antigo precisa trocar o import. O crédito às apostilas do Prof. Paulo Sérgio
+  Bastos continua no cabeçalho de cada módulo e no README.
+
+18/09/2026
+----------
+- Auditoria contra a NBR 6118:2026: 73 defeitos corrigidos, testes de 27 para 613. Ver
+  AUDITORIA_NBR6118_2026.md e CORRECOES_NBR6118_2026.md.
+
 0.0.1 (30/04/2022)
 ------------------
 Primeira versão.

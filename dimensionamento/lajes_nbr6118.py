@@ -1,5 +1,7 @@
 """Lajes Macicas em Concreto Armado (NBR 6118:2023).
 
+Nome ate 19/09/2026: lajes_bastos.py. O credito as apostilas esta abaixo.
+
 Implementa o calculo de lajes macicas seguindo a apostila
 "LAJES DE CONCRETO ARMADO" (Out/2023), Prof. Paulo Sergio Bastos,
 UNESP/Bauru, baseada na NBR 6118:2023 e Teoria das Placas (tabelas de Bares).
@@ -32,7 +34,7 @@ Convencoes:
 
 Estrutura segue:
     - alv_est/viga_mista_v3.py: dataclasses, funcoes puras, testes.
-    - open6118/dimensionamento/vigas_bastos.py: mesmo padrao para vigas.
+    - open6118/dimensionamento/vigas_nbr6118.py: mesmo padrao para vigas.
 """
 
 from __future__ import annotations

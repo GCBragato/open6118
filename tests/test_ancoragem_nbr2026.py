@@ -1,4 +1,4 @@
-"""Ancoragem (secoes_norma/sec9.py legado e dimensionamento/ancoragem_bastos.py)
+"""Ancoragem (secoes_norma/sec9.py legado e dimensionamento/ancoragem_nbr6118.py)
 contra a NBR 6118:2026 -- achados ANC-01 a ANC-08.
 
 Valores esperados das reproducoes verificadas na auditoria de 18/09/2026
@@ -22,7 +22,7 @@ sys.path.insert(0, str(_REPO / "dimensionamento"))
 sys.path.insert(0, str(_REPO / "secoes_norma"))
 
 import nucleo_nbr6118 as nbr  # noqa: E402
-import ancoragem_bastos as A  # noqa: E402
+import ancoragem_nbr6118 as A  # noqa: E402
 import sec9  # noqa: E402
 
 
@@ -174,7 +174,7 @@ def test_ANC06_qual_ader_invalido_levanta_valueerror_nao_typeerror():
         sec9.res_ade_pass('nervurada', 'excelente', 16, FCTD_C25)
 
 
-# --- ANC-07: fctm_mpa com o ramo de fck > 50 (ancoragem_bastos.py) --------
+# --- ANC-07: fctm_mpa com o ramo de fck > 50 (ancoragem_nbr6118.py) --------
 # (8.2.5, PDF p.42-43)
 @pytest.mark.parametrize("fck, esperado", [
     (45.0, 0.3 * 45 ** (2 / 3)),

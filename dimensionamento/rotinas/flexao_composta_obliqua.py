@@ -1320,7 +1320,7 @@ def ei_secante(
           'y' -> Md em torno de y (gera curvatura ky).
 
     Necessario para metodos de 2a ordem (P3/P4/P5 do PCalc) em
-    `pilares_bastos.py`.
+    `pilares_nbr6118.py`.
     """
     if eixo not in ("x", "y"):
         raise ValueError(f"eixo deve ser 'x' ou 'y', recebido {eixo!r}.")

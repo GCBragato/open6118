@@ -1,5 +1,7 @@
 """Ancoragem e Emenda de Armaduras Passivas (NBR 6118:2023).
 
+Nome ate 19/09/2026: ancoragem_bastos.py. O credito as apostilas esta abaixo.
+
 Implementa o calculo de comprimentos de ancoragem e de transpasse seguindo
 a apostila "ANCORAGEM E EMENDA DE ARMADURAS", Prof. Paulo Sergio Bastos,
 UNESP/Bauru.

@@ -53,7 +53,7 @@ python -m pytest
 Um exemplo, uma viga de 20 × 50 cm, com d = 46 cm, aço CA-50 e Md = 14.000 kN·cm, em C30 e em C90:
 
 ```python
-from dimensionamento import vigas_bastos as vigas
+from dimensionamento import vigas_nbr6118 as vigas
 
 for fck in (30, 90):
     r = vigas.secao_retangular_simples(
@@ -79,7 +79,7 @@ Python 3.13. O padrão é o kernel em Python, que dá o mesmo resultado; para re
 | Onde | O que tem |
 |---|---|
 | `dimensionamento/nucleo_nbr6118.py` | o núcleo normativo único: materiais, diagramas, dutilidade, armaduras mínimas, aderência, momento mínimo e cobrimento. Todos os módulos delegam a ele. |
-| `dimensionamento/*_bastos.py` | os módulos por elemento: vigas, lajes, pilares, cortante, torção, ancoragem, protendido, sapatas e blocos |
+| `dimensionamento/*_nbr6118.py` | os módulos por elemento: vigas, lajes, pilares, cortante, torção, ancoragem, protendido, sapatas e blocos |
 | `dimensionamento/rotinas/` | o kernel de flexão composta oblíqua (Python e C++), o despachante entre os dois e a envoltória mínima de pilar |
 | `secoes_norma/` | código legado por seção da norma, hoje delegando ao núcleo |
 | `tests/` | os testes; os escritos na auditoria de 2026 citam o item e a página da norma de cada valor esperado |
@@ -101,10 +101,11 @@ norma que diz outra coisa.
 
 ## Créditos
 
-Os módulos `*_bastos.py` nasceram das apostilas do **Prof. Paulo Sérgio Bastos (UNESP, Bauru)**, que resolvem
+Os módulos por elemento nasceram das apostilas do **Prof. Paulo Sérgio Bastos (UNESP, Bauru)**, que resolvem
 passo a passo exemplos de vigas, lajes, pilares, cortante, torção, ancoragem, sapatas, blocos e concreto
-protendido. O nome do arquivo é o crédito. As apostilas foram escritas para edições anteriores da norma; onde
-a edição de 2026 diverge, vale a norma.
+protendido. Até 19/09/2026 eles se chamavam `*_bastos.py`; hoje se chamam `*_nbr6118.py`, e o crédito está aqui
+e no cabeçalho de cada módulo. As apostilas foram escritas para edições anteriores da norma; onde a edição de
+2026 diverge, vale a norma.
 
 A auditoria, as correções e o plano de 2026 foram feitos com agentes de IA (Claude, da Anthropic), com cada
 achado conferido de forma independente: a norma lida na imagem da página, a execução com script próprio e a

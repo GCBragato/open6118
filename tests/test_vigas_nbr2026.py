@@ -1,4 +1,4 @@
-"""Testes das correcoes de vigas_bastos.py e viga_servico_bastos.py contra a
+"""Testes das correcoes de vigas_nbr6118.py e viga_servico_nbr6118.py contra a
 ABNT NBR 6118:2026 (auditoria de 18/09/2026 - AUDITORIA_NBR6118_2026.md).
 
 Cobre os achados VIG-01 a VIG-08, VIG-10 (obrigatorios) e VIG-09 (melhoria
@@ -9,7 +9,7 @@ opcional). Os valores esperados saem de duas fontes:
   - um "oraculo" independente, escrito neste arquivo, que recombina as
     primitivas ja testadas do nucleo normativo (nucleo_nbr6118.py, ver
     tests/test_nucleo_nbr6118.py) pela mesma formula da norma - sem chamar
-    as funcoes de vigas_bastos.py/viga_servico_bastos.py que estao sob
+    as funcoes de vigas_nbr6118.py/viga_servico_nbr6118.py que estao sob
     teste, para nao validar o codigo contra si mesmo.
 
 Classes cobertas onde fck entra na formula: C45, C50, C55, C70 e C90
@@ -28,8 +28,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "dimensionamento"))
 
 import nucleo_nbr6118 as nbr  # noqa: E402
-import vigas_bastos as vig  # noqa: E402
-import viga_servico_bastos as vser  # noqa: E402
+import vigas_nbr6118 as vig  # noqa: E402
+import viga_servico_nbr6118 as vser  # noqa: E402
 
 
 FCKS_COBERTURA = [45.0, 50.0, 55.0, 70.0, 90.0]

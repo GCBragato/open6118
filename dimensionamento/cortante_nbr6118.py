@@ -1,5 +1,7 @@
 """Forca Cortante - Vigas em Concreto Armado (NBR 6118:2026).
 
+Nome ate 19/09/2026: cortante_bastos.py. O credito as apostilas esta abaixo.
+
 Implementa o dimensionamento da armadura transversal seguindo a apostila
 "DIMENSIONAMENTO DE VIGAS DE CONCRETO ARMADO - FORCA CORTANTE" (Mar/2025),
 Prof. Paulo Sergio Bastos, UNESP/Bauru, corrigida contra a NBR 6118:2026
@@ -23,7 +25,7 @@ Convencoes:
     - Estribos verticais (alfa = 90 deg) por padrao.
     - fywd <= 435 MPa = 43.5 kN/cm2 (limite NBR para CA-50/CA-60).
 
-Estrutura segue o padrao de vigas_bastos.py e lajes_bastos.py.
+Estrutura segue o padrao de vigas_nbr6118.py e lajes_nbr6118.py.
 """
 
 from __future__ import annotations

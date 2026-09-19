@@ -2,11 +2,11 @@
 
 LEGADO (auditoria NBR 6118:2026, ver REPO\\AUDITORIA_NBR6118_2026.md): nenhum
 outro módulo do repositório importa secoes_norma/sec17.py hoje. Para cortante
-em vigas, use dimensionamento/cortante_bastos.py (Vc, Vsw, VRd2 completos,
+em vigas, use dimensionamento/cortante_nbr6118.py (Vc, Vsw, VRd2 completos,
 com unidades em cm); para armadura mínima, dimensionamento/nucleo_nbr6118.py
 (``rho_min_flexao``/``As_min_flexao_retangular``). O ``VRd2`` abaixo ganhou
 o ``return`` que faltava e o modelo de cálculo II, mas segue simples
-(não calcula Vc/Vsw) — prefira cortante_bastos.py em código novo.
+(não calcula Vc/Vsw) — prefira cortante_nbr6118.py em código novo.
 """
 
 import math
@@ -112,7 +112,7 @@ def VRd2(fck, fcd, bw, d, modelo, elemento, theta_graus=45.0, alfa_graus=90.0):
     (sempre devolvia None) e não implementava o modelo 2. bw e d em
     metros e fcd em MPa (= MN/m²): fcd*bw*d sai em MN, por isso o fator
     1000 no final, para chegar em kN. Para uso novo, com Vc/Vsw e
-    unidades em cm, prefira dimensionamento/cortante_bastos.py
+    unidades em cm, prefira dimensionamento/cortante_nbr6118.py
     (modelo_calculo_I / modelo_calculo_II), que já está corrigido.
     """
     alfa_v2 = 1.0 - fck/250.0

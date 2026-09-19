@@ -1,4 +1,4 @@
-"""Testes de regressão - cortante_bastos.py e torcao_bastos.py contra a
+"""Testes de regressão - cortante_nbr6118.py e torcao_nbr6118.py contra a
 ABNT NBR 6118:2026 (achados CRT-01 a CRT-08 da auditoria de 18/09/2026).
 
 Os valores esperados vêm da reprodução numérica de cada achado em
@@ -15,8 +15,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "dimensionamento"))
 
 import nucleo_nbr6118 as nbr   # noqa: E402
-import cortante_bastos as crt  # noqa: E402
-import torcao_bastos as trc    # noqa: E402
+import cortante_nbr6118 as crt  # noqa: E402
+import torcao_nbr6118 as trc    # noqa: E402
 
 
 FCKS_GRUPO_I_E_II = [45.0, 50.0, 55.0, 70.0, 90.0]   # faixa pedida no briefing

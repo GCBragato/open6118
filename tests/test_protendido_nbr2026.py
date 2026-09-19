@@ -1,4 +1,4 @@
-"""Concreto protendido (protendido_bastos.py) contra a NBR 6118:2026 —
+"""Concreto protendido (protendido_nbr6118.py) contra a NBR 6118:2026 —
 achados PRO-01 a PRO-08 (auditoria de 18/09/2026).
 
 Os valores esperados saem das reproduções verificadas em
@@ -15,7 +15,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "dimensionamento"))
 
 import nucleo_nbr6118 as nbr  # noqa: E402
-import protendido_bastos as PT  # noqa: E402
+import protendido_nbr6118 as PT  # noqa: E402
 
 
 FCKS_VARREDURA = (20.0, 30.0, 40.0, 45.0, 50.0, 55.0, 70.0, 90.0)
