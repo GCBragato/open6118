@@ -280,16 +280,29 @@ def test_decompor_em_faixas_carga_centrada_Ni_igual_em_todas():
         assert f.Ni_kn == pytest.approx(esperado)
 
 
-def test_decompor_em_faixas_lambda_igual_90_aceito():
+def test_decompor_em_faixas_lambda_89_999_aceito():
     """O processo aproximado so vale para lambda_i de cada lamina < 90
-    (paragrafo antes de 15.9.3, PDF p. 133). Igual ao limite de 35 lâminas de
-    15.9.2, o limite e comparado com tolerância relativa de 1e-9 (mesma
-    convenção do módulo): lambda_i = 90,00 exato e aceito."""
+    (paragrafo antes de 15.9.3, PDF p. 132: "onde a esbeltez de cada lâmina
+    que os constitui for menor que 90"). C1: a desigualdade e estrita, entao
+    lambda_i logo abaixo de 90 e aceito."""
     faixas = PP.decompor_em_faixas(
         b_cm=300.0, h_cm=20.0, Nd_kn=1800.0, M1xd_kncm=0.0,
-        lambda_i_laminas=[90.0, 50.0],
+        lambda_i_laminas=[89.999, 50.0],
     )
     assert len(faixas) == 5
+
+
+def test_decompor_em_faixas_lambda_igual_90_recusado():
+    """C1 (correção): lambda_i = 90,00 exato NÃO e aceito -- a norma exige
+    esbeltez menor que 90 (desigualdade estrita, 15.9.3, PDF p. 132), e a
+    própria docstring da função já dizia que λi >= 90 levanta
+    FaixaNormativaError. Antes desta correção o código aceitava 90,0 exato
+    (só recusava > 90 + 1e-9)."""
+    with pytest.raises(nbr.FaixaNormativaError):
+        PP.decompor_em_faixas(
+            b_cm=300.0, h_cm=20.0, Nd_kn=1800.0, M1xd_kncm=0.0,
+            lambda_i_laminas=[90.0, 50.0],
+        )
 
 
 def test_decompor_em_faixas_lambda_90_01_recusado():

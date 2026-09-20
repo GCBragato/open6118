@@ -192,7 +192,7 @@ def tensoes_servico(
     em torno de y (comprime +x) -- convenção do kernel de flexão oblíqua.
     """
     if estadio not in ("I", "II"):
-        raise ValueError(f"estádio deve ser 'I' ou 'II', recebido {estadio!r}.")
+        raise nbr.FaixaNormativaError(f"estádio deve ser 'I' ou 'II', recebido {estadio!r}.")
     if x0 is None:
         # x0=(0,0,0) é um ponto degenerado quando N_kn=0 (flexão pura): toda
         # fibra fica exatamente em eps=0, que é o "kink" das curvas lineares
@@ -459,7 +459,7 @@ def controle_fissuracao_sem_wk(
     aqui: `ok = phi_mm <= r.phi_max_mm and s_cm <= r.s_max_cm`.
     """
     if sigma_si_mpa <= 0.0:
-        raise ValueError("sigma_si_mpa deve ser positiva (tensão de tração na barra).")
+        raise nbr.FaixaNormativaError("sigma_si_mpa deve ser positiva (tensão de tração na barra).")
     linhas = sorted(TABELA_17_2)
     linha = next((L for L in linhas if sigma_si_mpa <= L), None)
     if linha is None:
@@ -622,7 +622,7 @@ def kc_deformacao_imposta(
             )
         limite_cm = min(h_cm / 2.0, 50.0)
         if altura_zona_tracionada_cm < 0.0:
-            raise ValueError("altura_zona_tracionada_cm não pode ser negativa.")
+            raise nbr.FaixaNormativaError("altura_zona_tracionada_cm não pode ser negativa.")
         if altura_zona_tracionada_cm > limite_cm:
             raise nbr.FaixaNormativaError(
                 f"altura da zona tracionada = {altura_zona_tracionada_cm:g} cm acima "
@@ -630,7 +630,7 @@ def kc_deformacao_imposta(
                 "interpolação de kc só vale dentro desse limite (17.3.5.2.2, PDF p. 153)."
             )
         return 0.4 * altura_zona_tracionada_cm / limite_cm
-    raise ValueError(
+    raise nbr.FaixaNormativaError(
         f"caso desconhecido: {caso!r}. Use 'tracao_pura', 'flexao_simples', "
         "'nervura_vazada_protendida', 'mesa_tracionada_vazada_protendida' ou "
         "'interpolado'."
@@ -653,7 +653,7 @@ def As_min_deformacao_imposta(
     razão é adimensional); devolve As em cm^2 (mesma unidade de Act_cm2).
     """
     if sigma_s_mpa <= 0.0:
-        raise ValueError("sigma_s_mpa deve ser positiva.")
+        raise nbr.FaixaNormativaError("sigma_s_mpa deve ser positiva.")
     return k * kc * fctef_mpa * Act_cm2 / sigma_s_mpa
 
 
@@ -709,7 +709,7 @@ def verificar_descompressao_laje(
     módulo e comprimindo a seção).
     """
     if b_cm <= 0.0 or h_cm <= 0.0:
-        raise ValueError("b_cm e h_cm devem ser positivos.")
+        raise nbr.FaixaNormativaError("b_cm e h_cm devem ser positivos.")
     Ac = _pt_f2.Ac_retangular(b_cm, h_cm)
     W = _pt_f2.W_retangular(b_cm, h_cm)
     return _pt_f2.verificar_descompressao_fissuracao(

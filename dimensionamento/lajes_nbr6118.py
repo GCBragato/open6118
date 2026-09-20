@@ -63,8 +63,8 @@ except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
 # ---------------------------------------------------------------------------
 # Constantes
 # ---------------------------------------------------------------------------
-GAMA_C = 1.4
-GAMA_S = 1.15
+GAMA_C = nbr.GAMA_C  # lido do núcleo (C1: era literal 1.4)
+GAMA_S = nbr.GAMA_S  # lido do núcleo (C1: era literal 1.15)
 GAMA_F = nbr.GAMA_F  # Tabela 11.1 — lido do núcleo (P4)
 
 E_S = 21000.0          # kN/cm2 (210 GPa).
@@ -99,7 +99,12 @@ def fcd_kncm2(fck_mpa: float, gama_c: float = GAMA_C) -> float:
 
 
 def fyd_kncm2(fyk_mpa: float, gama_s: float = GAMA_S) -> float:
-    return (fyk_mpa / gama_s) * 0.1
+    """Resistência de cálculo do aço ao escoamento, em kN/cm2.
+
+    Delega ao núcleo normativo (nbr.fyd = fyk/gama_s, MPa; C1: antes
+    reimplementava a divisão à mão).
+    """
+    return nbr.mpa_para_kncm2(nbr.fyd(fyk_mpa, gama_s))
 
 
 def fct_m_kncm2(fck_mpa: float) -> float:

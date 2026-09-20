@@ -33,8 +33,8 @@ except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
     from dimensionamento import nucleo_nbr6118 as nbr
 
 
-GAMA_C = 1.4
-GAMA_S = 1.15
+GAMA_C = nbr.GAMA_C  # lido do núcleo (C1: era literal 1.4)
+GAMA_S = nbr.GAMA_S  # lido do núcleo (C1: era literal 1.15)
 
 ETA1_TIPO_ACO = {
     "CA-25": 1.00,

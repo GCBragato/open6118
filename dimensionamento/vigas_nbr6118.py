@@ -49,8 +49,8 @@ except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
 # ---------------------------------------------------------------------------
 # Constantes
 # ---------------------------------------------------------------------------
-GAMA_C = 1.4
-GAMA_S = 1.15
+GAMA_C = nbr.GAMA_C  # lido do núcleo (C1: era literal 1.4)
+GAMA_S = nbr.GAMA_S  # lido do núcleo (C1: era literal 1.15)
 GAMA_F = nbr.GAMA_F  # Tabela 11.1 — lido do núcleo (P4)
 
 E_S = 21000.0          # kN/cm2 (módulo de elasticidade do aço - 210 GPa).

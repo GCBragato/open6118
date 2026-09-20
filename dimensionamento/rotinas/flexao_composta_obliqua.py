@@ -70,6 +70,13 @@ GAMA_C = nbr.GAMA_C
 GAMA_S = nbr.GAMA_S
 ES_KNCM2 = nbr.ES_MPA / 10.0   # modulo de elasticidade do aco (210 GPa, 8.3.5)
 ALPHA_C = 0.85        # coeficiente 0,85 do pico 0,85*eta_c*fcd (Figura 8.2)
+# C1 (achado revisado e rejeitado): NAO trocar por nbr.alpha_c(fck). O item
+# 17.2.2 e) (PDF p. 141) fixa o pico do diagrama CURVO parabola-retangulo em
+# 0,85*eta_c*fcd -- o 0,85 aqui e sempre 0,85, mesmo para fck > 50 MPa. O
+# alpha_c reduzido (0,85*[1 - (fck-50)/200] acima de C50) que nbr.alpha_c
+# calcula vale so para a tensao do RETANGULO equivalente (alpha_c*eta_c*fcd),
+# uma substituicao opcional do diagrama curvo, nao o diagrama em si. Usar o
+# alpha_c reduzido aqui contaria a reducao de fck > 50 duas vezes.
 EPS_SU = nbr.EPS_SU   # alongamento-limite da armadura no pivo A (Figura 17.1), por mil
 GAMA_F3 = nbr.GAMA_F3  # 15.3.1 -- formulacao de seguranca da relacao momento-curvatura
 TOL_UNIAXIAL = 1e-6   # |M perpendicular|/|M| abaixo disso = flexao normal

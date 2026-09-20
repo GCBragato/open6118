@@ -40,8 +40,8 @@ except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
     from dimensionamento import tempo_concreto_nbr6118 as tc
 
 
-GAMA_C = 1.4
-GAMA_S = 1.15
+GAMA_C = nbr.GAMA_C  # lido do núcleo (C1: era literal 1.4)
+GAMA_S = nbr.GAMA_S  # lido do núcleo (C1: era literal 1.15)
 
 E_S_MPA = 210000.0
 E_P_MPA = 200000.0    # aço de protensão (NBR 6118 8.4.5)
@@ -170,12 +170,12 @@ def psi_1000(tipo: str, relaxacao: str, sigma_pi_sobre_fptk: float) -> float:
         tabela = TABELA_8_3_PSI_1000_BARRA
     else:
         if tipo_key not in ("fio", "cordoalha"):
-            raise ValueError(
+            raise nbr.FaixaNormativaError(
                 f"tipo desconhecido: {tipo!r}. Use 'fio', 'cordoalha' ou 'barra'."
             )
         relax_key = relaxacao.strip().upper()
         if relax_key not in ("RN", "RB"):
-            raise ValueError(f"relaxação desconhecida: {relaxacao!r}. Use 'RN' ou 'RB'.")
+            raise nbr.FaixaNormativaError(f"relaxação desconhecida: {relaxacao!r}. Use 'RN' ou 'RB'.")
         tabela = TABELA_8_3_PSI_1000[(tipo_key, relax_key)]
 
     razao = float(sigma_pi_sobre_fptk)
@@ -183,7 +183,7 @@ def psi_1000(tipo: str, relaxacao: str, sigma_pi_sobre_fptk: float) -> float:
     if 0.0 <= razao < pontos[0]:
         return 0.0  # 9.6.3.4.5 (P30): sem perda por relaxação abaixo de 0,5 fptk
     if razao < pontos[0] or razao > pontos[-1]:
-        raise ValueError(
+        raise nbr.FaixaNormativaError(
             f"sigma_pi/fptk = {razao:g} fora da faixa da Tabela 8.3 "
             f"({pontos[0]:g} a {pontos[-1]:g})."
         )
@@ -618,7 +618,7 @@ def perda_encurtamento_cabos_restantes_kncm2(
     n_cabos = número de grupos de cabos protendidos simultaneamente.
     """
     if n_cabos < 1:
-        raise ValueError("n_cabos deve ser >= 1.")
+        raise nbr.FaixaNormativaError("n_cabos deve ser >= 1.")
     alpha_p = alpha_p_t(fck_mpa, t0_dias, cimento, agregado, Ep_mpa, Eci_t0_mpa)
     return alpha_p * (n_cabos - 1) / (2.0 * n_cabos) * abs(sigma_cpog_kncm2)
 
@@ -644,7 +644,7 @@ def omega_perfil(perfil: str, mu: float, k_per_m: float, **kwargs) -> float:
     if p in ("circular", "arco"):
         R_m = kwargs["R_m"]
         return mu / R_m + k_per_m
-    raise ValueError(f"perfil desconhecido: {perfil}.")
+    raise nbr.FaixaNormativaError(f"perfil desconhecido: {perfil}.")
 
 
 def X_escorregamento_m(delta_anc_m: float, sigma_pi_kncm2: float,
@@ -883,9 +883,9 @@ def propriedades_cordoalha(diam_mm: float,
         tab = TABELA_CORDOALHAS_CP210_RB
         fptk = 2100.0
     else:
-        raise ValueError(f"categoria desconhecida: {categoria}.")
+        raise nbr.FaixaNormativaError(f"categoria desconhecida: {categoria}.")
     if diam_mm not in tab:
-        raise ValueError(f"diâmetro {diam_mm} não tabelado em {cat}.")
+        raise nbr.FaixaNormativaError(f"diâmetro {diam_mm} não tabelado em {cat}.")
     d, area, massa, F_max = tab[diam_mm]
     return {
         "diam_mm": d,
@@ -1518,7 +1518,7 @@ def propriedades_fio(diam_mm: float, categoria: str | None = None) -> dict:
     """
     opcoes = {c: (a, f) for (d, c), (a, f) in TABELA_FIOS_NBR7482.items() if d == diam_mm}
     if not opcoes:
-        raise ValueError(f"diâmetro {diam_mm} não tabelado em TABELA_FIOS_NBR7482.")
+        raise nbr.FaixaNormativaError(f"diâmetro {diam_mm} não tabelado em TABELA_FIOS_NBR7482.")
     if categoria is None:
         if len(opcoes) > 1:
             raise ValueError(
@@ -1527,7 +1527,7 @@ def propriedades_fio(diam_mm: float, categoria: str | None = None) -> dict:
             )
         categoria = next(iter(opcoes))
     elif categoria not in opcoes:
-        raise ValueError(
+        raise nbr.FaixaNormativaError(
             f"categoria {categoria!r} não tabelada para o diâmetro {diam_mm} "
             f"(opções: {sorted(opcoes)})."
         )
@@ -1662,7 +1662,7 @@ def _sistema_p30(sistema: str) -> str:
     k2 = k.replace("_", "")
     if k2 in _ALIAS_SISTEMA_P30:
         return _ALIAS_SISTEMA_P30[k2]
-    raise ValueError(
+    raise nbr.FaixaNormativaError(
         f"Sistema de protensão desconhecido: {sistema!r}. Use 'pre_tracionada', "
         "'pos_tracionada_aderente' ou 'pos_tracionada_nao_aderente'.")
 
@@ -1671,7 +1671,7 @@ def _aco_p30(aco: str) -> str:
     k = _chave_p30(aco)
     if k in _ALIAS_ACO_P30:
         return _ALIAS_ACO_P30[k]
-    raise ValueError(
+    raise nbr.FaixaNormativaError(
         f"Aço de protensão desconhecido: {aco!r}. Use 'fio_cordoalha' ou 'barra' (CP-85/105).")
 
 
@@ -1966,7 +1966,7 @@ def coeficientes_atrito(contato: str) -> tuple[float, float]:
     """
     k = _chave_p30(contato)
     if k not in TABELA_MU_K:
-        raise ValueError(
+        raise nbr.FaixaNormativaError(
             f"Contato desconhecido: {contato!r}. Opções: {', '.join(TABELA_MU_K)}.")
     mu, fator = TABELA_MU_K[k]
     return mu, fator * mu
@@ -2083,7 +2083,7 @@ def perda_progressiva_aproximada_pct(
     """
     chave = str(aco).strip().upper()
     if chave not in TABELA_9_6_3_4_3_APROXIMADO:
-        raise ValueError(f"Aço {aco!r} desconhecido: use 'RN' ou 'RB'.")
+        raise nbr.FaixaNormativaError(f"Aço {aco!r} desconhecido: use 'RN' ou 'RB'.")
     phi = float(phi_inf)
     if phi < 0.0:
         raise nbr.FaixaNormativaError(f"φ(t∞,t0) = {phi:g}: tem de ser >= 0.")
@@ -2147,7 +2147,7 @@ class TrechoCabo:
         """e(x), cm, a x_cm do nó i (0 <= x_cm <= L_cm), pela parábola do trecho."""
         x = float(x_cm)
         if not (-1e-9 <= x <= self.L_cm + 1e-9):
-            raise ValueError(
+            raise nbr.FaixaNormativaError(
                 f"x = {_fmt_p30(x)} cm fora do trecho (0 a {_fmt_p30(self.L_cm)} cm).")
         u = min(max(x / self.L_cm, 0.0), 1.0)
         return self.e_i_cm * (1.0 - u) + self.e_j_cm * u + 4.0 * self.flecha_cm * u * (1.0 - u)
@@ -2936,7 +2936,7 @@ def gama_p_ato_protensao(sistema: str) -> float:
         return GAMAS_ATO_PROTENSAO["gama_p_pre_tracao"]
     if chave in ("postracao", "pos"):
         return GAMAS_ATO_PROTENSAO["gama_p_pos_tracao"]
-    raise ValueError(
+    raise nbr.FaixaNormativaError(
         f"sistema {sistema!r} desconhecido: use 'pre_tracao' ou 'pos_tracao'."
     )
 
@@ -3070,7 +3070,7 @@ def verificar_ato_protensao(
 
     tipo = _chave_p30(tipo_barra)
     if tipo not in LIMITE_DSIGMA_S_ATO_MPA:
-        raise ValueError(
+        raise nbr.FaixaNormativaError(
             f"tipo_barra deve ser 'nervurada' ou 'lisa', recebido {tipo_barra!r}."
         )
     limite_ds = LIMITE_DSIGMA_S_ATO_MPA[tipo]
@@ -3159,7 +3159,7 @@ def limite_compressao_servico_mpa(fck_mpa: float, combinacao: str,
         )
     comb = _chave_p30(combinacao)
     if comb not in FATOR_COMPRESSAO_SERVICO:
-        raise ValueError(
+        raise nbr.FaixaNormativaError(
             f"combinação {combinacao!r} desconhecida: use 'quase_permanente', "
             "'frequente' ou 'rara'."
         )
@@ -3194,7 +3194,7 @@ def limite_tracao_servico_mpa(fck_mpa: float, estado_limite: str,
         return 0.0
     if est == "elsf":
         return fct_admissivel_tracao_kncm2(fck_mpa, secao) * 10.0
-    raise ValueError(
+    raise nbr.FaixaNormativaError(
         f"estado_limite deve ser 'ELS-D' ou 'ELS-F', recebido {estado_limite!r}."
     )
 
@@ -3291,7 +3291,7 @@ def verificar_descompressao_fissuracao(
             raise ValueError("estado='ELS-F' exige fck_mpa (17.2.4.4.2).")
         limite = nbr.mpa_para_kncm2(limite_tracao_servico_mpa(fck_mpa, "ELS-F", secao))
     else:
-        raise ValueError(f"estado deve ser 'ELS-D' ou 'ELS-F', recebido {estado!r}.")
+        raise nbr.FaixaNormativaError(f"estado deve ser 'ELS-D' ou 'ELS-F', recebido {estado!r}.")
 
     r = _seg_p30.verificar_seguranca(
         limite, sigma_tracao_max, rotulo="tensão de tração x limite", item="17.3.4")
@@ -3315,7 +3315,7 @@ def rho_p_armadura_ativa(Ap_cm2: float, bc_cm: float, dp_cm: float) -> float:
     (PDF p. 140-141). bc: largura da mesa de compressão; dp: altura útil
     referida à armadura ativa. Adimensional."""
     if bc_cm <= 0.0 or dp_cm <= 0.0:
-        raise ValueError("bc_cm e dp_cm devem ser positivos.")
+        raise nbr.FaixaNormativaError("bc_cm e dp_cm devem ser positivos.")
     return Ap_cm2 / (bc_cm * dp_cm)
 
 
@@ -3352,7 +3352,7 @@ def delta_sigma_p_nao_aderente(fck_mpa: float, rho_p: float,
     deixando a divisão a critério de quem chama.
     """
     if rho_p <= 0.0:
-        raise ValueError("rho_p deve ser positivo.")
+        raise nbr.FaixaNormativaError("rho_p deve ser positivo.")
     fck = _positivo_p30(fck_mpa, "fck")
     if float(vao_dp) <= 35.0:
         delta = 70.0 + fck / (100.0 * rho_p)
@@ -3363,7 +3363,7 @@ def delta_sigma_p_nao_aderente(fck_mpa: float, rho_p: float,
     valor = min(delta, teto)
     if gama_s is not None:
         if gama_s <= 0.0:
-            raise ValueError("gama_s deve ser positivo.")
+            raise nbr.FaixaNormativaError("gama_s deve ser positivo.")
         valor = valor / float(gama_s)
     return valor
 
@@ -3398,7 +3398,7 @@ def momento_fissuracao_protendido_kncm(
     kN.cm. P_kn e ep_cm entram em módulo.
     """
     if Ac_cm2 <= 0.0 or W_cm3 <= 0.0:
-        raise ValueError("Ac_cm2 e W_cm3 devem ser positivos.")
+        raise nbr.FaixaNormativaError("Ac_cm2 e W_cm3 devem ser positivos.")
     return abs(Mr_sem_protensao_kncm) + abs(P_kn) * (abs(ep_cm) + W_cm3 / Ac_cm2)
 
 
@@ -3490,7 +3490,7 @@ def flecha_total_protendido(
     parcela permanente interessa. phi entra em módulo (sinal não importa).
     """
     if phi < 0.0:
-        raise ValueError("phi não pode ser negativo.")
+        raise nbr.FaixaNormativaError("phi não pode ser negativo.")
     fp = float(f_imediata_permanente_cm)
     fv = float(f_imediata_variavel_cm)
     return fv + fp * (1.0 + abs(float(phi)))
@@ -3609,7 +3609,7 @@ def verificar_flecha_protendido(
     elif chave_esq in ("balanco", "embalanco"):
         chave_esq = "balanco"
     else:
-        raise ValueError(
+        raise nbr.FaixaNormativaError(
             f"esquema deve ser 'biapoiada' ou 'balanco'; recebido {esquema!r}."
         )
 

@@ -78,7 +78,7 @@ def _fct_kncm2(fck_mpa: float, resistencia: str) -> float:
         return nbr.mpa_para_kncm2(nbr.fct_m(fck_mpa))
     if chave in ("fctkinf", "fctinf"):
         return nbr.mpa_para_kncm2(nbr.fctk_inf(fck_mpa))
-    raise ValueError(
+    raise FaixaNormativaError(
         f"resistencia deve ser 'fctm' ou 'fctk_inf' (NBR 6118:2026 17.3.1, "
         f"PDF p. 145); recebido {resistencia!r}."
     )
@@ -108,13 +108,13 @@ def momento_fissuracao_kncm(
     """
     chave_forma = nbr._chave(forma)
     if chave_forma not in ALPHA_FORMA_MR:
-        raise ValueError(
+        raise FaixaNormativaError(
             f"forma deve ser 'retangular', 'T', 'duplo_T', 'I' ou "
             f"'T_invertido' (NBR 6118:2026 17.3.1, PDF p. 145); recebido "
             f"{forma!r}."
         )
     if Ic_cm4 <= 0 or yt_cm <= 0:
-        raise ValueError("Ic_cm4 e yt_cm devem ser positivos.")
+        raise FaixaNormativaError("Ic_cm4 e yt_cm devem ser positivos.")
     alfa = ALPHA_FORMA_MR[chave_forma]
     fct = _fct_kncm2(fck_mpa, resistencia)
     return alfa * fct * Ic_cm4 / yt_cm
@@ -150,9 +150,9 @@ def rigidez_equivalente_kncm2(
     fissurada). Retorna (EI)eq em kN.cm².
     """
     if Ecs_kncm2 <= 0 or Ic_cm4 <= 0:
-        raise ValueError("Ecs_kncm2 e Ic_cm4 devem ser positivos.")
+        raise FaixaNormativaError("Ecs_kncm2 e Ic_cm4 devem ser positivos.")
     if III_cm4 < 0:
-        raise ValueError("III_cm4 não pode ser negativo.")
+        raise FaixaNormativaError("III_cm4 não pode ser negativo.")
     Ecs_Ic = Ecs_kncm2 * Ic_cm4
     Mr = abs(Mr_kncm) * (0.5 if barras_lisas else 1.0)
     Ma = abs(Ma_kncm)
@@ -225,7 +225,7 @@ def alpha_f(
     a antiga continua funcionando sem alteração.
     """
     if rho_linha < 0:
-        raise ValueError("rho_linha não pode ser negativo.")
+        raise FaixaNormativaError("rho_linha não pode ser negativo.")
     if isinstance(t0_meses, (int, float)):
         t0 = float(t0_meses)
     else:
@@ -297,7 +297,7 @@ def vao_equivalente(
                 "(NBR 6118:2026 13.3, NOTA 2, PDF p. 99)."
             )
         return min(float(l_cm), 2.0 * float(vao_menor_cm))
-    raise ValueError(
+    raise FaixaNormativaError(
         f"elemento deve ser 'balanco', 'laje' ou 'laje_parede'; recebido "
         f"{elemento!r}."
     )
@@ -425,7 +425,7 @@ def deslocamento_limite(
     """
     chave = nbr._chave(categoria)
     if chave not in TABELA_13_3:
-        raise ValueError(
+        raise FaixaNormativaError(
             f"categoria desconhecida: {categoria!r}. Use uma das chaves de "
             f"TABELA_13_3 (ex.: 'aceitabilidade_visual', 'alvenaria', "
             f"'movimento_lateral_vento', ...)."
@@ -635,19 +635,19 @@ def rigidez_equivalente_ponderada_kncm2(
     """
     l_cm = float(vao_cm)
     if l_cm <= 0.0:
-        raise ValueError("vao_cm deve ser positivo.")
+        raise FaixaNormativaError("vao_cm deve ser positivo.")
     for nome, valor in (("EI_eq1_kncm2", EI_eq1_kncm2),
                         ("EI_eqv_kncm2", EI_eqv_kncm2),
                         ("EI_eq2_kncm2", EI_eq2_kncm2)):
         if float(valor) <= 0.0:
-            raise ValueError(f"{nome} deve ser positivo.")
+            raise FaixaNormativaError(f"{nome} deve ser positivo.")
     a1 = 0.15 * l_cm if a1_cm is None else float(a1_cm)
     a2 = 0.15 * l_cm if a2_cm is None else float(a2_cm)
     if a1 < 0.0 or a2 < 0.0:
-        raise ValueError("a1_cm e a2_cm não podem ser negativos.")
+        raise FaixaNormativaError("a1_cm e a2_cm não podem ser negativos.")
     av = l_cm - a1 - a2
     if av < -1e-9 * l_cm:
-        raise ValueError(
+        raise FaixaNormativaError(
             f"a1_cm + a2_cm = {a1 + a2:g} cm passa do vão ({l_cm:g} cm): não "
             "sobra trecho de momento positivo (Figura 17.3, PDF p. 147)."
         )
@@ -740,7 +740,7 @@ def flecha_imediata_curvatura_cm(
                 "x_cm."
             )
     if any(e <= 0.0 for e in eis):
-        raise ValueError("EI_kncm2 deve ser positivo em todas as estações.")
+        raise FaixaNormativaError("EI_kncm2 deve ser positivo em todas as estações.")
 
     chave = _chave_categoria(esquema)
     if chave in ("biapoiada", "biapoiado", "bi_apoiada"):
@@ -748,7 +748,7 @@ def flecha_imediata_curvatura_cm(
     elif chave in ("balanco", "em_balanco"):
         chave = "balanco"
     else:
-        raise ValueError(
+        raise FaixaNormativaError(
             f"esquema deve ser 'biapoiada' ou 'balanco'; recebido {esquema!r}."
         )
 
@@ -758,7 +758,7 @@ def flecha_imediata_curvatura_cm(
     else:
         xf = float(x_flecha_cm)
         if xf < x0 - 1e-9 or xf > xn + 1e-9:
-            raise ValueError(
+            raise FaixaNormativaError(
                 f"x_flecha_cm = {xf:g} cm fora do vão ({x0:g} a {xn:g} cm)."
             )
         xf = min(max(xf, x0), xn)

@@ -39,8 +39,8 @@ except ModuleNotFoundError:  # importado como pacote (dimensionamento.xxx)
     from dimensionamento import analise_linear_nbr6118 as _analise_linear
 
 
-GAMA_C = 1.4
-GAMA_S = 1.15
+GAMA_C = nbr.GAMA_C  # lido do núcleo (C1: era literal 1.4)
+GAMA_S = nbr.GAMA_S  # lido do núcleo (C1: era literal 1.15)
 
 E_S_KNCM2 = 21000.0          # 210 GPa
 E_S_MPA = 210000.0
@@ -64,20 +64,28 @@ def alpha_E(agregado: str = "granito") -> float:
 
 
 def Eci_mpa(fck_mpa: float, agregado: str = "granito") -> float:
-    """Módulo de elasticidade inicial Eci (MPa).
+    """Módulo de elasticidade inicial Eci (MPa) — delega ao núcleo
+    (nucleo_nbr6118.Eci, 8.2.8, PDF p. 44).
     fck <= 50: Eci = alpha_E * 5600 * sqrt(fck);
-    fck > 50:  Eci = 21500 * alpha_E * (fck/10 + 1.25)^(1/3)."""
-    aE = alpha_E(agregado)
-    if fck_mpa <= 50.0:
-        return aE * 5600.0 * math.sqrt(fck_mpa)
-    return 21500.0 * aE * (fck_mpa / 10.0 + 1.25) ** (1.0 / 3.0)
+    fck > 50:  Eci = 21500 * alpha_E * (fck/10 + 1.25)^(1/3).
+
+    C1 (correção de duplicação): antes reimplementava a fórmula com as
+    constantes 5600/21500 escritas à mão; agora delega a
+    ``nucleo_nbr6118.Eci`` e ``nucleo_nbr6118.alpha_E``. Resultado idêntico
+    para agregado reconhecido; agregado desconhecido, que antes caía
+    silenciosamente em alpha_E=1.0, agora levanta ``ValueError`` (o núcleo
+    valida a lista de agregados)."""
+    return nbr.Eci(fck_mpa, nbr.alpha_E(agregado))
 
 
 def Ecs_mpa(fck_mpa: float, agregado: str = "granito") -> float:
     """Módulo secante Ecs = alpha_i * Eci, com
-    alpha_i = 0.8 + 0.2 * fck/80 <= 1.0 (Eq. 70)."""
-    alpha_i = min(1.0, 0.8 + 0.2 * fck_mpa / 80.0)
-    return alpha_i * Eci_mpa(fck_mpa, agregado)
+    alpha_i = 0.8 + 0.2 * fck/80 <= 1.0 (Eq. 70) — delega ao núcleo
+    (nucleo_nbr6118.Ecs, que já aplica nucleo_nbr6118.alpha_i).
+
+    C1 (correção de duplicação): ver observação de ``Eci_mpa`` sobre
+    agregado desconhecido."""
+    return nbr.Ecs(fck_mpa, nbr.alpha_E(agregado))
 
 
 def alpha_e(fck_mpa: float, agregado: str = "granito") -> float:

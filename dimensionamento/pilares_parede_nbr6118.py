@@ -321,7 +321,9 @@ def decompor_em_faixas(b_cm: float, h_cm: float, Nd_kn: float, M1xd_kncm: float,
         raise nbr.FaixaNormativaError(f"15.9.3: b = {b:g} cm deve ser positivo.")
     if lambda_i_laminas is not None:
         tol = 1e-9
-        piores_lambda = [float(x) for x in lambda_i_laminas if float(x) > LAMBDA_LIMITE_FAIXAS + tol]
+        # C1: a norma exige "menor que 90" (desigualdade estrita, 15.9.3, PDF
+        # p. 132) -- λi = 90 exatamente também levanta, não só λi > 90.
+        piores_lambda = [float(x) for x in lambda_i_laminas if float(x) >= LAMBDA_LIMITE_FAIXAS - tol]
         if piores_lambda:
             raise nbr.FaixaNormativaError(
                 "15.9.3: o processo aproximado de decomposição em faixas só vale "
