@@ -1,8 +1,8 @@
 # Matriz de cobertura da NBR 6118:2026 no open6118
 
-Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.md). Uma linha por item calculável ou conferível da norma, com a situação no código em 18/09/2026 e o pacote do plano que cuida dele. Revista em 19/09/2026 com as decisões da seção 6 do plano: a análise estrutural entrou no escopo, e os itens que ela trouxe estão nos pacotes P44 a P48.
+Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.md). Uma linha por item calculável ou conferível da norma, com a situação no código e o pacote do plano que cuidou dele. Revista em 19/09/2026 com as decisões da seção 6 do plano: a análise estrutural entrou no escopo, e os itens que ela trouxe estão nos pacotes P44 a P48.
 
-**Total:** 662 itens — 75 implementados, 58 parciais, 386 ausentes e 143 não computáveis.
+**Total:** 662 itens — 512 implementados, 6 parciais, 1 ausente e 143 não computáveis (execução do plano concluída em 19/09/2026; o item ausente é o vento, que é da NBR 6123).
 
 **Como ler:**
 

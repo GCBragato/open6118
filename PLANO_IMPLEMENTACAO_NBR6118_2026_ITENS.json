@@ -642,9 +642,7 @@
     "pacote": "P1",
     "data": "19/09/2026",
     "funcoes": [
-     "nucleo_nbr6118.cobrimento_nominal",
-     "face_revestida",
-     "superficie_exposta_agressiva"
+     "nucleo_nbr6118.cobrimento_nominal"
     ],
     "testes": [
      "test_tabela_7_2_todas_as_celulas",
@@ -654,7 +652,7 @@
      "test_superficie_exposta_agressiva_forca_caa_iv",
      "test_cobrimento_nominal_entradas_invalidas_continuam_levantando"
     ],
-    "observacao": "Nao alterado nesta rodada."
+    "observacao": "Nao alterado nesta rodada. Os parâmetros face_revestida e superficie_exposta_agressiva são argumentos de cobrimento_nominal, não funções."
    }
   },
   {
@@ -3020,7 +3018,7 @@
      "dimensionamento/protensao_detalhamento_nbr6118.py:angulo_difusao_beta_graus"
     ],
     "testes": [
-     "test_9622_angulo_beta_tangente_2_terços"
+     "test_9622_angulo_beta_tangente_2_tercos"
     ],
     "observacao": ""
    }
