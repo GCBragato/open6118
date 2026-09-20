@@ -1,6 +1,6 @@
 # Auditoria do open6118 contra a NBR 6118:2026 — e plano de correção
 
-> **Situação:** os 73 defeitos foram corrigidos em 18/09/2026 — ver [CORRECOES_NBR6118_2026.md](CORRECOES_NBR6118_2026.md). O plano para implementar o resto da norma (seções 7 e 8 abaixo) está em [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.md).
+> **Situação:** os 73 defeitos foram corrigidos em 18/09/2026 — ver [CORRECOES_NBR6118_2026.md](CORRECOES_NBR6118_2026.md). O plano para implementar o resto da norma (seções 7 e 8 abaixo) está em [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.md), **executado em 19/09/2026** ([EXECUCAO_NBR6118_2026.md](EXECUCAO_NBR6118_2026.md)).
 >
 > **Nomes de módulo:** em 19/09/2026 os `*_bastos.py` citados aqui foram renomeados para `*_nbr6118.py` (por exemplo, `vigas_bastos.py` virou `vigas_nbr6118.py`). O texto abaixo mantém os nomes da época.
 

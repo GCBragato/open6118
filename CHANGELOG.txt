@@ -1,6 +1,14 @@
 Change Log
 ==========
 
+19/09/2026 (execução do plano)
+------------------------------
+- A biblioteca passou a cobrir 512 dos 519 itens computáveis da NBR 6118:2026 (eram 75), em 48
+  pacotes, cada um com três verificações independentes. Testes: de 613 para 3.374.
+- Entraram o cálculo de estruturas de barras (pórtico, grelha e treliça), punção, detalhamento de
+  vigas, pilares e lajes, protensão completa, fundações, fadiga e concreto simples, entre outros.
+- Mudanças de comportamento e itens que ficaram de fora: ver EXECUCAO_NBR6118_2026.md.
+
 19/09/2026
 ----------
 - Módulos `*_bastos.py` renomeados para `*_nbr6118.py` (por exemplo, `vigas_bastos` virou `vigas_nbr6118`).

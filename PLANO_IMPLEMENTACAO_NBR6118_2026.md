@@ -4,6 +4,8 @@
 
 *Revisto em 19/09/2026 com as seis decisões do Gustavo (seção 6). A principal: a análise estrutural que a 6118 prescreve entrou no plano, com cálculo próprio de barras (pacotes P44 a P48).*
 
+*__Executado em 19/09/2026.__ Os 48 pacotes estão no `main`, e a biblioteca cobre 512 dos 519 itens computáveis. O relatório da execução, com o que mudou e o que ficou de fora, está em [EXECUCAO_NBR6118_2026.md](EXECUCAO_NBR6118_2026.md). O texto abaixo é o plano como foi escrito, e serve de registro do que se pretendia fazer.*
+
 ## 1. Resposta curta
 
 1. **O que o plano cobre.** A norma inteira, das seções 5 a 25 mais o Anexo A, mapeada em 662 itens. Desses, 143 não são computáveis (texto de princípio, remissão a outra norma, recomendação de projeto) e ficam fora por natureza. Sobram **519 itens computáveis**:
@@ -1374,5 +1376,6 @@ Para cada pacote, na ordem da seção 5:
 ---
 
 **Anexos:**
+- [EXECUCAO_NBR6118_2026.md](EXECUCAO_NBR6118_2026.md) — o relatório da execução deste plano, de 19/09/2026.
 - [PLANO_IMPLEMENTACAO_NBR6118_2026_MATRIZ.md](PLANO_IMPLEMENTACAO_NBR6118_2026_MATRIZ.md) — uma linha por item da norma, com situação, prioridade e pacote.
 - `PLANO_IMPLEMENTACAO_NBR6118_2026_ITENS.json` — os mesmos itens com fórmula transcrita, o que falta, dependências e teste sugerido. É a entrada dos agentes na execução.
