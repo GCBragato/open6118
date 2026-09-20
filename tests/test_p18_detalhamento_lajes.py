@@ -146,7 +146,9 @@ def test_distribuicao_faixas_l600_fracao_governa():
     assert d.faixa_ext_sup_restante_min_cm == pytest.approx(150.0, abs=TOL)
     assert d.faixa_int_sup_100pct_min_cm == pytest.approx(150.0, abs=TOL)
     assert d.faixa_ext_inf_100pct_min_cm == pytest.approx(15.0, abs=TOL)
-    assert d.faixa_int_inf_33pct_min_cm == pytest.approx(15.0, abs=TOL)
+    # faixa interna, barras inferiores (33%): sem cota de extensao minima
+    # nesta linha da Figura 20.2 (conferencia C2, ver docstring da funcao)
+    assert d.faixa_int_inf_33pct_min_cm == pytest.approx(0.0, abs=TOL)
     assert d.faixa_ext_inf_colapso_prog_max_cm == pytest.approx(75.0, abs=TOL)
     assert d.faixa_int_inf_restante_max_cm == pytest.approx(75.0, abs=TOL)
     assert d.soma_percentuais_ok is True
@@ -154,10 +156,14 @@ def test_distribuicao_faixas_l600_fracao_governa():
 
 def test_distribuicao_faixas_l100_minimo_absoluto_governa():
     # l=100cm -> 0,125l=12,5cm < 15cm, deve prevalecer o minimo absoluto de
-    # 15cm - teste sugerido do plano
+    # 15cm apenas na linha (faixa externa) onde a cota >= 15cm de fato
+    # coexiste com o corte <= 0,125l - teste sugerido do plano, ajustado
+    # pela conferencia C2 (ver docstring de distribuicao_faixas_laje_lisa)
     d = dl.distribuicao_faixas_laje_lisa(100.0)
     assert d.faixa_ext_inf_colapso_prog_max_cm == pytest.approx(15.0, abs=TOL)
-    assert d.faixa_int_inf_restante_max_cm == pytest.approx(15.0, abs=TOL)
+    # faixa interna, restante (67% das inferiores): sem piso de 15cm nesta
+    # linha - o corte e so 0,125*100 = 12,5cm
+    assert d.faixa_int_inf_restante_max_cm == pytest.approx(12.5, abs=TOL)
     # e as fracoes de 0,35l/0,25l continuam validas nesse vao pequeno
     assert d.faixa_ext_sup_50pct_min_cm == pytest.approx(35.0, abs=TOL)
     assert d.faixa_ext_sup_restante_min_cm == pytest.approx(25.0, abs=TOL)
@@ -166,8 +172,17 @@ def test_distribuicao_faixas_l100_minimo_absoluto_governa():
 
 def test_distribuicao_faixas_fronteira_0125l_igual_15cm():
     # 0,125*l = 15cm exatamente quando l = 120cm: os dois criterios coincidem
+    # (faixa externa, unica linha onde essas duas cotas compartilham celula)
     d = dl.distribuicao_faixas_laje_lisa(120.0)
     assert d.faixa_ext_inf_colapso_prog_max_cm == pytest.approx(15.0, abs=TOL)
+    # na faixa interna essa fronteira nao existe (a linha das inferiores
+    # nao tem piso de 15cm): o corte e so 0,125*120 = 15cm por coincidencia
+    # aritmetica, nao por combinacao de cotas
+    assert d.faixa_int_inf_restante_max_cm == pytest.approx(15.0, abs=TOL)
+
+
+# As demais fronteiras de ">= 15 cm" x ">= 0,25 l" na faixa interna (e a
+# evidencia visual da arbitragem C2) estao em tests/test_c2_figura_20_2.py.
 
 
 def test_distribuicao_faixas_soma_percentuais_100_por_cento():

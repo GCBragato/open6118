@@ -164,9 +164,9 @@ class DistribuicaoFaixasLajeLisa:
     faixa_ext_inf_100pct_min_cm: float      # 100 % das barras inferiores, contínuas: extensão >= 15 cm
     faixa_ext_inf_colapso_prog_max_cm: float  # trecho <= 0,125 l da armadura contra colapso progressivo (19.5.4)
     # Faixa interna (região central)
-    faixa_int_sup_100pct_min_cm: float      # 100 % das barras superiores: extensão >= 0,25 l
-    faixa_int_inf_33pct_min_cm: float       # 33 % das barras inferiores, contínuas: extensão >= 15 cm
-    faixa_int_inf_restante_max_cm: float    # restante (67 %): corte a <= 0,125 l (mínimo absoluto 15 cm)
+    faixa_int_sup_100pct_min_cm: float      # 100 % das barras superiores: extensão >= máx(0,25 l; 15 cm)
+    faixa_int_inf_33pct_min_cm: float       # 33 % das barras inferiores, contínuas (sem cota mínima em cm na figura)
+    faixa_int_inf_restante_max_cm: float    # restante (67 %): corte a <= 0,125 l (sem piso absoluto de 15 cm)
     soma_percentuais_ok: bool
     memoria: tuple[str, ...]
 
@@ -196,13 +196,32 @@ def distribuicao_faixas_laje_lisa(l_cm: float) -> DistribuicaoFaixasLajeLisa:
         externo, eixo no apoio interno), em que essa armadura deve estar
         contida.
     - Faixa interna / região central:
-      - barras superiores: 100 % com extensão >= 0,25 l;
-      - barras inferiores: 33 % com extensão >= 15 cm (armadura contínua,
-        também ligada a 19.5.4); o restante (67 %) pode ser cortado a uma
-        distância <= 0,125 l do mesmo ponto de referência. Quando
-        0,125 l < 15 cm, a figura combina as duas cotas no mesmo trecho e
-        prevalece o mínimo absoluto de 15 cm (por isso o valor devolvido é
-        máx(15, 0,125 l)).
+      - barras superiores: 100 % com extensão >= 0,25 l; na própria linha da
+        figura, logo abaixo de ">= 0,25 l", há também uma cota ">= 15 cm"
+        (mesma célula da tabela, mesmo traço contínuo) — piso absoluto para
+        vãos pequenos, onde 0,25 l < 15 cm. A extensão mínima dessa linha é
+        então máx(0,25 l; 15 cm);
+      - barras inferiores: 33 % contínuas sobre o apoio (sem cota de
+        extensão mínima em cm nesta linha da figura: o traço da linha
+        segue sem interrupção até o próximo apoio); o restante (67 %) pode
+        ser cortado a uma distância <= 0,125 l do mesmo ponto de
+        referência, sem piso absoluto de 15 cm associado (a cota ">= 15 cm"
+        desta figura pertence à linha das barras superiores, não a esta).
+
+      Conferência de leitura da figura (ampliação em 700 dpi de
+      ``SCRATCH\\nbr_png\\p194.png`` / PDF p. 194, célula por célula): na
+      faixa externa, ">= 15 cm" e as chamadas de corte "<= 0,125 l" da
+      armadura contra colapso progressivo aparecem as duas dentro da MESMA
+      linha "Barras inferiores 100" (por isso o piso de 15 cm ali é
+      combinado com o corte, valor devolvido em
+      ``faixa_ext_inf_colapso_prog_max_cm``); já na faixa interna, ">= 15 cm"
+      aparece dentro da linha "Barras superiores 100" (junto de
+      ">= 0,25 l"), e as chamadas "<= 0,125 l" aparecem numa linha diferente,
+      abaixo, junto de "Barras inferiores 33/Restante" — as duas cotas não
+      compartilham linha na faixa interna. Uma leitura anterior deste módulo
+      atribuía o ">= 15 cm" da faixa interna às barras inferiores (33 %) em
+      vez das superiores (100 %); a divergência foi apontada em conferência
+      e corrigida aqui com a evidência acima.
 
     Os percentuais de cada linha somam sempre 100 % (50+50, 100, 33+67),
     fixados pela norma; ``soma_percentuais_ok`` registra essa checagem.
@@ -215,9 +234,10 @@ def distribuicao_faixas_laje_lisa(l_cm: float) -> DistribuicaoFaixasLajeLisa:
     ext_sup_50 = 0.35 * l
     ext_sup_restante = 0.25 * l
     ext_inf_100 = 15.0
-    corte_0125l = max(15.0, 0.125 * l)
-    int_sup_100 = 0.25 * l
-    int_inf_33 = 15.0
+    corte_ext_0125l = max(15.0, 0.125 * l)
+    int_sup_100 = max(0.25 * l, 15.0)
+    int_inf_33 = 0.0
+    corte_int_0125l = 0.125 * l
 
     soma_ok = True  # 50 % + 50 % = 100 %; 100 % = 100 %; 33 % + 67 % = 100 %
 
@@ -227,13 +247,15 @@ def distribuicao_faixas_laje_lisa(l_cm: float) -> DistribuicaoFaixasLajeLisa:
         f">= 0,25l = {_fmt(ext_sup_restante)} cm.",
         f"20.3.1 Fig. 20.2 (faixa externa, barras inferiores): 100% "
         f"contínuas com >= 15 cm; armadura contra colapso progressivo "
-        f"(19.5.4) contida em <= 0,125l = {_fmt(corte_0125l)} cm "
-        f"(mínimo absoluto 15 cm).",
+        f"(19.5.4) contida em <= 0,125l = {_fmt(corte_ext_0125l)} cm "
+        f"(mínimo absoluto 15 cm, cota na mesma linha da figura).",
         f"20.3.1 Fig. 20.2 (faixa interna, barras superiores): 100% com "
-        f">= 0,25l = {_fmt(int_sup_100)} cm.",
+        f">= máx(0,25l; 15 cm) = {_fmt(int_sup_100)} cm (a cota >= 15 cm "
+        f"desta figura pertence a esta linha, não à das barras inferiores).",
         f"20.3.1 Fig. 20.2 (faixa interna, barras inferiores): 33% "
-        f"contínuas com >= 15 cm; restante (67%) cortado a "
-        f"<= 0,125l = {_fmt(corte_0125l)} cm (mínimo absoluto 15 cm).",
+        f"contínuas, sem cota de extensão mínima nesta linha da figura; "
+        f"restante (67%) cortado a <= 0,125l = {_fmt(corte_int_0125l)} cm "
+        f"(sem piso absoluto de 15 cm nesta linha).",
     )
 
     return DistribuicaoFaixasLajeLisa(
@@ -241,10 +263,10 @@ def distribuicao_faixas_laje_lisa(l_cm: float) -> DistribuicaoFaixasLajeLisa:
         faixa_ext_sup_50pct_min_cm=ext_sup_50,
         faixa_ext_sup_restante_min_cm=ext_sup_restante,
         faixa_ext_inf_100pct_min_cm=ext_inf_100,
-        faixa_ext_inf_colapso_prog_max_cm=corte_0125l,
+        faixa_ext_inf_colapso_prog_max_cm=corte_ext_0125l,
         faixa_int_sup_100pct_min_cm=int_sup_100,
         faixa_int_inf_33pct_min_cm=int_inf_33,
-        faixa_int_inf_restante_max_cm=corte_0125l,
+        faixa_int_inf_restante_max_cm=corte_int_0125l,
         soma_percentuais_ok=soma_ok,
         memoria=memoria,
     )
