@@ -85,16 +85,17 @@ Cada pacote registrou as suas mudanças de comportamento na mensagem do commit; 
 
 ## 5. O que ficou parcial, e por quê
 
-| Item | O que falta | Por quê |
-|---|---|---|
-| 14.6.2.2, abertura na mesa colaborante | a largura efetiva a partir das coordenadas da abertura | a Figura 14.3 é regra gráfica, sem ângulo nem proporção; a função recebe o bef medido no desenho e aplica o limite normativo |
-| 14.6.2.3, mísulas | a altura efetiva ponto a ponto dentro da cunha | a Figura 14.4 não dá comprimento nem inclinação da cunha; a função devolve o piso garantido, que é o trecho menor |
-| 19.5.3.4, contorno C″ da punção | o perímetro reduzido do arranjo de conectores em cruz | a Figura 19.8 ilustra o arranjo sem dar a regra numérica do trecho reto e do raio |
-| 22.5.1.3 e 22.5.2.3, modelos de consolo e dente Gerber | o modelo "calibrado por ensaio" que a norma cita | a norma descreve o comportamento e exige apoio experimental, sem fórmula fechada; a biblioteca usa o modelo clássico de biela e tirante, com a geometria declarada |
-| 22.7.3, bloco em três dimensões | o modelo tridimensional linear | a biblioteca faz a treliça espacial de bielas e tirantes, que a norma aceita como alternativa, e não um modelo de elementos finitos |
+Cada linha tem o número do item da norma, que é também o id usado na triagem desses pontos.
 
-O vento (11.4.1.2) continua fora do escopo: é da NBR 6123. A biblioteca recebe os esforços de vento, combina
-com as demais ações e compara com o desaprumo.
+| Id | Item | O que falta | Por quê |
+|---|---|---|---|
+| 11.4.1.2 | vento | o cálculo das forças de vento | é da NBR 6123, outra norma; a biblioteca recebe as forças prontas, combina com as demais ações e compara com o desaprumo |
+| 14.6.2.2 | abertura na mesa colaborante | a largura efetiva a partir das coordenadas da abertura | a Figura 14.3 é regra gráfica, sem o ângulo da reta inclinada; a função recebe o bef medido no desenho e aplica o limite normativo |
+| 14.6.2.3 | mísulas | a altura efetiva ponto a ponto dentro da cunha | a Figura 14.4 não dá comprimento nem inclinação da cunha; a função devolve o piso garantido, que é o trecho menor |
+| 19.5.3.4 | contorno C″ da punção | o perímetro reduzido do arranjo de conectores em cruz | a Figura 19.8 ilustra o arranjo sem dar a regra numérica do trecho reto e do raio |
+| 22.5.1.3 | modelo de cálculo do consolo | o modelo de atrito-cisalhamento, para consolo muito curto | a norma cita o modelo sem coeficiente de atrito nem expressão; o modelo de biela e tirante está completo |
+| 22.5.2.3 | modelo de cálculo do dente Gerber | a treliça própria do dente | a norma manda seguir os princípios do consolo "com as correções necessárias", sem dar a posição dos nós; a biblioteca usa o modelo do consolo com o braço e a distância ajustados ao dente |
+| 22.7.3 | bloco sobre estacas em três dimensões | a análise de sólido | a norma aceita a treliça espacial de bielas e tirantes como alternativa, e a biblioteca faz a treliça; o sólido em elementos finitos ficou fora pela decisão 1 |
 
 ## 6. A conferência final
 
@@ -117,24 +118,34 @@ contaria a redução duas vezes. O código está certo e ganhou um comentário c
 
 ## 7. O que ainda depende do engenheiro
 
-1. **Comparar de novo com o programa de projeto.** A comparação que existia foi medida antes das correções de
-   18/09 e não vale mais. É a verificação cruzada que falta.
-2. **γqs na perda de equilíbrio como corpo rígido (11.8.2.1).** A edição de 2026 não dá valor para o
-   multiplicador de Qs,mín. Foi adotado 1,0, exposto como parâmetro.
-3. **Catálogo de fios de protensão (8.4.1).** Os valores vieram de catálogo de referência, não da ABNT NBR
-   7482. Vale conferir antes de usar em projeto.
-4. **Armadura de pele (17.3.5.2.3).** Implementada como taxa por metro de altura da alma, porque a norma não
-   define Ac,alma. Se o escritório usa outra convenção, é um ajuste pequeno.
-5. **Figura 14.7, rotação plástica (14.6.4.4).** A curva foi digitalizada da imagem, com tolerância declarada
-   de ±3 mrad.
-6. **Integral de fluência com tensão variável (A.2.5).** A imagem da p. 240 traz α·φ(τ,t0)/Eci dentro da
-   integral, o que contradiz o princípio da superposição: o acréscimo de tensão aplicado em τ deveria fluir até
-   t com φ(t,τ). A biblioteca segue a letra da norma por padrão (`integrando='impresso'`) e oferece a
-   superposição como opção explícita (`integrando='superposicao'`), registrada na memória de cálculo. É
-   provável erro de impressão na norma; vale confirmar qual das duas usar.
-7. **Leituras declaradas na docstring.** Onde a norma não fecha o caso, a escolha está escrita na função: o
-   ramo de fc(t∞) no φa do Anexo A, o kc interpolado da fissuração por deformação imposta, a desigualdade
-   estrita de 9.4.6.2 a) e o teto de Vc no Modelo II.
+Numerados de D1 a D7 (e D7.1 a D7.4), que são os ids usados na triagem desses pontos.
+
+- **D1. Comparar de novo com o programa de projeto.** A comparação que existia foi medida antes das correções
+  de 18/09 e não vale mais. É a verificação cruzada que falta. O script `tests/compare_tqs_pilar.py` lê o
+  relatório de pilares do programa (`Pilar.xml`).
+- **D2. γqs na perda de equilíbrio como corpo rígido (11.8.2.1).** A edição de 2026 não dá valor para o
+  multiplicador de Qs,mín em Fnd = γgn·Gnk + γq·Qnk − γqs·Qs,mín. Foi adotado 1,0, exposto como parâmetro. Com
+  1,0 a ação variável estabilizante entra inteira a favor do equilíbrio, que é o lado menos conservador.
+- **D3. Catálogo de fios de protensão (8.4.1).** Os valores vieram de catálogo de referência, não da ABNT NBR
+  7482. Vale conferir antes de usar em projeto.
+- **D4. Armadura de pele (17.3.5.2.3).** A função devolve a taxa em cm² por metro de altura da alma
+  (0,10 %·bw·100). Distribuída na altura, dá o mesmo que a área total 0,10 %·bw·h por face; muda só a forma de
+  apresentar.
+- **D5. Figura 14.7, rotação plástica (14.6.4.4).** A curva foi digitalizada da imagem, com tolerância
+  declarada de ±3 mrad.
+- **D6. Integral de fluência com tensão variável (A.2.5).** A imagem da p. 240 traz α·φ(τ,t0)/Eci dentro da
+  integral, o que contradiz o princípio da superposição: o acréscimo de tensão aplicado em τ deveria fluir até
+  t com φ(t,τ). A biblioteca segue a letra da norma por padrão (`integrando='impresso'`) e oferece a
+  superposição como opção explícita (`integrando='superposicao'`), registrada na memória de cálculo. É
+  provável erro de impressão na norma; vale confirmar qual das duas usar.
+- **D7. Leituras declaradas na docstring.** Onde a norma não fecha o caso, a escolha está escrita na função:
+  - **D7.1.** No φa do Anexo A (A.2.2.3), fc(t∞) é a resistência final, o limite de β1, e não fc aos 28 dias.
+  - **D7.2.** No kc interpolado da armadura mínima sob deformação imposta (17.3.5.2.2), kc cresce de 0 a 0,4
+    com a altura da zona tracionada.
+  - **D7.3.** Nas barras transversais soldadas (9.4.6.2 a), vale φt1 > 0,7·φt, estrito, como no texto (a
+    figura sugere "maior ou igual").
+  - **D7.4.** No teto de Vc do Modelo II (17.4.2.3), vale "≤ 2·Vc1", como no Modelo I (o texto do Modelo II
+    escreve "<").
 
 ## 8. Limites que continuam valendo
 
