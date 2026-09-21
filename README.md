@@ -97,7 +97,7 @@ Python 3.13. O padrão é o kernel em Python, que dá o mesmo resultado; para re
 | Onde | O que tem |
 |---|---|
 | `dimensionamento/nucleo_nbr6118.py` | o núcleo normativo único: materiais, diagramas, dutilidade, armaduras mínimas, aderência, momento mínimo, cobrimento e os coeficientes de ponderação. Todos os módulos delegam a ele. |
-| `dimensionamento/*_nbr6118.py` | os 40 módulos por tema: ações, análise de barras, vigas, lajes, pilares, cortante, torção, punção, ancoragem, emendas, protendido, fundações, bielas e tirantes, consolos, fadiga, concreto simples, durabilidade, ELS e detalhamento |
+| `dimensionamento/*_nbr6118.py` | os 38 módulos por tema: ações, análise de barras, vigas, lajes, pilares, cortante, torção, punção, ancoragem, emendas, protendido, fundações, bielas e tirantes, consolos, fadiga, concreto simples, durabilidade, ELS e detalhamento |
 | `dimensionamento/rotinas/` | o kernel de flexão composta oblíqua (Python e C++), o despachante entre os dois e a envoltória mínima de pilar |
 | `secoes_norma/` | código legado por seção da norma, hoje delegando ao núcleo |
 | `tests/` | os testes; os escritos na auditoria de 2026 citam o item e a página da norma de cada valor esperado |
