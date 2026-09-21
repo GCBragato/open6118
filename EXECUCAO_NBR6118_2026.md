@@ -42,9 +42,9 @@ apontou. Ao todo foram cerca de 295 rodadas de agente.
 **O que a verificação encontrou.** As lentes apontaram, entre outras coisas, um erro de leitura da Figura
 20.2 que trocava a linha da armadura (seção 4), a taxa mecânica mínima de viga aceitando aço fora da Tabela
 17.3, a esbeltez de lâmina de pilar-parede aceita exatamente no limite de 90, fórmula de material
-reimplementada em vez de delegada ao núcleo e mensagens sem acento. Em 98 itens, a fórmula transcrita no
-plano divergia da imagem da página; nesses casos valeu a imagem, e a divergência está registrada no JSON do
-plano.
+reimplementada em vez de delegada ao núcleo e mensagens sem acento. Em 93 itens, com 98 registros ao todo,
+quem implementou anotou diferença entre a transcrição do plano e a imagem da página, ou uma leitura que a norma
+não fecha; valeu a imagem, e cada registro está no JSON do plano, no campo `divergencias_imagem` do item.
 
 ## 3. O que entrou, onda por onda
 
@@ -127,7 +127,12 @@ contaria a redução duas vezes. O código está certo e ganhou um comentário c
    define Ac,alma. Se o escritório usa outra convenção, é um ajuste pequeno.
 5. **Figura 14.7, rotação plástica (14.6.4.4).** A curva foi digitalizada da imagem, com tolerância declarada
    de ±3 mrad.
-6. **Leituras declaradas na docstring.** Onde a norma não fecha o caso, a escolha está escrita na função: o
+6. **Integral de fluência com tensão variável (A.2.5).** A imagem da p. 240 traz α·φ(τ,t0)/Eci dentro da
+   integral, o que contradiz o princípio da superposição: o acréscimo de tensão aplicado em τ deveria fluir até
+   t com φ(t,τ). A biblioteca segue a letra da norma por padrão (`integrando='impresso'`) e oferece a
+   superposição como opção explícita (`integrando='superposicao'`), registrada na memória de cálculo. É
+   provável erro de impressão na norma; vale confirmar qual das duas usar.
+7. **Leituras declaradas na docstring.** Onde a norma não fecha o caso, a escolha está escrita na função: o
    ramo de fc(t∞) no φa do Anexo A, o kc interpolado da fissuração por deformação imposta, a desigualdade
    estrita de 9.4.6.2 a) e o teto de Vc no Modelo II.
 

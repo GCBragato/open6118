@@ -653,7 +653,15 @@
      "test_cobrimento_nominal_entradas_invalidas_continuam_levantando"
     ],
     "observacao": "Nao alterado nesta rodada. Os parâmetros face_revestida e superficie_exposta_agressiva são argumentos de cobrimento_nominal, não funções."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P1",
+     "transcricao_do_plano": "O id do item cita '7.4.7.6-nota' como parte da referencia normativa da Tabela 7.2.",
+     "imagem_da_norma": "Na imagem (p.39), a nota c que obriga o cobrimento da CAA IV em superficies expostas a ambiente quimicamente agressivo (reservatorios, ETA, esgoto, canaletas de efluentes) e uma nota de rodape da propria Tabela 7.2 (coluna 'IV^c'), vizinha da clausula 7.4.7.2 -- nao do texto corrido de 7.4.7.6, que na verdade trata de outra coisa (o limite dmax<=1,2*cnom do agregado graudo, ja coberto pelo item separado 7.4.7.6-dmax-agregado-cobrimento). A citacao do JSON mistura os dois numeros de clausula; implementei a nota c mesmo assim, como parametro superficie_exposta_agressiva.",
+     "pagina": "39"
+    }
+   ]
   },
   {
    "id": "7.4.7.4-delta-c-premoldados",
@@ -1345,7 +1353,15 @@
      "tests/test_p03_aco_protensao.py::test_propriedades_cordoalha_rn_mesma_geometria_que_rb"
     ],
     "observacao": "Tabela de fios reconstruída contra o catálogo do fabricante citado no achado, chaveada por (diâmetro, categoria); teste RN/RB agora exercita RN de fato."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P3",
+     "transcricao_do_plano": "conferido_na_imagem: false; falta: 'So cobre CP-190/CP-210 RB; nao cobre fios nem cordoalhas RN.'",
+     "imagem_da_norma": "A NBR 6118:2026 (p.49) so remete a ABNT NBR 7482/7483 para os valores de fio/cordoalha; nao ha tabela numerica na propria NBR 6118 para conferir contra a imagem. Os valores de TABELA_FIOS_NBR7482 vem de referencia de catalogo comercial, sem confirmacao contra o texto da NBR 7482 (fora do escopo de paginas disponiveis em SCRATCH\\nbr_png). Ficou registrado como limitacao no docstring da tabela e no status 'parcial' do item.",
+     "pagina": "p.49 (item 8.4.1) -- mas a fonte real dos valores de catalogo e a NBR 7482, nao a NBR 6118"
+    }
+   ]
   },
   {
    "id": "8.4.5-fig8.6-diagrama-aco-ativo",
@@ -1388,7 +1404,15 @@
      "tests/test_p03_aco_protensao.py::test_mrd_secao_protendida_ramo_inclinado_maior_que_patamar"
     ],
     "observacao": "Diagrama 'patamar' agora valida a mesma faixa |eps|<=eps_pu que o diagrama padrão."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P3",
+     "transcricao_do_plano": "formula_ou_regra do JSON: 'Trecho 2: reta ligando (fpyk,fpyd) a (fptk,fptd) em eps_pu -- nao e patamar horizontal.'",
+     "imagem_da_norma": "Na Figura 8.6 (imagem conferida), o eixo horizontal e eps_p; os pares corretos sao (eps_pyd, fpyd) e (eps_pu, fptd) -- fpyk e fptk sao apenas as linhas-guia tracejadas do desenho (referencias de tensao caracteristica), nao coordenadas do eixo eps. O JSON troca a abscissa do segundo ponto (deveria ser eps_pu, nao fptk) e da o primeiro ponto como par (fpyk,fpyd) quando deveria ser (eps_pyd,fpyd). Implementei conforme a imagem: reta de (eps_pyd,fpyd) a (eps_pu,fptd).",
+     "pagina": "p.50 (item 8.4.5, Figura 8.6)"
+    }
+   ]
   },
   {
    "id": "8.4.6-dutilidade-aco-ativo",
@@ -2034,7 +2058,15 @@
      "test_943_phi_n_formula"
     ],
     "observacao": "φn = φf·√n, conferido na p. 58."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P27",
+     "transcricao_do_plano": "9.4.3, p. 58",
+     "imagem_da_norma": "Confere com a imagem. A docstring de nucleo_nbr6118.phi_n_feixe (P24) cita 9.4.2 e p. 60, o que está errado: o item é 9.4.3, na p. 58. O núcleo não foi editado.",
+     "pagina": "58"
+    }
+   ]
   },
   {
    "id": "9.4.3-feixe-regras-ancoragem",
@@ -2325,7 +2357,15 @@
      "test_9462_memoria_com_acentuacao_correta_em_nao_ok"
     ],
     "observacao": "Corrigida a acentuação de 'nao ok' -> 'não ok' na memória de cálculo (achado de execução/diff); a condição geométrica verificada não mudou."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P21",
+     "transcricao_do_plano": "O JSON do pacote transcreveu a regra como 'phi_t1 >= 0,7*phi_t' (inclusiva) para o caso de duas barras. Confirmei a divergencia texto x figura ampliando a imagem (zoom): o corpo do item a) usa '>' e a figura usa '>='. Implementei ancoragem_estribo_barra_soldada usando a desigualdade ESTRITA do texto normativo (mais conservadora: um phi_t1 exatamente igual a 0,7*phi_t reprova), e documentei a divergencia na docstring da funcao. Se o Gustavo preferir seguir a figura (inclusiva, como o item b) e como o resto da tabela), e so trocar o '>' por '>=' na funcao -- e uma linha.",
+     "imagem_da_norma": "9.4.6.2 a), PDF p. 60: o texto impresso diz 'duas barras soldadas com diametro phi_t1 > 0,7 phi_t' (desigualdade ESTRITA), mas a Figura 9.3 (PDF p. 61) desenha 'phi_t1 >= 0,7 phi_t' (inclusiva). O item b) (uma barra, 2 ramos) nao tem essa inconsistencia: texto e figura concordam em '>= 1,4 phi_t'.",
+     "pagina": "PDF p. 60-61 (impressa 42-43)"
+    }
+   ]
   },
   {
    "id": "9.4.7-dispositivos-mecanicos-ancoragem",
@@ -2387,7 +2427,15 @@
      "test_9471_phi_t_e_solda"
     ],
     "observacao": "O texto diz \"1/6 da menor dimensão ... ou 25 mm\". Lido como φ ≤ min(dimensão/6, 25 mm), a favor da segurança. As condições de solda entram como booleanos declarados pelo projetista."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P27",
+     "transcricao_do_plano": "phi <= min(dimensao/6, 25mm)",
+     "imagem_da_norma": "O texto diz \"não seja maior que 1/6 da menor dimensão ... ou 25 mm\", ambíguo. Adotou-se o min, a favor da segurança, como no JSON.",
+     "pagina": "61"
+    }
+   ]
   },
   {
    "id": "9.5.2-traspasse-limite-32mm-feixe-45mm",
@@ -2461,7 +2509,15 @@
      "test_transpasse_diametros_diferentes_erros"
     ],
     "observacao": "É mesma seção quando o afastamento é < 0,2·ℓ0, e 0,2·ℓ0 exato já não é. Com dois comprimentos diferentes, usa-se o maior (Figura 9.4). Com duas barras de diâmetros diferentes, vale o menor. Com mais de duas, levanta FaixaNormativaError: a norma manda calcular barra a barra, pelo esforço de cada uma."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P27",
+     "transcricao_do_plano": "mesma seção se o afastamento for < 0,2·comprimento_traspasse, sem dizer qual comprimento usar",
+     "imagem_da_norma": "A Figura 9.4 mostra ℓ01 > ℓ02 e cota < 0,2·ℓ01: com comprimentos diferentes, vale o maior.",
+     "pagina": "62"
+    }
+   ]
   },
   {
    "id": "9.5.2.1-tab9.3-proporcao-maxima-emendas",
@@ -2716,7 +2772,15 @@
      "test_9525_separacao_adotada_e_45mm"
     ],
     "observacao": "n + 1 ≤ 4 barras na seção da emenda, separação ≥ 1,3·ℓ0 medida entre inícios de emendas consecutivas, e 9.5.2 (45 mm e 32 mm). A norma não tem figura; a interpretação está na docstring."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P27",
+     "transcricao_do_plano": "no máximo 4 barras emendadas na mesma seção do feixe",
+     "imagem_da_norma": "O texto diz que \"em qualquer seção do feixe emendado não resultem mais de quatro barras\". O limite vale para o total de barras na seção (feixe mais a barra que traspassa, n + 1 ≤ 4), não para o número de barras emendadas.",
+     "pagina": "64"
+    }
+   ]
   },
   {
    "id": "9.5.3-emendas-luvas",
@@ -2782,7 +2846,15 @@
      "test_954_reducao_20pct"
     ],
     "observacao": "Topo por caldeamento com φ ≥ 10 e com eletrodo com φ ≥ 20; traspasse com ≥ 2 cordões ≥ 5φ afastados ≥ 5φ; cobrejuntas com cordão ≥ 5φ; espessura ≥ 0,3φ (Figura 9.6); mesma seção quando o afastamento é < 15φ; fator 0,8 em barra tracionada com variável preponderante; 1,15·As·fy."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P27",
+     "transcricao_do_plano": "cordões ≥ 5φ afastados ≥ 5φ; não fala da espessura",
+     "imagem_da_norma": "A Figura 9.6 também dá espessura do cordão ≥ 0,3φ (traspasse) e ≥ 0,3φ2 (cobrejunta), e implementou-se como verificação opcional. O -20 % de resistência e o 1,15·fy estão na p. 66, não na 65.",
+     "pagina": "65-66"
+    }
+   ]
   },
   {
    "id": "9.6.1.1-forca-media",
@@ -2854,7 +2926,15 @@
      "test_96121_entradas_invalidas"
     ],
     "observacao": "Os quatro limites são 0,77, 0,74, 0,80 e 0,72·fptk. Com aco='barra' vale a alínea d) em qualquer sistema. A verificação usa seguranca.verificar_seguranca. A assinatura não tem fpyk, porque o texto de 2026 não tem condição em fpyk."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P30",
+     "transcricao_do_plano": "O plano propõe a assinatura sigma_pi_limite(fptk, fpyk, sistema, aco).",
+     "imagem_da_norma": "A imagem dá os limites só em função de fptk (0,77, 0,74, 0,80 e 0,72·fptk). Não há condição em fpyk, que existia na edição anterior. A função foi feita sem fpyk.",
+     "pagina": "67"
+    }
+   ]
   },
   {
    "id": "9.6.1.2.2-sigma-p0-termino",
@@ -2915,7 +2995,15 @@
      "test_96123_lista_vazia"
     ],
     "observacao": "Em cada cabo, σpi <= 1,10·0,74·fptk. O número de cabos acima de 0,74·fptk tem de ser <= 50 % dos cabos. A exigência de segurança nas ancoragens não é calculável e fica registrada na memória."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P30",
+     "transcricao_do_plano": "σpi <= 1,10 × (limite de 9.6.1.2.1-b), em no máximo 50 % dos cabos.",
+     "imagem_da_norma": "A imagem confirma. Ela também deixa claro que a tolerância vale só para elementos com armadura pós-tracionada e que o limite base é sempre o da alínea b) (0,74·fptk), mesmo na pós-tração não aderente, cuja alínea c) dá 0,80. A função segue o texto literal: o teto majorado é 0,814·fptk, abaixo do 0,80·fptk × 1,10 que se esperaria na pós-tração não aderente.",
+     "pagina": "67"
+    }
+   ]
   },
   {
    "id": "9.6.1.3-Pk-caracteristico",
@@ -3288,7 +3376,15 @@
      "test_96343_aco_desconhecido"
     ],
     "observacao": "18,1 + (αp/47)·φ^1,57·(3 + σc,p0g), em %. Condição: |εcs| a no máximo 25 % de 8·10^−5·φ; exatamente 25 % passa, e fora disso levanta FaixaNormativaError. As condições de 9.6.3.4.2 (fases únicas) não são verificáveis e ficam na docstring. O nome leva o sufixo _pct porque a função devolve porcentagem."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P30",
+     "transcricao_do_plano": "Condição: 'a retração não difira de [-8e-5·φ(∞,t0)] em mais de 25 %'.",
+     "imagem_da_norma": "Confere com a imagem. Nota de unidade: εcs de referência = 8·10^−5·φ, adimensional, o que dá 0,08·φ em ‰. A função compara a retração em módulo.",
+     "pagina": "73"
+    }
+   ]
   },
   {
    "id": "9.6.3.4.3-processo-aproximado-RB",
@@ -3354,7 +3450,15 @@
      "tests/test_p43_metodo_geral_perdas.py (testes test_9634_4_*)"
     ],
     "observacao": "Não foi alterado nesta volta. A comparação com a forma integral (test_9634_4_passos_curtos_convergem_para_a_forma_integral) agora passa integrando='superposicao' de forma explícita, porque o método por passos integra φ(t,τ)."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P43",
+     "transcricao_do_plano": "Sem fórmula (procedimento). 'conferido_na_imagem': false.",
+     "imagem_da_norma": "A imagem confere com o JSON: fluência de cada camada e relaxação de cada cabo, separadamente; a relaxação de cada cabo pode ser considerada isolada, independentemente das ações permanentes posteriores. A norma não diz como montar o procedimento; a montagem adotada está descrita no item acima.",
+     "pagina": "73"
+    }
+   ]
   },
   {
    "id": "9.6.3.4.5-psi-t",
@@ -3370,7 +3474,15 @@
    "formula_ou_regra": "ψ(t,t0) = ψ1000·[(t − t0)/41,67]^0,15, com (t − t0) em dias",
    "conferido_na_imagem": true,
    "depende_de": [],
-   "trecho": "prot"
+   "trecho": "prot",
+   "divergencias_imagem": [
+    {
+     "pacote": "P43",
+     "transcricao_do_plano": "—",
+     "imagem_da_norma": "ψ(t,t0) = ψ1000·[(t − t0)/41,67]^0,15 e ψ(t∞) ≅ 2,5·ψ1000. A potência passa de 2,5·ψ1000 depois de cerca de 18 800 dias. No método geral, ψ foi limitado a 2,5·ψ1000 para manter χ crescente; a escolha está declarada na docstring de CaboProtensao.",
+     "pagina": "74"
+    }
+   ]
   },
   {
    "id": "9.6.3.4.5-psi-infinito",
@@ -3720,7 +3832,15 @@
      "test_desaprumo_n_pilares_invalido_levanta"
     ],
     "observacao": "Sem achados nesta volta; nao alterado."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P26",
+     "transcricao_do_plano": "O campo teste_sugerido do item dizia 'H=30m, n=10 -> theta1=1/(100*sqrt(30))=0.001826; theta_a=theta1*0.7416', usando o valor bruto sem aplicar o piso de 1/300. Implementei com o clamp (theta1 nunca sai de [1/300,1/200], como a propria imagem da pagina 79 exige) e testei a formula bruta apenas nos casos em que ela cai dentro da faixa (H entre 4m e 9m) e os dois extremos clampados separadamente (H=1 e H=100).",
+     "imagem_da_norma": "theta1 = 1/(100*sqrt(H)), com 1/300 <= theta1 <= 1/200 (H em m). Para H=30m, theta1_bruto = 1/(100*sqrt(30)) = 0,0018257, que e MENOR que o piso 1/300=0,0033333; logo o valor efetivo, apos o clamp que a propria formula da norma exige, e theta1=1/300=0,0033333 -- nao 0,0018257.",
+     "pagina": "p. 79 (Figura 11.1)"
+    }
+   ]
   },
   {
    "id": "11.3.3.4.1-combinacao-vento-desaprumo",
@@ -3756,7 +3876,15 @@
      "test_combinar_vento_desaprumo_negativo_levanta"
     ],
     "observacao": "Sem achados nesta volta; nao alterado."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P26",
+     "transcricao_do_plano": "O teste_sugerido dizia 'Caso limite M_vento=0,3*M_desaprumo: os criterios (a) e (b) devem coincidir', que nao se sustenta: nesse ponto (a) fica claramente falso (0,3*0,3D=0,09D, nao maior que D) e (b) fica na propria fronteira exata (nao satisfaz a desigualdade estrita), caindo os dois no caso (c). Implementei e testei as duas fronteiras separadamente, cada uma caindo em (c) por igualdade exata, conforme a leitura literal do texto (desigualdades estritas em (a) e (b)).",
+     "imagem_da_norma": "Os dois criterios de 30% comparam quantidades diferentes: (a) 0,3*M_vento > M_desaprumo -> so vento; (b) M_vento < 0,3*M_desaprumo -> so desaprumo. Sao duas fronteiras distantes (para M_desaprumo=D fixo, a fronteira de (a) fica em M_vento=D/0,3=3,33D; a de (b) fica em M_vento=0,3*D), com o caso (c) cobrindo todo o intervalo entre elas.",
+     "pagina": "p. 79"
+    }
+   ]
   },
   {
    "id": "11.3.3.4.2-imperfeicao-local",
@@ -3895,7 +4023,15 @@
      "test_alternancia_cargas_nodais_e_erros"
     ],
     "observacao": "Posições mais desfavoráveis por superposição: cada grupo de barras (vão a vão por padrão) e cada carga nodal é uma parcela; o máximo soma as parcelas positivas e o mínimo as negativas, em cada estação e em cada reação. Aceita caso permanente somado. A dispensa de 14.6.6.3 vem de analise_linear_nbr6118.dispensa_alternancia_cargas (P14) e é testada dos dois lados do limite. Cargas móveis, impacto, frenagem e força centrífuga não têm modelo próprio: entram como cargas nodais ou de barra do caso."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P44",
+     "transcricao_do_plano": "conferido_na_imagem: false",
+     "imagem_da_norma": "Conferido na imagem: a lista continua na p. 82 (cargas móveis com impacto vertical, impacto lateral, frenagem ou aceleração e força centrífuga), e a frase sobre as posições mais desfavoráveis também está na p. 82, não na p. 81.",
+     "pagina": "81-82"
+    }
+   ]
   },
   {
    "id": "11.4.1.2-acao-vento",
@@ -3990,7 +4126,15 @@
      "test_temperatura_adotada"
     ],
     "observacao": "Sem mudança nesta volta."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P4",
+     "transcricao_do_plano": "dimensao>=70cm: 5-10C",
+     "imagem_da_norma": "A alínea b vale para elementos 'maciços ou ocos, com os espaços vazios inteiramente fechados', de menor dimensão superior a 70 cm. O JSON omite essa condição de tipo de elemento.",
+     "pagina": "82"
+    }
+   ]
   },
   {
    "id": "11.4.2.2-temperatura-nao-uniforme",
@@ -4271,7 +4415,15 @@
      "test_gama_f_por_tipo_de_acao"
     ],
     "observacao": "Sem mudança nesta volta."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P4",
+     "transcricao_do_plano": "Nota a: 'acoes de pequena variabilidade podem reduzir D para 1,3'",
+     "imagem_da_norma": "A nota a acrescenta: 'Neste caso, as demais ações permanentes devem ser ponderadas conforme a ABNT NBR 8681:2003, Tabela 1'. O código aplica o γg configurado a todas as permanentes diretas; a exceção fica pelo campo gama_f_desfavoravel de cada ação.",
+     "pagina": "85"
+    }
+   ]
   },
   {
    "id": "11.7.1-tabela-11.2-gamma_f2-psi",
@@ -4434,7 +4586,15 @@
      "test_sapata_excentrica_sob_vento_fsd_maior_igual_fnd"
     ],
     "observacao": "Fsd = gama_gs*Gsk + Rd e Fnd = gama_gn*Gnk + gama_q*Qnk - gama_qs*Qs,min, conferidos com S(Fsd) >= S(Fnd) via verificar_seguranca. gama_gs/gama_gn/gama_q vêm da Tabela 11.1 (acoes_nbr6118.gama_f_tabela_11_1, reuso de P4), com combinacao configurável (normal/especial/excepcional) e override explicito. gama_qs (o multiplicador de Qs,min) NÃO está na Tabela 11.1 nem na 11.3 com nome próprio; adotei 1,0 por decisão documentada na docstring (ver divergência abaixo) -- é a única lacuna real do item, e está exposta como parâmetro para o usuário sobrepor."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P5",
+     "transcricao_do_plano": "O JSON do plano dava a fórmula Fsd=gamma_gs*Gsk+Rd; Fnd=gamma_gn*Gnk+gamma_q*Qnk-gamma_qs*Qs,min, sem dizer de onde vêm numericamente gamma_gs, gamma_gn, gamma_q e gamma_qs.",
+     "imagem_da_norma": "A Tabela 11.3 (p. 87) tem exatamente essa fórmula, e o rodapé dela (p. 88, 'Tabela 11.3 (conclusão)') diz apenas 'gamma_g, gamma_eg, gamma_q, gamma_eq: ver Tabela 11.1' -- ou seja, remete SOMENTE os símbolos sem subscrito extra (gamma_g, gamma_q) à Tabela 11.1; não define separadamente gamma_gs (permanente estabilizante), gamma_gn (permanente instabilizante) nem gamma_qs (o multiplicador de Qs,min) por nome. Resolvi por interpretação de engenharia, documentada na docstring de fnd_equilibrio/fsd_equilibrio: gamma_gs = coluna F (favorável) da Tabela 11.1 = 1,0 (a parcela estabilizante permanente); gamma_gn = coluna D (desfavorável) da Tabela 11.1 = 1,4/1,3/1,2 conforme a combinação (isso é razoavelmente inequívoco, dado que 'gs'=estabilizante e 'gn'=não-estabilizante mapeiam a F/D). gamma_q = coluna G (desfavorável) da Tabela 11.1 = 1,4/1,2/1,0. Já gamma_qs não tem base textual nenhuma na norma (nem no rodapé, nem em nenhuma outra página em torno) -- adotei 1,0 como padrão seguro (não reduzir Qs,min, para não superestimar a folga que esse termo dá à ação instabilizante), exposto como parâmetro explícito para o usuário sobrepor com outro critério, caso tenha uma referência normativa que eu não encontrei (ex.: comentário técnico da NBR 8681 ou de edições anteriores da 6118). Vale registrar: a NBR 6118:2014 tinha texto explícito em 11.8.2.1 com esses coeficientes nomeados (inclusive citando gamma_g=0,9 para o caso favorável, valor diferente do gamma_g,F=1,0 da Tabela 11.1 atual); a versão 2026 aqui lida parece ter substituído aquele texto pela remissão genérica à Tabela 11.1 -- não encontrei o texto antigo em nenhuma página da pasta nbr_png fornecida, então não posso confirmar se 0,9 ainda vale ou se foi intencionalmente unificado com o gamma_g,F=1,0 da Tabela 11.1.",
+     "pagina": "PDF p. 87-88 (Tabela 11.3) e p. 68 (rodapé da tabela, PDF p. 88)"
+    }
+   ]
   },
   {
    "id": "11.8.2.1-combinacao-ultima-protendido",
@@ -4514,7 +4674,15 @@
      "test_excepcionais_uma_de_cada_vez"
     ],
     "observacao": "Sem mudança nesta volta."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P4",
+     "transcricao_do_plano": "Nota b: psi0j pode ser trocado por psi2j (só na excepcional)",
+     "imagem_da_norma": "Na Tabela 11.3, a nota b está nas linhas 'Especiais ou de construção' e 'Excepcionais'. O código aceita psi2_nota_b nas duas e o recusa na normal.",
+     "pagina": "87-88"
+    }
+   ]
   },
   {
    "id": "11.8.3.1-classificacao-combinacoes-servico",
@@ -5120,7 +5288,15 @@
      "test_mesa_nervurada_phi_10_exato_usa_regra_menor_igual"
     ],
     "observacao": "Sem alteração nesta rodada."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P10",
+     "transcricao_do_plano": "'hf >= max(l0/15,4) sem tubo; hf>=5 se phi<=10mm; hf>=4+phi se phi>10mm; hf>=4+2*phi se cruzamento' -- lido como regras alternativas/substituindo-se.",
+     "imagem_da_norma": "Texto da p. 95 dá as duas regras em parágrafos separados (regra geral l0/15,4 sem tubulação; regra de 5 cm/4+phi/4+2phi quando há tubulação). Não fica explícito se a regra de tubulação substitui ou soma à regra geral. Implementei como o MAIOR entre as duas (max(base, candidato_tubo)), que é a leitura a favor da segurança e bate com os 4 valores do teste_sugerido do JSON (l0=75 sem tubo->5; phi=8->5; phi=15 sem cruz->5,5; phi=15 com cruz->7).",
+     "pagina": "95 (PDF), impresso 77"
+    }
+   ]
   },
   {
    "id": "13.2.4.2-espessura-min-nervura",
@@ -5288,7 +5464,15 @@
      "test_abertura_laje_distancia_entre_aberturas_menor_que_metade_menor_vao"
     ],
     "observacao": "Sem alteração nesta rodada."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P10",
+     "transcricao_do_plano": "teste_sugerido tem 'lx=500,ly=600,ax=ay=40,dist=130' com uma distância única para as duas direções.",
+     "imagem_da_norma": "A Figura 13.1 (p. 96) rotula 'ax < lx/10' e 'ay < lx/10' (ambas contra lx, o menor vão) para o item a), mas as distâncias de b) aparecem como '>= 1/4 ly' (horizontal) e '>= 1/4 lx' (vertical) -- ou seja, cada distância usa o vão da sua própria direção, não as duas o mesmo lx. Implementei dist_face_apoio_x_cm >= lx/4 e dist_face_apoio_y_cm >= ly/4 (dois parâmetros, não um só), e por isso não usei o valor único 'dist=130' do JSON — escrevi meus próprios números (130 e 160) que satisfazem os dois limiares (125 e 150) simultaneamente.",
+     "pagina": "96 (PDF), impresso 78"
+    }
+   ]
   },
   {
    "id": "13.2.6-canalizacoes-embutidas-proibicoes",
@@ -5828,7 +6012,15 @@
      "test_memoria_viga_parede_usa_virgula_no_valor_numerico"
     ],
     "observacao": "Regra geral (14.4.2.2) implementada dentro de eh_viga_parede junto com 18.3.1/22.4.1; memoria corrigida nesta rodada."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P11",
+     "transcricao_do_plano": "vao < 3 * maior_dimensao_secao_transversal -> chapa = viga-parede (regra isolada, sem distinguir isostatica/continua)",
+     "imagem_da_norma": "Confirmado na imagem (p.105): a redacao de 14.4.2.2 e essa mesma, mas e a definicao geral de 'chapas'; para vigas especificamente a norma repete o mesmo criterio de forma mais fina em 18.3.1/22.4.1 (distinguindo isostatica de continua). As duas regras coexistem e podem divergir numa faixa estreita (viga isostatica, 2,0<=l/h<3,0); implementei as duas dentro de eh_viga_parede, com a regra especifica de vigas (18.3.1/22.4.1) prevalecendo na classificacao final e a divergencia registrada explicitamente.",
+     "pagina": "105"
+    }
+   ]
   },
   {
    "id": "14.4.2.3-cascas-definicao",
@@ -5971,7 +6163,15 @@
      "test_els_e_fadiga_dao_aviso"
     ],
     "observacao": "O estado redistribuído é o elástico somado ao estado autoequilibrado de rotações plásticas θ nas extremidades das vigas, com A·θ = (δ − 1)·M resolvido no próprio modelo. Assim, todos os esforços e reações são recalculados e o equilíbrio de cada barra e da estrutura é conferido. δ fica em [0,75; 1] e x/d segue o limite do P13. ELS e fadiga dão AvisoNBR6118. Os lembretes de ancoragem, corte de barras e carga de grande variabilidade entram só na memória de cálculo. Vale para pórtico plano, grelha e pórtico espacial (momento do plano principal); treliça é recusada."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P46",
+     "transcricao_do_plano": "O plano dá a assinatura redistribuir(resultado, apoios, delta).",
+     "imagem_da_norma": "Sem divergência de texto: p. 106 confere com o JSON. A implementação precisa do modelo para refazer o equilíbrio, então a assinatura ficou redistribuir(modelo, resultado, apoios, delta, ...).",
+     "pagina": "106"
+    }
+   ]
   },
   {
    "id": "14.5.4-analise-plastica-restricoes",
@@ -6003,7 +6203,15 @@
      "test_analise_plastica_padrao_risco_fadiga_falso"
     ],
     "observacao": "Sem achados nesta verificacao; memoria deste item nao usa formatacao numerica de 4 casas, so booleanos."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P11",
+     "transcricao_do_plano": "analise_plastica_permitida = NAO considera_2a_ordem_global E dutilidade_suficiente E NAO ha_risco_de_fadiga (formula unica com 3 termos)",
+     "imagem_da_norma": "A imagem (p.106) separa a) e b) como a lista formal de restricoes do 1o paragrafo, e a fadiga aparece num paragrafo seguinte e distinto ('deve-se evitar o calculo plastico'), nao na mesma lista a)/b). Mantive a formula do JSON (fadiga tambem proibe), mas com risco_fadiga como parametro opcional (padrao False) para nao impor uma 3a condicao obrigatoria a quem so queria checar a) e b).",
+     "pagina": "106"
+    }
+   ]
   },
   {
    "id": "14.5.5-analise-nao-linear-geral",
@@ -6160,7 +6368,15 @@
      "test_largura_efetiva_com_abertura_bf_minimo_valido (F1)"
     ],
     "observacao": "Releitura em zoom alto da Figura 14.3 (p. 109) confirmou que é regra gráfica pura: os dois pequenos triângulos retângulos nos vértices da abertura mostram uma reta 1 (perpendicular à linha de bef, isto é, vertical) e uma reta 2 (hipotenusa, inclinada) cujo ângulo não tem valor numérico nem proporção indicados no texto ou no desenho — depende de onde a abertura fica em relação à viga em cada projeto. Não há base normativa para reconstruir a geometria da abertura a partir de coordenadas; a função continua recebendo o bef já lido no desenho do caso concreto (bef_geometrico_cm) e só aplica o teto bef<=bf. Nenhuma fórmula nem assinatura mudou nesta revisão, só a docstring (evidência da releitura) e testes novos de fronteira (corte total bef=0, bf mínimo válido, bef intermediário preservado)."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P14",
+     "transcricao_do_plano": "formula_ou_regra: bef <= bf, com bef limitado pela projecao dos angulos 1 e 2... regra grafica da Figura 14.3, sem equacao explicita no texto",
+     "imagem_da_norma": "Confirmado na imagem (p. 109): so ha a regra grafica, nenhum angulo numerico e dado. Implementei so o limite bef<=bf sobre um bef ja obtido graficamente pelo engenheiro, em vez de inventar um angulo de projecao.",
+     "pagina": "109"
+    }
+   ]
   },
   {
    "id": "14.6.2.3-misulas-secao-efetiva",
@@ -6192,7 +6408,15 @@
      "test_secao_efetiva_misula_negativo_invalido (F1)"
     ],
     "observacao": "Releitura em zoom alto da Figura 14.4 (p. 109-110), nos dois traçados de cada uma das duas transições desenhadas: o traçado 1 (variação brusca) é vertical e encostado no trecho de seção MAIOR; o traçado 2 (mísula) é a diagonal que liga o pé do traçado 1 (no nível do trecho menor) até o nível do trecho maior, percorrendo uma extensão ao longo do vão que a norma não dimensiona nem inclina numericamente. Ou seja, dentro da cunha a altura/largura efetiva de fato varia entre h_menor e h_maior como função de uma posição que a norma não parametriza (sem régua, sem proporção, só desenho qualitativo). Sem parâmetro de posição — e sem base normativa para inventar um comprimento ou ângulo de cunha — a única resposta que não superestima a seção em nenhum ponto da transição é o piso garantido em toda a cunha: h_menor_cm. A interpretação já usada no P14 foi confirmada, não alterada; a docstring foi ampliada com essa evidência específica (o que a função calcula e por que não vai além) e a assinatura pública (só h_menor_cm, h_maior_cm, sem posição) foi verificada por teste como intencional. Item continua parcial: a biblioteca não calcula hef(x) ao longo da mísula, só o limite inferior seguro."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P14",
+     "transcricao_do_plano": "formula_ou_regra: hef (ou bef) = extensao definida graficamente na Figura 14.4... sem equacao explicita no texto",
+     "imagem_da_norma": "Confirmado na imagem (p. 109-110): regra grafica sem formula. Implementei a interpretacao a favor da seguranca (hef=menor dos dois trechos constantes), declarada na docstring como escolha, ja que a norma nao fixa isso numericamente.",
+     "pagina": "109-110"
+    }
+   ]
   },
   {
    "id": "14.6.2.4-vao-efetivo-viga",
@@ -6279,7 +6503,15 @@
      "test_resultado_memoria_e_imutavel"
     ],
     "observacao": "A rigidez padrão é Ecs vezes a inércia bruta. A memória de cálculo avisa que a flecha de verificação exige fissuração e fluência (17.3.2.1, P8). Opções: 14.6.6.2 delega a rigidez_torcao_reduzida (P14); 15.7.3 cobre 0,3, 0,4, 0,5 e 0,8 e levanta erro com menos de 4 andares; 15.5.1 majora Ecs em 10 % na estabilidade global."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P44",
+     "transcricao_do_plano": "depende_de: nucleo_nbr6118.Ecs e 17.3.2.1; nada sobre o módulo em 15.7.3",
+     "imagem_da_norma": "A p. 127 diz que o Ec de 15.7.3 é o valor representativo de 15.5.1. O 15.5.1 (p. 124, conferido no texto extraído) permite majorar o Ecs em 10 % na estabilidade global. Isso entrou como opção (Material.concreto(estabilidade_global=True)), não como padrão.",
+     "pagina": "124, 126-127"
+    }
+   ]
   },
   {
    "id": "14.6.4.2-restricoes-redistribuicao",
@@ -6309,7 +6541,15 @@
      "test_trelica_nao_tem_momento_a_redistribuir"
     ],
     "observacao": "Pilar (barra vertical, detectada automaticamente), consolo e barra comprimida (declarados em pilares=, consolos=, comprimidos=) não recebem rótula. O momento deles só muda em decorrência da viga ligada, e a lista vai em pilares_alterados. Nó sem viga levanta FaixaNormativaError. O efeito na estabilidade global e a regra de 2ª ordem da Seção 15 são só avisos na memória de cálculo: nada é calculado a partir deles. A norma não dá critério numérico de 'preponderância de compressão', por isso o usuário declara essas barras."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P46",
+     "transcricao_do_plano": "Só permite redistribuir em pilar, elemento comprimido e consolo quando decorre das vigas ligadas; exige avaliar a estabilidade global.",
+     "imagem_da_norma": "Confere. A imagem traz ainda um terceiro parágrafo: redistribuições implícitas numa análise de 2ª ordem seguem a Seção 15. Ele foi registrado na memória.",
+     "pagina": "111"
+    }
+   ]
   },
   {
    "id": "14.6.4.3-xd-dutilidade",
@@ -6541,7 +6781,15 @@
      "test_coeficientes_engastamento_invalidos"
     ],
     "observacao": "Sem mudanca nesta correcao alem da reacentuacao de docstring/memoria."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P14",
+     "transcricao_do_plano": "teste_sugerido: Pilares muito mais rigidos que a viga (r_inf,r_sup>>r_vig) devem levar o coeficiente da viga para perto de 1,0 e os dos pilares para perto de 0",
+     "imagem_da_norma": "A formula da imagem (p. 113-114) bate com o JSON, mas a consequencia numerica sugerida esta errada: com r_inf=r_sup=R>>r_vig, coef_viga->1 (correto), porem coef_sup e coef_inf tendem cada um a 0,5, nao a 0 (porque coef_sup+coef_inf=coef_viga sempre, por construcao algebrica da propria formula da norma). Testei o comportamento matematicamente correto em vez do sugerido.",
+     "pagina": "113-114"
+    }
+   ]
   },
   {
    "id": "14.6.6.2-reducao-rigidez-torcao-grelha",
@@ -6875,7 +7123,15 @@
      "test_charneiras_menos_de_2_apoios_levanta_erro"
     ],
     "observacao": "Nenhum achado da verificacao para este item; sem alteracao nesta rodada."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P17",
+     "transcricao_do_plano": "formula_ou_regra do JSON e so descritiva ('reacao_apoio ~= carga_uniforme * area_do_triangulo_ou_trapezio... angulos 45/60/90 graus conforme a vinculacao de cada borda'), sem formula fechada.",
+     "imagem_da_norma": "A imagem (p. 117, item 14.7.6.1 b) tambem so da a regra qualitativa dos 3 angulos (45/60/90), sem formula fechada nem exemplo numerico.",
+     "pagina": "117"
+    }
+   ]
   },
   {
    "id": "14.7.6.2-compatibilizacao-momentos",
@@ -6945,7 +7201,15 @@
      "test_largura_colaborante_nervura_usa_P14"
     ],
     "observacao": "Grelha de nervuras em seção T, com bf pela largura colaborante do P14 (b2 = e - bw; a = vão por padrão) e seção L na borda livre. GJ vale 0,15 do elástico por padrão (14.6.6.2). Bordas: apoio, engaste ou livre. A carga entra nos nós por área de influência. A classificação de 13.2.4.2 (P10) vai para a memória; na categoria c, a memória avisa que a capa é laje maciça apoiada na grelha. J da nervura = soma dos retângulos da alma e das abas, uma aproximação declarada, porque a norma não dá fórmula."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P45",
+     "transcricao_do_plano": "o_que_calcula: 'Quando as condicoes de 13.2.4.2 nao sao atendidas (nervuras muito espacadas etc.)...'",
+     "imagem_da_norma": "Imagem da p. 118 conferida: o texto confirma que as prescrições de laje maciça valem desde que atendido 13.2.4.2 e que, senão, a capa é analisada como laje maciça apoiada numa grelha de vigas. O item começa na p. 117 (definição de laje nervurada) e segue na p. 118. Não há divergência de conteúdo.",
+     "pagina": "117-118"
+    }
+   ]
   },
   {
    "id": "14.7.7-lajes-nervuradas-unidirecionais",
@@ -7051,7 +7315,15 @@
      "test_portico_equivalente_faixa"
     ],
     "observacao": "Monta um pórtico plano por fila de pilares, em cada direção. A laje é uma viga de largura l2 = la + lb com a carga total q·l2, e os pilares têm lance inferior e/ou superior engastado no extremo oposto; os momentos de ligação laje-pilar saem no resultado. Antes de montar, confere as condições de uso: só concreto armado, filas ortogonais completas e vãos pouco diferentes. Para 'vãos pouco diferentes', que a norma não quantifica, o critério adotado é menor/maior >= 2/3 entre vãos sucessivos, configurável. A repartição usa P17.repartir_momentos_faixas lado a lado da fila, na proporção da largura: no pórtico interno com lados iguais dá exatamente 27,5/45 % e 37,5/25 %, e no pórtico de borda (um lado) a faixa externa recebe 55 % dos positivos e 75 % dos negativos. Os momentos são elásticos; a redistribuição fica com o P13 e o arredondamento com o P14."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P45",
+     "transcricao_do_plano": "'pilares em filas ortogonais regulares e vaos pouco diferentes'",
+     "imagem_da_norma": "A imagem confirma o texto e acrescenta duas condições: o processo vale só para lajes em concreto armado e é 'com redistribuição'. A norma não quantifica 'vãos pouco diferentes'; o critério 2/3 é escolha declarada da biblioteca. Percentuais da Figura 14.9 conferidos: 45 %, 27,5 %, 25 % e 37,5 %.",
+     "pagina": "118"
+    }
+   ]
   },
   {
    "id": "14.7.8-faixas-distribuicao-momento",
@@ -7192,7 +7464,15 @@
      "test_sdtot_com_acoes_indiretas_divide_cada_termo_pelo_proprio_gama"
     ],
     "observacao": "O cálculo não mudou. A docstring passou a explicar F = Σ(γf,i/γf3)·ψi·Fik e a remissão de 15.3.1 à Seção 11 (p. 121). Há agora um teste com ações indiretas."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P4",
+     "transcricao_do_plano": "pagina_pdf 121 e item 15.3",
+     "imagem_da_norma": "A fórmula Sd,tot = γf3·S(F) está em 15.3.1 (Relações momento-curvatura), na p. 121. A página confere; o subitem é 15.3.1, não 15.3.",
+     "pagina": "121"
+    }
+   ]
   },
   {
    "id": "15.3.1-rigidez-secante-ei-sec",
@@ -7618,7 +7898,15 @@
      "test_p_delta_e_095_gama_z_proximos"
     ],
     "observacao": "A não linearidade geométrica resolve (K + Kg(N))·u = P por iterações sucessivas: as cargas fictícias −Kg·u entram em resolver, e N é atualizado a cada passo. Kg é a matriz consistente de Euler-Bernoulli; em barra articulada ou de treliça, só o termo de corda. A não linearidade física usa as rigidezes de 15.7.3, e o critério de convergência e o número de iterações vão para a memória. Resultados: no balanço, o momento na base bate com H·tan(kL)/k a 1e-5, e o deslocamento bate com 1/(1 − P/Pcr) a 1 %. O γz do modelo é igual ao gama_z do P26 com as mesmas entradas. A P-Δ fica a 5 % do 0,95·γz e o fator de deslocamento a 2 % do γz."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P46",
+     "transcricao_do_plano": "Não linearidade geométrica e física obrigatórias.",
+     "imagem_da_norma": "Confere com p. 126. Os fatores de 15.7.3 (0,3 / 0,4 / 0,5 / 0,8, mínimo de 4 andares, só esforços globais) também conferem em p. 126-127.",
+     "pagina": "126"
+    }
+   ]
   },
   {
    "id": "15.7.2-processo-aproximado-095-gamaz",
@@ -7791,7 +8079,15 @@
      "test_1581_gama_n1_integrado_ao_pilar_padrao"
     ],
     "observacao": "Sem mudança nesta volta."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P25",
+     "transcricao_do_plano": "O plano (P25) diz 'γn1 aplicado ao Md,tot quando 140 < λ ≤ 200'.",
+     "imagem_da_norma": "'deve-se majorar os efeitos locais de 2ª ordem por um coeficiente adicional' γn1 = 1 + (λ − 140)/140 ≥ 1. Quem é majorado é a parcela de 2ª ordem (M2d), não o Md,tot inteiro. aplicar_gama_n1 multiplica só o M2d.",
+     "pagina": "127"
+    }
+   ]
   },
   {
    "id": "15.8.2-lambda-esbeltez-basico",
@@ -7919,7 +8215,15 @@
      "test_1583_2_memoria"
     ],
     "observacao": "Barra birrotulada de comprimento ℓe, com N constante e M1 linear entre topo e base, em n_segmentos trechos. Em cada nó, a curvatura vem do diagrama M, N, 1/r (em Md/γf3). A linha elástica sai por diferenças finitas e iteração de ponto fixo até |Δy| < tol. Regras aplicadas: λ <= 200 por verificar_esbeltez_limite; γn1 multiplica a parcela de 2ª ordem quando λ > 140 (15.8.1); ecc é obrigatório com λ > 90; M1d,mín entra uniforme quando o maior momento de extremidade fica abaixo dele. O parâmetro diagramas aceita um par pronto (ou um stub linear, como no teste da solução fechada). Só SecaoRetangular, flexão numa direção."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P28",
+     "transcricao_do_plano": "Para λ <= 90, o método geral deve convergir para os aproximados (curvatura ou rigidez κ).",
+     "imagem_da_norma": "A p. 129 só define o método. Os aproximados são conservadores. O teste compara o método geral com o pilar-padrão M, N, 1/r (mesma relação momento-curvatura), com λ pequeno (diferença < 2 %), e confere a linha elástica contra a solução fechada da secante.",
+     "pagina": "129"
+    }
+   ]
   },
   {
    "id": "15.8.3.3.2-md-tot-curvatura-aprox",
@@ -8009,7 +8313,15 @@
      "test_158334_entradas_invalidas"
     ],
     "observacao": "O diagrama segue a Figura 15.1: curva AB com pico 1,10·fcd e N = Nd/γf3, e o MRd tirado da curva de ELU. O ponto B entra como ponto do diagrama, e a (EI)sec bate com ei_secante a 1e-12. O diagrama vai até o primeiro limite de deformação da Figura 17.1. Md,tot = αb·M1d,A + Nd·ℓe²/10·(1/r), com 1/r lido em Md,tot/γf3, resolvido pela primeira raiz; se não há raiz, estavel=False. A opção linearizar=True usa a reta AB, em forma fechada. Com λ > 140 levanta erro; com λ > 90, exige ecc_cm (15.8.4). A seção crítica é verificada contra o MRd por verificar_seguranca. Só SecaoRetangular."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P28",
+     "transcricao_do_plano": "Teste sugerido: com ν entre 0,5 e 0,6, o diagrama M, N, 1/r deve coincidir com a curvatura aproximada de 15.8.3.3.2 e os dois métodos devem dar resultados próximos. O plano cita P6 (fluência no diagrama).",
+     "imagem_da_norma": "A imagem não diz isso. A curvatura aproximada 0,005/[h(ν + 0,5)] é uma estimativa de ELU. Medido: ela fica entre a curvatura do ponto B (M = MRd/γf3) e a do limite de deformação do diagrama, e com M abaixo de MRd o diagrama dá Md,tot menor. O teste confere essas duas coisas, não a proximidade. Quanto à fluência, a p. 130 manda para 15.8.4 (λ > 90), isto é, a excentricidade ecc somada a e1, e não uma dilatação do diagrama. Ela entra como ecc_cm.",
+     "pagina": "130 (e 129, 131)"
+    }
+   ]
   },
   {
    "id": "15.8.3.3.5-pilar-padrao-flexao-obliqua",
@@ -8046,7 +8358,15 @@
      "test_158335_lambda_acima_de_90_numa_direcao"
     ],
     "observacao": "Sem mudança nesta volta."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P25",
+     "transcricao_do_plano": "Aplica 15.8.3.3.2/.3/.4 nas duas direções e verifica 3 seções.",
+     "imagem_da_norma": "Confere com a imagem. A norma não diz com que momentos verificar as extremidades A e B. Foram usados os momentos de 1ª ordem de cada extremidade, e na seção intermediária os Md,tot concomitantes. O momento mínimo é verificado pela envoltória da Figura 15.2 (15.3.2), sem elevar os momentos das duas direções ao mínimo ao mesmo tempo.",
+     "pagina": "131"
+    }
+   ]
   },
   {
    "id": "15.8.4-fluencia-ecc",
@@ -8086,7 +8406,15 @@
      "test_1584_ecc_com_phi_da_tabela_8_1"
     ],
     "observacao": "Sem mudança nesta volta."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P25",
+     "transcricao_do_plano": "ecc = (Msg/Nsg + ea)·(2,718^(φ·Nsg/(Ne − Nsg)) − 1).",
+     "imagem_da_norma": "A fórmula é a mesma, e a norma diz que '2,718 é o número de Euler'. A implementação usa math.e; a diferença relativa é de 1,1e-4. O item também diz que o φ deveria vir de protendido_nbr6118.phi_eps_cs_NBR, mas essa função hoje está em nucleo_nbr6118.phi_eps_cs_NBR.",
+     "pagina": "131"
+    }
+   ]
   },
   {
    "id": "15.9.1-pilar-parede-generalidades",
@@ -8265,7 +8593,15 @@
      "testes do bloco 'Instabilidade lateral' em test_p12_vigas_limites.py, incluindo test_instabilidade_lateral_tipo_desconhecido (atualizado)"
     ],
     "observacao": "Corrigido nesta rodada: tipo fora da Tabela 15.1 agora levanta FaixaNormativaError (nao ValueError generico), e memoria de calculo trocou 'NAO OK' por 'não ok'."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P12",
+     "transcricao_do_plano": "teste_sugerido: 'trocar tipologia para duplo T com o mesmo b/h deve reprovar (betafl cai para 0,20)'",
+     "imagem_da_norma": "Imagem p.134 (impresso p.116) confirma beta_fl=0,40 para retangular/T/I isoladas e 0,20 para duplo T/caixao. Como o limite de altura e b>=beta_fl*h, um beta_fl MENOR (0,20) e um limite MAIS FRACO, nao mais forte: um caso que falha como retangular passa a valer como duplo T, nunca o contrario. O teste_sugerido do JSON inverte essa logica; o teste implementado usa a direcao fisicamente correta (retangular reprova onde duplo T, com o mesmo b/h/l0, passa).",
+     "pagina": "134 (PDF) / 116 (impresso)"
+    }
+   ]
   },
   {
    "id": "16.1-objetivo",
@@ -8609,7 +8945,15 @@
      "test_1722g_dominio_elu_sem_armadura"
     ],
     "observacao": "Rótulo pela posição da LN, com os extremos decididos pelo texto da p. 142: 1 para x <= 0; 2 para 0 < x < x23; 3 para x23 <= x <= x34 (εs >= εyd); 4 para x34 < x < d; 4a para d <= x < h; 5 para x >= h. Deformada fora da região da Figura 17.1 (além de εcu, de −10 ‰ na armadura, de εc2 no pivô C ou na reta b) levanta FaixaNormativaError. dominio_elu rotula o par (α, x_LN) que verificar_fco devolve, para SecaoRetangular e Secao de um concreto só. O dict de verificar_fco não foi alterado: o rótulo é obtido chamando dominio_elu sobre o resultado."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P28",
+     "transcricao_do_plano": "O plano dá a assinatura dominio_deformacao(eps_topo, eps_base, fck) -> str.",
+     "imagem_da_norma": "A Figura 17.1 separa os domínios 3 e 4 por εyd (depende do aço) e os domínios 4 e 4a por d. Só com εtopo, εbase e fck não dá para rotular. A assinatura ganhou h_cm e d_cm obrigatórios e fyk_mpa, gama_s e Es_mpa com padrão CA-50.",
+     "pagina": "142"
+    }
+   ]
   },
   {
    "id": "17.2.3-dutilidade-vigas",
@@ -8902,7 +9246,15 @@
      "test_17_2_4_4_1_combinacao_desconhecida"
     ],
     "observacao": "Sem alteração nesta volta."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P32",
+     "transcricao_do_plano": "conferido_na_imagem estava marcado como false.",
+     "imagem_da_norma": "Confirmado exatamente como no JSON: 0,45*fck (quase permanente), 0,60*fck (frequente), 0,60*fck (rara, só Nível 3) -- sem divergência de valor, só a bandeira de conferência estava desatualizada.",
+     "pagina": "144"
+    }
+   ]
   },
   {
    "id": "17.2.4.4.2-limite-tensao-tracao-els",
@@ -8936,7 +9288,15 @@
      "test_limites_tensao_servico_dispatcher"
     ],
     "observacao": "Sem alteração nesta volta."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P32",
+     "transcricao_do_plano": "onde_no_codigo dizia que fct_admissivel_traçao_kncm2 'parece já incluir o fator 1,2 do próprio limite, e não apenas o limiar de passagem ao Estádio II' -- suspeita de que fosse outra grandeza.",
+     "imagem_da_norma": "17.2.4.4.2 (p. 144): 'quando a tensão de tração máxima no concreto no ELS-F [...] exceder 0,7 alpha fctm, a seção passa a trabalhar no Estádio II'.",
+     "pagina": "144"
+    }
+   ]
   },
   {
    "id": "17.2.5-interacao-flexao-obliqua",
@@ -9032,7 +9392,15 @@
      "test_rigidez_equivalente_III_negativo"
     ],
     "observacao": "Sem alteração nesta rodada; verificação não achou defeito neste item."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P8",
+     "transcricao_do_plano": "(EI)eq,t0 = Ecs*{(Mr/Ma)^3*Ic + [1-(Mr/Ma)^3]*III} <= Ecs*Ic, sem mencionar reducao de Mr para barras lisas.",
+     "imagem_da_norma": "Mesma formula, mas o texto da imagem (p. 146) acrescenta uma frase que o JSON nao capturou: 'Mr e o momento de fissuracao do elemento estrutural, cujo valor deve ser reduzido a metade no caso de utilizacao de barras lisas.' Implementei isso como parametro opcional barras_lisas=False (default reproduz exatamente a formula do JSON; True reduz Mr a metade antes do calculo).",
+     "pagina": "146"
+    }
+   ]
   },
   {
    "id": "17.3.2.1.2-flecha-diferida-alphaf-xi",
@@ -9125,7 +9493,21 @@
      "test_flecha_protendido_fluxo_erros_de_entrada"
     ],
     "observacao": "O que faltava, segundo a própria observação do P32, eram dois passos: a integração da curvatura para obter a flecha imediata e a aplicação do limite. Os dois entraram. `flecha_imediata_curvatura_cm` integra 1/r = M(x)/(EI)(x) pelo princípio dos trabalhos virtuais (regra do trapézio), com (EI) escalar ou por estação, para viga biapoiada e para balanço, e a docstring diz que isso é mecânica das estruturas, não expressão normativa — a norma só prescreve o modelo (17.3.2.1) e a rigidez (17.3.2.1.1). `verificar_flecha_protendido` monta o fluxo inteiro: (EI)eq de 17.3.2.1.3 (reusando `flecha_protendido`, que já delega a Branson ao P8), Ma pela regra de 17.3.2.1.1 (máximo no vão em viga biapoiada/contínua, momento no apoio em balanço), flecha imediata de cada parcela, f_total = f_variável + f_permanente·(1+φ) por `flecha_total_protendido`, e o limite da Tabela 13.3 por `deslocamento_limite`, com `AvisoNBR6118` quando passa. Não reusa `els_deformacao_nbr6118.verificar_flecha` de propósito: aquela aplica (1+alfa_f) de 17.3.2.1.2, que é de armadura passiva. Entrou junto a rigidez ponderada da Figura 17.3 (p. 147), que faltava para a expressão completa de 17.3.2.1.1 em vão de viga contínua. A docstring da função nova declara a convenção que evita contagem dupla da protensão (ela entra por Mr,p; quem preferir pôr a protensão como ação externa equivalente nos diagramas chama com P_kn = 0)."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "F2",
+     "transcricao_do_plano": "O campo `falta` diz: \"Nenhum modulo monta esse fluxo para vigas protendidas (depende de 17.3.2.1.1, que tambem esta ausente)\".",
+     "imagem_da_norma": "17.3.2.1.1 não estava ausente: a expressão de Branson (EI)eq,t0 = Ecs·{(Mr/Ma)³·Ic + [1 − (Mr/Ma)³]·III} ≤ Ecs·Ic já estava em `els_deformacao_nbr6118.rigidez_equivalente_kncm2` (P8), conferida na imagem da p. 146. O que de fato faltava de 17.3.2.1.1 era a rigidez ponderada da Figura 17.3 (p. 147), (EI)eq = [(EI)eq,1·a1 + (EI)eq,v·av + (EI)eq,2·a2]/l, com a1/l ≈ a2/l ≈ 0,15 — implementada agora.",
+     "pagina": "PDF 146-147 (impressa 128-129)"
+    },
+    {
+     "pacote": "F2",
+     "transcricao_do_plano": "Título do item: \"Flecha em elementos com armaduras ativas\".",
+     "imagem_da_norma": "O título do subitem na p. 148 é \"Flecha em vigas com armaduras ativas\"; o corpo do texto é que fala em \"elementos estruturais com armaduras ativas\". Diferença só de rótulo: não muda fórmula nem escopo, e a docstring cita o texto do corpo.",
+     "pagina": "PDF 148 (impressa 130)"
+    }
+   ]
   },
   {
    "id": "17.3.3.2-abertura-fissura-wk",
@@ -9210,7 +9592,15 @@
      "test_tabela_17_2_celula_vazia_mensagem_reflete_com_armadura_ativa_real"
     ],
     "observacao": "Corrigida a mensagem de erro da célula vazia (achado execucao). Achado diff sobre a assinatura/convenção ok:bool/governante:str foi rejeitado e documentado no docstring (ver respostas) em vez de mudar a assinatura; todas as 7 células da Tabela 17.2 continuam testadas e passando."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P9",
+     "transcricao_do_plano": "O JSON do plano so lista o alpha_e=10 do item 23.5.3 (fadiga); nao ha item nem mencao ao alpha_e=15 do contexto de fissuracao na pagina 150.",
+     "imagem_da_norma": "Paragrafo logo antes da Tabela 17.2 (conferido na imagem): \"O calculo no estadio II (que admite comportamento linear dos materiais e despreza a resistencia a tracao do concreto) pode ser feito considerando a relacao alpha_e entre os modulos de elasticidade do aco e do concreto igual a 15.\" -- uma segunda simplificacao de alpha_e, so para o contexto de controle de fissuracao (17.3.3.2/17.3.3.3), diferente da de fadiga.",
+     "pagina": "150"
+    }
+   ]
   },
   {
    "id": "17.3.4-descompressao-formacao-fissuras",
@@ -9345,7 +9735,15 @@
      "testes do bloco 'Armadura de pele' em test_p12_vigas_limites.py"
     ],
     "observacao": "Sem mudanca nesta rodada; nenhum achado sobre este item."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P12",
+     "transcricao_do_plano": "As,pele>=0,10%*Ac,alma por face; teste_sugerido do JSON trata Ac,alma como bw*h total (bw=20,h=80 -> Ac,alma=1600cm2 -> As,pele=1,6cm2/face), com teto de 5cm2/m",
+     "imagem_da_norma": "Imagem p.153 (impresso p.135) confirma o texto ('0,10% Ac,alma em cada face...nao sendo necessaria armadura superior a 5cm2/m por face'), mas nao define Ac,alma numericamente nem explicita se e area total ou taxa por metro de altura. O teste do JSON (1,6cm2/face) mistura uma area total (bw*h) com um teto expresso em cm2/m, dimensionalmente inconsistente. Implementei como taxa por metro de altura da alma (Ac,alma de uma faixa de 1m = bw*100), convencao usada na pratica de escritorio e em softwares de detalhamento (a grandeza que informa bitola/espacamento ao longo da altura), documentada na docstring. Para bw=20cm isso da 2,0cm2/m (nao 1,6cm2), e o teto de 5cm2/m so e atingido com bw>=50cm.",
+     "pagina": "153 (PDF) / 135 (impresso)"
+    }
+   ]
   },
   {
    "id": "17.3.5.2.4-as-max-tracao-compressao-vigas",
@@ -9463,7 +9861,15 @@
      "test_regime_asw_min_pilar_comprimido"
     ],
     "observacao": "Os três casos: a) bw > 5d (estrito) vira laje; b) nervura dispensa quando VSd <= VRd1; c) pilar ou fundação comprimido com σt,máx <= fctk (tomado como fctk,inf, a favor da segurança) e VSd <= Vc leva à Asw,min da Seção 18."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P15",
+     "transcricao_do_plano": "bw > 5d vira laje",
+     "imagem_da_norma": "17.4.1.1.2 a) diz bw > 5d (estrito), mas o título de 19.4 diz 'bw >= 5d'. Implementado o estrito de 17.4.1.1.2, com bw = 5d ainda tratado como viga. Para c), a norma diz 'fctk' sem especificar; adotado fctk,inf.",
+     "pagina": "154 e 181"
+    }
+   ]
   },
   {
    "id": "17.4.1.1.3-limite-barras-dobradas",
@@ -9756,7 +10162,15 @@
      "test_M0_entradas_invalidas"
     ],
     "observacao": "M0 = Pd(W1/Ac + ep) + NSd·W1/Ac, com γp = 0,9 e γf = 1,0 aplicados dentro da função. Ela recebe P_kn e N_kn sem ponderação, e não Pd_kn e Nsd_kn como sugeria o plano, para não aplicar γ duas vezes."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P15",
+     "transcricao_do_plano": "Assinatura sugerida M0_kncm(Pd_kn, ep_cm, Nsd_kn, ...) e a formulação 'W1 = módulo de resistência na fibra mais tracionada'.",
+     "imagem_da_norma": "A fórmula confere com a imagem: M0 = Pd(W1/Ac + ep) + NSd(W1/Ac), com a tensão calculada com γf = 1,0 e γp = 0,9. A função recebe P e N sem ponderação e aplica esses γ dentro dela; não é divergência de fórmula, só de assinatura.",
+     "pagina": "157-158"
+    }
+   ]
   },
   {
    "id": "17.4.2.2-decalagem-forca",
@@ -9859,7 +10273,15 @@
      "test_modelo_II_vc1_nas_bordas_da_interpolacao"
     ],
     "observacao": "Mesmos ramos, aplicados sobre Vc1 (interpolado). O teto 2·Vc1 é aplicado como min(), igual ao modelo I."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P15",
+     "transcricao_do_plano": "Vc = Vc1(1 + M0/MSd,max) < 2Vc1",
+     "imagem_da_norma": "Confere: no modelo II a desigualdade é estrita (< 2Vc1), e no modelo I é <= 2Vc0. O código aplica min(…, 2·Vc_base) nos dois casos.",
+     "pagina": "157 e 159"
+    }
+   ]
   },
   {
    "id": "17.4.2.3-decalagem-modeloII",
@@ -10520,7 +10942,15 @@
      "test_curvatura_fora_da_faixa"
     ],
     "observacao": "Agora também valida os espaçamentos informados (livre >= 0, mínimo > 0)."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P22",
+     "transcricao_do_plano": "teste_sugerido: 'sigma_s=0 reduziria até o mínimo do gancho da Tabela 9.1'.",
+     "imagem_da_norma": "Confere. A norma não diz se a multiplicação pelo número de barras incide sobre o valor reduzido; adotou-se o valor mínimo já reduzido ('o valor mínimo ... estabelecido nesta Seção'), com a escolha declarada na docstring.",
+     "pagina": "166"
+    }
+   ]
   },
   {
    "id": "18.2.2-fissuracao-plano-dobra",
@@ -10826,7 +11256,15 @@
      "test_FSd_extremo_fora_da_faixa"
     ],
     "observacao": "Sem mudança nesta volta."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P22",
+     "transcricao_do_plano": "JSON do 18.6.1.1 diz que 18.3.2.4 'usa a mesma fórmula'.",
+     "imagem_da_norma": "18.3.2.4 b): FSd = MSd/z + (aℓ/d)·VSd + NSd ≥ (aℓ/d)·VSd + NSd, sem piso de 0,2·V e com VSd, e não ΔVd.",
+     "pagina": "169"
+    }
+   ]
   },
   {
    "id": "18.3.2.4-c-fracao-as-vao",
@@ -11356,7 +11794,15 @@
      "test_18_3_6_suspensao_nao_e_a_de_bloco"
     ],
     "observacao": "As = fator·Fd/fyd, com fyd do núcleo, sem o teto de 435 MPa do estribo, porque a norma não o impõe à suspensão. Viga não pendurada: >= 75 % na viga de apoio, em h (ou h/2 se a viga não continua), e <= 25 % na apoiada. A taxa em cm²/m é devolvida já somada à Asw de cisalhamento informada. Viga pendurada: a norma não reparte; adota-se 100 % na viga de apoio (decisão declarada)."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P23",
+     "transcricao_do_plano": "O teste sugerido é pôr cada parcela na extensão h/2.",
+     "imagem_da_norma": "Na imagem, a extensão máxima é h_viga (metade para cada lado do cruzamento). Só quando a viga não passa do cruzamento a armadura toda vai em h_viga/2.",
+     "pagina": "172"
+    }
+   ]
   },
   {
    "id": "18.3.6-fator-reducao-vigas-face-superior-coincidente",
@@ -11387,7 +11833,15 @@
      "test_18_3_6_fator_reducao"
     ],
     "observacao": "Faixa 0 <= h_susp <= h_viga apoio; fora dela, FaixaNormativaError. Sem faces superiores coincidentes, devolve 1. Com viga pendurada, As_suspensao_viga recusa fator < 1."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P23",
+     "transcricao_do_plano": "h_susp = h_viga_apoio é tratado como equivalente a viga pendurada.",
+     "imagem_da_norma": "Pela norma, viga pendurada é aquela cuja face inferior está abaixo da face inferior da viga de apoio, ou seja, h_susp < 0. h_susp = h_viga_apoio dá fator 0 e não é viga pendurada.",
+     "pagina": "172"
+    }
+   ]
   },
   {
    "id": "18.3.6-definicao-viga-pendurada",
@@ -11447,7 +11901,15 @@
      "test_18_3_7_verificacao_ligacao"
     ],
     "observacao": "Exigida = máx(necessária; 1,5 cm²/m). A armadura de flexão da laje conta se estiver ancorada. A resistência do concreto no plano de ligação não tem fórmula neste item e fica com o usuário."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P23",
+     "transcricao_do_plano": "conferido_na_imagem: false",
+     "imagem_da_norma": "Conferido agora na imagem: 1,5 cm² por metro, por toda a largura útil e ancorada; a armadura de flexão da laje pode complementar. Confere com a fórmula do JSON.",
+     "pagina": "173"
+    }
+   ]
   },
   {
    "id": "18.4.1-introducao-pilar-x-pilar-parede",
@@ -11869,7 +12331,15 @@
      "test_FSd_intermediario_fora_da_faixa"
     ],
     "observacao": "Sem mudança nesta volta."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P22",
+     "transcricao_do_plano": "Plano (texto do P22): 'FSd_apoio_extremo(VSd, al, d, NSd) (18.3.2.4 b), a mesma fórmula servindo ao apoio intermediário de 18.6.1.1'.",
+     "imagem_da_norma": "18.6.1.1 usa FSd = (aℓ/d)·ΔVd + Nd ≥ FSd,mín = 0,2·Vd (ΔVd = máxima diferença de cortante entre os lados, sem o termo MSd/z e com piso de 0,2Vd), adotando o maior FSd entre os lados. Não é a mesma fórmula de 18.3.2.4 b); foi implementada como função separada.",
+     "pagina": "175"
+    }
+   ]
   },
   {
    "id": "18.6.1.2-raio-minimo-curvatura",
@@ -12270,7 +12740,15 @@
      "test_els_laje_faltando_dados_de_cada_criterio"
     ],
     "observacao": "O que faltava era a verificação de descompressão (17.3.4) para laje protendida — a de abertura de fissura (17.3.3) já existia por `wk_verificacao`. `verificar_descompressao_laje` monta a faixa de laje como seção retangular b×h (Ac = b·h, Wb = Wt = b·h²/6, via `Ac_retangular`/`W_retangular`) e delega a `protendido_nbr6118.verificar_descompressao_fissuracao`, que já implementa o texto de 17.3.4 (máxima tensão de tração no Estádio I; limite nulo no ELS-D e o de 17.2.4.4.2 no ELS-F) — a norma não dá fórmula própria para laje, e é exatamente o que 19.3.2 diz. `verificar_els_laje_protendida` é o ponto de entrada de 19.3.2: consulta a Tabela 13.4 pelo núcleo (`nucleo_nbr6118.wk_max_mm`) e, conforme o par CAA/nível/tipo de protensão, roda o critério de 17.3.3 (quando há wk,máx: armado e protendido nível 1) ou as duas verificações de 17.3.4 (níveis 2 e 3, ELS-F e ELS-D, cada uma com a sua combinação), devolvendo ok, governante e memória. Par fora da Tabela 13.4 levanta FaixaNormativaError vindo do núcleo."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "F2",
+     "transcricao_do_plano": "O campo `falta` diz: \"não há verificação de descompressão (17.3.4) para laje protendida\".",
+     "imagem_da_norma": "Confirmado na imagem: 19.3.2 (p. 179) só remete — \"Devem ser usados os critérios dados em 17.3.3 e 17.3.4\" — e 17.3.4 (p. 150-151) diz que a verificação \"pode ser feita calculando-se a máxima tensão de tração do concreto no estádio I\". A verificação já existia para viga (`protendido_nbr6118.verificar_descompressao_fissuracao`, P32); faltava só a fachada de faixa de laje e a escolha do critério pela Tabela 13.4. Página do JSON (179) confere com a imagem.",
+     "pagina": "PDF 179 (impressa 161) e PDF 150-151 (impressa 132-133)"
+    }
+   ]
   },
   {
    "id": "19.3.3.1-principios-as-max-min",
@@ -12506,7 +12984,15 @@
      "test_a_l_laje"
     ],
     "observacao": "aℓ = 1,5·d (d = 15 dá 22,5 cm). O plano citava uma constante AL_LAJE = 1,5·d, que não pode depender de d; por isso ficaram um fator constante e uma função."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P15",
+     "transcricao_do_plano": "al = 1,5*d (conferido_na_imagem: false)",
+     "imagem_da_norma": "Confere: 'considerando para aℓ o valor 1,5d', com remissão a 18.3.2.3.1.",
+     "pagina": "182"
+    }
+   ]
   },
   {
    "id": "19.4.2-modelo-cortante-laje",
@@ -12559,7 +13045,15 @@
      "test_fywd_laje_kncm2_e_modelos"
     ],
     "observacao": "250 MPa até 15 cm, 435 MPa acima de 35 cm e interpolação linear entre os dois, sempre limitado por fywd (fyd ou 0,7·fyd). Os modelos I e II e a verificação aceitam h_laje_cm."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P15",
+     "transcricao_do_plano": "fywd_max = 250 MPa para h <= 15; 435 MPa para h > 35; interpolação entre 15 e 35 (conferido_na_imagem: false)",
+     "imagem_da_norma": "Confere na imagem: '250 MPa, para lajes com espessura até 15 cm' e '435 MPa (fywd), para lajes com espessura maior que 35 cm', sendo permitida a interpolação linear. O 435 é o próprio fywd, portanto também limitado a fyd.",
+     "pagina": "182"
+    }
+   ]
   },
   {
    "id": "19.5.1-modelo-calculo-puncao",
@@ -12796,7 +13290,15 @@
      "test_wp_generico_erros"
     ],
     "observacao": "A integral Wp = ∫|e|dℓ é resolvida em forma fechada, trecho a trecho (retas e arcos), e reproduz as fórmulas fechadas do P19 a 1e-12 no retângulo e a 1e-5 no círculo (polígono de 720 lados). Tem a opção cantos='retos', que é a simplificação permitida pela norma ('desprezando a curvatura dos cantos'). Com aberturas, Wp é integrado só sobre o perímetro efetivo (leitura da biblioteca)."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P20",
+     "transcricao_do_plano": "Wp = integral(0,u) |e| dl",
+     "imagem_da_norma": "A imagem diz que Wp 'pode ser calculado desprezando a curvatura dos cantos do perímetro crítico' pela integral. As fórmulas fechadas, porém, incluem a curvatura (termo 2πdC1). A biblioteca integra com arcos por padrão (e reproduz as fórmulas fechadas) e oferece cantos='retos'.",
+     "pagina": "184"
+    }
+   ]
   },
   {
    "id": "19.5.2.3-pilar-borda-sem-momento-paralelo",
@@ -12838,7 +13340,15 @@
      "test_verificar_borda_usa_u_estrela"
     ],
     "observacao": "Wp1 e e* não têm fórmula fechada na norma: foram deduzidos da integral ∫|e|dℓ e da geometria da Figura 19.3, e os testes os conferem por integração numérica independente. No contorno C de pilar de borda a norma não detalha u0. A biblioteca usa u0 = 2C1 + C2, Wp sobre u0 e MSd inteiro, sem o desconto de MSd*, o que fica a favor da segurança."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P19",
+     "transcricao_do_plano": "Wp1 = Wp perpendicular à borda, calculado com u; u* = menor entre 1,5d e 0,5C1.",
+     "imagem_da_norma": "Confere. A norma não dá expressão fechada para Wp1, Wp2 (borda) nem para Wp de canto, só a integral de 19.5.2.2. Os trechos de u* têm comprimento a = min(1,5d; 0,5C1), medido da face interna do pilar em direção à borda (Figura 19.3).",
+     "pagina": "185"
+    }
+   ]
   },
   {
    "id": "19.5.2.3-pilar-borda-com-momento-paralelo",
@@ -12945,7 +13455,15 @@
      "test_capitel_erros"
     ],
     "observacao": "Classifica as três faixas de lc (as fronteiras 2(dc−d) e 2dc são inclusivas, como na figura). A posição dos contornos foi lida das retas 2:1 da Figura 19.5: C1′ a 2dc da face e C2′ a lc+2d. Os perímetros valem para pilar interno retangular com capitel de borda retangular (leitura da biblioteca). da é exigido quando C1′ entra na verificação. Com lc=0, o resultado recai no caso sem capitel."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P20",
+     "transcricao_do_plano": "Não diz onde ficam C1′ e C2′.",
+     "imagem_da_norma": "Pelas retas 2:1 da Figura 19.5, C1′ fica a 2·dc da face do pilar (altura útil da) e C2′ a 2d da borda do capitel, ou seja, a lc+2d da face (altura útil d).",
+     "pagina": "187"
+    }
+   ]
   },
   {
    "id": "19.5.2.6-contorno-reentrancia",
@@ -12977,7 +13495,15 @@
      "test_sem_reentrancia_reproduz_perimetro_p19"
     ],
     "observacao": "C′ fica paralelo à envoltória convexa, com cantos em arco. u0 (contorno C) usa o perímetro real do polígono."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P20",
+     "transcricao_do_plano": "teste sugerido: 'C′ deve coincidir com o do retângulo envolvente (convex hull)'",
+     "imagem_da_norma": "A Figura 19.6 mostra o polígono circunscrito fechando a reentrância do L com uma reta inclinada (tracejada): é a envoltória convexa, não o retângulo envolvente. Os dois dão perímetros diferentes.",
+     "pagina": "187"
+    }
+   ]
   },
   {
    "id": "19.5.2.6-contorno-abertura",
@@ -13103,7 +13629,15 @@
      "test_19_5_3_2_tau_rd1_com_sigma_cp"
     ],
     "observacao": "Teto de ρ (0,02) e de ke (2) aplicados. σcp é zerado quando σcp,x ou σcp,y <= 1 MPa, com teto de 3,5 MPa. Quem calcula ρx e ρy na largura do pilar + 3d é o chamador."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P19",
+     "transcricao_do_plano": "Teste sugerido: tRd1 = 0,13·2·(100·0,01·25)^(1/3) = 0,760 MPa.",
+     "imagem_da_norma": "A fórmula confere com a imagem. O valor exato é 0,26·25^(1/3) = 0,760245 MPa; a divergência é só de arredondamento.",
+     "pagina": "188"
+    }
+   ]
   },
   {
    "id": "19.5.3.3-trd3-com-armadura",
@@ -13142,7 +13676,15 @@
      "test_verificar_interno_com_armadura_e_c2linha"
     ],
     "observacao": "sr > 0,75d levanta erro. O fywd usado é o menor entre o informado e o teto (300 MPa para studs, 250 MPa para estribos). Com h > 15 cm entra a reta de 19.4.2 (cortante.fywd_max_laje_mpa, P15): estribos seguem a reta; studs ficam com max(300, reta), leitura da biblioteca. A descontinuidade 0,10 × 0,13 está comentada e testada."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P19",
+     "transcricao_do_plano": "pagina_pdf 189; fywd <= 300 MPa (studs) ou <= 250 MPa (estribos), maior se h > 15 cm.",
+     "imagem_da_norma": "A fórmula e sr <= 0,75d estão na p. 189. A definição de u (u* em borda e canto) e os tetos de fywd estão na p. 190. Os valores conferem.",
+     "pagina": "189-190"
+    }
+   ]
   },
   {
    "id": "19.5.3.4-superficie-c2linha",
@@ -13175,7 +13717,15 @@
      "tests/test_f3_fechamento.py:test_19_5_3_4_contorno_inteiro_quando_espacamento_ok"
     ],
     "observacao": "Não fechei o perímetro reduzido do arranjo em cruz (Figura 19.8, à direita) porque a Figura não dá regra numérica para ele — só ilustra \">2d\" no braço e \"d\" entre a última linha de conectores e o arco, sem dizer onde o trecho reto termina nem o raio do arco nos cantos entre braços, ao contrário da Figura 19.9 (<=0,75d, <=0,50d explícitos). Traçar isso seria inventar uma construção geométrica que a norma não dá, o que é o erro que este pacote existe para evitar. Reescrevi a docstring de disposicao_armadura_puncao explicando isso na primeira pessoa; a função continua sinalizando ok=False e apontando para calcular u\" à parte com verificar_puncao(u_C2l_cm=...). Item permanece parcial, com evidência de por quê."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P20",
+     "transcricao_do_plano": "'primeiro contorno <2d do perímetro do pilar; camadas subsequentes <2d entre si (planta)'",
+     "imagem_da_norma": "Figura 19.9: o 1º contorno fica a <= 0,50d da face e os contornos seguintes a <= 0,75d entre si. O '< 2d' da Figura 19.8 é o espaçamento entre linhas radiais adjacentes no último contorno de armadura. Acima de 2d, vale o perímetro reduzido da figura da direita.",
+     "pagina": "190"
+    }
+   ]
   },
   {
    "id": "19.5.3.5-armadura-puncao-obrigatoria",
@@ -13665,7 +14215,15 @@
      "test_largura_max_faixa_externa_dimensoes_invalidas"
     ],
     "observacao": "Parametro 'lados' (1 ou 2) generaliza a Figura 20.3, que desenha apenas o caso de pilar de borda (um lado); o teste sugerido do plano (pilar interno, 40cm/h=20cm->180cm) usa o padrao lados=2. Ver divergencia registrada."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P33",
+     "transcricao_do_plano": "largura_max = dimensao_pilar_transversal + 2*3,5*h (o JSON assume os dois lados do pilar, sem expor essa premissa)",
+     "imagem_da_norma": "Texto (p.195): 'acrescida de 3,5 vezes a espessura da laje para cada um dos lados do pilar' — mas a Figura 20.3, que ilustra o caso, desenha um pilar de BORDA e rotula a cota total como 'a + 3,5h' (um so lado recebe o acrescimo, ja que o outro coincide com a borda da laje). A imagem sozinha sugeriria a+3,5h; o texto generaliza para os dois lados de um pilar interno (a+2*3,5h), que e o caso do teste sugerido do plano (pilar 40cm, h=20cm -> 180cm = 40+2*3,5*20). Implementado com parametro 'lados' (1 ou 2, padrao 2) para cobrir os dois casos sem contradizer nem a imagem nem o texto.",
+     "pagina": "195"
+    }
+   ]
   },
   {
    "id": "20.3.2.3-espacamento-min-cabos",
@@ -14243,7 +14801,15 @@
      "test_zona_ancoragem_regiao_d_coincide_com_22_2"
     ],
     "observacao": "A subseção não traz fórmula fechada: ela exige modelo tridimensional (ou bielas e tirantes da Seção 22) com equilíbrio global, fendilhamento anelar e esmagamento. O modelo entregue é o do prisma simétrico, com a fonte declarada na docstring (Guyon, 1953; Schlaich & Schäfer, 1987; mesma expressão na AASHTO LRFD 5.9.5.6.5a): T = 0,25*P*(1 - a/h') com h' = h - 2|e|, tirante em x = h'/2. O equilíbrio do modelo é fechado (duas trajetórias de força), e o teste confere as componentes da biela contra T e P/2 em vez de repetir a fórmula. Os três aspectos que 21.2.3 lista estão cobertos: equilíbrio (componentes da biela), fendilhamento (tirante, com As por 22.3.3) e esmagamento (tensão sob a ancoragem verificada por verificar_no, nó CCT, 22.3.2)."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P48",
+     "transcricao_do_plano": "\"Nao ha formula fechada nesta subsecao (remete a bielas e tirantes)\"",
+     "imagem_da_norma": "Confirmado na imagem da p. 199: 21.2.3 só exige modelos tridimensionais, ou bielas e tirantes da Seção 22, considerando (a) equilíbrio global, (b) tração transversal (fendilhamento anelar) e (c) esmagamento. A expressão T = 0,25*P*(1 - a/h') usada no módulo não é da norma; é do prisma simétrico da literatura e está declarada como tal na docstring e na memória de cálculo.",
+     "pagina": "199"
+    }
+   ]
   },
   {
    "id": "21.2.4-cargas-superficie-chumbadores",
@@ -14625,7 +15191,21 @@
      "test_classificar_regiao_bd_nos_dois_lados_do_degrau"
     ],
     "observacao": "Transcrito da imagem da p. 202: o limite entre as regiões B e D fica a uma distância h (altura da seção) da seção efetiva da descontinuidade. O parâmetro n_lados (1 ou 2) cobre a descontinuidade de extremidade e a interna, que a Figura 22.1 b2 marca como 2h. O degrau é testado nos dois lados (x = h devolve 'D', x = h + eps devolve 'B')."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P48",
+     "transcricao_do_plano": "\"Criterio de modelagem: distancia h (altura da secao) a partir da descontinuidade define o limite entre regiao B (Bernoulli) e regiao D\" — só a distância h, sem dizer para quantos lados.",
+     "imagem_da_norma": "O texto da p. 202 é esse mesmo, mas a Figura 22.1 (p. 203) mostra que a região D avança h para cada lado quando a descontinuidade é interna (b2, carga concentrada em viga, marcada com 2h) e que, na mudança de seção (a1, a2, a3), cada lado usa o seu próprio h (h1 e h2). O modelo implementado traz o parâmetro n_lados por causa disso.",
+     "pagina": "202-203"
+    },
+    {
+     "pacote": "P48",
+     "transcricao_do_plano": "\"falta\": \"A biblioteca não calcula estrutura; só recebe esforços prontos.\"",
+     "imagem_da_norma": "Campo defasado no JSON: a própria \"revisao\" do item já registra que ele passou a ausente com a decisão 1 e virou a extensão da região D do P48. Não é divergência de fórmula, só de campo não atualizado.",
+     "pagina": "202"
+    }
+   ]
   },
   {
    "id": "22.2-gamma-n-consolo-gerber",
@@ -15075,7 +15655,15 @@
      "test_memoria_suspensao_carga_inferior_tem_acentuacao"
     ],
     "observacao": "Norma so exige texto qualitativo (sem formula fechada, p. 206); modulo aplica por decisao propria a relacao generica de tirante de 22.3.3, agora documentada de forma explicita na docstring como convencao do escritorio (achado da lente norma). Memoria de calculo corrigida nesta rodada (acentuacao, achado da lente diff)."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P35",
+     "transcricao_do_plano": "As,susp >= V_total_aplicada / fyd (armadura vertical distribuida na regiao de aplicacao)",
+     "imagem_da_norma": "Texto da p.206 (22.4.4.3) é só qualitativo: 'No caso de carregamento pela parte inferior da viga, essa armadura deve ser capaz de suspender a totalidade da carga aplicada.' Não há expressão numérica na imagem — o próprio item já veio marcado conferido_na_imagem=false, e a leitura da página confirma isso.",
+     "pagina": "206"
+    }
+   ]
   },
   {
    "id": "22.5.1.1-classificacao-consolo",
@@ -15137,7 +15725,15 @@
      "test_verificar_abertura_carga_acima_do_limite_reprovado"
     ],
     "observacao": "22.5.1.2 c) (p. 207): abertura de carga sob a placa de apoio limitada a inclinacao 1:2 (horizontal:vertical) a partir das bordas da area de apoio -> largura_max = a0 + profundidade."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P36",
+     "transcricao_do_plano": "O JSON trata como se fosse um item proprio, focado so no limite 1:2.",
+     "imagem_da_norma": "Na pagina 207, este conteudo esta dentro de 22.5.1.2 'Comportamento estrutural', item c): a inclinacao 1:2 e so uma das varias exigencias listadas (a a e) para o comportamento do consolo; nao e um item numerado a parte.",
+     "pagina": "207"
+    }
+   ]
   },
   {
    "id": "22.5.1.2-limite-taxa-tirante-ductil",
@@ -15207,7 +15803,27 @@
      "tests/test_f4_fechamento.py::test_dimensionar_consolo_modelo_atrito_explica_a_ausencia_de_coeficiente"
     ],
     "observacao": "Fechados os dois buracos que o P36 apontou como \"falta\". (1) Verificação automática da compressão na biela: a imagem da p. 207 (22.5.1.2 c) dá justamente a regra de largura efetiva do nó que o P36 disse não existir — \"pode ser considerada a abertura de carga sob a placa de apoio [...] limitada a uma inclinação máxima de 1:2 em relação à vertical, nos pontos extremos A e C (ou E) da área de apoio ampliada\". Com ela, verificar_biela_consolo calcula Rcd = Fd·L/z, a largura do nó a0 + d' (d' = h − d), h,biela = (a0 + d')·sen(theta) e compara sigma a fcd3 (nó CCT, padrão) ou fcd1 (tipo='CCC'); dimensionar_consolo faz isso sozinho quando a0_cm é informado, e o resultado entra em ok. (2) Equilíbrio global \"inclusive no nó de ligação com o pilar\" (22.5.1.2): modelo_biela_tirante_consolo monta a treliça da Figura 22.4 como TrelicaBT (22.3.1, P48), isostática e conferida pelo próprio cálculo de barras, e reproduz exatamente Rsd = Fd·a/z + Hd e Rcd = −Fd·L/z. (3) Acrescentada a conferência da inclinação da biela contra 22.3.1 (0,57 <= tan(theta) <= 2), que com z = 0,85·d cobre o consolo curto inteiro e reprova a/d < 0,425. Continua PARCIAL só por modelo='atrito': varri a norma inteira — \"atrito-cisalhamento\" aparece uma única vez, em 22.5.1.3, sem coeficiente de atrito, faixa de rugosidade nem expressão; as demais ocorrências de \"atrito\" são perda de protensão (9.6.3.3.2.2). Sem fonte normativa para a constante, mantive NotImplementedError e registrei a evidência no comentário de abertura do bloco F4 e na docstring."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "F4",
+     "transcricao_do_plano": "A observação de implementação do P36 registrada no mapa afirma que a verificação da compressão na biela \"exige a largura efetiva do nó, que depende da geometria do apoio (placa a0) e não tem fórmula fechada no texto normativo\".",
+     "imagem_da_norma": "A imagem da p. 207 (22.5.1.2 c) dá a regra: \"verificação da resistência à compressão da biela ou do cisalhamento equivalente na face do pilar [...] Para a verificação da biela, pode ser considerada a abertura de carga sob a placa de apoio, conforme indicado na Figura 22.4, limitada a uma inclinação máxima de 1:2 em relação à vertical, nos pontos extremos A e C (ou E) da área de apoio ampliada\". Com a placa a0 e a profundidade de difusão, a largura efetiva do nó fica determinada (a0 + d'), e a verificação passou a ser possível sem arbitrar geometria.",
+     "pagina": "PDF p. 207 (impressa 189), item 22.5.1.2 c) e Figura 22.4"
+    },
+    {
+     "pacote": "F4",
+     "transcricao_do_plano": "O campo o_que_calcula do item lista o dimensionamento \"por modelo biela-tirante [...] ou atrito-cisalhamento\", como se os dois fossem calculáveis a partir da norma.",
+     "imagem_da_norma": "A imagem da p. 208 mostra que 22.5.1.3 apenas cita o método: \"podem ser usados modelos planos lineares ou não [...], modelos de bielas e tirantes ou modelos atrito-cisalhamento, respeitando, em cada caso, o seu campo de aplicação\". Busca no texto inteiro da norma: \"atrito-cisalhamento\" só ocorre nessas duas linhas de 22.5.1.3; não há coeficiente de atrito, faixa de rugosidade nem expressão em nenhum item. As demais ocorrências de \"atrito\" são perdas de protensão (9.6.3.3.2.2).",
+     "pagina": "PDF p. 208 (impressa 190), item 22.5.1.3"
+    },
+    {
+     "pacote": "P36",
+     "transcricao_do_plano": "o_que_calcula descreve 'Dimensionamento do consolo por modelo biela-tirante ... contemplando equilibrio global inclusive no no de ligacao com o pilar', que sugere uma formula fechada; o proprio JSON marca conferido_na_imagem=false, coerente com essa ausencia.",
+     "imagem_da_norma": "22.5.1.3 'Modelo de calculo' (p. 208) e inteiramente descritivo: diz que modelos planos, biela-tirante ou atrito-cisalhamento podem ser usados, respeitando 22.5.1.2 e tendo apoio experimental -- nao ha nenhuma formula ou tabela na imagem da pagina.",
+     "pagina": "208"
+    }
+   ]
   },
   {
    "id": "22.5.1.4.1-as-min-tirante-consolo",
@@ -15399,7 +16015,21 @@
      "tests/test_f4_fechamento.py::test_dente_gerber_memoria_cita_as_tres_diferencas_de_22_5_2_2"
     ],
     "observacao": "A geometria da biela do dente passou a ser parametrizável e conferida: z_cm substitui a aproximação 0,85·d, a docstring documenta (o que faltava) que no dente Gerber a_cm é medido até a linha da armadura de suspensão e não até a face de um pilar — é essa a \"correção necessária\" de 22.5.2.3 para a biela \"usualmente mais inclinada\" de 22.5.2.2 a) —, a inclinação é conferida contra 22.3.1 e, com a0_cm, a compressão na biela contra 22.3.2. A memória de cálculo agora percorre as três diferenças de 22.5.2.2: a) biela mais inclinada (com o tan(theta) do caso), b) a armadura principal tem de penetrar na viga procurando ancoragem nas bielas de cisalhamento (exigência de detalhamento, comprimento pela Seção 9), c) suspensão para no mínimo Fd (22.5.2.4.2, já existia). Continua PARCIAL na treliça própria do dente: li a imagem da p. 210 e 22.5.2.3 é literalmente \"os mesmos princípios estabelecidos para os consolos, desde que sejam feitas as correções necessárias\", e 22.5.2.2 a) descreve a biela mais inclinada sem dar inclinação, posição de nó nem geometria. Tentei montar a treliça da Figura 22.6 e o equilíbrio do nó do aparelho de apoio fica indeterminado sem arbitrar o tirante do soffit e a posição do nó da suspensão — arbítrio sem fonte normativa, que a biblioteca não faz. Registrado assim na docstring, na primeira pessoa da biblioteca."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "F4",
+     "transcricao_do_plano": "O campo o_que_calcula fala em \"correções necessárias para as diferenças de 22.5.2.2 (biela mais inclinada, apoio na armadura de suspensão)\", sugerindo geometria específica a implementar.",
+     "imagem_da_norma": "A imagem da p. 210 mostra que 22.5.2.2 a) só descreve qualitativamente (\"a biela é usualmente mais inclinada, porque deve procurar apoio na armadura de suspensão, dentro da viga, na extremidade oposta ao ponto de aplicação da carga\") e que 22.5.2.3 remete inteiramente ao consolo. Não há na norma inclinação, posição de nó nem expressão que permita montar uma treliça própria do dente; a Figura 22.6 é esquemática e não cota a geometria da biela.",
+     "pagina": "PDF p. 210 (impressa 192), itens 22.5.2.2 e 22.5.2.3 e Figura 22.6"
+    },
+    {
+     "pacote": "P36",
+     "transcricao_do_plano": "conferido_na_imagem=false, coerente; o o_que_calcula do JSON e uma parafrase razoavel do texto.",
+     "imagem_da_norma": "Mesma situacao de 22.5.1.3: 22.5.2.3 (p. 210) e uma unica frase remetendo aos principios do consolo com as correcoes de 22.5.2.2, sem formula.",
+     "pagina": "210"
+    }
+   ]
   },
   {
    "id": "22.5.2.4.2-as-suspensao-dente-gerber",
@@ -15530,7 +16160,15 @@
      "test_tensoes_excentrica_2d_avisa_e_mantem_a_tupla"
     ],
     "observacao": "A checagem reusa eh_rigida_nbr (22.6.1) e cobre as duas direções quando B/bp são informados. Fundação em rocha invalida a hipótese mesmo com sapata rígida, como a imagem da p. 211 diz. As funções de tensão só checam quando recebem h_cm/ap_cm ou fundacao_em_rocha=True: sem esses dados o comportamento é exatamente o de antes."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P37",
+     "transcricao_do_plano": "O JSON marca conferido_na_imagem=false e descreve o caso de rocha como \"fundação em rocha (mesmo com sapata rígida)\".",
+     "imagem_da_norma": "Conferido na imagem da p. 211 e confirmado literalmente: \"Para sapatas flexíveis ou em casos extremos de fundação em rocha, mesmo com sapata rígida, essa hipótese deve ser revista.\" A expressão de rigidez é h >= (a − ap)/3, verificada nas duas direções. Sem divergência de conteúdo — só o campo conferido_na_imagem estava desatualizado.",
+     "pagina": "211"
+    }
+   ]
   },
   {
    "id": "22.6.2.2-cisalhamento-compressao-diagonal-sapata-rigida",
@@ -15764,7 +16402,15 @@
      "test_projetar_bloco_classifica_a_rigidez_quando_recebe_a_planta"
     ],
     "observacao": "22.7.1 manda usar critério análogo ao de sapatas, então eh_rigido_bloco delega a sapatas_nbr6118.eh_rigida_nbr (h >= (a − ap)/3 nas duas direções), sem reimplementar a expressão. Em projetar_bloco a classificação só sai quando as dimensões em planta do bloco são informadas (não são dado das fórmulas de Blévot); sem elas o campo fica None."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P37",
+     "transcricao_do_plano": "formula_ou_regra do JSON: \"rigido se h >= (a - ap)/3 nas duas direcoes (mesma formula de 22.6.1, aplicada ao bloco)\".",
+     "imagem_da_norma": "A imagem da p. 213 não repete a expressão no 22.7.1: diz apenas que os blocos podem \"ser considerados rígidos ou flexíveis por critério análogo ao definido para sapatas\". A fórmula do JSON é, portanto, uma inferência (correta, e é a que foi implementada), não texto do item — a docstring de eh_rigido_bloco registra que a expressão vem de 22.6.1 por remissão.",
+     "pagina": "213"
+    }
+   ]
   },
   {
    "id": "22.7.2.1-a-faixa-armadura-estacas",
@@ -15870,7 +16516,15 @@
      "tests/test_p48_bielas_tirantes_trelicas.py::test_bloco_5_estacas_exige_topologia_isostatica (atualizado)"
     ],
     "observacao": "Fechadas as três exigências de 22.7.3 que dependem só de geometria. (1) Topologia automática, que o P48 deixou como \"falta\": topologia_tirantes_bloco monta o reticulado isostático de 2n−3 tirantes para qualquer número de estacas, pelo critério determinístico das ligações mais curtas primeiro, aceitando o par só quando ele acrescenta equação de equilíbrio independente (posto da matriz de equilíbrio da treliça completa) — garante isostaticidade e ausência de forma crítica. modelo_bloco_estacas usa isso para n >= 5 e mantém exatamente a topologia antiga para n <= 4, para não mexer nos resultados já aceitos (inclusive modelo_sapata). Conferido: 5 estacas (4 + central) dá 7 tirantes, com os 4 radiais absorvendo o empuxo inteiro (400 kN cada) e o perímetro nulo; hexágono de 6 dá 9, com os 6 lados a 200 kN e as 3 diagonais nulas. (2) Força horizontal (22.7.3, \"sempre que houver forças horizontais significativas ou forte assimetria\"): Hx_kn e Hy_kn entram no nó do pilar, o momento H·d soma-se ao de N·e na distribuição vertical e a reação horizontal é dividida por igual com a parcela polar que equilibra a torção ex·Hy − ey·Hx; conferido que a treliça sai autoequilibrada em força e momento, inclusive com excentricidade cruzada. Sai AvisoNBR6118 dizendo que essa é a hipótese de bloco rígido sobre apoios iguais e não a interação solo-estrutura, que é dado de projeto (avisar=False silencia; reacoes_estacas_kn aceita as reações da análise de interação). (3) Fendilhamento pilar-bloco (21.2, via 22.7.3): fendilhamento_pilar_bloco aplica o prisma simétrico já existente em cada direção (Tx = 0,25·Nd·(1 − ap/a'), a' = a,bloco − 2|ex|) e verifica o esmagamento no nó CCC contra fcd1; serve também à sapata (22.6.4.1). (4) largura_faixa_tirante_bloco_cm traz a faixa de 1,2·phi de 22.7.2.1 a), que 22.7.3 manda contemplar. Continua PARCIAL só pela análise tridimensional linear ou não linear de sólido, que 22.7.3 também aceita: está fora do escopo do projeto pela seção 7 e pela decisão 1 do plano (análise em barras; sem elementos finitos de placa e de sólido)."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "F4",
+     "transcricao_do_plano": "O campo depende_de do item lista 22.3.2-fcd2 entre as dependências.",
+     "imagem_da_norma": "No modelo de bloco sobre estacas de 22.7.3, o nó sob o pilar é CCC (fcd1, imagem da p. 213: as forças vão do pilar às estacas \"essencialmente por bielas de compressão\") e o nó sobre a estaca é CCT (fcd3, biela atravessada por tirante único). fcd2 (nó com dois ou mais tirantes) não é usado por este modelo; a implementação expõe fcd1 e fcd3, que são os que a geometria do bloco produz.",
+     "pagina": "PDF p. 213 (impressa 195), itens 22.7.2.1 e 22.7.3; fcd1/fcd2/fcd3 em 22.3.2, PDF p. 204"
+    }
+   ]
   },
   {
    "id": "22.7.4.1.1-armadura-flexao-bloco-85pct",
@@ -16017,7 +16671,15 @@
      "test_projetar_bloco_dispara_a_suspensao_por_espacamento"
     ],
     "observacao": "As duas condições de disparo da norma, ambas estritas (25 % exatos e espaçamento igual a 3·h não disparam). A área em si continua sendo a de Blévot/apostila (As_suspensao_total, As_suspensao_5_estacas): a norma só diz \"para a parcela de carga a ser equilibrada\", sem fórmula — a docstring registra isso. As_suspensao_cm2 de projetar_bloco não mudou de valor (convenção 7); o gatilho da NBR sai em campos novos."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P37",
+     "transcricao_do_plano": "O texto do pacote no plano (seção \"O que criar\") diz: \"suspensão só quando a distribuição passa de 25 % ou o espaçamento passa de 3·φ\".",
+     "imagem_da_norma": "A imagem da p. 215 diz \"se o espaçamento entre estacas for maior que três vezes a altura do bloco\" — 3·h do bloco, não 3·φ da estaca. O campo formula_ou_regra do JSON do item está certo (\"espacamento_estacas > 3*h_bloco\"); quem erra é só a frase-resumo do plano.",
+     "pagina": "215"
+    }
+   ]
   },
   {
    "id": "22.7.4.1.4-armadura-arranque-pilar-bloco",
@@ -16741,7 +17403,15 @@
      "test_tabela232_phi_obrigatorio_para_caso_passivo"
     ],
     "observacao": "Sem mudanca funcional nesta rodada; corrigida so a acentuacao das mensagens de erro e docstrings da tabela."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P38",
+     "transcricao_do_plano": "Descricao do JSON para a linha 'barra dobrada/estribo D<25phi' misturava os tres sub-casos (Dmin=8phi/5phi/3phi) com mapeamento numerico incorreto por coluna de phi (ex. sugeria 105/90/85 e 105/100/95/90/85 em ordens que nao batem com a tabela real).",
+     "imagem_da_norma": "A imagem da pagina 220 mostra 3 sub-linhas exatas: Dmin=8*phi (phi>=20mm): 105,105,105,105,100,95,90,85 (phi=10..40) Tipo T1; Dmin=5*phi (phi<20mm): 90,90,90,-,-,-,-,- ; Dmin=3*phi (phi<=10mm): 85,-,-,-,-,-,-,-. Usei a imagem (fonte) e transcrevi celula a celula em TABELA_23_2_PASSIVA_MPA.",
+     "pagina": "p. 220 (PDF)"
+    }
+   ]
   },
   {
    "id": "23.5.5-nota-e-barra-reta-limite",
@@ -16807,7 +17477,15 @@
      "test_notad_phi_zero_ou_negativo_levanta_erro"
     ],
     "observacao": "Mensagem de ValueError agora traz acento ('nao'->'não'); comportamento inalterado."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P38",
+     "transcricao_do_plano": "teste_sugerido do JSON dizia 'D=25*phi -> xi=0,35+0,026*25=0,999'.",
+     "imagem_da_norma": "0,35 + 0,026*25 = 1,0 exatamente (nao 0,999) -- e o valor correto de fronteira com a barra reta. Corrigido no teste (test_notad_xi_em_D_igual_25phi_reproduz_barra_reta).",
+     "pagina": "p. 221 (PDF, nota d)"
+    }
+   ]
   },
   {
    "id": "23.5.5-tab23.3-tipos-curva",
@@ -16982,7 +17660,15 @@
      "test_impedimentos_reprovam"
     ],
     "observacao": "Exige ao menos uma condição básica (confinamento lateral, compressão em toda a seção, apoio vertical contínuo ou outra declarada em texto, porque a lista da norma é exemplificativa: 'como'). Sismo, explosão e dutilidade importante reprovam. Também inclui a restrição de 24.5.2.5 (peça curva, torção de equilíbrio)."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P40",
+     "transcricao_do_plano": "Lista de condições tratada como exigência",
+     "imagem_da_norma": "A lista é exemplificativa ('algumas condições básicas, como...'). Também proíbe sismo, explosão e dutilidade importante, o que o JSON omite.",
+     "pagina": "224"
+    }
+   ]
   },
   {
    "id": "24.2-proibicao-sismo-dutilidade",
@@ -17271,7 +17957,15 @@
      "test_tau_Rd_caso_desconhecido"
     ],
     "observacao": "caso = 'laje' (24.5.2.4), 'torcao' (24.5.2.5) ou 'puncao' (24.5.2.6). Com C15 a C40 e γc = 1,68, 0,30·fctd vai de 0,228 a 0,439 MPa, então o teto de 1,0 MPa nunca governa dentro da faixa. O teto foi testado forçando fctd alto com monkeypatch. A restrição de 24.5.2.5 sobre peças curvas e torção de equilíbrio está em concreto_simples_aplicavel."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P40",
+     "transcricao_do_plano": "Teste sugerido: fck alto deve saturar em 1,0 MPa",
+     "imagem_da_norma": "Com C15 a C40 (24.3) e γc = 1,68, 0,30·fctd fica no máximo em 0,439 MPa (C40). O teto de 1,0 MPa existe, mas nunca governa na faixa admitida.",
+     "pagina": "225-226"
+    }
+   ]
   },
   {
    "id": "24.5.3-altura-concreto-contra-solo",
@@ -17306,7 +18000,15 @@
      "test_tau_wd_contra_solo_usa_h_menos_5"
     ],
     "observacao": "h − 5 cm quando o concreto é lançado contra o solo; h <= 5 cm levanta erro. O restante de 24.5.3 (armadura menor que a mínima tratada como concreto simples) não foi implementado; não era item do pacote."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P40",
+     "transcricao_do_plano": "depende_de: 24.6.2-espessura-bloco",
+     "imagem_da_norma": "A imagem mostra regra geral para tensões de flexão, flexão composta e tangenciais, sem dependência do bloco.",
+     "pagina": "226"
+    }
+   ]
   },
   {
    "id": "24.5.3-qualitativo",
@@ -17355,7 +18057,15 @@
      "test_diagrama_simples_pontos_da_figura_24_1"
     ],
     "observacao": "3,5 ‰ e 0,35 ‰. O diagrama parábola-retângulo da Figura 24.1 é a função sigma_c_simples. Duas escolhas não estão na norma: expoente 2 nas duas parábolas e patamar de tração em 0,85·fctd, porque a figura não cota a ordenada da tração. A fluência não entra na função: a deformação informada já deve incluí-la."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P40",
+     "transcricao_do_plano": "Diagrama parábola-retângulo em ambos os sentidos",
+     "imagem_da_norma": "A Figura 24.1 cota só 0,85·fcd na compressão e as abscissas −0,0002 e −0,00035 na tração. A ordenada da tração não é dada: adotou-se 0,85·fctd.",
+     "pagina": "226"
+    }
+   ]
   },
   {
    "id": "24.5.4.2-limites-deformacao-media",
@@ -17573,7 +18283,15 @@
      "test_24_5_7_2_fck_fora_da_faixa"
     ],
     "observacao": "Só seção retangular. Três decisões registradas na docstring, porque a norma não trata desses casos: (1) exa/eya somam no sentido da excentricidade; (2) o 'mais desfavorável' é o G1 de menor Ae; (3) com excentricidade pequena o triângulo 3ax×3ay sai da seção e a parte de fora é descontada de Ae. Sem esse recorte, uma carga centrada daria Ae maior que a própria seção (a favor da segurança). G1 fora da seção levanta FaixaNormativaError. Seções não retangulares, como o L da Figura 24.2, não foram implementadas."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P41",
+     "transcricao_do_plano": "Ae = triângulo de catetos 3ax e 3ay com baricentro em G1",
+     "imagem_da_norma": "Confere com a Figura 24.2. A norma não trata do triângulo que ultrapassa a seção quando a excentricidade é pequena; o módulo desconta a parte de fora (a favor da segurança).",
+     "pagina": "228"
+    }
+   ]
   },
   {
    "id": "24.5.7.3-secao-comprimida-cortante",
@@ -17688,7 +18406,15 @@
      "test_24_6_1_comprimento_horizontal"
     ],
     "observacao": "min(distância centro a centro entre cargas; distância entre apoios + 4h), transcrito literalmente. A distância entre cargas é opcional (None quando só há uma carga)."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P41",
+     "transcricao_do_plano": "min(distancia_centro_a_centro_cargas, distancia_entre_apoios + 4*espessura)",
+     "imagem_da_norma": "Confere com a imagem: 'distância entre apoios acrescida de quatro vezes a espessura'. O termo 'distância entre apoios' parece tradução do 'bearing width' do ACI, mas foi implementado literalmente.",
+     "pagina": "229"
+    }
+   ]
   },
   {
    "id": "24.6.1-espessura-minima",
@@ -17717,7 +18443,15 @@
      "test_24_6_1_espessura_minima"
     ],
     "observacao": "max(ℓ/24; 10 cm; 15 cm se parede de fundação ou sapata corrida). Também entra em verificar_pilar_parede_simples."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P41",
+     "transcricao_do_plano": "e_min = max(altura_ou_l_livre/24, 10 cm, [15 cm se parede de fundação ou sapata corrida])",
+     "imagem_da_norma": "Confere. O texto é '1/24 da altura total ou do comprimento vertical não apoiado', sem dizer qual dos dois; o usuário passa o ℓ.",
+     "pagina": "229-230"
+    }
+   ]
   },
   {
    "id": "24.6.1-abertura-armadura-minima",
@@ -18023,7 +18757,15 @@
      "test_24_6_3_verificar_pilar"
     ],
     "observacao": "Adotei max(20 cm; altura/10). A norma diz '20 cm ou 1/10 de sua altura' sem dizer qual prevalece, e fiquei com a leitura a favor da segurança (está na docstring)."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P41",
+     "transcricao_do_plano": "menor_dimensao >= max(20 cm, altura_pilar/10)",
+     "imagem_da_norma": "'A menor dimensão de pilares deve ser 20 cm ou 1/10 de sua altura', sem dizer qual prevalece. Adotei o max (a favor da segurança) e registrei na docstring.",
+     "pagina": "230"
+    }
+   ]
   },
   {
    "id": "24.6.4-sem-tracao",
@@ -18208,7 +18950,15 @@
      "test_razao_fc_usa_o_crescimento_de_12_3"
     ],
     "observacao": "fc(t0)/fc(t∞) = β1(t0)/exp(s) = exp(−s·√(28/t0)), reusando nucleo.beta1 e nucleo.s_cimento. O argumento razao_fc permite informar a razão diretamente. fck entre 45 e 50 MPa segue o bloco C50–C90, como na Tabela 8.1."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P6",
+     "transcricao_do_plano": "fc(t0)/fc(t∞) corresponde a nucleo.fckj(fck,t0)/fck, ou seja, t∞ tomado como 28 dias e razão 1 para t0 ≥ 28 dias.",
+     "imagem_da_norma": "A imagem remete à função de crescimento de 12.3, e a hipótese c de A.2.2.2 fala de 'sua resistência final'. Implementei fc(t∞) como o limite de β1 quando t → ∞, exp(s), o que dá razão exp(−s·√(28/t0)). Com essa leitura o Anexo A reproduz o bloco C50–C90 da Tabela 8.1: erro médio −0,003 e máximo 0,08. Com a leitura do JSON o erro médio seria −0,21. O argumento razao_fc permite impor outro valor.",
+     "pagina": "234 (e 233, hipótese c; 91, β1)"
+    }
+   ]
   },
   {
    "id": "A.2.2.3-phi-t-t0",
@@ -18248,7 +18998,15 @@
      "test_phi_inf_contra_tabela_8_1"
     ],
     "observacao": "Aceita U_pct (notas a, c e d) ou ambiente (linha da Tabela A.1), além de h_fic_cm sem ponderação. Devolve dataclass congelada com as parcelas e a memória de cálculo. Contra as 24 células da Tabela 8.1, com t0 fictício igual ao t0 da tabela: C50–C90 fica a menos de 0,1 e C20–C45 a menos de 0,25."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P6",
+     "transcricao_do_plano": "O teste sugerido compara φ(10000,t0) com a Tabela 8.1 'para a mesma combinação de umidade/h_fic/t0'.",
+     "imagem_da_norma": "A Tabela 8.1 usa t0 real e 'cimento Portland comum'. A comparação só fecha, a menos de 0,1 no bloco C50–C90 e de 0,25 no C20–C45, tomando o t0 fictício igual ao t0 da tabela, o que equivale a α = 1. Com α = 2 (CP I), φ fica até 0,45 abaixo da tabela. Os testes usam t0 fictício igual ao t0 da tabela e registram isso no comentário.",
+     "pagina": "47 e 239"
+    }
+   ]
   },
   {
    "id": "A.2.2.3-eps-cc",
@@ -18623,7 +19381,15 @@
      "test_nota_b_fora_da_faixa"
     ],
     "observacao": "Faixa 40 % ≤ U ≤ 90 %. Coincide com a tabela a menos de 0,05 na coluna de 5 cm a 9 cm."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P6",
+     "transcricao_do_plano": "O teste sugerido diz que U = 40 % aproxima −6,3 e U = 90 % aproxima −2,5.",
+     "imagem_da_norma": "A fórmula da imagem confere: −8,09 + U/15 − U²/2 284 − U³/133 765 + U⁴/7 608 150. Os valores exatos são −6,2658 (U = 40), −4,9771 (U = 70) e −2,4626 (U = 90). Nas colunas de 0 cm a 4 cm e de 10 cm a 15 cm a diferença contra a tabela chega a 0,067, por efeito do arredondamento da tabela multiplicado por 0,75 e 1,25.",
+     "pagina": "237"
+    }
+   ]
   },
   {
    "id": "tabelaA.1-ajuste-abatimento",
@@ -18844,7 +19610,16 @@
      "tests/test_p43_metodo_geral_perdas.py (demais test_a25_*)"
     ],
     "observacao": "O padrão agora é a letra da p. 240: α·φ(τ,t0). A leitura por superposição, φ(t,τ), é opt-in, e a memória de cálculo registra a divergência quando ela é usada."
-   }
+   },
+   "divergencias_imagem": [
+    {
+     "pacote": "P43",
+     "transcricao_do_plano": "integral de (dσc/dτ)·[1/Ec(τ) + α·φ(τ,t0)/Eci] dτ",
+     "imagem_da_norma": "A imagem confirma o texto impresso: α·φ(τ,t0)/Eci e 1/Ecτ. Isso contradiz o princípio da superposição, em que o acréscimo aplicado em τ flui até t com φ(t,τ), e é por essa via que a forma simplificada (Δσc·α·φ(t,t0)) aproxima a integral. Com φ(τ,t0), um salto em t0 não fluiria nada. Por isso o padrão implementado é a superposição, com φ(t,τ) e α = 1; o literal da página fica disponível em integrando='impresso'. Provável erro de impressão na norma; convém confirmar com o Gustavo.",
+     "pagina": "240",
+     "situacao_final": "Depois da verificação, o padrão passou a ser a letra da norma (integrando='impresso'); a superposição, com φ(t,τ), ficou como opção explícita (integrando='superposicao')."
+    }
+   ]
   },
   {
    "id": "A.2.5-formula-simplificada",
