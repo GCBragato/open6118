@@ -3,9 +3,10 @@
 Cobre os dois pontos do brief de fechamento (SCRATCH\\exec\\pacotes\\F3.md):
 
   - 19.5.3.4 — contorno C'' e disposição da armadura de punção (Figuras 19.8 e
-    19.9, PDF p. 190-191): confirma que o arranjo em cruz da Figura 19.8 (à
-    direita) continua sinalizado como não traçado, e por quê (a razão vira
-    parte da docstring de ``disposicao_armadura_puncao``).
+    19.9, PDF p. 190-191): no F3, o arranjo em cruz da Figura 19.8 (à
+    direita) ficou sinalizado como não traçado; desde o T2 (decisão do
+    engenheiro, 21/09/2026) ele é traçado pela construção do programa de
+    punção do escritório (BRGTools), e o teste confere isso.
   - 24.6.3 — núcleo central de inércia e verificação sem tração para seção
     poligonal qualquer, com excentricidade nas duas direções (PDF p. 230):
     fecha o que P41 deixou de fora (só retângulo; só uma direção com ações
@@ -44,22 +45,30 @@ def _fcd(fck):
 # ---------------------------------------------------------------------------
 # 19.5.3.4 — Figura 19.8 (à direita): arranjo em cruz não traçado (PDF p. 190)
 # ---------------------------------------------------------------------------
-def test_19_5_3_4_arranjo_em_cruz_continua_nao_tracado():
-    """Com linhas radiais espaçadas >= 2d no último contorno, a função (Figura
-    19.8, à direita) sinaliza ok=False e aponta o perímetro reduzido, que não
-    calcula — a Figura não dá uma regra numérica para esse contorno (só
-    ilustra ">2d" e "d"), ao contrário da Figura 19.9 (<=0,75d, <=0,50d)."""
+def test_19_5_3_4_arranjo_em_cruz_tracado_pela_construcao_do_brgtools():
+    """Com linhas radiais espaçadas >= 2d no último contorno (Figura 19.8, à
+    direita), o contorno C″ inteiro não vale. No F3 a função só sinalizava
+    ok=False, porque a Figura não dá regra numérica (só ilustra ">2d" e "d");
+    no T2 (decisão do engenheiro, 21/09/2026) o perímetro reduzido passa a ser
+    traçado pela construção do programa de punção do escritório (BRGTools,
+    porte do LPUNC), e C″ é verificado com ele."""
     # Pilar 40x40, d=17: poucas linhas radiais (4) no contorno mais externo
     # dão espaçamento tangencial grande -> viola o "< 2d" da Figura 19.8.
     r = pc.disposicao_armadura_puncao(FSd_kn=500.0, c1_cm=40.0, c2_cm=40.0, d_cm=17.0,
                                       tau_Rd1_mpa=0.6, sr_cm=10.0, n_linhas_radiais=4)
-    assert not r.ok
-    assert "perímetro reduzido" in r.governante
-    # Confere a docstring: continua documentando, na primeira pessoa, por que
-    # o perímetro reduzido do arranjo em cruz não é traçado.
+    assert r.arranjo_C2l == "cruz"
+    # 4 contornos: rn = 8,5 + 3·10 = 38,5 cm > 2d = 34 -> trechos retos de d.
+    # u″ = π·(r6 + r8) + 8d, r6 = r8 = 40/√2 + 34 = 62,284 cm -> 527,344 cm;
+    # τSd″ = 500/(527,344·17)·10 = 0,5577 MPa <= 0,6.
+    u = math.pi * 2 * (40 / math.sqrt(2) + 34) + 8 * 17
+    assert r.n_contornos == 4
+    assert r.u_C2l_cm == pytest.approx(u, rel=1e-12)
+    assert r.tau_Sd_C2l_mpa == pytest.approx(500 / (u * 17) * 10, rel=1e-12)
+    assert r.ok
+    assert any("BRGTools" in linha and "21/09/2026" in linha for linha in r.memoria)
     doc = pc.disposicao_armadura_puncao.__doc__
-    assert "traça" in doc and "não" in doc
     assert "Figura 19.8" in doc and "não dá uma regra analítica" in doc
+    assert "BRGTools" in doc
 
 
 def test_19_5_3_4_contorno_inteiro_quando_espacamento_ok():

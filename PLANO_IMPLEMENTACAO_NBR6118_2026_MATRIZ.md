@@ -551,7 +551,7 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `19.5.3.1-trd2-compressao-diagonal` | 19.5.3.1 | 188 | Tensão resistente de compressão diagonal do concreto no contorno C (punção) | implementado | alta | P | P19 |
 | `19.5.3.2-trd1-sem-armadura` | 19.5.3.2 | 188 | Tensão resistente na superfície crítica C' sem armadura de punção | implementado | alta | M | P19 |
 | `19.5.3.3-trd3-com-armadura` | 19.5.3.3 | 189 | Tensão resistente na superfície crítica C' com armadura de punção | implementado | alta | M | P19 |
-| `19.5.3.4-superficie-c2linha` | 19.5.3.4 | 190 | Definição geométrica da superfície crítica C'' e disposição da armadura de punção | parcial | alta | M | P20 |
+| `19.5.3.4-superficie-c2linha` | 19.5.3.4 | 190 | Definição geométrica da superfície crítica C'' e disposição da armadura de punção | implementado | alta | M | P20 |
 | `19.5.3.5-armadura-puncao-obrigatoria` | 19.5.3.5 | 191 | Armadura de punção obrigatória por robustez (estabilidade global) | implementado | alta | P | P20 |
 | `19.5.4-colapso-progressivo` | 19.5.4 | 191 | Armadura de flexão inferior contra colapso progressivo na ligação laje-pilar | implementado | alta | P | P20 |
 | `19.5.5-puncao-protendido` | 19.5.5 | 191 | Tensão solicitante efetiva de punção em laje protendida (efeito favorável dos cabos inclinados) | implementado | média | M | P20 |

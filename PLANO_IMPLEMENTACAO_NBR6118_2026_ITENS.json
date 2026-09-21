@@ -13702,7 +13702,7 @@
    "pagina_pdf": 190,
    "titulo": "Definição geométrica da superfície crítica C'' e disposição da armadura de punção",
    "tipo": "detalhamento",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P20",
@@ -13717,16 +13717,22 @@
    "teste_sugerido": "Gerar contornos sucessivos e conferir que o último cai a 2d de onde tSd<=tRd1.",
    "trecho": "lajes",
    "implementacao": {
-    "pacote": "P20 + F3",
-    "data": "19/09/2026",
+    "pacote": "P20 + F3 + T2",
+    "data": "21/09/2026",
     "funcoes": [
-     "dimensionamento/puncao_nbr6118.py:disposicao_armadura_puncao"
+     "puncao_nbr6118.contorno_C2l_cruz",
+     "puncao_nbr6118.u_C2l_cruz_cm",
+     "puncao_nbr6118.Wp_C2l_cruz_cm2",
+     "puncao_nbr6118.disposicao_armadura_puncao (novo parâmetro arranjo; novo campo arranjo_C2l)",
+     "puncao_nbr6118.verificar_puncao (novos parâmetros afastamento_C2l_cruz_cm e posicao)",
+     "puncao_nbr6118.FONTE_C2L_CRUZ, POSICOES_C2L_CRUZ, CONSTRUCAO_C2L_CRUZ"
     ],
     "testes": [
-     "tests/test_f3_fechamento.py:test_19_5_3_4_arranjo_em_cruz_continua_nao_tracado",
-     "tests/test_f3_fechamento.py:test_19_5_3_4_contorno_inteiro_quando_espacamento_ok"
+     "tests/test_t2_puncao_cruz.py (48 testes: u″ interno, borda e canto, retangular e circular, em todas as posições, contra conta independente raio × ângulo + d por reta; degrau dos trechos retos em rn = 2d, inclusive com o acréscimo (D − D·cos45°)/2 do circular; pontas dos arcos a 2d do canto do braço; Wp″ contra integração numérica independente, polo no perímetro e no pilar; erros; fonte nas docstrings; ligação com disposicao_armadura_puncao e verificar_puncao)",
+     "tests/test_f3_fechamento.py::test_19_5_3_4_arranjo_em_cruz_tracado_pela_construcao_do_brgtools",
+     "tests/test_p20_puncao_especiais.py::test_disposicao_espacamento_tangencial"
     ],
-    "observacao": "Não fechei o perímetro reduzido do arranjo em cruz (Figura 19.8, à direita) porque a Figura não dá regra numérica para ele — só ilustra \">2d\" no braço e \"d\" entre a última linha de conectores e o arco, sem dizer onde o trecho reto termina nem o raio do arco nos cantos entre braços, ao contrário da Figura 19.9 (<=0,75d, <=0,50d explícitos). Traçar isso seria inventar uma construção geométrica que a norma não dá, o que é o erro que este pacote existe para evitar. Reescrevi a docstring de disposicao_armadura_puncao explicando isso na primeira pessoa; a função continua sinalizando ok=False e apontando para calcular u\" à parte com verificar_puncao(u_C2l_cm=...). Item permanece parcial, com evidência de por quê."
+    "observacao": "A NBR 6118 não dá a regra numérica (Figura 19.8, p. 190 do PDF); a construção é a do programa de punção do escritório (BRGTools, Perimetros.Cruz, porte do LPUNC), adotada por decisão do engenheiro em 21/09/2026. É um porte fiel: arcos de 90° entre os braços com r6 = nb/√2 + 2d e r8 = nh/√2 + 2d, trechos retos de d só quando rn > 2d, e no circular nb = nh = D·cos45° com rn acrescido de (D − nb)/2. Em forma fechada: interno π(r6+r8) + 8dδ, borda (π/2)(r6+r8) + 4dδ, canto (π/4)(r6+r8) + 2dδ. A fonte está declarada nas docstrings e na memória de cálculo. Wp″ é integrado em forma fechada sobre os trechos, com o polo no centróide de C″, que é o padrão do programa, ou no centro do pilar. O argumento u_C2l_cm continua valendo e prevalece. Os testes do BRGTools não têm valor esperado de u″ na cruz (o SmokeTests só confere que o cálculo termina), então não havia valor de lá para reproduzir."
    },
    "divergencias_imagem": [
     {

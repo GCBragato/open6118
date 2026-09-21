@@ -343,7 +343,13 @@ def test_disposicao_espacamento_tangencial():
     assert r.ok == (st < 2 * d)
     r8 = P.disposicao_armadura_puncao(F, 40, 40, d, 0.6, sr_cm=15.0, s0_cm=10.0, n_linhas_radiais=4)
     assert r8.espacamento_tangencial_cm >= 2 * d and not r8.ok
-    assert "Figura 19.8" in r8.governante
+    # T2 (decisão do engenheiro, 21/09/2026): com linhas a >= 2d, C″ passa a
+    # ser o contorno em cruz da construção do BRGTools (antes: só ok = False
+    # e "Figura 19.8" no governante, sem traçar). Aqui ele também não passa:
+    # u″ = π·2·(40/√2 + 40) + 8·20 = 589,04 cm; 1500/(589,04·20)·10 = 1,273 MPa > 0,6.
+    assert r8.arranjo_C2l == "cruz"
+    assert r8.u_C2l_cm == pytest.approx(math.pi * 2 * (40 / math.sqrt(2) + 40) + 160)
+    assert any("Figura 19.8" in linha for linha in r8.memoria)
 
 
 # ---------------------------------------------------------------------------

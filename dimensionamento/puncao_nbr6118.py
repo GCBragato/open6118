@@ -696,7 +696,9 @@ def verificar_puncao(fck_mpa: float, d_cm: float, FSd_kn: float, c1_cm: float,
                      Wp_C2l_cm2: tuple[float, float] | None = None,
                      circular: bool = False, ampliar_tau_Rd2: bool = False,
                      interpolar_K: bool = True,
-                     gama_c: float = nbr.GAMA_C) -> ResultadoPuncao:
+                     gama_c: float = nbr.GAMA_C,
+                     afastamento_C2l_cruz_cm: float | None = None,
+                     posicao: str | None = None) -> ResultadoPuncao:
     """Verificação de punção nos contornos C, C′ e C″ (19.5.1 a 19.5.3.4, PDF p. 182 a 190).
 
     Geometria:
@@ -723,6 +725,16 @@ def verificar_puncao(fck_mpa: float, d_cm: float, FSd_kn: float, c1_cm: float,
            traçado é do P20) <= τRd1 (19.5.3.4). Os momentos entram inteiros,
            com o K de C′ e os Wp″ de ``Wp_C2l_cm2`` (plano 1, plano 2). Sem
            u″, C″ fica "não verificado" e ``ok`` é falso.
+           Armadura em cruz (Figura 19.8, à direita): com
+           ``afastamento_C2l_cruz_cm`` (distância de C″ à face do pilar, 2d
+           além do último contorno de armadura) e sem ``u_C2l_cm``, u″ sai de
+           ``u_C2l_cruz_cm`` e, com momento e sem ``Wp_C2l_cm2``, Wp″ sai de
+           ``Wp_C2l_cruz_cm2`` (polo no centróide de C″; plano 1 ao longo de
+           C1, plano 2 ao longo de C2). A NBR 6118 não dá a regra numérica
+           (Figura 19.8); a construção é a do programa de punção do
+           escritório (BRGTools, porte do LPUNC), adotada por decisão do
+           engenheiro em 21/09/2026. ``posicao`` é a do pilar na laje, como
+           em ``contorno_C2l_cruz`` (b = C1 em x, h = C2 em y).
 
     ρ = √(ρx·ρy) <= 0,02 e σcp de 19.5.3.2. FSd em kN, momentos em kN·cm,
     comprimentos em cm, tensões em MPa. As comparações passam por
@@ -827,6 +839,16 @@ def verificar_puncao(fck_mpa: float, d_cm: float, FSd_kn: float, c1_cm: float,
         status_Cl = "ok com armadura de punção" if s3.ok else "não passa com a armadura informada"
 
     if armadura_necessaria:
+        if u_C2l_cm is None and afastamento_C2l_cruz_cm is not None:   # T2: C″ em cruz
+            geo = ((None, None) if circular else (c1_cm, c2_cm))
+            Dc = c1_cm if circular else None
+            u_C2l_cm = u_C2l_cruz_cm(geo[0], geo[1], d, afastamento_C2l_cruz_cm, t, posicao, Dc)
+            if (M1 > 0 or M2 > 0) and Wp_C2l_cm2 is None:
+                Wp_C2l_cm2 = tuple(
+                    Wp_C2l_cruz_cm2(geo[0], geo[1], d, afastamento_C2l_cruz_cm, t, posicao, Dc, ang)
+                    if M > 0 else 0.0 for M, ang in ((M1, 0.0), (M2, 90.0)))
+            mem.append(f"19.5.3.4 (C″ em cruz, Figura 19.8): C″ a {_fmt(afastamento_C2l_cruz_cm)} cm "
+                       f"da face; u″ = {_fmt(u_C2l_cm)} cm — {FONTE_C2L_CRUZ}.")
         if u_C2l_cm is None:
             status_C2 = "não verificado: informe u_C2l_cm (19.5.3.4)"
             ok_C2 = False
@@ -1438,6 +1460,7 @@ class DisposicaoArmaduraPuncao:
     ok: bool
     governante: str
     memoria: tuple[str, ...]
+    arranjo_C2l: str = "inteiro"               # T2: "inteiro" ou "cruz" (traçado de C″ usado)
 
 
 def disposicao_armadura_puncao(FSd_kn: float, c1_cm: float, c2_cm: float, d_cm: float,
@@ -1445,7 +1468,8 @@ def disposicao_armadura_puncao(FSd_kn: float, c1_cm: float, c2_cm: float, d_cm: 
                                MSd1_kncm: float = 0.0, MSd2_kncm: float = 0.0,
                                n_linhas_radiais: int | None = None, n_min_contornos: int = 1,
                                interpolar_K: bool = True,
-                               n_max_contornos: int = 200) -> DisposicaoArmaduraPuncao:
+                               n_max_contornos: int = 200,
+                               arranjo: str = "radial") -> DisposicaoArmaduraPuncao:
     """Número de contornos de armadura de punção até C″ satisfazer τSd <= τRd1 (19.5.3.4, Figuras 19.8 e 19.9, PDF p. 190-191).
 
     "Quando for necessário utilizar armadura transversal, ela deve ser
@@ -1470,23 +1494,29 @@ def disposicao_armadura_puncao(FSd_kn: float, c1_cm: float, c2_cm: float, d_cm: 
     a menos de 2d entre si no último contorno de armadura. Com
     ``n_linhas_radiais``, a função toma o espaçamento tangencial médio
     u(rn)/n_linhas (linhas distribuídas por igual ao longo do contorno de
-    armadura) e, se não for menor que 2d, marca ``ok = False``: vale então o
-    perímetro reduzido da Figura 19.8 (direita), que esta função **não**
-    traça (fechamento F3, 19/09/2026). Não traço porque a Figura 19.8 (à
-    direita) não dá uma regra analítica para esse contorno reduzido: as duas
-    cotas desenhadas (“> 2d” no braço, “d” entre a última linha de conectores
-    e o arco) são só ilustrativas — a Figura não diz onde ao longo de cada
-    braço o trecho reto termina nem onde exatamente entra o arco de
-    concordância nem qual é o raio dele nos cantos entre braços, ao contrário
-    da Figura 19.9, que dá ≤ 0,75d e ≤ 0,50d como regra numérica. Sem esses
-    dados, qualquer traçado seria uma construção geométrica inventada por
-    mim, não a da norma — o que é exatamente o erro que este pacote existe
-    para evitar. Por isso o item permanece **parcial** para o arranjo em
-    cruz: esta função sinaliza ``ok = False`` e diz, na ``memoria``, para
-    calcular u″ à parte (o perímetro reduzido da Figura 19.8) e usar
-    ``verificar_puncao(u_C2l_cm=...)``, mas não calcula esse perímetro.
-    Pilar de borda e de canto: mesma coisa — calcule u″ à parte e use
-    ``verificar_puncao(u_C2l_cm=...)``.
+    armadura) e, se não for menor que 2d, o contorno C″ inteiro não vale:
+    vale o perímetro reduzido da Figura 19.8 (direita), o da armadura em
+    cruz. Com ``arranjo='cruz'``, a armadura é tomada em cruz desde o início.
+
+    A Figura 19.8 (à direita) não dá uma regra analítica para esse contorno
+    reduzido: as duas cotas desenhadas (“> 2d” no braço, “d” entre a última
+    linha de conectores e o arco) são só ilustrativas — a Figura não diz onde
+    ao longo de cada braço o trecho reto termina nem onde exatamente entra o
+    arco de concordância nem qual é o raio dele nos cantos entre braços, ao
+    contrário da Figura 19.9, que dá ≤ 0,75d e ≤ 0,50d como regra numérica.
+    Por isso o traçado não sai da norma: a NBR 6118 não dá a regra numérica
+    (Figura 19.8); a construção é a do programa de punção do escritório
+    (BRGTools, porte do LPUNC), adotada por decisão do engenheiro em
+    21/09/2026 (pacote T2; antes, no fechamento F3, a função não traçava esse
+    contorno, só sinalizava ``ok = False`` e pedia u″ à parte). u″ e Wp″ saem
+    de ``u_C2l_cruz_cm`` e ``Wp_C2l_cruz_cm2`` (pilar interno, b = C1,
+    h = C2), contorno a contorno, e o campo ``arranjo_C2l`` diz qual traçado
+    ficou no resultado. Na cruz, u″ não cresce com o número de contornos (só
+    ganha os trechos retos de d quando o último contorno passa de 2d da
+    face): se C″ não passa, estender a armadura não resolve, e a busca para
+    no limite ``n_max_contornos`` com ``ok = False``. Pilar de borda e de
+    canto: use ``u_C2l_cruz_cm`` (ou calcule u″ à parte) e
+    ``verificar_puncao``.
     """
     F = _nao_negativo(FSd_kn, "FSd", "19.5.3.4")
     c1 = _positivo(c1_cm, "C1", "19.5.3.4")
@@ -1505,15 +1535,38 @@ def disposicao_armadura_puncao(FSd_kn: float, c1_cm: float, c2_cm: float, d_cm: 
     k1 = K(c1 / c2, interpolar_K) if M1 > 0.0 else None
     k2 = K(c2 / c1, interpolar_K) if M2 > 0.0 else None
     pol = _retangulo(c1, c2)
+    arr = str(arranjo).strip().lower()
+    if arr not in ("radial", "cruz"):
+        raise ValueError("arranjo deve ser 'radial' ou 'cruz'.")
+    nl = None
+    if n_linhas_radiais is not None:
+        nl = int(n_linhas_radiais)
+        if nl < 1:
+            raise ValueError("n_linhas_radiais tem de ser positivo.")
+    lim = ESP_TANGENCIAL_MAX_FATOR_D * d
     n = max(1, int(n_min_contornos))
+    sem_saida = False
     while True:
         rn = s0 + (n - 1) * sr
         r2 = rn + 2.0 * d
-        u2 = 2.0 * (c1 + c2) + 2.0 * math.pi * r2
-        W1 = Wp_generico_cm2(pol, d, 0.0, afastamento_cm=r2) if M1 > 0.0 else 0.0
-        W2 = Wp_generico_cm2(pol, d, 90.0, afastamento_cm=r2) if M2 > 0.0 else 0.0
+        st = None if nl is None else (2.0 * (c1 + c2) + 2.0 * math.pi * rn) / nl
+        cruz = arr == "cruz" or (st is not None and st >= lim)
+        if cruz:   # T2: Figura 19.8 (à direita), construção do BRGTools
+            u2 = u_C2l_cruz_cm(c1, c2, d, r2, "interno")
+            W1 = Wp_C2l_cruz_cm2(c1, c2, d, r2, "interno", None, None, 0.0) if M1 > 0.0 else 0.0
+            W2 = Wp_C2l_cruz_cm2(c1, c2, d, r2, "interno", None, None, 90.0) if M2 > 0.0 else 0.0
+        else:
+            u2 = 2.0 * (c1 + c2) + 2.0 * math.pi * r2
+            W1 = Wp_generico_cm2(pol, d, 0.0, afastamento_cm=r2) if M1 > 0.0 else 0.0
+            W2 = Wp_generico_cm2(pol, d, 90.0, afastamento_cm=r2) if M2 > 0.0 else 0.0
         tau2 = tau_Sd_mpa(F, u2, d, M1, k1, W1 or None, M2, k2, W2 or None)
         if seg.verificar_seguranca(rd1, tau2).ok or n >= n_max_contornos:
+            break
+        # Na cruz, com o último contorno além de 2d, u″ não cresce mais: se só a
+        # parcela FSd/(u″·d) já passa de τRd1, estender a armadura não resolve
+        # (é a parada do BRGTools/LPUNC no ramo em cruz).
+        sem_saida = cruz and rn > 2.0 * d + _TOL_GEO and F / (u2 * d) * 10.0 > rd1
+        if sem_saida:
             break
         n += 1
     s_final = seg.verificar_seguranca(rd1, tau2, "τSd x τRd1 (C″)", "19.5.3.4")
@@ -1521,31 +1574,44 @@ def disposicao_armadura_puncao(FSd_kn: float, c1_cm: float, c2_cm: float, d_cm: 
     mem = [f"19.5.3.4 (Figura 19.9): s0 = {_fmt(s0)} cm (<= 0,50d = {_fmt(0.5 * d)} cm), "
            f"sr = {_fmt(sr)} cm (<= 0,75d = {_fmt(0.75 * d)} cm).",
            f"{n} contorno(s) de armadura; o último a {_fmt(raios[-1])} cm da face; C″ a "
-           f"{_fmt(r2)} cm da face (2d além do último contorno).",
-           f"u″ = 2·(C1 + C2) + 2·π·{_fmt(r2)} = {_fmt(u2)} cm; τSd″ = {_fmt(tau2)} MPa; "
-           f"τRd1 = {_fmt(rd1)} MPa."]
-    mem.extend(s_final.memoria)
-    ok = s_final.ok
-    governante = ("C″: τSd <= τRd1" if ok else
-                  f"C″ não passa com {n_max_contornos} contornos (limite de busca)")
-    st = None
-    if n_linhas_radiais is not None:
-        nl = int(n_linhas_radiais)
-        if nl < 1:
-            raise ValueError("n_linhas_radiais tem de ser positivo.")
-        st = (2.0 * (c1 + c2) + 2.0 * math.pi * raios[-1]) / nl
-        lim = ESP_TANGENCIAL_MAX_FATOR_D * d
+           f"{_fmt(r2)} cm da face (2d além do último contorno)."]
+    if st is not None:
         if st < lim:
             mem.append(f"Figura 19.8: espaçamento entre linhas radiais no último contorno = "
                        f"{_fmt(st)} cm < 2d = {_fmt(lim)} cm; C″ é o contorno inteiro.")
         else:
-            ok = False
-            governante = (f"Figura 19.8: linhas radiais a {_fmt(st)} cm >= 2d = {_fmt(lim)} cm; "
-                          "o contorno C″ inteiro não vale (use o perímetro reduzido da Figura 19.8)")
-            mem.append(governante + ".")
+            mem.append(f"Figura 19.8: linhas radiais a {_fmt(st)} cm >= 2d = {_fmt(lim)} cm no "
+                       "último contorno; o contorno C″ inteiro não vale: vale o perímetro reduzido "
+                       "da armadura em cruz (Figura 19.8, à direita).")
+    if cruz:
+        r6 = c1 / math.sqrt(2.0) + 2.0 * d
+        r8 = c2 / math.sqrt(2.0) + 2.0 * d
+        retas = rn > 2.0 * d + _TOL_GEO
+        mem.append(f"C″ em cruz — {FONTE_C2L_CRUZ}: arcos de 90° entre os braços, r6 = C1/√2 + 2d = "
+                   f"{_fmt(r6)} cm e r8 = C2/√2 + 2d = {_fmt(r8)} cm"
+                   + (f", mais 8 trechos retos de d = {_fmt(d)} cm (último contorno a mais de 2d "
+                      "da face)" if retas else " (sem trechos retos: último contorno a até 2d da face)")
+                   + ".")
+        mem.append(f"u″ = π·(r6 + r8){' + 8·d' if retas else ''} = {_fmt(u2)} cm"
+                   + (f"; Wp1″ = {_fmt(W1)} cm²" if W1 else "") + (f"; Wp2″ = {_fmt(W2)} cm²" if W2 else "")
+                   + f"; τSd″ = {_fmt(tau2)} MPa; τRd1 = {_fmt(rd1)} MPa.")
+    else:
+        mem.append(f"u″ = 2·(C1 + C2) + 2·π·{_fmt(r2)} = {_fmt(u2)} cm; τSd″ = {_fmt(tau2)} MPa; "
+                   f"τRd1 = {_fmt(rd1)} MPa.")
+    mem.extend(s_final.memoria)
+    ok = s_final.ok
+    rotulo = "C″ em cruz" if cruz else "C″"
+    if ok:
+        governante = f"{rotulo}: τSd <= τRd1"
+    elif sem_saida:
+        governante = (f"{rotulo} não passa: FSd/(u″·d) = {_fmt(F / (u2 * d) * 10.0)} MPa > τRd1, e na "
+                      "cruz u″ não cresce com mais contornos (aumente a seção do pilar ou o d, ou "
+                      "use linhas radiais a menos de 2d)")
+    else:
+        governante = f"{rotulo} não passa com {n_max_contornos} contornos (limite de busca)"
     mem.append(f"Resultado: {'passa' if ok else 'não passa'} — {governante}.")
     return DisposicaoArmaduraPuncao(s0, sr, n, raios, r2, u2, (W1, W2), tau2, rd1, st, ok,
-                                    governante, tuple(mem))
+                                    governante, tuple(mem), "cruz" if cruz else "inteiro")
 
 
 # ---------------------------------------------------------------------------
@@ -1881,3 +1947,237 @@ def puncao_abertura_proxima_pilar(fck_mpa: float, d_cm: float, FSd_kn: float, c1
     return ResultadoPuncaoAbertura(u0, cont.u_total_cm, cont.u_cm, cont.u_excluido_cm,
                                    cont.aberturas_consideradas, tau_C, rd2, tau_Cl, rd1, rd3, arm,
                                    ok, gov, tuple(mem))
+
+
+# === T2: punção — contorno C″ com armadura em cruz (construção do BRGTools) ===
+# 19.5.3.4, Figura 19.8 (à direita), PDF p. 190. A Figura mostra o contorno C″
+# reduzido entre os braços da armadura em cruz, com as cotas "> 2d" e "d", mas
+# não dá a regra numérica do traçado. A construção abaixo é a do programa de
+# punção do escritório (BRGTools, BRGTools.PuncaoLaje.Core/Calc/Perimetros.cs,
+# função Cruz, porte fiel do LPUNC), adotada por decisão do engenheiro em
+# 21/09/2026 (triagem do pacote T2).
+#
+# Sistema de eixos (o do BRGTools): origem no centro do pilar; x ao longo de b
+# e y ao longo de h. Posição do pilar na laje:
+#     borda: "esq" (borda livre à esquerda, x < 0), "dir", "sup" (borda livre
+#            em cima, y > 0), "inf";
+#     canto: "inf_esq" (bordas livres à esquerda e embaixo), "inf_dir",
+#            "sup_esq", "sup_dir".
+
+FONTE_C2L_CRUZ = ("a NBR 6118 não dá a regra numérica (Figura 19.8); a construção é a do "
+                  "programa de punção do escritório (BRGTools, porte do LPUNC), adotada por "
+                  "decisão do engenheiro em 21/09/2026")
+
+POSICOES_C2L_CRUZ = {
+    "interno": (None,),
+    "borda": ("esq", "dir", "sup", "inf"),
+    "canto": ("inf_esq", "inf_dir", "sup_esq", "sup_dir"),
+}
+
+# Tabela da construção (Perimetros.Cruz): para cada (tipo, posição), os arcos
+# (braço, ângulo inicial, ângulo final, em radianos) e, depois de cada arco,
+# os trechos retos de comprimento d que só entram quando o último contorno de
+# armadura está a mais de 2d da face. Braços: "sup" (arco de raio r6 acima do
+# pilar), "dir" (raio r8, à direita), "inf" (r6, abaixo), "esq" (r8, à
+# esquerda). Retas: "sup_d" = ponta direita do arco superior, e assim por diante.
+_A_CRUZ = math.pi / 4.0
+_T_CRUZ = 1.5 * math.pi   # 3π/2
+_P_CRUZ = math.pi
+CONSTRUCAO_C2L_CRUZ = {
+    ("interno", None): (("sup", _A_CRUZ, _P_CRUZ - _A_CRUZ, ("sup_d", "sup_e")),
+                        ("dir", _T_CRUZ + _A_CRUZ, _P_CRUZ / 2 - _A_CRUZ, ("dir_s", "dir_i")),
+                        ("inf", _P_CRUZ + _A_CRUZ, 2 * _P_CRUZ - _A_CRUZ, ("inf_d", "inf_e")),
+                        ("esq", _P_CRUZ / 2 + _A_CRUZ, _T_CRUZ - _A_CRUZ, ("esq_s", "esq_i"))),
+    ("borda", "esq"): (("sup", _A_CRUZ, _P_CRUZ / 2, ("sup_d",)),
+                       ("dir", _T_CRUZ + _A_CRUZ, _P_CRUZ / 2 - _A_CRUZ, ("dir_s", "dir_i")),
+                       ("inf", _T_CRUZ, 2 * _P_CRUZ - _A_CRUZ, ("inf_d",))),
+    ("borda", "dir"): (("sup", _P_CRUZ / 2, _P_CRUZ - _A_CRUZ, ("sup_e",)),
+                       ("inf", _P_CRUZ + _A_CRUZ, _T_CRUZ, ("inf_e",)),
+                       ("esq", _P_CRUZ / 2 + _A_CRUZ, _T_CRUZ - _A_CRUZ, ("esq_s", "esq_i"))),
+    ("borda", "sup"): (("dir", _T_CRUZ + _A_CRUZ, 2 * _P_CRUZ, ("dir_i",)),
+                       ("inf", _P_CRUZ + _A_CRUZ, 2 * _P_CRUZ - _A_CRUZ, ("inf_d", "inf_e")),
+                       ("esq", _P_CRUZ, _T_CRUZ - _A_CRUZ, ("esq_i",))),
+    ("borda", "inf"): (("sup", _A_CRUZ, _P_CRUZ - _A_CRUZ, ("sup_d", "sup_e")),
+                       ("dir", 0.0, _P_CRUZ / 2 - _A_CRUZ, ("dir_s",)),
+                       ("esq", _P_CRUZ / 2 + _A_CRUZ, _P_CRUZ, ("esq_s",))),
+    ("canto", "inf_esq"): (("sup", _A_CRUZ, _P_CRUZ / 2, ("sup_d",)),
+                           ("dir", 0.0, _P_CRUZ / 2 - _A_CRUZ, ("dir_s",))),
+    ("canto", "inf_dir"): (("sup", _P_CRUZ / 2, _P_CRUZ - _A_CRUZ, ("sup_e",)),
+                           ("esq", _P_CRUZ / 2 + _A_CRUZ, _P_CRUZ, ("esq_s",))),
+    ("canto", "sup_esq"): (("dir", _T_CRUZ + _A_CRUZ, 2 * _P_CRUZ, ("dir_i",)),
+                           ("inf", _T_CRUZ, 2 * _P_CRUZ - _A_CRUZ, ("inf_d",))),
+    ("canto", "sup_dir"): (("inf", _P_CRUZ + _A_CRUZ, _T_CRUZ, ("inf_e",)),
+                           ("esq", _P_CRUZ, _T_CRUZ - _A_CRUZ, ("esq_i",))),
+}
+
+
+def _posicao_cruz(tipo: str, posicao: str | None) -> tuple[str, str | None]:
+    t = _tipo(tipo)
+    validas = POSICOES_C2L_CRUZ[t]
+    if t == "interno":
+        if posicao not in (None, "", "interno"):
+            raise ValueError("Pilar interno não tem posição de borda: deixe posicao=None.")
+        return t, None
+    p = validas[0] if posicao is None else str(posicao).strip().lower()
+    if p not in validas:
+        raise ValueError(f"Posição {posicao!r} inválida para pilar de {t}; use uma de {validas}.")
+    return t, p
+
+
+def contorno_C2l_cruz(b_cm: float | None, h_cm: float | None, d_cm: float,
+                      afastamento_C2l_cm: float, tipo: str = "interno",
+                      posicao: str | None = None, D_cm: float | None = None) -> tuple:
+    """Traçado do contorno C″ com a armadura de punção em cruz (19.5.3.4, Figura 19.8 à direita, PDF p. 190).
+
+    Fonte: a NBR 6118 não dá a regra numérica (Figura 19.8); a construção é a
+    do programa de punção do escritório (BRGTools, porte do LPUNC), adotada
+    por decisão do engenheiro em 21/09/2026. Porte da função ``Cruz`` de
+    ``BRGTools.PuncaoLaje.Core/Calc/Perimetros.cs``.
+
+    Entre os quatro braços da cruz (ao longo dos eixos do pilar), o contorno é
+    fechado por um arco por braço, de 90° no pilar interno, com as pontas a 2d
+    (na diagonal de 45°) do canto externo do último contorno de armadura do
+    braço. Com rn = ``afastamento_C2l_cm`` − 2d (distância do último contorno
+    de armadura à face do pilar) e nb, nh os lados do pilar:
+
+        r6 = (0,5·nb + 2d·cos 45°)/cos 45°      (arcos acima e abaixo do pilar)
+        r8 = (0,5·nh + 2d·cos 45°)/cos 45°      (arcos à direita e à esquerda)
+
+    Quando rn > 2d, cada ponta de arco ganha um trecho reto de comprimento d,
+    na diagonal (as cotas "d" da Figura 19.8). Pilar circular de diâmetro D:
+    nb = nh = D·cos 45° e rn acrescido de (D − nb)/2, como no programa. Borda
+    e canto: só os arcos do lado da laje; no programa, os arcos junto à borda
+    livre terminam no eixo do pilar (a 90° ou a 0°/180°).
+
+    Devolve os trechos no formato da biblioteca: ("reta", p0, p1) e
+    ("arco", centro, r, t0, t1), com t1 > t0 (anti-horário), comprimentos em
+    cm, origem no centro do pilar, x ao longo de b e y ao longo de h.
+    ``posicao``: borda "esq", "dir", "sup" ou "inf"; canto "inf_esq",
+    "inf_dir", "sup_esq" ou "sup_dir" (lado ou lados da borda livre);
+    padrão "esq" e "inf_esq". Pilar circular: ``D_cm`` no lugar de b e h.
+    """
+    t, p = _posicao_cruz(tipo, posicao)
+    d = _positivo(d_cm, "d", "19.5.3.4")
+    af = _positivo(afastamento_C2l_cm, "afastamento de C″", "19.5.3.4")
+    if af - 2.0 * d <= _TOL_GEO:
+        raise FaixaNormativaError(
+            f"Afastamento de C″ = {af:g} cm não é maior que 2d = {2.0 * d:g} cm: C″ fica a 2d do "
+            "último contorno de armadura, que está fora da face do pilar (19.5.3.4).")
+    if D_cm is not None:
+        D = _positivo(D_cm, "D", "19.5.3.4")
+        nb = nh = D * math.cos(math.pi / 4.0)
+        off = af - 2.0 * d + (D - nb) / 2.0
+    else:
+        if b_cm is None or h_cm is None:
+            raise ValueError("Informe b_cm e h_cm (pilar retangular) ou D_cm (pilar circular).")
+        nb = _positivo(b_cm, "b", "19.5.3.4")
+        nh = _positivo(h_cm, "h", "19.5.3.4")
+        off = af - 2.0 * d
+    s45 = math.sin(math.pi / 4.0)
+    c45 = math.cos(math.pi / 4.0)
+    e3 = 2.0 * d * c45
+    e4 = 2.0 * d * s45
+    r6 = (0.5 * nb + e3) / c45
+    r8 = (0.5 * nh + e3) / c45
+    ext = off > 2.0 * d
+    yS = 0.5 * nh + off - (r6 - 2.0 * d) * s45
+    xD = 0.5 * nb + off - (r8 - 2.0 * d) * s45
+    centros = {"sup": ((0.0, yS), r6), "inf": ((0.0, -yS), r6),
+               "dir": ((xD, 0.0), r8), "esq": ((-xD, 0.0), r8)}
+
+    def _reta(x0, y0, x1, y1):
+        return ("reta", (x0, y0), (x1, y1))
+
+    xa, ya = 0.5 * nb + e3, 0.5 * nh + off + e4      # pontas dos arcos sup/inf
+    xb, yb = 0.5 * nb + off + e3, 0.5 * nh + e4      # pontas dos arcos dir/esq
+    retas = {
+        "sup_d": _reta(xa, ya, xa + d * s45, ya - d * c45),
+        "sup_e": _reta(-xa, ya, -xa - d * s45, ya - d * c45),
+        "inf_d": _reta(xa, -ya, xa + d * s45, -ya + d * c45),
+        "inf_e": _reta(-xa, -ya, -xa - d * s45, -ya + d * c45),
+        "dir_s": _reta(xb, yb, xb - d * c45, yb + d * s45),
+        "dir_i": _reta(xb, -yb, xb - d * c45, -yb - d * s45),
+        "esq_s": _reta(-xb, yb, -xb + d * c45, yb + d * s45),
+        "esq_i": _reta(-xb, -yb, -xb + d * c45, -yb - d * s45),
+    }
+    trechos: list = []
+    for braco, a0, a1, nomes in CONSTRUCAO_C2L_CRUZ[(t, p)]:
+        c, r = centros[braco]
+        if a1 < a0:   # o arco cruza 0/2π (Arco do BRGTools): leva o fim para depois de 2π
+            a1 += 2.0 * math.pi
+        trechos.append(("arco", c, r, a0, a1))
+        if ext:
+            trechos.extend(retas[n] for n in nomes)
+    return tuple(trechos)
+
+
+def u_C2l_cruz_cm(b_cm: float | None, h_cm: float | None, d_cm: float,
+                  afastamento_C2l_cm: float, tipo: str = "interno",
+                  posicao: str | None = None, D_cm: float | None = None) -> float:
+    """Perímetro u″ do contorno C″ com a armadura de punção em cruz, cm (19.5.3.4, Figura 19.8 à direita, PDF p. 190).
+
+    Fonte: a NBR 6118 não dá a regra numérica (Figura 19.8); a construção é a
+    do programa de punção do escritório (BRGTools, porte do LPUNC), adotada
+    por decisão do engenheiro em 21/09/2026. Soma dos comprimentos dos trechos
+    de ``contorno_C2l_cruz`` (arco: raio × ângulo; reta: distância entre as
+    pontas), como ``Wp.Comprimento`` do programa. Em forma fechada, com
+    r6 = nb/√2 + 2d, r8 = nh/√2 + 2d e δ = 1 quando rn > 2d (0 caso contrário):
+
+        interno: u″ = π·(r6 + r8) + 8·d·δ
+        borda:   u″ = (π/2)·(r6 + r8) + 4·d·δ
+        canto:   u″ = (π/4)·(r6 + r8) + 2·d·δ
+
+    ``afastamento_C2l_cm`` é a distância de C″ à face do pilar (rn + 2d, com rn
+    a distância do último contorno de armadura à face). Fora do trecho reto,
+    u″ não depende de rn: na cruz, estender a armadura não aumenta u″ (só
+    desloca o contorno). Argumentos como em ``contorno_C2l_cruz``.
+    """
+    return sum(_comprimento(t) for t in contorno_C2l_cruz(b_cm, h_cm, d_cm, afastamento_C2l_cm,
+                                                          tipo, posicao, D_cm))
+
+
+def _centroide_trechos(trechos) -> tuple[float, float]:
+    L = sx = sy = 0.0
+    for t in trechos:
+        comp = _comprimento(t)
+        if t[0] == "reta":
+            mx, my = (t[1][0] + t[2][0]) / 2.0, (t[1][1] + t[2][1]) / 2.0
+        else:
+            delta = t[4] - t[3]
+            cg = t[2] * math.sin(0.5 * delta) / (0.5 * delta)
+            meio = 0.5 * (t[3] + t[4])
+            mx, my = t[1][0] + cg * math.cos(meio), t[1][1] + cg * math.sin(meio)
+        L += comp
+        sx += comp * mx
+        sy += comp * my
+    return sx / L, sy / L
+
+
+def Wp_C2l_cruz_cm2(b_cm: float | None, h_cm: float | None, d_cm: float,
+                    afastamento_C2l_cm: float, tipo: str = "interno",
+                    posicao: str | None = None, D_cm: float | None = None,
+                    direcao_excentricidade_graus: float = 0.0,
+                    polo: str = "perimetro") -> float:
+    """Wp = ∫|e|·dℓ sobre o contorno C″ em cruz, cm² (19.5.2.2 aplicado a 19.5.3.4, PDF p. 184 e 190).
+
+    O contorno é o de ``contorno_C2l_cruz`` (fonte: a NBR 6118 não dá a regra
+    numérica (Figura 19.8); a construção é a do programa de punção do
+    escritório (BRGTools, porte do LPUNC), adotada por decisão do engenheiro
+    em 21/09/2026). A integral é feita em forma fechada, trecho a trecho, com
+    e medido a partir do eixo perpendicular a ``direcao_excentricidade_graus``
+    (0° = excentricidade ao longo de b, x; 90° = ao longo de h, y) que passa
+    pelo polo. ``polo='perimetro'`` (padrão do programa): centróide do
+    próprio contorno C″; ``polo='pilar'``: centro do pilar. No pilar interno
+    os dois coincidem.
+    """
+    trechos = contorno_C2l_cruz(b_cm, h_cm, d_cm, afastamento_C2l_cm, tipo, posicao, D_cm)
+    pl = str(polo).strip().lower()
+    if pl == "perimetro":
+        centro = _centroide_trechos(trechos)
+    elif pl == "pilar":
+        centro = (0.0, 0.0)
+    else:
+        raise ValueError("polo deve ser 'perimetro' ou 'pilar'.")
+    a = math.radians(float(direcao_excentricidade_graus))
+    nrm = (math.cos(a), math.sin(a))
+    return sum(_integral_abs_e(t, centro, nrm) for t in trechos)
