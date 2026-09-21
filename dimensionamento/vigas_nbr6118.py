@@ -876,6 +876,45 @@ def verificar_instabilidade_lateral(b_cm: float, h_cm: float, l0_cm: float,
     )
 
 
+# === T3: armadura de pele, área total por face (17.3.5.2.3, PDF p. 153) ===
+def armadura_pele_total_cm2_por_face(
+    bw_cm: float, h_alma_cm: float, h_total_cm: float | None = None
+) -> float:
+    """Armadura de pele mínima por face da alma, em cm2 de área total
+    (17.3.5.2.3, PDF p. 153): 0,10% * Ac,alma por face, sem exceder o
+    equivalente a 5 cm2/m de altura da alma.
+
+    Esta é a forma **principal** recomendada (área total por face, como na
+    apostila do Prof. Bastos), a partir da qual o detalhista distribui as
+    barras ao longo de h_alma respeitando o espaçamento máximo de
+    ``espacamento_max_pele_cm``. Para a taxa por metro de altura (grandeza
+    equivalente, usada por outros softwares de detalhamento), veja
+    ``armadura_pele_cm2_por_face``.
+
+    Ac,alma = bw_cm * h_alma_cm. ``h_alma_cm`` é a altura da alma: em viga
+    retangular, a própria altura h da viga; em viga T, a altura da alma
+    abaixo da mesa (não a altura total da viga).
+
+    Dispensável em vigas com altura TOTAL <= 60 cm (17.3.5.2.3: "Em vigas
+    com altura igual ou inferior a 60 cm..." — a norma fala da altura da
+    viga, não da altura da alma). ``h_total_cm`` é essa altura total; se
+    omitido, assume-se seção retangular e usa-se ``h_alma_cm`` (onde as
+    duas coincidem). Para viga T, o chamador DEVE informar ``h_total_cm``
+    explicitamente: uma viga T com altura total > 60 cm não é dispensada
+    mesmo que a alma abaixo da mesa tenha <= 60 cm.
+
+    O teto de 5 cm2/m por face (mesmo limite de ``armadura_pele_cm2_por_face``)
+    é convertido para a área total distribuída em h_alma_cm: 5 cm2/m *
+    (h_alma_cm / 100).
+    """
+    h_dispensa_cm = h_total_cm if h_total_cm is not None else h_alma_cm
+    if h_dispensa_cm <= H_DISPENSA_PELE_CM:
+        return 0.0
+    area = TAXA_PELE * bw_cm * h_alma_cm
+    teto = TETO_PELE_CM2_POR_M * (h_alma_cm / 100.0)
+    return min(area, teto)
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------

@@ -167,10 +167,15 @@ def fnd_equilibrio(Gnk: float, Qnk: float, Qs_min: float = 0.0,
 
     γqs pondera Qs,mín: nem a Tabela 11.3 nem a Tabela 11.1 dão um valor
     próprio para ele (a nota de rodapé da Tabela 11.3 só remete γg, γq à
-    Tabela 11.1; γqs não é um deles). O padrão adotado aqui é 1,0 — não
-    reduzir o valor característico mínimo, para não superestimar a folga de
-    segurança que esse termo concede à ação instabilizante. Informe
-    ``gama_qs`` explícito para outro critério.
+    Tabela 11.1; γqs não é um deles). O padrão adotado aqui é 1,0 — Qs,mín
+    entra inteiro, sem redução, subtraindo o máximo possível de Fnd. Atenção:
+    isso é o lado **menos** conservador (Fnd menor, mais folga contra a perda
+    de equilíbrio), porque Qs,mín é a ação variável estabilizante que
+    acompanha a instabilizante, e reduzi-la a favor da segurança significaria
+    usar um γqs **menor** que 1,0 (subtrai menos, Fnd fica maior). O valor
+    1,0 foi mantido como padrão por não haver, na norma, um γqs próprio nem
+    indicação de reduzi-lo; quem quiser o lado mais conservador informa
+    ``gama_qs`` explícito, menor que 1,0.
     """
     g_gn = (ac.gama_f_tabela_11_1(combinacao, "permanente", "D") if gama_gn is None
             else float(gama_gn))
