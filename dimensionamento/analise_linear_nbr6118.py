@@ -27,9 +27,13 @@ Convenções: tensões e fck em MPa; geometria em cm; esforços em kN e kN.cm.
 Fora da faixa de validade de cada item, as funções levantam
 ``nucleo_nbr6118.FaixaNormativaError`` (nunca devolvem número calculado com a
 fórmula errada). A fonte de cada fórmula é a imagem da página do PDF citada
-acima (SCRATCH\\nbr_png\\pNNN.png); onde a norma só traz uma regra gráfica,
-sem equação explícita (14.6.2.2 - abertura; 14.6.2.3 - mísula), a docstring
-da função correspondente diz isso e declara a escolha feita.
+acima (SCRATCH\\nbr_png\\pNNN.png); em 14.6.2.2 (abertura) e 14.6.2.3
+(mísula) a norma não dá a equação em texto, mas as Figuras 14.3 e 14.4 dão a
+inclinação da reta-limite em forma gráfica (triângulo 1:2 - pacote T1,
+INCLINACAO_FIGURAS_14_3_E_14_4, PDF p. 109-110); as funções sem posição x
+(largura_efetiva_com_abertura, secao_efetiva_misula) continuam devolvendo o
+piso seguro, e as de posição (bef_com_abertura_em_x_cm,
+hef_variacao_brusca_em_x_cm, hef_misula_em_x_cm) aplicam a regra 1:2.
 """
 
 from __future__ import annotations
@@ -240,34 +244,22 @@ def largura_efetiva_com_abertura(bf_cm: float, bef_geometrico_cm: float) -> floa
     """Largura efetiva bef da mesa colaborante na presença de abertura na
     laje (14.6.2.2, Figura 14.3, PDF p. 109).
 
-    A norma não dá equação explícita aqui - é uma regra gráfica: quando a
-    laje tem abertura ou interrupção na região da mesa colaborante, traçam-se
-    duas retas (numeradas 1 e 2 na Figura 14.3) a partir dos vértices da
-    abertura até a viga, e a largura efetiva bef é lida diretamente no
-    desenho, respeitando sempre bef <= bf. Como a norma não fixa o ângulo
-    dessas retas nem uma fórmula fechada, esta função não reconstrói a
-    geometria da abertura (que depende do desenho de cada caso); ela recebe
-    o bef já obtido graficamente (bef_geometrico_cm, pelo desenho da Figura
-    14.3 do caso concreto) e apenas aplica o limite normativo bf.
-
-    Revisão do pacote F1 (fechamento), com a Figura 14.3 relida em zoom alto:
-    em cada vértice da abertura há um pequeno triângulo retângulo, com o
-    ângulo reto marcado entre a reta 1 (perpendicular à linha de bef,
-    isto é, vertical - a projeção do vértice da abertura) e a reta 2 (a
-    hipotenusa, inclinada, que vai da reta 1 até a borda bf). O ângulo da
-    reta 2 não tem valor numérico nem proporção indicados no desenho ou no
-    texto: ele depende de onde a abertura está em relação à viga em cada
-    projeto, e por isso não dá para generalizar um ângulo fixo (nem os 45°
-    que o desenho sugere a olho nu) como fórmula da norma. Confirma-se assim
-    que 14.6.2.2 (parte de abertura) permanece uma regra gráfica sem base
-    para uma equação fechada; esta função continua limitada a aplicar
-    bef <= bf sobre o valor que o engenheiro já tirou do desenho do caso
-    concreto.
+    A Figura 14.3 traça, em cada vértice da abertura, um pequeno triângulo
+    retângulo com os catetos rotulados 1 (direção transversal) e 2 (direção
+    do eixo da viga): a borda da mesa efetiva volta da abertura para a
+    largura bf com inclinação 1:2 (revisão do pacote T1, PDF p. 109, com a
+    figura relida em zoom alto - o triângulo é o símbolo gráfico usual de
+    inclinação, e não um detalhe sem proporção). Para calcular bef a uma
+    distância x do início da abertura por essa regra, use
+    ``bef_com_abertura_em_x_cm`` (bloco T1, fim deste arquivo). Esta função
+    aqui é a mais simples e continua igual à de antes do pacote T1: recebe o
+    bef já obtido (pela regra 1:2 ou por outro meio) e só aplica o limite
+    normativo bf <= bf original.
 
     bf_cm: largura colaborante sem abertura (14.6.2.2, largura_colaborante_cm
     ou largura_efetiva_mesa).
-    bef_geometrico_cm: largura efetiva obtida da construção gráfica da
-    Figura 14.3 para a abertura em questão.
+    bef_geometrico_cm: largura efetiva já obtida para a abertura em questão
+    (pela regra 1:2 da Figura 14.3, ver ``bef_com_abertura_em_x_cm``).
 
     Faixa: bf_cm > 0; bef_geometrico_cm >= 0.
     """
@@ -291,45 +283,24 @@ def secao_efetiva_misula(h_menor_cm: float, h_maior_cm: float) -> float:
     """Altura (ou largura) efetiva em mísula ou variação brusca de seção
     (14.6.2.3, Figura 14.4, PDF p. 109-110).
 
-    A norma também não dá equação aqui (regra gráfica): "só deve ser
-    considerada como parte efetiva da seção aquela indicada na Figura 14.4".
-    A figura mostra duas transições espelhadas (uma para o caso em que a
-    seção aumenta ao longo do vão, outra em que diminui), cada uma com dois
-    traçados sobrepostos e legendados 1 e 2 (variação brusca e mísula,
-    respectivamente) entre um trecho de seção menor e um de seção maior; em
-    ambos os traçados, o mesmo segmento vertical rotulado "hef ou bef" mede,
-    na posição da transição, a distância entre o nível do trecho maior e o
-    nível do trecho menor - ou seja, o valor de hef (ou bef) coincide com a
-    própria altura (ou largura) do trecho de seção CONSTANTE menor que a
-    mísula ou a variação brusca liga, nunca com o do trecho maior nem com
-    algo intermediário dentro da cunha de transição. Interpretação adotada
-    aqui, a favor da segurança e consistente com a leitura da figura nos
-    dois sentidos: a dimensão efetiva no trecho de mísula ou variação
-    brusca é o MENOR dos dois trechos de seção constante que ela liga - o
-    acréscimo de seção dado pela mísula nunca é contado.
+    A Figura 14.4 mostra duas transições espelhadas (seção aumentando ou
+    diminuindo ao longo do vão), cada uma com dois traçados legendados 1 e 2
+    (variação brusca e mísula, respectivamente) entre um trecho de seção
+    menor e um de seção maior. Junto de cada traçado 2 (mísula) há também um
+    pequeno triângulo retângulo à parte, com os catetos rotulados 2 (ao
+    longo do vão) e 1 (na altura ou largura): é o símbolo gráfico de
+    inclinação, e fixa a proporção da reta-limite em 1:2 (revisão do pacote
+    T1, PDF p. 109-110, com a figura relida em zoom alto). O traçado 1
+    (variação brusca) sobe/desce de uma vez no início da transição; o
+    traçado 2 (mísula) é a diagonal que parte do mesmo ponto com essa
+    inclinação 1:2. Para calcular hef (ou bef) a uma distância x da
+    transição por essa regra, use ``hef_variacao_brusca_em_x_cm`` (degrau) ou
+    ``hef_misula_em_x_cm`` (mísula real, com seu próprio comprimento) - bloco
+    T1, fim deste arquivo.
 
-    Revisão do pacote F1 (fechamento), com a Figura 14.4 relida em zoom alto
-    nos dois traçados (1 e 2) de cada uma das duas transições desenhadas:
-    o traçado 1 (variação brusca) é vertical e fica encostado no trecho de
-    seção MAIOR, subindo de uma vez até o nível maior logo na extremidade da
-    cunha; o traçado 2 (mísula) é a diagonal que liga o pé do traçado 1 (no
-    nível do trecho menor) até o nível do trecho maior, percorrendo uma
-    certa extensão ao longo do vão sem que a norma diga o comprimento dessa
-    extensão nem a inclinação da diagonal. Ou seja, dentro da própria cunha
-    de transição a altura (ou largura) efetiva realmente varia entre
-    h_menor_cm (no pé da mísula) e h_maior_cm (na extremidade oposta,
-    inclusive imediatamente após a variação brusca), mas como função de uma
-    posição ao longo do vão que a norma não parametriza - não há régua nem
-    proporção na figura, só o desenho qualitativo. Sem um parâmetro de
-    posição (e sem base normativa para inventar um), a única resposta que
-    esta função pode devolver sem superestimar a seção em nenhum ponto da
-    cunha é o valor garantido em TODO o trecho de transição: h_menor_cm, o
-    piso da variação (é exatamente o valor no pé da mísula, antes de
-    qualquer contribuição do traçado 1 ou 2). Continua sendo uma
-    simplificação a favor da segurança, não uma leitura literal e completa
-    da Figura 14.4 - por isso o item permanece "parcial": a biblioteca não
-    calcula hef(x) ao longo da cunha porque a norma não dá com o que fazer
-    isso, e devolve apenas o limite inferior seguro.
+    Esta função aqui é a mais simples e continua igual à de antes do pacote
+    T1: sem informar a posição x ao longo da cunha, o único valor garantido
+    em todo o trecho de transição é o piso h_menor_cm (a favor da segurança).
 
     h_menor_cm, h_maior_cm: alturas (ou larguras) dos dois trechos de seção
     constante ligados pela mísula ou variação brusca, com h_menor_cm <=
@@ -747,3 +718,162 @@ def laje_diafragma_rigido(
         return False
     razao = lado_maior_cm / lado_menor_cm
     return razao <= 3.0 + 1e-9
+
+
+# ---------------------------------------------------------------------------
+# === T1: inclinação 1:2 das Figuras 14.3 e 14.4 (abertura na mesa e mísulas) ===
+# ---------------------------------------------------------------------------
+# Triagem de 21/09/2026: as Figuras 14.3 (14.6.2.2, PDF p. 109) e 14.4
+# (14.6.2.3, PDF p. 109-110) trazem, junto de cada canto de transição, um
+# pequeno triângulo retângulo com os catetos rotulados 1 e 2 - o símbolo
+# gráfico usual de inclinação, com "1" na direção transversal (altura ou
+# largura) e "2" na direção do eixo da viga. Isso fixa a proporção da reta-
+# limite em 1:2 (para cada 2 cm percorridos ao longo do eixo, a largura ou
+# altura efetiva pode crescer 1 cm), embora a norma não dê essa inclinação
+# em forma de texto ou equação - só no desenho.
+INCLINACAO_FIGURAS_14_3_E_14_4 = 0.5  # cm de altura/largura por cm de eixo
+
+
+def bef_com_abertura_em_x_cm(
+    bef_na_abertura_cm: float, bf_cm: float, x_cm: float,
+) -> float:
+    """Largura efetiva bef(x) da mesa colaborante a uma distância x da face
+    da abertura na laje, pela inclinação 1:2 da Figura 14.3 (14.6.2.2, PDF
+    p. 109).
+
+    Fórmula (pacote T1, ver INCLINACAO_FIGURAS_14_3_E_14_4):
+        bef(x) = mín(bf, bef_na_abertura + INCLINACAO_FIGURAS_14_3_E_14_4 * x)
+
+    Isto é: a partir do vértice da abertura (x=0, onde a largura efetiva vale
+    bef_na_abertura_cm), a borda da mesa efetiva volta para bf com
+    inclinação 1:2, e fica presa em bf assim que a reta 1:2 alcança essa
+    largura.
+
+    bef_na_abertura_cm: largura efetiva bem na face da abertura (x=0), cm;
+    o menor valor de bef na Figura 14.3 (bef_na_abertura_cm <= bf_cm).
+    bf_cm: largura colaborante sem abertura (14.6.2.2, largura_colaborante_cm
+    ou largura_efetiva_mesa), a que a reta 1:2 volta.
+    x_cm: distância ao longo do eixo da viga, contada a partir da face da
+    abertura, cm.
+
+    Faixa: bf_cm > 0; 0 <= bef_na_abertura_cm <= bf_cm; x_cm >= 0.
+    """
+    if bf_cm <= 0.0:
+        raise FaixaNormativaError(
+            f"bf_cm = {bf_cm:g} cm não é uma largura colaborante válida "
+            "(14.6.2.2): deve ser positiva."
+        )
+    if bef_na_abertura_cm < 0.0:
+        raise FaixaNormativaError(
+            f"bef_na_abertura_cm = {bef_na_abertura_cm:g} cm não pode ser "
+            "negativo (14.6.2.2, Figura 14.3)."
+        )
+    if bef_na_abertura_cm > bf_cm + 1e-9 * max(1.0, bf_cm):
+        raise FaixaNormativaError(
+            f"bef_na_abertura_cm = {bef_na_abertura_cm:g} cm não pode ser "
+            f"maior que bf_cm = {bf_cm:g} cm (14.6.2.2, Figura 14.3)."
+        )
+    if x_cm < 0.0:
+        raise FaixaNormativaError(
+            f"x_cm = {x_cm:g} cm não pode ser negativo (14.6.2.2, Figura "
+            "14.3): x é medido a partir da face da abertura."
+        )
+    return min(bf_cm, bef_na_abertura_cm + INCLINACAO_FIGURAS_14_3_E_14_4 * x_cm)
+
+
+def hef_variacao_brusca_em_x_cm(
+    h_menor_cm: float, h_maior_cm: float, x_cm: float,
+) -> float:
+    """Altura (ou largura) efetiva hef(x) numa variação brusca de seção, a
+    uma distância x do canto do degrau, pela inclinação 1:2 da Figura 14.4
+    (14.6.2.3, PDF p. 109-110).
+
+    Fórmula (pacote T1, ver INCLINACAO_FIGURAS_14_3_E_14_4):
+        hef(x) = mín(h_maior, h_menor + INCLINACAO_FIGURAS_14_3_E_14_4 * x)
+
+    Isto é: embora a seção salte de h_menor para h_maior de uma só vez no
+    degrau (traçado 1 da Figura 14.4), o trecho de seção maior só passa a
+    contar na seção efetiva gradualmente, com inclinação 1:2 a partir do
+    canto do degrau, até que a reta 1:2 alcance h_maior. Vale igual para
+    cima e para baixo (a figura desenha a inclinação nas duas faces) e para
+    altura (hef) ou largura (bef), como a figura rotula ("hef ou bef").
+
+    h_menor_cm, h_maior_cm: alturas (ou larguras) dos trechos de seção
+    constante menor e maior que o degrau liga (h_menor_cm <= h_maior_cm).
+    x_cm: distância ao longo do eixo, contada a partir do canto do degrau,
+    para qualquer um dos dois lados (a subida ou a descida), cm.
+
+    Faixa: h_menor_cm > 0; h_maior_cm > 0; h_menor_cm <= h_maior_cm;
+    x_cm >= 0.
+    """
+    if h_menor_cm <= 0.0 or h_maior_cm <= 0.0:
+        raise FaixaNormativaError(
+            "h_menor_cm e h_maior_cm devem ser positivos (14.6.2.3, Figura 14.4)."
+        )
+    if h_menor_cm > h_maior_cm:
+        raise ValueError(
+            "h_menor_cm deve ser <= h_maior_cm (troque a ordem dos argumentos)."
+        )
+    if x_cm < 0.0:
+        raise FaixaNormativaError(
+            f"x_cm = {x_cm:g} cm não pode ser negativo (14.6.2.3, Figura "
+            "14.4): x é medido a partir do canto do degrau."
+        )
+    return min(h_maior_cm, h_menor_cm + INCLINACAO_FIGURAS_14_3_E_14_4 * x_cm)
+
+
+def hef_misula_em_x_cm(
+    h_menor_cm: float, h_maior_cm: float, comprimento_misula_cm: float, x_cm: float,
+) -> float:
+    """Altura (ou largura) efetiva hef(x) numa mísula, a uma distância x do
+    início da mísula, pela inclinação 1:2 da Figura 14.4 (14.6.2.3, PDF
+    p. 109-110).
+
+    A mísula real é a cunha reta que liga h_menor a h_maior ao longo de
+    comprimento_misula_cm:
+        h_real(x) = h_menor + (h_maior - h_menor) * mín(x, comprimento_misula) / comprimento_misula
+
+    mas só conta como seção efetiva o que fica dentro da reta-limite de
+    inclinação 1:2 que sai do início da mísula (traçado 2 da Figura 14.4,
+    ver INCLINACAO_FIGURAS_14_3_E_14_4):
+        hef(x) = mín(h_real(x), h_menor + INCLINACAO_FIGURAS_14_3_E_14_4 * x)
+
+    Se a mísula for mais íngreme que 1:2 (comprimento_misula curto), hef fica
+    preso na reta 1:2 até bem depois do fim físico da mísula, quando
+    h_menor + x/2 finalmente alcança h_maior. Se a mísula for mais suave que
+    1:2 (comprimento_misula longo), h_real(x) já fica sempre abaixo da reta
+    1:2, e hef segue a mísula inteira (hef(x) = h_real(x) em todo o trecho).
+
+    h_menor_cm, h_maior_cm: alturas (ou larguras) dos trechos de seção
+    constante menor e maior que a mísula liga (h_menor_cm <= h_maior_cm).
+    comprimento_misula_cm: extensão da mísula ao longo do eixo, do início
+    (seção h_menor_cm) ao fim (seção h_maior_cm), cm.
+    x_cm: distância ao longo do eixo, contada a partir do início da mísula,
+    cm (pode passar de comprimento_misula_cm: a mísula já terminou
+    fisicamente, mas a reta 1:2 pode ainda não ter alcançado h_maior).
+
+    Faixa: h_menor_cm > 0; h_maior_cm > 0; h_menor_cm <= h_maior_cm;
+    comprimento_misula_cm > 0; x_cm >= 0.
+    """
+    if h_menor_cm <= 0.0 or h_maior_cm <= 0.0:
+        raise FaixaNormativaError(
+            "h_menor_cm e h_maior_cm devem ser positivos (14.6.2.3, Figura 14.4)."
+        )
+    if h_menor_cm > h_maior_cm:
+        raise ValueError(
+            "h_menor_cm deve ser <= h_maior_cm (troque a ordem dos argumentos)."
+        )
+    if comprimento_misula_cm <= 0.0:
+        raise FaixaNormativaError(
+            f"comprimento_misula_cm = {comprimento_misula_cm:g} cm deve ser "
+            "positivo (14.6.2.3, Figura 14.4)."
+        )
+    if x_cm < 0.0:
+        raise FaixaNormativaError(
+            f"x_cm = {x_cm:g} cm não pode ser negativo (14.6.2.3, Figura "
+            "14.4): x é medido a partir do início da mísula."
+        )
+    x_na_cunha = min(x_cm, comprimento_misula_cm)
+    h_real = h_menor_cm + (h_maior_cm - h_menor_cm) * x_na_cunha / comprimento_misula_cm
+    h_reta_1_2 = h_menor_cm + INCLINACAO_FIGURAS_14_3_E_14_4 * x_cm
+    return min(h_real, h_reta_1_2)

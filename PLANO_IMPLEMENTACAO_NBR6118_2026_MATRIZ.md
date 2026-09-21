@@ -277,8 +277,8 @@ Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.
 | `14.6.2.1-trecho-rigido` | 14.6.2.1 | 108 | Extensão do trecho rígido no cruzamento de elementos lineares (Figura 14.1) | implementado | alta | P | P14 |
 | `14.6.2.2-vao-a-mesa` | 14.6.2.2 | 108 | Distância a entre pontos de momento fletor nulo (para largura colaborante) | implementado | alta | P |  |
 | `14.6.2.2-largura-colaborante` | 14.6.2.2 | 109 | Largura colaborante bf de viga T/L (limites b1, b3 conforme Figura 14.2) | implementado | alta | M | P14 |
-| `14.6.2.2-largura-efetiva-abertura` | 14.6.2.2 | 109 | Largura efetiva bef da mesa colaborante na presença de abertura na laje (Figura 14.3) | parcial | média | M | P14 |
-| `14.6.2.3-misulas-secao-efetiva` | 14.6.2.3 | 109 | Seção efetiva em mísulas e variações bruscas de seção (Figura 14.4) | parcial | alta | M | P14 |
+| `14.6.2.2-largura-efetiva-abertura` | 14.6.2.2 | 109 | Largura efetiva bef da mesa colaborante na presença de abertura na laje (Figura 14.3) | implementado | média | M | P14 |
+| `14.6.2.3-misulas-secao-efetiva` | 14.6.2.3 | 109 | Seção efetiva em mísulas e variações bruscas de seção (Figura 14.4) | implementado | alta | M | P14 |
 | `14.6.2.4-vao-efetivo-viga` | 14.6.2.4 | 110 | Vão efetivo de vigas (lef = l0 + a1 + a2) | implementado | alta | P |  |
 | `14.6.3-arredondamento-momentos` | 14.6.3 | 111 | Arredondamento do diagrama de momentos fletores sobre apoios/cargas concentradas (Figura 14.6) | implementado | alta | P | P14 |
 | `14.6.4.1-rigidez-vigas-pilares` | 14.6.4.1 | 111 | Valores de rigidez para análise linear (Ecs, momento de inércia bruto; flechas com fissuração/fluência) | implementado | alta | P | P44 |

@@ -6345,7 +6345,7 @@
    "pagina_pdf": 109,
    "titulo": "Largura efetiva bef da mesa colaborante na presença de abertura na laje (Figura 14.3)",
    "tipo": "detalhamento",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "media",
    "complexidade": "M",
    "pacote": "P14",
@@ -6355,19 +6355,21 @@
    "conferido_na_imagem": true,
    "trecho": "analise",
    "implementacao": {
-    "pacote": "P14 + F1",
-    "data": "19/09/2026",
+    "pacote": "P14 + F1 + T1",
+    "data": "21/09/2026",
     "funcoes": [
-     "largura_efetiva_com_abertura"
+     "bef_com_abertura_em_x_cm (nova)",
+     "largura_efetiva_com_abertura (mantida, docstring corrigida)"
     ],
     "testes": [
-     "test_largura_efetiva_com_abertura (P14, já existente)",
-     "test_largura_efetiva_com_abertura_invalida (P14, já existente)",
-     "test_largura_efetiva_com_abertura_corte_total_da_mesa (F1)",
-     "test_largura_efetiva_com_abertura_bef_intermediario_nao_e_alterado (F1)",
-     "test_largura_efetiva_com_abertura_bf_minimo_valido (F1)"
+     "test_bef_abertura_x_zero_e_o_bef_na_face_da_abertura",
+     "test_bef_abertura_ponto_interior_da_transicao",
+     "test_bef_abertura_x_onde_a_reta_1_2_alcanca_bf",
+     "test_bef_abertura_sem_reducao_na_face_ja_igual_a_bf",
+     "test_bef_abertura_entradas_invalidas",
+     "test_funcoes_antigas_sem_posicao_x_nao_mudaram"
     ],
-    "observacao": "Releitura em zoom alto da Figura 14.3 (p. 109) confirmou que é regra gráfica pura: os dois pequenos triângulos retângulos nos vértices da abertura mostram uma reta 1 (perpendicular à linha de bef, isto é, vertical) e uma reta 2 (hipotenusa, inclinada) cujo ângulo não tem valor numérico nem proporção indicados no texto ou no desenho — depende de onde a abertura fica em relação à viga em cada projeto. Não há base normativa para reconstruir a geometria da abertura a partir de coordenadas; a função continua recebendo o bef já lido no desenho do caso concreto (bef_geometrico_cm) e só aplica o teto bef<=bf. Nenhuma fórmula nem assinatura mudou nesta revisão, só a docstring (evidência da releitura) e testes novos de fronteira (corte total bef=0, bf mínimo válido, bef intermediário preservado)."
+    "observacao": "A Figura 14.3 (p. 109) traz, em cada vertice da abertura, um triangulo retangulo com catetos rotulados 1 (transversal) e 2 (ao longo do eixo) -- confirmado por zoom 10x na imagem p109.png: e o simbolo grafico usual de inclinacao, nao um detalhe sem proporcao. bef_com_abertura_em_x_cm(bef_na_abertura_cm, bf_cm, x_cm) aplica bef(x) = min(bf, bef_na_abertura + 0,5*x), com x medido a partir da face da abertura. A funcao antiga largura_efetiva_com_abertura(bf_cm, bef_geometrico_cm) foi mantida com a mesma assinatura e o mesmo resultado (so aplica o clip em bf sobre um bef ja conhecido)."
    },
    "divergencias_imagem": [
     {
@@ -6384,7 +6386,7 @@
    "pagina_pdf": 109,
    "titulo": "Seção efetiva em mísulas e variações bruscas de seção (Figura 14.4)",
    "tipo": "detalhamento",
-   "status": "parcial",
+   "status": "implementado",
    "prioridade": "alta",
    "complexidade": "M",
    "pacote": "P14",
@@ -6394,20 +6396,28 @@
    "conferido_na_imagem": true,
    "trecho": "analise",
    "implementacao": {
-    "pacote": "P14 + F1",
-    "data": "19/09/2026",
+    "pacote": "P14 + F1 + T1",
+    "data": "21/09/2026",
     "funcoes": [
-     "secao_efetiva_misula"
+     "hef_variacao_brusca_em_x_cm (nova)",
+     "hef_misula_em_x_cm (nova)",
+     "secao_efetiva_misula (mantida, docstring corrigida)"
     ],
     "testes": [
-     "test_secao_efetiva_misula_usa_o_menor (P14, já existente)",
-     "test_secao_efetiva_misula_invalida (P14, já existente)",
-     "test_secao_efetiva_misula_sem_parametro_de_posicao (F1)",
-     "test_secao_efetiva_misula_viga_com_misula_de_apoio (F1)",
-     "test_secao_efetiva_misula_variacao_pequena (F1)",
-     "test_secao_efetiva_misula_negativo_invalido (F1)"
+     "test_hef_brusca_x_zero_e_h_menor",
+     "test_hef_brusca_ponto_interior",
+     "test_hef_brusca_x_onde_a_reta_1_2_alcanca_h_maior",
+     "test_hef_brusca_sem_variacao_de_secao",
+     "test_hef_brusca_entradas_invalidas",
+     "test_hef_misula_x_zero_e_h_menor",
+     "test_hef_misula_mais_suave_que_1_para_2_conta_a_misula_inteira",
+     "test_hef_misula_mais_ingreme_que_1_para_2_fica_presa_na_reta",
+     "test_hef_misula_exatamente_1_para_2",
+     "test_hef_misula_sem_variacao_de_secao",
+     "test_hef_misula_entradas_invalidas",
+     "test_funcoes_antigas_sem_posicao_x_nao_mudaram"
     ],
-    "observacao": "Releitura em zoom alto da Figura 14.4 (p. 109-110), nos dois traçados de cada uma das duas transições desenhadas: o traçado 1 (variação brusca) é vertical e encostado no trecho de seção MAIOR; o traçado 2 (mísula) é a diagonal que liga o pé do traçado 1 (no nível do trecho menor) até o nível do trecho maior, percorrendo uma extensão ao longo do vão que a norma não dimensiona nem inclina numericamente. Ou seja, dentro da cunha a altura/largura efetiva de fato varia entre h_menor e h_maior como função de uma posição que a norma não parametriza (sem régua, sem proporção, só desenho qualitativo). Sem parâmetro de posição — e sem base normativa para inventar um comprimento ou ângulo de cunha — a única resposta que não superestima a seção em nenhum ponto da transição é o piso garantido em toda a cunha: h_menor_cm. A interpretação já usada no P14 foi confirmada, não alterada; a docstring foi ampliada com essa evidência específica (o que a função calcula e por que não vai além) e a assinatura pública (só h_menor_cm, h_maior_cm, sem posição) foi verificada por teste como intencional. Item continua parcial: a biblioteca não calcula hef(x) ao longo da mísula, só o limite inferior seguro."
+    "observacao": "A Figura 14.4 (p. 109-110) traz, junto de cada tracado 2 (misula), o mesmo triangulo-simbolo com catetos 1 e 2, confirmando a inclinacao 1:2. hef_variacao_brusca_em_x_cm(h_menor,h_maior,x) cobre o degrau: hef(x)=min(h_maior, h_menor+0,5x) a partir do canto do degrau. hef_misula_em_x_cm(h_menor,h_maior,comprimento_misula,x) cobre a misula real (cunha linear de comprimento_misula): hef(x)=min(h_real(x), h_menor+0,5x) -- se a misula for mais ingreme que 1:2, hef fica preso na reta 1:2 mesmo depois do fim fisico da cunha; se for mais suave, hef segue a misula inteira. secao_efetiva_misula foi mantida com a mesma assinatura e o mesmo resultado (piso h_menor, sem posicao x)."
    },
    "divergencias_imagem": [
     {
