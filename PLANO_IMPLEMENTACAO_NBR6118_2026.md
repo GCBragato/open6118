@@ -4,7 +4,7 @@
 
 *Revisto em 19/09/2026 com as seis decisões do Gustavo (seção 6). A principal: a análise estrutural que a 6118 prescreve entrou no plano, com cálculo próprio de barras (pacotes P44 a P48).*
 
-*__Executado em 19/09/2026.__ Os 48 pacotes estão no `main`, e a biblioteca cobre 512 dos 519 itens computáveis. O relatório da execução, com o que mudou e o que ficou de fora, está em [EXECUCAO_NBR6118_2026.md](EXECUCAO_NBR6118_2026.md). O texto abaixo é o plano como foi escrito, e serve de registro do que se pretendia fazer.*
+*__Executado em 19/09/2026.__ Os 48 pacotes estão no `main`, e, depois da triagem de 21/09/2026, a biblioteca cobre 515 dos 519 itens computáveis. O relatório da execução, com o que mudou e o que ficou de fora, está em [EXECUCAO_NBR6118_2026.md](EXECUCAO_NBR6118_2026.md). O texto abaixo é o plano como foi escrito, e serve de registro do que se pretendia fazer.*
 
 ## 1. Resposta curta
 

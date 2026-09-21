@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+21/09/2026 (triagem)
+--------------------
+- Largura efetiva com abertura na mesa e seção efetiva em mísula calculadas pela inclinação 1:2 das
+  Figuras 14.3 e 14.4; contorno C″ da punção com armadura em cruz pela construção do BRGTools;
+  armadura de pele também como área total por face. Cobertura: 515 dos 519 itens computáveis.
+  Testes: 3.452.
+
 19/09/2026 (execução do plano)
 ------------------------------
 - A biblioteca passou a cobrir 512 dos 519 itens computáveis da NBR 6118:2026 (eram 75), em 48

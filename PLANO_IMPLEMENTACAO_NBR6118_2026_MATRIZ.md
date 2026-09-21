@@ -2,7 +2,7 @@
 
 Anexo do [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.md). Uma linha por item calculável ou conferível da norma, com a situação no código e o pacote do plano que cuidou dele. Revista em 19/09/2026 com as decisões da seção 6 do plano: a análise estrutural entrou no escopo, e os itens que ela trouxe estão nos pacotes P44 a P48.
 
-**Total:** 662 itens — 512 implementados, 6 parciais, 1 ausente e 143 não computáveis (execução do plano concluída em 19/09/2026; o item ausente é o vento, que é da NBR 6123).
+**Total:** 662 itens — 515 implementados, 3 parciais, 1 ausente e 143 não computáveis (execução do plano em 19/09/2026 e triagem em 21/09/2026; o item ausente é o vento, que é da NBR 6123).
 
 **Como ler:**
 

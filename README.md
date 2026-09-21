@@ -11,20 +11,21 @@ Ela recebe esforços e geometria e devolve o que a norma pede para aquela seçã
 conta à vista. Serve a quem quer conferir um número fora do programa de projeto, a quem desenvolve a própria
 ferramenta de cálculo e a quem ensina e quer mostrar cada passo.
 
-## Situação em 19/09/2026
+## Situação em 21/09/2026
 
-- **Cobre 512 dos 519 itens computáveis da norma, 98,7 %.** O relatório da execução, com o método, o que
+- **Cobre 515 dos 519 itens computáveis da norma, 99,2 %.** O relatório da execução, com o método, o que
   mudou e o que ficou de fora, está em [EXECUCAO_NBR6118_2026.md](EXECUCAO_NBR6118_2026.md); a cobertura item
   a item, em [PLANO_IMPLEMENTACAO_NBR6118_2026_MATRIZ.md](PLANO_IMPLEMENTACAO_NBR6118_2026_MATRIZ.md).
-- **3.374 testes**, com os valores esperados tirados do texto ou da imagem da norma, e não de exemplos de
+- **3.452 testes**, com os valores esperados tirados do texto ou da imagem da norma, e não de exemplos de
   apostila.
 - **Auditada antes contra o texto da norma.** Foram 73 defeitos, 38 deles graves, todos corrigidos e
   confirmados por verificação independente: [AUDITORIA_NBR6118_2026.md](AUDITORIA_NBR6118_2026.md) e
   [CORRECOES_NBR6118_2026.md](CORRECOES_NBR6118_2026.md).
 - **Concreto de C20 a C90**, com o Grupo II (C55 a C90) calculado de verdade. Fora dessa faixa, e onde a
   norma não define o caso, a biblioteca levanta `FaixaNormativaError` em vez de extrapolar.
-- **Fora da cobertura:** o vento, que é da NBR 6123, e seis itens em que a norma dá só uma figura ou um
-  princípio, sem fórmula fechada. Estão listados no relatório da execução.
+- **Fora da cobertura:** o vento, que é da NBR 6123, e três modelos de cálculo da seção 22 (consolo muito curto,
+  dente Gerber e bloco em três dimensões), que a norma descreve sem fórmula fechada. Estão no relatório da
+  execução.
 - Cada verificação devolve, junto com o número, a **memória de cálculo** com o item da norma, a fórmula e os
   valores usados.
 
@@ -109,8 +110,8 @@ Python 3.13. O padrão é o kernel em Python, que dá o mesmo resultado; para re
    laje lisa entra como grelha equivalente, e bloco e sapata como treliça espacial, como a norma permite.
 2. **Não substitui o engenheiro responsável.** Todo resultado deve ser conferido à luz da NBR 6118:2026 e das
    demais normas aplicáveis.
-3. **Não cobre a norma inteira.** Faltam o vento, que é de outra norma, e seis itens que a norma só
-   descreve com figura; a [matriz](PLANO_IMPLEMENTACAO_NBR6118_2026_MATRIZ.md) diz item a item o que está e o
+3. **Não cobre a norma inteira.** Faltam o vento, que é de outra norma, e três modelos da seção 22 que a
+   norma só descreve; a [matriz](PLANO_IMPLEMENTACAO_NBR6118_2026_MATRIZ.md) diz item a item o que está e o
    que não está.
 4. **A comparação com um programa comercial de projeto precisa ser refeita.** A que existia é anterior às
    correções de 18/09.

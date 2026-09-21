@@ -3,16 +3,16 @@
 - **Data:** 19/09/2026
 - **Base:** [PLANO_IMPLEMENTACAO_NBR6118_2026.md](PLANO_IMPLEMENTACAO_NBR6118_2026.md), revisto no mesmo dia com as decisões do engenheiro responsável (seção 6 do plano)
 - **Norma:** ABNT NBR 6118:2026, 5ª edição. As páginas citadas são as do PDF (a impressa é 18 a menos).
-- **Estado:** os 48 pacotes do plano estão no `main`, um commit por pacote. Nada foi publicado no PyPI.
+- **Estado:** os 48 pacotes do plano estão no `main`, um commit por pacote, e a triagem de 21/09/2026 (seção 9) fechou mais três itens. Nada foi publicado no PyPI.
 
 ## 1. Resposta curta
 
-1. **A biblioteca cobre 512 dos 519 itens computáveis da norma, 98,7 %.** Antes desta execução eram 75, ou
+1. **A biblioteca cobre 515 dos 519 itens computáveis da norma, 99,2 %.** Antes desta execução eram 75, ou
    14,5 %.
-2. **Ficam de fora 7 itens:** o vento, que é da NBR 6123 e entra na biblioteca como esforço já calculado, e
-   **6 itens parciais**, listados na seção 5, em que a norma dá uma figura ou um princípio, sem fórmula,
-   ângulo ou proporção que permitam fechar a conta.
-3. **Os testes passaram de 613 para 3.374**, todos com o valor esperado tirado do texto ou da imagem da
+2. **Ficam de fora 4 itens:** o vento, que é da NBR 6123 e entra na biblioteca como esforço já calculado, e
+   **3 itens parciais** da seção 22, listados na seção 5, em que a norma descreve o modelo sem dar a fórmula
+   ou a geometria que permitam fechar a conta, e que o engenheiro decidiu deixar como estão (seção 9).
+3. **Os testes passaram de 613 para 3.452**, todos com o valor esperado tirado do texto ou da imagem da
    norma. Nenhum é pulado, nenhum está marcado para falhar.
 4. **A biblioteca passou a calcular a estrutura**, e não só a verificar seções: pórtico plano e espacial,
    grelha, treliça plana e espacial, lajes por grelha e por pórtico equivalente, 2ª ordem global e as
@@ -30,14 +30,14 @@ Cada um dos 48 pacotes do plano passou pelo mesmo protocolo, o da seção 9 do p
 2. **Três verificações independentes,** cada uma por um agente que não viu a implementação sendo feita: uma
    releu a norma na imagem, outra recalculou tudo com script próprio sem importar a biblioteca, e a terceira
    revisou o diff, as convenções, os acentos e as assinaturas públicas.
-3. **Correção e nova conferência,** até as três lentes aprovarem. Em 23 dos 54 pacotes houve pelo menos uma
+3. **Correção e nova conferência,** até as três lentes aprovarem. Em 24 dos 57 pacotes houve pelo menos uma
    volta de correção; em um deles, duas.
 4. **Integração no `main`,** um commit por pacote, com o pytest inteiro passando depois de cada merge e o
    item marcado na matriz de cobertura.
 
 Depois dos 48 pacotes vieram **4 rodadas de fechamento** dos itens que tinham ficado parciais, **1
 conferência final** da biblioteca inteira em cinco lentes (seção 6) e **2 rodadas de correção** do que ela
-apontou. Ao todo foram cerca de 295 rodadas de agente.
+apontou; em 21/09 vieram as **3 rodadas da triagem** (seção 9). Ao todo foram cerca de 310 rodadas de agente.
 
 **O que a verificação encontrou.** As lentes apontaram, entre outras coisas, um erro de leitura da Figura
 20.2 que trocava a linha da armadura (seção 4), a taxa mecânica mínima de viga aceitando aço fora da Tabela
@@ -85,14 +85,12 @@ Cada pacote registrou as suas mudanças de comportamento na mensagem do commit; 
 
 ## 5. O que ficou parcial, e por quê
 
-Cada linha tem o número do item da norma, que é também o id usado na triagem desses pontos.
+Cada linha tem o número do item da norma, que é também o id usado na triagem desses pontos. Os itens 14.6.2.2,
+14.6.2.3 e 19.5.3.4, que estavam aqui, foram fechados na triagem de 21/09/2026 (seção 9).
 
 | Id | Item | O que falta | Por quê |
 |---|---|---|---|
 | 11.4.1.2 | vento | o cálculo das forças de vento | é da NBR 6123, outra norma; a biblioteca recebe as forças prontas, combina com as demais ações e compara com o desaprumo |
-| 14.6.2.2 | abertura na mesa colaborante | a largura efetiva a partir das coordenadas da abertura | a Figura 14.3 é regra gráfica, sem o ângulo da reta inclinada; a função recebe o bef medido no desenho e aplica o limite normativo |
-| 14.6.2.3 | mísulas | a altura efetiva ponto a ponto dentro da cunha | a Figura 14.4 não dá comprimento nem inclinação da cunha; a função devolve o piso garantido, que é o trecho menor |
-| 19.5.3.4 | contorno C″ da punção | o perímetro reduzido do arranjo de conectores em cruz | a Figura 19.8 ilustra o arranjo sem dar a regra numérica do trecho reto e do raio |
 | 22.5.1.3 | modelo de cálculo do consolo | o modelo de atrito-cisalhamento, para consolo muito curto | a norma cita o modelo sem coeficiente de atrito nem expressão; o modelo de biela e tirante está completo |
 | 22.5.2.3 | modelo de cálculo do dente Gerber | a treliça própria do dente | a norma manda seguir os princípios do consolo "com as correções necessárias", sem dar a posição dos nós; a biblioteca usa o modelo do consolo com o braço e a distância ajustados ao dente |
 | 22.7.3 | bloco sobre estacas em três dimensões | a análise de sólido | a norma aceita a treliça espacial de bielas e tirantes como alternativa, e a biblioteca faz a treliça; o sólido em elementos finitos ficou fora pela decisão 1 |
@@ -118,19 +116,21 @@ contaria a redução duas vezes. O código está certo e ganhou um comentário c
 
 ## 7. O que ainda depende do engenheiro
 
-Numerados de D1 a D7 (e D7.1 a D7.4), que são os ids usados na triagem desses pontos.
+Numerados de D1 a D7 (e D7.1 a D7.4), que são os ids usados na triagem desses pontos. A decisão de cada um
+está na seção 9; **continuam abertos o D1 e o D3**, que dependem de dado do engenheiro.
 
 - **D1. Comparar de novo com o programa de projeto.** A comparação que existia foi medida antes das correções
   de 18/09 e não vale mais. É a verificação cruzada que falta. O script `tests/compare_tqs_pilar.py` lê o
   relatório de pilares do programa (`Pilar.xml`).
 - **D2. γqs na perda de equilíbrio como corpo rígido (11.8.2.1).** A edição de 2026 não dá valor para o
   multiplicador de Qs,mín em Fnd = γgn·Gnk + γq·Qnk − γqs·Qs,mín. Foi adotado 1,0, exposto como parâmetro. Com
-  1,0 a ação variável estabilizante entra inteira a favor do equilíbrio, que é o lado menos conservador.
+  1,0 a ação variável estabilizante entra inteira a favor do equilíbrio, que é o lado menos conservador. O
+  engenheiro decidiu manter 1,0; a documentação da função agora diz de que lado da segurança ele fica.
 - **D3. Catálogo de fios de protensão (8.4.1).** Os valores vieram de catálogo de referência, não da ABNT NBR
   7482. Vale conferir antes de usar em projeto.
-- **D4. Armadura de pele (17.3.5.2.3).** A função devolve a taxa em cm² por metro de altura da alma
-  (0,10 %·bw·100). Distribuída na altura, dá o mesmo que a área total 0,10 %·bw·h por face; muda só a forma de
-  apresentar.
+- **D4. Armadura de pele (17.3.5.2.3).** A função devolvia só a taxa em cm² por metro de altura da alma
+  (0,10 %·bw·100). Por decisão do engenheiro, passou a devolver também a área total por face em cm²
+  (0,10 %·bw·h_alma), como na apostila; distribuída na altura, as duas dão o mesmo.
 - **D5. Figura 14.7, rotação plástica (14.6.4.4).** A curva foi digitalizada da imagem, com tolerância
   declarada de ±3 mrad.
 - **D6. Integral de fluência com tensão variável (A.2.5).** A imagem da p. 240 traz α·φ(τ,t0)/Eci dentro da
@@ -156,3 +156,36 @@ Numerados de D1 a D7 (e D7.1 a D7.4), que são os ids usados na triagem desses p
    equivalente, e bloco e sapata como treliça espacial, que a norma aceita.
 4. **Cobertura não é garantia de acerto em todo caso.** Cada item foi conferido por três lentes, mas a
    biblioteca é nova: o uso em projeto real é o próximo filtro.
+
+## 9. Triagem de 21/09/2026
+
+Os pontos das seções 5 e 7 passaram por uma triagem do engenheiro, item a item. As respostas estão guardadas
+fora do repositório, em `Triagem-open6118-pendencias-2026-09-21.json`, na pasta acima dele.
+
+**O que foi resolvido.**
+
+| Id | Decisão | O que foi feito |
+|---|---|---|
+| 14.6.2.2 | resolver | largura efetiva com abertura calculada pela inclinação 1:2 da Figura 14.3 (rodada T1) |
+| 14.6.2.3 | resolver | altura ou largura efetiva em mísula e em variação brusca pela inclinação 1:2 da Figura 14.4 (T1) |
+| 19.5.3.4 | resolver | contorno C″ com armadura em cruz pela construção do programa de punção do escritório, o BRGTools, porte do LPUNC, com a fonte declarada (T2) |
+| D2 | manter 1,0 | valor padrão mantido; documentação corrigida para dizer que 1,0 é o lado menos conservador (T3) |
+| D4 | resolver | armadura de pele devolvendo também a área total por face em cm² (T3) |
+| D1 | resolver | aguarda o engenheiro indicar os projetos e o `Pilar.xml` para a comparação |
+| D3 | resolver | aguarda os PDFs da NBR 7482 e da NBR 7483, que não estão na biblioteca de normas |
+
+**Um erro de leitura que a verificação não pegou.** As Figuras 14.3 e 14.4 trazem, em cada canto, o triângulo
+com catetos 1 e 2 que fixa a inclinação 1:2. O pacote P14, a rodada de fechamento F1 e as três lentes de cada um
+concluíram que as figuras não davam proporção, e os itens ficaram parciais. Foi o engenheiro quem apontou o
+triângulo, na triagem. Fica registrado porque é o tipo de erro que o protocolo de três lentes não garante pegar:
+um detalhe de figura que todos os leitores deixam de ver do mesmo jeito.
+
+**O que ficou como está, por decisão do engenheiro**, sem comentário adicional na triagem:
+
+- 11.4.1.2, vento: fora, por ser da NBR 6123;
+- 22.5.1.3, consolo muito curto por atrito-cisalhamento: continua recusado com mensagem;
+- 22.5.2.3, dente Gerber: continua com o modelo do consolo ajustado ao dente;
+- 22.7.3, bloco: continua parcial, sem reclassificar a treliça espacial como atendimento pleno;
+- D5, curva da Figura 14.7: continua a digitalização da imagem;
+- D6, integral de fluência do Anexo A: continua a letra da norma como padrão;
+- D7.1 a D7.4: as quatro leituras declaradas continuam como estão.
