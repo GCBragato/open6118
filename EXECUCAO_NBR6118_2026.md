@@ -17,8 +17,8 @@
 4. **A biblioteca passou a calcular a estrutura**, e não só a verificar seções: pórtico plano e espacial,
    grelha, treliça plana e espacial, lajes por grelha e por pórtico equivalente, 2ª ordem global e as
    treliças de bielas e tirantes (decisão 1 do plano).
-5. **Tamanho:** 54 módulos e 44.874 linhas de Python na biblioteca, com 1.114 funções e classes públicas,
-   mais 27.828 linhas de teste.
+5. **Tamanho:** 54 módulos e 45.348 linhas de Python na biblioteca, com 1.121 funções e classes públicas,
+   mais 28.570 linhas de teste.
 
 ## 2. Como foi feito
 
